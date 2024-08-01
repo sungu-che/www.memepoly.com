@@ -5207,7 +5207,7 @@ OAuth3.on("ready", function(e){
 													<a class="hashType Portal">Portal</a>\
 												</li>\
 												<li>\
-													<a class="hashType Chord">Chord</a>\
+													<a class="hashType Chord">Build</a>\
 												</li>\
 												<li>\
 													<a class="hashType Mine">Mine</a>\
@@ -5217,7 +5217,7 @@ OAuth3.on("ready", function(e){
 													<a class="hashType Flag">Flag</a>\
 												</li>\
 												<li>\
-													<a class="hashType Chord">Chord</a>\
+													<a class="hashType Chord">Build</a>\
 												</li>\
 												<li>\
 													<a class="hashType Open">Open</a>\
@@ -9501,7 +9501,7 @@ OAuth3.on("ready", function(e){
 												<a class="hashType Portal">Portal</a>\
 											</li>\
 											<li>\
-												<a class="hashType Chord">Chord</a>\
+												<a class="hashType Chord">Build</a>\
 											</li>\
 											<li>\
 												<a class="hashType Mine">Mine</a>\
@@ -9511,7 +9511,7 @@ OAuth3.on("ready", function(e){
 												<a class="hashType Flag">Flag</a>\
 											</li>\
 											<li>\
-												<a class="hashType Chord">Chord</a>\
+												<a class="hashType Chord">Build</a>\
 											</li>\
 											<li>\
 												<a class="hashType Open">Open</a>\

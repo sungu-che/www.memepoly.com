@@ -434,7 +434,7 @@ export const Experience = () => {
 													<a class="hashType Portal">Portal</a>\
 												</li>\
 												<li>\
-													<a class="hashType Chord">Chord</a>\
+													<a class="hashType Chord">Build</a>\
 												</li>\
 												<li>\
 													<a class="hashType Mine">Mine</a>\
@@ -444,7 +444,7 @@ export const Experience = () => {
 													<a class="hashType Flag">Flag</a>\
 												</li>\
 												<li>\
-													<a class="hashType Chord">Chord</a>\
+													<a class="hashType Chord">Build</a>\
 												</li>\
 												<li>\
 													<a class="hashType Open">Open</a>\
