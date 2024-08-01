@@ -1,0 +1,314 @@
+
+forms{display: block;}
+forms:empty{display: none;}
+forms:not(:empty)+form{display: none;}
+
+
+
+
+form[name="oauth.network"][client]{display: block;}
+form[name="oauth.network"] input[type="submit"]{-webkit-user-modify:read-only;}
+
+details[open]+fieldset{}
+
+details summary{padding: 20px 0; cursor: pointer;}
+
+details{display: none; -webkit-user-modify:read-only;}
+details table{width:100%;}
+details table th{background-color: #f5f5f5;border-top: 1px solid #000;}
+details table th,
+details table td{border-bottom: 1px solid #ddd;height: 40px;text-align:center;}
+details table td a{padding: 5px; cursor:pointer;}
+
+details table td.col_flow a:before{content:"상담접수 대기중";}
+details table td.col_flow a[flow]:before{content:"상담접수 완료";}
+details table tbody:empty{position: relative; border-bottom:1px solid #f5f5f5; height: 40px;}
+details table tbody:empty:after{content: "작성한 내용이 없습니다."; display: block; text-align: center; position: absolute; left: 0; right: 0; top: 0; bottom: 0; line-height: 40px;}
+
+details .col_flow{width: 80px;}
+details .col_type{width:100px;}
+details .col_date{width:200px;}
+
+cable{display: block;margin-bottom: 10px;}
+/*details label[for="cable"]{display: block; font-size:16px; font-weight:bold;}*/
+#cable,
+details label[for="cable"]{display: none;}
+
+
+details .col{display: block;padding: 5px 15px;}
+details .col label input[type="radio"]{display:none;}
+
+details table label{position: relative; display: block;padding: 5px; z-index: 0;}
+details table label[for]{cursor:pointer;}
+details table label[for] input{/* display: none; */position: absolute;left: 0;top: 0;width: 100%;height: 100%;opacity: 0;z-index: 1;}
+details table label span{position:relative;display: inline-block;padding: 5px;font-weight:normal; z-index: -1;}
+
+
+details label[for="order.by"] input[type="checkbox"]{display: none;}
+details label[for="order.by"] input[type="checkbox"]+span:after{content: "\f0de";margin-left: 10px;font-family: "Font Awesome 6 Free";font-weight:600;position: absolute;right: -10px;height: 7px;top: 0;bottom: 0;margin: auto 0;}
+details label[for="order.by"] input[type="checkbox"]:checked+span:after{content:"\f0dd";height: 23px;}
+
+
+
+form[name="oauth.network"][client][contenteditable]{margin:0;max-width: inherit;}
+form[name="oauth.network"][client]{margin:50px auto;max-width:670px;}
+
+form[name="oauth.network"][client] field item[contenteditable]{line-height:50px;border: 1px solid #ddd;border-radius: 5px;line-height: 30px;padding-left: 0;}
+
+form[name="oauth.network"][client] fields{position:relative; display: block;}
+form[name="oauth.network"][client] #daumPostcode{position: absolute;left: 0px;bottom: 30px;width: 100%;height: 424px;border: 1px solid #000;}
+form[name="oauth.network"][client] #daumPostcode:empty{display: none;}
+form[name="oauth.network"][client] #daumPostcode:not(:empty)+.btns .daumPostcodeClose{display: block; position: absolute;left: 0;bottom: 470px;background: #fff;text-decoration: underline;}
+.daumPostcodeClose{display: none;}
+form[name="oauth.network"][client] #daumPostcode:not(:empty)+.btns input[type="submit"]{display: none;}
+
+
+form[name="oauth.network"][client] field.heading h0{margin-bottom:20px; font-size:20px;}
+
+
+form[name="oauth.network"][client] items{display: block;}
+form[name="oauth.network"][client] item{display: block;}
+form[name="oauth.network"][client] h0{display: block;margin-bottom: 15px;font-weight: 100;font-size: 14px;}
+form[name="oauth.network"][client] field{display: block;}
+form[name="oauth.network"][client] field+field{margin-top: 30px;}
+form[name="oauth.network"][client] tooltip{display: none;}
+
+
+
+form[name="oauth.network"][client] field[type] item{position: relative; padding-left: 25px; line-height: 30px; cursor: pointer;}
+form[name="oauth.network"][client] field[type] item:not(:empty):after{position: absolute;left: 0;top: 0;bottom: 0;margin: auto 0;width: 18px;text-align: center;height: 18px;font-size: 18px;line-height: 18px;font-weight: 900;}
+form[name="oauth.network"][client] field[type] item[contenteditable]{padding-left: 15px;line-height: 40px; height: 40px; cursor:inherit; font-weight: 100;}
+form[name="oauth.network"][client] field[type] item[contenteditable]:after{display: none;}
+form[name="oauth.network"][client] field[type] item[readonly]{-webkit-user-modify: read-only;cursor: default;}
+
+
+form[name="oauth.network"][client] field[type] item:after{-webkit-text-stroke: 0.5px #fff;}
+form[name="oauth.network"][client] field[type] item[checked]:after{-webkit-text-stroke: 0.5px #000;}
+
+form[name="oauth.network"][client] field[type="radio"] item:not(:empty):after{content: "\f058"; font-family: "Font Awesome 6 Free";font-weight:300;}
+form[name="oauth.network"][client] field[type="radio"] item[checked]:after{font-weight:900;}
+
+form[name="oauth.network"][client] field[type="checkbox"] item:not(:empty):after{content: "\f14a"; font-family: "Font Awesome 6 Free";font-weight:300;}
+form[name="oauth.network"][client] field[type="checkbox"] item[checked]:after{font-weight:900;}
+
+form[name="oauth.network"][client] input[type="submit"]{display: block;margin: 50px auto;border-radius:5px;max-width: 670px;width: 100%;height:40px;font-weight:700;background-color: #235bf5;cursor: pointer;color: #fff;}
+
+
+
+
+
+form[name="oauth.network"]{display: none; outline:none; padding-bottom: 100px;}
+form[name="oauth.network"][contenteditable]{display: block; background-color: #f9f9f9; /* position: absolute; left: 0; right: 0; top: 0; */}
+
+form[name="oauth.network"][contenteditable] iframe[src*="/policy/"]{display: none;}
+
+form[name="oauth.network"][contenteditable] oauth.network{background-color: #ddd; -webkit-user-modify: read-only;}
+
+
+form[name="oauth.network"][id="3S2VGCP"] field.heading{ display: none; }
+form[name="oauth.network"][id="3S2VGCP"] fieldset{position:relative;}
+
+form[name="oauth.network"][id="3S2VGCP"] field[draggable="false"][idx="2Q2ODDA"] tooltip btn[type="hide"],
+form[name="oauth.network"][id="3S2VGCP"] field[draggable="false"][idx="21O2DP7"] tooltip btn[type="hide"],
+form[name="oauth.network"][id="3S2VGCP"] field[draggable="false"][idx="2V53J0H"] tooltip btn[type="hide"],
+form[name="oauth.network"][id="3S2VGCP"] field[draggable="false"][idx="1T2DN16"] tooltip btn[type="hide"],
+form[name="oauth.network"][id="3S2VGCP"] field[draggable="false"][idx="1NDJV4H"] tooltip btn[type="hide"]{display: none;}
+
+/* 주소 */
+form[name="oauth.network"][id="3S2VGCP"] field[id="1BD47RN"] item+item{margin-top: 15px;font-size: 15px;}
+form[name="oauth.network"][id="3S2VGCP"] field[contenteditable][draggable="true"][id="1T2DN16"] tooltip[style]{display: none;}
+form[name="oauth.network"][id="3S2VGCP"][contenteditable] field[id="1BD47RN"] items,
+form[name="oauth.network"][id="3S2VGCP"][contenteditable] field[id="1BD47RN"] item{-webkit-user-modify: read-only;/* font-size: 0; */}
+form[name="oauth.network"][id="3S2VGCP"][contenteditable] field[id="1BD47RN"] item[id="1AIMD4K"]:before{content:"시/도";}
+form[name="oauth.network"][id="3S2VGCP"][contenteditable] field[id="1BD47RN"] item[id="299INPM"]:before{content:"시/군/구";}
+form[name="oauth.network"][id="3S2VGCP"][contenteditable] field[id="1BD47RN"] item[id="2OKGVDA"]:before{content:"우편번호";}
+form[name="oauth.network"][id="3S2VGCP"][contenteditable] field[id="1BD47RN"] item[id="2A7OH2G"]:before{content:"도로명주소";}
+form[name="oauth.network"][id="3S2VGCP"][contenteditable] field[id="1BD47RN"] item[id="2SL4UEO"]:before{content:"지번주소";}
+form[name="oauth.network"][id="3S2VGCP"][contenteditable] field[id="1BD47RN"] item[id="2T3A2HF"]:before{content:"추가주소";}
+
+
+
+
+form[name="oauth.network"][contenteditable] fieldset{margin: 0 auto; border:0; }
+
+form[name="oauth.network"][contenteditable] fields{display: block;}
+
+
+
+form[name="oauth.network"][contenteditable] field{display: block; position: relative; padding: 35px 35px 25px; background-color: #fff; outline: none; -webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field.on{margin-bottom: 160px;}
+
+form[name="oauth.network"][contenteditable] field[draggable="true"]:after{content: "\f58d"; position: absolute; left: -1px; right: -1px; top: -1px; line-height: 28px; text-align: center; font-size: 14px; font-family: "Font Awesome 6 Free"; font-weight: 900; background: #ddd; cursor: move;}
+
+form[name="oauth.network"][contenteditable] field:empty{display: none;}
+form[name="oauth.network"][contenteditable] field+field{max-width: 600px; margin: 50px auto 0; box-shadow: 0 0 4px 0px #bbb;}
+
+
+form[name="oauth.network"][contenteditable] field items{display: block; font-size: 0;}
+
+form[name="oauth.network"][contenteditable] field item[draggable="true"]{}
+form[name="oauth.network"][contenteditable] field item[draggable="true"]:after{opacity:0.3;}
+form[name="oauth.network"][contenteditable] field item[draggable="true"]:not(:empty):before{content: "\f58e"; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; left: -25px; top: 3px; padding: 9px; font-size: 13px; height: 13px;}
+
+form[name="oauth.network"][contenteditable] field:first-child+field{margin-top: 90px;}
+form[name="oauth.network"][contenteditable] field:first-child+field:before{content: "필드 리스트"; position: absolute; top: -40px; left: 0; display: block; margin-bottom: 15px; font-size: 15px; font-weight: 900;}
+
+form[name="oauth.network"][contenteditable] field+field{opacity:0.6;}
+form[name="oauth.network"][contenteditable] field+field.on{background-color: #fff; opacity:1;}
+
+
+
+form[name="oauth.network"][contenteditable] field.heading{position:relative; padding: 0; background-color: inherit; z-index: 0;}
+
+form[name="oauth.network"][contenteditable] field.heading h0{position:relative; padding: 13px 20px 13px 70px; height: 24px; font-size: 16px; margin-bottom: 0; font-weight: 900; clear: both; z-index: 0;}
+form[name="oauth.network"][contenteditable] field.heading h0:before{content:""; position:absolute; left: 0; right: 0; top: 0; height: 50px; background-color: #fff;  z-index: -1;}
+form[name="oauth.network"][contenteditable] field.heading h0:empty{min-width:200px;}
+form[name="oauth.network"][contenteditable] field.heading h0:empty:after{content:"제목";}
+
+form[name="oauth.network"][contenteditable] field.heading h0[style]{padding-bottom: 390px; background-repeat: no-repeat; background-position: center bottom; background-size: auto 300px;}
+
+form[name="oauth.network"][contenteditable] field.heading items{max-width: 600px; margin: 120px auto 70px; background: #fff; padding: 10px 35px; box-shadow: 0 0 4px 0px #bbb;}
+form[name="oauth.network"][contenteditable] field.heading items:before{content: "내용"; position: absolute; display: block; margin: -50px 0 0 -35px; font-size: 15px; font-weight: 900;}
+
+form[name="oauth.network"][contenteditable] field.heading item[type]{border: 0; background-color: #fff; padding: 0; margin: 10px auto;}
+form[name="oauth.network"][contenteditable] field.heading item[type]:empty:before,
+form[name="oauth.network"][contenteditable] field.heading item[type]+item[type]:empty:before{content:"\f1dd"; font-family: "Font Awesome 6 Free"; font-weight: 900;} 
+form[name="oauth.network"][contenteditable] field.heading item[type]:after{display: none;}
+
+form[name="oauth.network"][contenteditable] field.heading tooltip btn[type="hide"],
+form[name="oauth.network"][contenteditable] field.heading tooltip btn[type="undo"]{display: none;}
+
+form[name="oauth.network"][contenteditable] field.heading h0.on+tooltip{max-width:initial; left: 60px; right: initial;}
+form[name="oauth.network"][contenteditable] field.heading h0.on+tooltip tooltip-wrapper{margin-top: 40px;}
+form[name="oauth.network"][contenteditable] field.heading tooltip{}
+form[name="oauth.network"][contenteditable] field.heading tooltip tooltip-wrapper{position:relative; display: inline-block; margin-top: 30px; border-radius: 5px; height: 30px; line-height: 30px; font-size:0; box-shadow: 0 0 4px 0px #bbb; background-color: #fff;}
+
+form[name="oauth.network"][contenteditable] field.heading tooltip{display: none; max-width:600px; position: absolute; left: 0; right: 0; margin-left:auto; margin-right: auto; z-index: 1;}
+form[name="oauth.network"][contenteditable] field.heading tooltip[style]{display: block;}
+
+form[name="oauth.network"][contenteditable] field.heading toolbar{overflow: hidden; display: block; margin: 0 auto 0; font-size: 0; text-align: left; background: #fff; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; position: absolute; left: 0; right: 0; top: 50px;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label{float: left; padding-left: 15px;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label span{float:left; font-weight:900; font-size:13px; line-height:35px;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label input{padding: 0 10px; border:0; height: 35px; font-size:12px; font-weight: 900; background-color: transparent; outline:none;}
+
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.count"] input[name="count"]{width:90px;}
+
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.started"] input[type="datetime-local"],
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.expired"] input[type="datetime-local"]{width:190px;}
+
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.started"]{border-left:1px solid #ddd;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.expired"]{border-right:1px solid #ddd;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label input:focus~span{}
+
+form[name="oauth.network"][contenteditable] field items,
+form[name="oauth.network"][contenteditable] field item,
+form[name="oauth.network"][contenteditable] field h0{-webkit-user-modify: read-write; outline:none;}
+form[name="oauth.network"][contenteditable] field h0{padding: 12px 0; border-bottom:1px solid #ddd;}
+
+form[name="oauth.network"][contenteditable]{}
+form[name="oauth.network"][contenteditable][draggable="false"] field items,
+form[name="oauth.network"][contenteditable][draggable="false"] field item,
+form[name="oauth.network"][contenteditable][draggable="false"] field h0{
+    -webkit-user-modify: read-only;
+}
+
+
+form[name="oauth.network"][contenteditable] field item div,
+form[name="oauth.network"][contenteditable] field h0 div{display: none;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"][style]{display: block;}
+form[name="oauth.network"][contenteditable] field[draggable="false"].on{margin-bottom: 150px;}
+
+form[name="oauth.network"][contenteditable] field h0{position:relative; display: block; margin-bottom: 20px; padding-bottom: 12px; height: 25px; font-size: 15px;}
+
+
+form[name="oauth.network"][contenteditable] field+field h0:empty{min-width:200px;}
+form[name="oauth.network"][contenteditable] field+field h0:empty:before{content:"내용을 입력해주세요";}
+form[name="oauth.network"][contenteditable] field+field h0[style]{padding-bottom: 110px; background-repeat: no-repeat; background-position: 45px bottom; background-size: auto 100px;}
+
+form[name="oauth.network"][contenteditable] field[style] item{border:0;}
+form[name="oauth.network"][contenteditable] field item{display: block;position: relative;padding: 7px 15px 7px 45px;/* min-height: 22px; *//* line-height: 1; */font-size: 15px;}
+form[name="oauth.network"][contenteditable] field item[type][link]{text-decoration:underline; color:#1a73e8;}
+form[name="oauth.network"][contenteditable] field item[type][style]{padding-bottom: 110px; background-repeat: no-repeat; background-position: 45px bottom; background-size: auto 100px;}
+form[name="oauth.network"][contenteditable] field item:after{position: absolute; left: 0; top: 13px; text-align: center; font-size: 20px; width: 20px; height: 20px; line-height: 1;}
+
+
+form[name="oauth.network"][contenteditable] field.radio item:after{border-radius:50%;}
+form[name="oauth.network"][contenteditable] field item[checked]:after{}
+form[name="oauth.network"][contenteditable] field item+item{margin-top: 5px;}
+form[name="oauth.network"][contenteditable] field item:empty:before{content:"직접 입력하기"; opacity:0.6;}
+form[name="oauth.network"][contenteditable] field+field item:empty:after{}
+
+
+
+
+form[name="oauth.network"][contenteditable] field[draggable="false"]{display: none; position:absolute; left: 0; right: 0; margin: 35px auto 0; padding-top: 10px; max-width:580px; text-align:center; background-color: initial; opacity:1; z-index: 0; box-shadow:inherit; -webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"]:after{content: "";position: absolute;left: 0;right: 0;/* top: 68px; */bottom: 32px;margin: 0 auto;width: 1px;text-align: center;height: 14px;font-size: 40px;font-weight: 900;/* background: #000015; */z-index: -1;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] h0{margin-top: 10px;margin-bottom: 0;padding-bottom: 5px;height: 0;border-bottom:0;font-size:14px;-webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] h0:empty:before{content: "";}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] items{-webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item{display: inline-block; font-size:13px; -webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item+item{margin-left: 30px; margin-top: 0;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item:empty:before{font-size:14px; opacity:1;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item:empty:after{font-size:18px;left: 15px;top: 7px;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item[type="radio"]:empty:before{content: "단일 선택형 추가";}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item[type="checkbox"]:empty:before{content: "복수 선택형 추가";}
+
+form[name="oauth.network"][contenteditable] field[type="checkbox"] item:after{content: "\f14a"; font-family: "Font Awesome 6 Free";font-weight:300;}
+form[name="oauth.network"][contenteditable] field[type="checkbox"] item[checked]:after{font-weight:900;}
+
+form[name="oauth.network"][contenteditable] field[type="radio"] item:after{content: "\f058"; font-family: "Font Awesome 6 Free";font-weight:300;}
+form[name="oauth.network"][contenteditable] field[type="radio"] item[checked]:after{font-weight:900;}
+
+/* field[contenteditable] item[type]{cursor: pointer;} */
+field[contenteditable] item[type="checkbox"]:after{content: "\f14a"; font-family: "Font Awesome 6 Free";font-weight:300;}
+field[contenteditable] item[type="radio"]:after{content: "\f058"; font-family: "Font Awesome 6 Free";font-weight:300;}
+
+
+field[contenteditable] item[draggable].dragging{background-color: white; border: 2px dashed red; cursor: move;}
+
+
+
+
+
+form[name="oauth.network"] field toolbar{display: none;}
+
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip{display: block; text-align: left; position: absolute; top:10px; left: 35px; right: 35px; -webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn{font-size:18px;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn+btn{margin-left: 13px;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="checkbox"]:after{content: "\f14a"; font-family: "Font Awesome 6 Free";font-weight:300;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="radio"]:after{content: "\f058"; font-family: "Font Awesome 6 Free";font-weight:300;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="input"]:after{content: "\f2ea"; font-family: "Font Awesome 6 Free";font-weight:900;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="hide"]{float: right;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="hide"]:after{content: "\f1f8"; font-family: "Font Awesome 6 Free";font-weight:900;}
+
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="image"]{display: none;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="image"]:after{content: "\f1c5"; font-family: "Font Awesome 6 Free";font-weight:900;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="undo"]{}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="undo"]:after{content: "\f2ea"; font-family: "Font Awesome 6 Free";font-weight:900;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="link"]{display: none;}
+
+
+
+
+form[name="oauth.network"][contenteditable] field.dragging {opacity: .5 !important; border: 2px dashed red !important;}
+
+
+form[name="oauth.network"][contenteditable] field[contenteditable][draggable="true"] tooltip{display: none; position: absolute; left: 36px; margin-top: 40px; border-radius: 0; height: 30px; line-height: 30px; font-size:0; box-shadow: 0 0 4px 0px #bbb; background-color: #fff; z-index: 1;}
+form[name="oauth.network"][contenteditable] field[contenteditable][draggable="true"] tooltip[style]{display: block;}
+
+
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type]{display: inline-block; padding: 0 9px; min-width: 40px; line-height: 30px; font-size: 15px; text-align: center; box-sizing: border-box;}
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type]+btn[type]{border-left: 1px solid #ddd;}
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type="image"]:before{content: "\f1c5"; font-family: "Font Awesome 6 Free";font-weight:900;}
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type="link"]:before{content: "\f0c1"; font-family: "Font Awesome 6 Free";font-weight:900;}
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip input[type="uri"]{border: 0; width: 200px; height: 30px; font-size:13px; outline:none;}
+
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type="undo"],
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type="hide"]{display: none;}

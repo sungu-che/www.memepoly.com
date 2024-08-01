@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
+
+		<meta name="oauth-network-verification" content="0x4a408dfc132871a074c312d5c78b6db3d7ed1dde" />
+		<meta name="privacy" content="/privacy/" />
+		<meta name="terms" content="/terms/" />	
+
+		<meta name="format-detection" content="telephone=no, address=no, email=no">
+		
+
+		<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+		<link rel="stylesheet" href="/src/fonts/fontawesome/css/all.min.css">
+		<link rel="stylesheet" href="/src/fonts/xeicon/xeicon.min.css">
+		<link rel="stylesheet" href="/src/plyr.css">
+		<link rel="stylesheet" href="/src/style.css">
+		<title>emption.red</title>
+		<style>
+			.wrap{opacity: 0}
+			html[user-agent] .wrap,
+			body.loading .wrap{opacity: 1;}
+			body{}
+		</style>
+	</head>
+	<body tooltip="true" mode="third" address="" style="position: relative; overflow: hidden; overflow-y:scroll; background-color: #555;">
+		<div class="wrap third">
+			<div id="header">
+				<input id="nav" type="checkbox">
+				<div class="area">
+					<label for="nav">
+						<div class="balance">
+							<span></span>
+							<a class="tutorial">
+								<i class="emoji"></i>
+							</a>
+						</div>
+					</label>
+					<nav></nav>
+				</div>
+			</div>
+
+			<div id="intro">
+				<div class="tb">
+					<div class="tc">
+						<div class="title">
+							<div class="emoji color">
+								<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">
+							</div>
+						</div>
+						<div class="coptyright">
+							<p>Lounge</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="bg">
+					<div class="noite"></div>
+
+					<div class="constelacao"></div>
+
+					<div class="chuvaMeteoro"></div>
+				</div>
+			</div>
+
+			<div class="main">
+				<div class="react">
+					<div class="three">
+						<div id="root" class="fiber"></div>
+
+						<!-- <div class="zoom_toggle">
+							<a class="zoom map emoji">🗺️</a>
+						</div> -->
+
+						<a id="go"></a>
+
+						<div id="capture">
+							<div class="xyz">
+								<span class="x"></span>
+								<span class="z"></span>
+							</div>
+							<div class="icon rank_toggle"></div>
+							<div id="rank">
+								<ol></ol>
+							</div>
+						</div>
+
+						<div id="bingo"></div>
+
+						<div class="layer">
+							<form action="javascript:window.Report()" name="report" class="popup">
+								<input type="hidden" name="emoji">
+								<input type="hidden" name="to">
+								<input type="hidden" name="hash">
+								<input type="hidden" name="token">
+								<label for="violence">
+									<input id="violence" type="radio" name="subject" value="violence" required>
+									<span>violence</span>
+								</label>
+								<label for="harassment">
+									<input id="harassment" type="radio" name="subject" value="harassment">
+									<span>harassment</span>
+								</label>
+								<label for="spam">
+									<input id="spam" type="radio" name="subject" value="spam">
+									<span>spam</span>
+								</label>
+
+								<div class="submit">
+									<input type="submit" value="Report">
+								</div>
+								<back class="close">❌</back>
+							</form>
+
+							<form action="javascript:window.Feedback()" name="feedback" class="popup">
+								<input type="hidden" name="emoji">
+								<input type="hidden" name="to">
+								<input type="hidden" name="hash">
+								<input type="hidden" name="token">
+								<input type="text" name="subject">
+
+								<div class="submit">
+									<input type="submit" name="subject" placeholder="content">
+								</div>
+								<back class="close">❌</back>
+							</form>
+
+							<form action="javascript:window.Withdrawal()" name="Withdrawal" class="popup">
+								<input type="hidden" name="hash">
+								<input type="hidden" name="token">
+
+								<div class="submit">
+									<input type="submit" value="Withdrawal">
+								</div>
+								<back class="close">❌</back>
+							</form>
+
+							<form name="Tutorial" class="popup">
+								<div class="index">
+									<select onchange="window.Tutorial()" name="index"></select>
+								</div>
+								<back class="close skip">❌</back>
+							</form>
+						</div>
+
+						<div class="aside" sort="emoji">
+							<div class="area">
+								<div class="status">
+									<div class="loading">
+										<strong>Loading...</strong>
+									</div>
+								</div>
+
+								<form name="oauth.network" method="POST" enctype="application/x-www-form-urlencoded">
+									<details>
+										<summary>Dialog Flow</summary>
+										
+										<flows></flows>
+										
+										<label for="cable">filter</label>
+										<input id="cable" type="checkbox">
+										<cable>
+											<div class="col type">
+												<legend>
+													<em>Type</em>
+												</legend>
+												<label for="query.from">
+													<input id="query.from" name="query.type" type="radio" value="from">
+													<span>questions</span>
+												</label>
+												<label for="query.to">
+													<input id="query.to" name="query.type" type="radio" value="to">
+													<span>answer</span>
+												</label>
+											</div>
+
+											<div class="col subject">
+												<legend>
+													<em>category</em>
+												</legend>
+												<label for="query.subject">
+													<input id="query.subject" name="query.subject" type="text" value="">
+												</label>
+											</div>
+
+											<div class="col date">
+												<legend>
+													<em>booking date</em>
+												</legend>
+												<label for="query.booking">
+													<input id="query.booking" name="query.booking" type="month">
+													<span>start date</span>
+												</label>
+											</div>
+
+											<div class="col date">
+												<legend>
+													<em>created date</em>
+												</legend>
+												<label for="query.started">
+													<input id="query.started" name="query.started" type="date">
+													<span>start date</span>
+												</label>
+												<label for="query.expired">
+													<input id="query.expired" name="query.expired" type="date">
+													<span>end date</span>
+												</label>
+											</div>
+										</cable>
+										
+										<table>
+											<colgroup>
+												<col class="col_flow">
+												<col class="col_email">
+												<col class="col_subject">
+												<col class="col_booking">
+												<col class="col_created">
+											</colgroup>
+											<thead>
+												<tr>
+													<th class="col_flow">
+														<label for="query.flow">
+															<input id="query.flow" name="query.flow" type="checkbox">
+															<span>state</span>
+														</label>
+													</th>
+													<th class="col_email">
+														<label>
+															<span>id</span>
+														</label>
+													</th>
+													<th class="col_subject">
+														<label class="subject">
+															<span>type</span>
+														</label>
+													</th>
+													<th class="col_booking">
+														<label for="order.by.booking">
+															<input id="order.by.booking" name="order.by" type="checkbox">
+															<span>booking date</span>
+														</label>
+													</th>
+													<th class="col_created">
+														<label for="order.by.created">
+															<input id="order.by.created" name="order.by" type="checkbox">
+															<span>created date</span>
+															<!-- 
+																checked 
+																	true  오름차순
+																	false 내림차순
+															-->
+														</label>
+													</th>
+												</tr>
+											</thead>
+											<tbody></tbody>
+										</table>
+									</details>
+									<fieldset>
+										<fields>
+											<field draggable="false">
+												<h0></h0>
+												<tooltip>
+													<tooltip-wrapper>
+														<btn type="undo"></btn>
+														<btn type="image"></btn>
+														<btn type="link">
+															<flows></flows>
+															<input type="url" placeholder="write link" tabindex="-1">
+														</btn>
+														<btn type="hide"></btn>
+													</tooltip-wrapper>
+												</tooltip>
+												<toolbar>
+													<input type="hidden" name="created">
+													<label for="oauth.network.guest">
+														<input id="oauth.network.guest" type="checkbox" name="guest">
+														<span>Guest</span>
+													</label>
+													<label for="oauth.network.count">
+														<input id="oauth.network.count" type="number" name="count" min="0" placeholder="참여 제한없음">
+														<span>Count</span>
+													</label>
+													<label for="oauth.network.started">
+														<input type="date" name="started" id="oauth.network.started">
+														<span>Started</span>
+													</label>
+													<label for="oauth.network.expired">
+														<input type="date" name="expired" id="oauth.network.expired">
+														<span>Expired</span>
+													</label>
+												</toolbar>
+												<items>
+													<item class="radio" type="radio"></item>
+													<item class="checkbox" type="checkbox"></item>
+												</items>
+											</field>
+										</fields>
+
+										<div class="submit">
+											<div class="field">
+												<input type="submit"></div>
+											</div>
+									</fieldset>
+								</form>
+
+								<messages>
+									<ul></ul>
+								</messages>
+
+								<form action="javascript:window.Chat()" name="chat" class="message">
+									<div class="area">
+										<a class="message close">❌</a>
+										<fieldset>
+											<input class="chat_message" name="message" type="text" placeholder="content" autocomplete="off" />
+											<input type="submit" value="send">
+										</fieldset>
+									</div>
+								</form>
+
+								
+																
+								<emojis>
+									<a class="back">
+										<span>Back</span>
+									</a>
+									<div class="scroll tab_nav emojis_filter">
+										<div class="deck">
+											<a class="emoji color on" type="emoji">
+												<span>emotion</span>
+												<cnt></cnt>
+											</a>
+											<a class="emoji color" type="sticker">
+												<span>sticker</span>
+												<cnt></cnt>
+											</a>
+											<a class="emoji color" type="follows">
+												<span>Follow</span>
+												<cnt></cnt>
+											</a>
+											<a class="emoji color" type="players">
+												<span>Player</span>
+												<cnt></cnt>
+											</a>
+											<a class="emoji color" type="threads">
+												<span>Talk</span>
+												<cnt></cnt>
+											</a>
+										</div>
+									</div>
+									<div class="scroll tab_content">
+										<div class="deck">
+											<div class="items"></div>
+											<div class="emojis"></div>
+											<div class="follows"></div>
+											<div class="players"></div>
+											<div class="threads"></div>
+										</div>
+									</div>
+								</emojis>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="footer">
+				<div class="cc">
+					<a href="https://fonts.google.com/" target="_blank"><img src="/src/images/Google_Fonts_logo.svg" alt=""></a>
+					<a class="by" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+						<span>CC BY</span>
+					</a>
+				</div>
+
+				<div class="info">
+					<div class="links">
+						<span>ⓒ PopupLink</span>
+						<a target="_blank" href="/terms/">Terms of Service</a>
+						<a target="_blank" href="/privacy/">Privacy Policy</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="/src/js/socket.io.min.js"></script>
+		<script src="/src/js/adapter-latest.js"></script>
+		<script src="/src/js/plyr.js"></script>
+		<script src="/src/js/bn.js"></script>
+		<script src="/src/js/ethers.umd.min.js"></script>
+		<script src="/src/js/blockies.min.js"></script>
+		<script src="/src/js/jquery.min.js"></script>
+		<script src="/src/js/jquery.path.js"></script>
+		<script src="/src/js/qrcode.min.js?ver1"></script>
+		<script src="/src/js/browser-image-compression.js"></script>
+		<script type="module" src="/src/oauth3.js"></script>
+		<script type="module" src="/src/event.js"></script>
+		<script type="module" src="/src/emojis.js"></script>
+		<script type="module" src="/src/items.js"></script>
+		<script type="module" src="/src/index.js"></script>
+		<script type="module" src="/src/main.jsx"></script>
+	</body>
+</html>

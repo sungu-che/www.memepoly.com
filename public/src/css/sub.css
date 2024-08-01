@@ -1,0 +1,68 @@
+@charset "utf-8";
+
+@import url('//fonts.googleapis.com/earlyaccess/notosanskr.css');
+@import url('//fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@700&display=swap');
+@import url('//fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+
+*{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000; }
+
+html[lang="ko"] .policy .items.ko{display: block;}
+html[lang="en"] .policy .items.en{display: block;}
+
+#header{position: relative; border-bottom: 1px solid #efefef;}
+#header h1{position: absolute; padding: 0 2em; left: 0; top: 0; bottom: 0;}
+#header h1 a{position: relative; display: block; left: -2px; font-size:1em; font-weight: 700; text-decoration:none;}
+#header h1 a[href="/"]{overflow: hidden; width: 36px; height: 58px; text-indent: -9999px; line-height: 58px;}
+#header h1 a:after {content: "\40";font-size: 35px;font-family: "Font Awesome 6 Free";font-weight: 100;-webkit-text-stroke: 2.4px #fafafa;color: #000;position: absolute;text-indent: 0;left: 0;top: 0;z-index: 1;}
+
+.area{margin: 0 auto; max-width: 900px;}
+
+#header .area{position: relative; display: block; padding: 1em 2em; min-height: 58px; box-sizing: border-box; z-index: 11;}
+
+
+#header #nav{display: none;}
+#header #nav:checked+nav{border:1px solid #efefef;}
+#header #nav:checked+nav ul{overflow:inherit; max-height: inherit;}
+
+#header label[for="nav"]{position: absolute; right: 1em; top: 0; height: 100%; z-index: 10; cursor: pointer;}
+
+#header nav:after{content: "\f107"; font-family: "Font Awesome 6 Free"; position: absolute; top: -3.1em; right: 0; font-size: 0.8em; font-weight: 600;}
+#header #nav:checked+nav:after{content: "\f106";}
+#header label[for="nav"] canvas{position: absolute; left: 0; top: 0; bottom: 0; margin: auto 0; border: 1px solid #000; border-radius: 50%; padding: 2px; width: 26px; height: 26px;}
+#header label[for="nav"] em{display: block; padding-left: 2em; padding-right: 1.5em; line-height: 3.9em;}
+#header label[for="nav"] em:empty{padding-left: 3em;}
+#header label[for="nav"] em:empty:before{content: "Sign In"}
+
+#header nav{position: absolute; right: 1em; top: 100%; min-width: 81px;  z-index: 2;}
+#header nav ul{overflow: hidden; max-height: 0; zoom:0.8;}
+#header nav ul{background: #fff;}
+#header nav a{display: block; padding: 1em; line-height: 1.5em; font-size: 1em; height: 1.5em;}
+#header nav a[href*="/address/#"]{background: #000; color: #fff;}
+#header nav a:empty{position: relative; padding: 0.2em; height: 0; z-index: -1;}
+
+
+#footer .terms a{color:#666;}
+#footer .terms a+a{margin-left: 15px;}
+
+#footer .info{overflow: hidden; margin: 0 auto; padding: 1em 2em; max-width: 900px; box-sizing: border-box;}
+#footer .info .copyright{float: left; font-size:0.7em;}
+#footer .info .links a{float: left; font-size: 0.7em;}
+#footer .info .links a+a{margin-left: 2em;}
+
+#footer .info .links{float:right;}
+
+
+.policy .items{display: none;}
+.policy{padding: 50px 30px;}
+.policy .area{padding: 0 2em; box-sizing: border-box;}
+.policy .item+.item{margin-top: 3em;}
+.policy h2{margin-bottom: 1em; font-size: 2em;}
+.policy h3{margin-bottom: 1em; font-size: 1.5em;}
+.policy .context *{line-height: 1.5; font-weight: 300; font-size: 16px; word-break: break-word;}
+html[lang="ko"] .policy .context *{word-break: keep-all;}
+.policy .context p{word-break: keep-all;}
+
+.policy .context .dp1{margin: 0.5em 1.5em 1.5em;}
+.policy .context table{border:1px solid #ddd; width: 100%;}
+.policy .context table th{padding: 10px; border:1px solid #ddd; white-space: nowrap; background-color: #efefef;}
+.policy .context table td{padding: 10px; border:1px solid #ddd;}

@@ -1,0 +1,314 @@
+
+
+
+@media (min-width: 1300px) {
+	
+	
+	
+	
+	
+
+
+	
+
+	
+
+
+}
+
+@media (max-width: 999px) {
+	/* .section01 .bg_video{transform: scale(2);} */
+}
+
+.typed-cursor{
+	opacity: 1;
+	font-weight: 100;
+	-webkit-animation: blink 0.7s infinite;
+	-moz-animation: blink 0.7s infinite;
+	-ms-animation: blink 0.7s infinite;
+	-o-animation: blink 0.7s infinite;
+	animation: blink 0.7s infinite;
+}
+
+@keyframes blink{
+	0% { opacity:1; }
+	50% { opacity:0; }
+	100% { opacity:1; }
+}
+@-webkit-keyframes blink{
+	0% { opacity:1; }
+	50% { opacity:0; }
+	100% { opacity:1; }
+}
+@-moz-keyframes blink{
+	0% { opacity:1; }
+	50% { opacity:0; }
+	100% { opacity:1; }
+}
+@-ms-keyframes blink{
+	0% { opacity:1; }
+	50% { opacity:0; }
+	100% { opacity:1; }
+}
+@-o-keyframes blink{
+	0% { opacity:1; }
+	50% { opacity:0; }
+	100% { opacity:1; }
+}
+
+
+
+
+.contents{position:relative; overflow:hidden;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+body[edit] .wrap{display: none;}
+body[edit] form[name="oauth.network"]{display: block;}
+
+
+form[name="oauth.network"][client][contenteditable]{margin:0;max-width: inherit;}
+form[name="oauth.network"][client]{margin:50px auto;max-width:670px;}
+form[name="oauth.network"][client] field item[contenteditable]{line-height:50px;border: 1px solid #ddd;border-radius: 5px;line-height: 30px;padding-left: 0;}
+
+form[name="oauth.network"][client] field[type] item{position:relative; padding-left: 25px; line-height: 30px; cursor:pointer;}
+form[name="oauth.network"][client] field[type] item:not(:empty):after{position: absolute;left: 0;top: 0;bottom: 0;margin: auto 0;width: 18px;text-align: center;height: 18px;font-size: 18px;line-height: 18px;font-weight: 900;/* background: #000015; */z-index: -1;}
+form[name="oauth.network"][client] field[type] item[contenteditable]{padding-left: 15px;line-height: 40px; height: 40px; cursor:inherit;}
+form[name="oauth.network"][client] field[type] item[contenteditable]:after{display: none;}
+form[name="oauth.network"][client] field[type] item[readonly]{-webkit-user-modify: read-only;cursor: default;}
+
+
+form[name="oauth.network"]{display: none; outline:none; padding-bottom: 100px;}
+
+/*form[name="oauth.network"][contenteditable]{display: block;}*/
+form[name="oauth.network"][contenteditable]{display: none;}
+form[name="oauth.network"][contenteditable]{background-color: #f6f6f6;}
+form[name="oauth.network"][contenteditable][admin]{display: block;}
+
+form[name="oauth.network"][contenteditable] iframe[src*="/policy/"]{display: none;}
+
+form[name="oauth.network"][client] input[type="submit"]{display: block;margin: 50px auto;border-radius:5px;max-width: 670px;width: 100%;height:40px;font-weight:700;background-color: #235bf5;cursor: pointer;color: #fff;}
+
+
+form[name="oauth.network"] fieldset{margin: 0 auto; border:0; }
+
+form[name="oauth.network"][contenteditable] fields{display: block;}
+
+
+
+form[name="oauth.network"][contenteditable] field{display: block; position: relative; padding: 35px 35px 25px; background-color: #fff; outline: none; -webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field.on{margin-bottom: 160px;}
+
+form[name="oauth.network"][contenteditable] field[draggable="true"]:after{content: "\f58d"; position: absolute; left: -1px; right: -1px; top: -1px; line-height: 28px; text-align: center; font-size: 14px; font-family: "Font Awesome 6 Free"; font-weight: 900; background: #ddd; cursor: move;}
+
+form[name="oauth.network"][contenteditable] field:empty{display: none;}
+form[name="oauth.network"][contenteditable] field+field{max-width: 600px; margin: 50px auto 0; box-shadow: 0 0 4px 0px #bbb;}
+
+
+form[name="oauth.network"][contenteditable] field items{display: block; font-size: 0;}
+
+form[name="oauth.network"][contenteditable] field item[draggable="true"]{font-size:15px;}
+form[name="oauth.network"][contenteditable] field item[draggable="true"]:after{opacity:0.3;}
+form[name="oauth.network"][contenteditable] field item[draggable="true"]:not(:empty):before{content: "\f58e"; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; left: -25px; top: 3px; padding: 9px; font-size: 13px; height: 13px;}
+
+form[name="oauth.network"][contenteditable] field:first-child+field{margin-top: 90px;}
+form[name="oauth.network"][contenteditable] field:first-child+field:before{content: "플로우, 메인 세션 리스트"; position: absolute; top: -40px; left: 0; display: block; margin-bottom: 15px; font-size: 15px; font-weight: 900;}
+
+form[name="oauth.network"][contenteditable] field+field{opacity:0.6;}
+form[name="oauth.network"][contenteditable] field+field.on{background-color: #fff; opacity:1;}
+
+
+
+form[name="oauth.network"][contenteditable] field.heading{position:relative; padding: 0; background-color: inherit; z-index: 0;}
+
+form[name="oauth.network"][contenteditable] field.heading h0{position:relative; padding: 13px 20px 13px 70px; height: 24px; font-size: 16px; margin-bottom: 0; font-weight: 900; clear: both; z-index: 0;}
+form[name="oauth.network"][contenteditable] field.heading h0:before{content:""; position:absolute; left: 0; right: 0; top: 0; height: 50px; background-color: #fff;  z-index: -1;}
+form[name="oauth.network"][contenteditable] field.heading h0:empty{min-width:200px;}
+form[name="oauth.network"][contenteditable] field.heading h0:empty:after{content:"제목";}
+
+form[name="oauth.network"][contenteditable] field.heading h0[style]{padding-bottom: 390px; background-repeat: no-repeat; background-position: center bottom; background-size: auto 300px;}
+
+form[name="oauth.network"][contenteditable] field.heading items{max-width: 600px; margin: 120px auto 70px; background: #fff; padding: 10px 35px; box-shadow: 0 0 4px 0px #bbb;}
+form[name="oauth.network"][contenteditable] field.heading items:before{content: "내용"; position: absolute; display: block; margin: -50px 0 0 -35px; font-size: 15px; font-weight: 900;}
+
+form[name="oauth.network"][contenteditable] field.heading item[type]{margin: 10px auto; padding: 0; border: 0; font-size:15px; background-color: #fff;}
+form[name="oauth.network"][contenteditable] field.heading item[type]:empty:before,
+form[name="oauth.network"][contenteditable] field.heading item[type]+item[type]:empty:before{content:"\f1dd"; font-family: "Font Awesome 6 Free"; font-weight: 900;} 
+form[name="oauth.network"][contenteditable] field.heading item[type]:after{display: none;}
+
+form[name="oauth.network"][contenteditable] field.heading tooltip btn[type="hide"],
+form[name="oauth.network"][contenteditable] field.heading tooltip btn[type="undo"]{display: none;}
+
+form[name="oauth.network"][contenteditable] field.heading h0.on+tooltip{max-width:initial; left: 60px; right: initial;}
+form[name="oauth.network"][contenteditable] field.heading h0.on+tooltip tooltip-wrapper{margin-top: 40px;}
+form[name="oauth.network"][contenteditable] field.heading tooltip{}
+form[name="oauth.network"][contenteditable] field.heading tooltip tooltip-wrapper{position:relative; display: inline-block; margin-top: 30px; border-radius: 5px; height: 30px; line-height: 30px; font-size:0; box-shadow: 0 0 4px 0px #bbb; background-color: #fff;}
+
+form[name="oauth.network"][contenteditable] field.heading tooltip{display: none; max-width:600px; position: absolute; left: 0; right: 0; margin-left:auto; margin-right: auto; z-index: 1;}
+form[name="oauth.network"][contenteditable] field.heading tooltip[style]{display: block;}
+form[name="oauth.network"][contenteditable] field.heading tooltip flows{display: none;}
+
+form[name="oauth.network"][contenteditable] field.heading toolbar{overflow: hidden; display: block; margin: 0 auto 0; font-size: 0; text-align: left; background: #fff; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; position: absolute; left: 0; right: 0; top: 50px;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label{float: left; padding-left: 15px;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label span{float:left; font-weight:900; font-size:13px; line-height:35px;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label input{padding: 0 10px; border:0; height: 35px; font-size:12px; font-weight: 900; background-color: transparent; outline:none;}
+
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.count"] input[name="count"]{width:90px;}
+
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.started"] input[type="datetime-local"],
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.expired"] input[type="datetime-local"]{width:190px;}
+
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.started"]{border-left:1px solid #ddd;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label[for="oauth.network.expired"]{border-right:1px solid #ddd;}
+form[name="oauth.network"][contenteditable] field.heading toolbar label input:focus~span{}
+
+form[name="oauth.network"][contenteditable] field.heading item{-webkit-user-modify: read-write; outline:none;}
+
+form[name="oauth.network"][contenteditable] field items,
+form[name="oauth.network"][contenteditable] field h0{-webkit-user-modify: read-write; outline:none;}
+form[name="oauth.network"][contenteditable] field h0{padding: 12px 0; border-bottom:1px solid #ddd;}
+
+
+
+form[name="oauth.network"][contenteditable] field item div,
+form[name="oauth.network"][contenteditable] field h0 div{display: none;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"][style]{display: block;}
+form[name="oauth.network"][contenteditable] field[draggable="false"].on{margin-bottom: 150px;}
+
+field h0{position:relative; display: block; margin-bottom: 20px; padding-bottom: 12px; height: 25px; font-size: 15px;}
+
+
+form[name="oauth.network"][contenteditable] field+field h0:empty{min-width:200px;}
+form[name="oauth.network"][contenteditable] field+field h0:empty:before{content:"내용을 입력해주세요";}
+form[name="oauth.network"][contenteditable] field+field h0[style]{padding-bottom: 110px; background-repeat: no-repeat; background-position: 45px bottom; background-size: auto 100px;}
+
+form[name="oauth.network"][contenteditable] field[style] item{border:0;}
+form[name="oauth.network"][contenteditable] field item{display: block;position: relative;padding: 7px 15px 7px 45px;/* min-height: 22px; */}
+form[name="oauth.network"][contenteditable] field item[type][link]{text-decoration:underline; color:#1a73e8;}
+form[name="oauth.network"][contenteditable] field item[type][style]{padding-bottom: 110px; background-repeat: no-repeat; background-position: 45px bottom; background-size: auto 100px;}
+form[name="oauth.network"][contenteditable] field item:after{position: absolute;left: 0;top: 13px;text-align: center;font-size: 20px;line-height: 1;width: 20px;height: 20px;}
+
+
+form[name="oauth.network"][contenteditable] field.radio item:after{border-radius:50%;}
+form[name="oauth.network"][contenteditable] field item[checked]:after{}
+form[name="oauth.network"][contenteditable] field item+item{margin-top: 5px;}
+form[name="oauth.network"][contenteditable] field item:empty:before{content:"폼을 선택해주세요";opacity:0.6;}
+form[name="oauth.network"][contenteditable] field item[type="flow"][link]:empty:before{content:"폼 입력 모드 or 채팅 모드"; opacity:0.6;}
+
+
+
+
+form[name="oauth.network"][contenteditable] field[draggable="false"]{display: none; position:absolute; left: 0; right: 0; margin: 35px auto 0; padding-top: 10px; max-width:580px; text-align:center; background-color: initial; opacity:1; z-index: 0; box-shadow:inherit; -webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"]:after{content: "";position: absolute;left: 0;right: 0;/* top: 68px; */bottom: 35px;margin: 0 auto;width: 1px;text-align: center;height: 14px;font-size: 40px;font-weight: 900;/* background: #000015; */z-index: -1;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] h0{margin-top: 10px;margin-bottom: 0;padding-bottom: 5px;border-bottom:0;height: 0;font-size:14px;-webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] h0:empty:before{content: "";}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] flows{display: none;}
+
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] items{-webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item{display: inline-block; font-size:13px; -webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item+item{margin-left: 30px; margin-top: 0;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item:empty:before{font-size:14px; opacity:1;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item:empty:after{
+    font-size: 18px;
+    left: 15px;
+    top: 7px;
+}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item[type="flow"]:empty:before{content: "플로우 추가";}
+form[name="oauth.network"][contenteditable] field[draggable="false"] item[type="item"]:empty:before{content: "메인 세션 추가";}
+
+form[name="oauth.network"][contenteditable] field[type="flow"] item:after{content: "\f058"; font-family: "Font Awesome 6 Free";font-weight:300;}
+
+
+form[name="oauth.network"][contenteditable] field[type="flow"] item[link]:empty:after{content:"\f192";}
+
+form[name="oauth.network"][contenteditable] field[type="item"] item:after{content: "\f14a"; font-family: "Font Awesome 6 Free";font-weight:300;}
+form[name="oauth.network"][contenteditable] field[type="item"] item[checked]:after{font-weight:900;}
+
+/* field[contenteditable] item[type]{cursor: pointer;} */
+field[contenteditable] item[type="flow"]:after{content: "\f058"; font-family: "Font Awesome 6 Free";font-weight:300;}
+field[contenteditable] item[type="item"]:after{content: "\f14a"; font-family: "Font Awesome 6 Free";font-weight:300;}
+
+field[contenteditable] item[draggable].dragging{background-color: white; border: 2px dashed red; cursor: move;}
+
+
+
+
+
+form[name="oauth.network"] field toolbar{display: none;}
+
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip{display: block; text-align: left; position: absolute; top:10px; left: 35px; right: 35px; -webkit-user-modify: read-only;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn{font-size:18px;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn+btn{margin-left: 13px;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="flow"]:after{content: "\f058"; font-family: "Font Awesome 6 Free";font-weight:300;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="input"]:after{content: "\f2ea"; font-family: "Font Awesome 6 Free";font-weight:900;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="hide"]{float: right;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="hide"]:after{content: "\f1f8"; font-family: "Font Awesome 6 Free";font-weight:900;}
+
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="image"]{display: none;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="image"]:after{content: "\f1c5"; font-family: "Font Awesome 6 Free";font-weight:900;}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="undo"]{}
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="undo"]:after{content: "\f2ea"; font-family: "Font Awesome 6 Free";font-weight:900;}
+
+form[name="oauth.network"][contenteditable] field[draggable="false"] tooltip btn[type="link"]{display: none;}
+
+
+
+
+form[name="oauth.network"][contenteditable] field.dragging {opacity: .5 !important; border: 2px dashed red !important;}
+
+
+form[name="oauth.network"][contenteditable] field[contenteditable][draggable="true"] tooltip{display: none; position: absolute; left: 36px; margin-top: 40px; border-radius: 0; height: 30px; line-height: 30px; font-size:0; box-shadow: 0 0 4px 0px #bbb; background-color: #fff; z-index: 1;}
+form[name="oauth.network"][contenteditable] field[contenteditable][draggable="true"] tooltip[style]{display: block;}
+
+
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn{display: inline-block; padding: 0 9px; min-width: 40px; line-height: 30px; font-size: 15px; text-align: center; box-sizing: border-box;}
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn+btn{border-left: 1px solid #ddd;}
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type="image"]:before{content: "\f1c5"; font-family: "Font Awesome 6 Free";font-weight:900;}
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type="link"]:before{content: "\f0c1"; font-family: "Font Awesome 6 Free";font-weight:900;}
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip input[type="url"]{border: 0; width: 200px; height: 30px; font-size:13px; outline:none;}
+
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type="undo"],
+form[name="oauth.network"][contenteditable] field[contenteditable="true"] tooltip btn[type="hide"]{display: none;}
+
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] tooltip btn[type="image"]{display: none;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="item"] tooltip flows{display: none;}
+
+form[name="oauth.network"][contenteditable] field[draggable="true"] tooltip btn[type="link"]{border-left: 0;}
+/* form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] tooltip input[type="url"]{display: none;} */
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] tooltip input[type="url"]{position:relative;z-index: -1;opacity: 0;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flows:empty{display: none;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flows{display: block;background: #fff;position: absolute;left: 0;right: 0;top: 0;width: 100%;box-shadow: 0 2px 4px 0px #bbb;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flow{position: relative; display: block; font-size: 13px; text-align: left; line-height: 30px; height: 30px; padding: 0 15px 0 35px; cursor: pointer;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flow:before{content: "\f0fe"; font-family: "Font Awesome 6 Free"; position: absolute; left: 8px; top: 0; bottom: 0; width: 18px; height: 18px; line-height: 18px; margin: auto 0; font-size: 16px; text-align: center;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flow:hover:before{font-weight:900;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flow[selected]{background-color: #ddd;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flow[selected]:before{content:"\f146"}
+
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flow+flow{border-top:1px solid #ddd;}
+form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] item[draggable="true"][cc]{}
+
+

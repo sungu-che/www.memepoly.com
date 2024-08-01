@@ -1,0 +1,590 @@
+@import url('//fonts.googleapis.com/earlyaccess/notosanskr.css');
+@import url('//fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@700&display=swap');
+
+
+*{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000; }
+
+/*#header nav{position: absolute; left: 6em; top: 0; bottom: 0; z-index: 1;}
+#header nav li{float: left;}
+#header nav li+li{margin-left: 1em;}
+#header nav li a{display: block; line-height: 54px; height: 58px;}*/
+#header .area{position: relative; display: block; padding: 1em 2em; min-height: 58px; box-sizing: border-box; z-index: 11;}
+
+body{overflow:hidden; overflow-y:scroll;}
+body.sticky{overflow: auto}
+body::-webkit-scrollbar {width: 10px;}
+body::-webkit-scrollbar-thumb {background-color: #ddd;background-clip: border-box;}
+body::-webkit-scrollbar-track {background-color: transparent;}
+
+table{border-spacing:0px;border-collapse:collapse;}
+
+.area{margin: 0 auto; max-width: 900px;}
+
+
+.tb{position:relative; display:table; width: 100%;}
+.tc{display:table-cell; height: 100%;}
+
+.mobile{display: none;}
+
+code script[type="text/plain"]{display: block; white-space: pre;}
+
+wallet.unlock .metamask{height: auto; padding-bottom: 40px;}
+wallet .metamask{position: relative; overflow: hidden; text-align: center; height: 0; z-index: 2; background-color: #fff;}
+wallet .metamask .metamask-logo{position: relative; margin: 50px auto 20px; width: 150px; height: 150px;}
+wallet .metamask .metamask-logo svg {display: block; overflow: visible; width: 100%;height: auto;}
+wallet .metamask .metamask-logo.on:after{content: "1"; position: absolute; right: 0; bottom: 1em; overflow: hidden; border: 3px solid #fff; border-radius: 0.4em; width: 2em; height: 2em; line-height: 1.8em; text-align: center; background: #0376c9; color: #fff; font-size: 1.2em; z-index: 1;}
+
+wallet .metamask .metamask-title{margin-bottom: 1em;}
+wallet .metamask .metamask-title em{font-size: 2em; margin-top: 5px; font-weight: 700; color:#535a61;}
+
+wallet .metamask .metamask-span{}
+wallet .metamask .metamask-span span{color:#535a61;}
+
+wallet.install .metamask .metamask-install{display: block;}
+wallet .metamask .metamask-install{display: none;}
+
+wallet.unlock .metamask .metamask-unlock{display: block;}
+wallet .metamask .metamask-unlock{display: none; margin: 40px; border-radius: 100px; height: 40px; line-height: 40px; font-weight: 400; box-shadow: none;background-color: #0376c9; color: #fff;}
+
+
+
+.lds-ring{position: absolute; left: 0;right: 0;top: 0;bottom: 0; margin:auto; width: 80px; height: 80px; opacity: 0; z-index: -1; transition-duration: 0.5s;}
+
+
+
+oauth.on .guide{opacity: 0; z-index: -1;}
+
+oauth .guide{position: absolute;left: 0;right: 0;top: 0;bottom: 0;background-color: #fff;z-index: 1;box-shadow: 0 0 9px 0px #e4e4e4;}
+oauth .guide .tc{padding-bottom: 56px;}
+oauth .guide .steps{position: absolute; left: 0;right: 0;top: 0;bottom: 0;}
+oauth .guide ul,
+oauth .guide li{position: relative; min-width: 100%; height: 100%;}
+oauth .guide li .context *{opacity: 0.4; transition-duration: 0.5s;}
+oauth .guide li .context .tit{margin: 1em}
+oauth .guide li[aria-hidden="false"] .context *{opacity: 1;}
+
+oauth .guide .close{position: absolute; left: 0; top: -5em;}
+oauth .guide .close:after{content: "\f053"; font-size: 22px; font-family: "Font Awesome 6 Free"; font-weight: 600;}
+
+oauth .guide .ts-controls .ts-prev{display: none;}
+oauth .guide .ts-controls .ts-next{position: absolute;padding: 1.5em;left: 5em;bottom: 0;right: 0;background-color: #efefef;border-left: 1px solid #fff;text-transform: capitalize;font-weight: bold;cursor: pointer;}
+oauth .guide .ts-controls .ts-next:after{content: "Next";}
+oauth .guide .ts-controls .ts-paging{position: absolute; left: 0; right: 0; top: 1.5em; z-index: 1;}
+oauth .guide .ts-controls .ts-paging button{overflow: hidden; text-indent: -9999px; width: 8px; height: 8px;border-radius: 50%; background-color: #000; opacity: 0.2;}
+oauth .guide .ts-controls .ts-paging button+button{margin-left: 6px;}
+oauth .guide .ts-controls .ts-paging button.ts-paging-active{opacity: 1;}
+oauth .guide .skip{position: absolute;left: 0;bottom: 0;padding: 1.5em;cursor: pointer;background: #efefef; z-index: 1;}
+
+.ts-controls{}
+
+
+html[lang="ko"] oauth .guide .step01 .desc span:after{content:"인증 메일을 전송합니다"}
+html[lang="ko"] oauth .guide .step02 .desc span:after{content:"로그인 화면으로 돌아옵니다"}
+html[lang="ko"] oauth .guide .step03 .desc span:after{content:"인증 확인을 기다립니다"}
+
+.loading .lds-ring {
+	top: -70px;
+	z-index: 11;
+	opacity: 1;
+}
+.loading .lds-ring div {
+	box-sizing: border-box;
+	display: block;
+	position: absolute;
+	width: 64px;
+	height: 64px;
+	margin: 8px;
+	border: 3px solid #000;
+	border-radius: 50%;
+	animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+	border-color: #000 transparent transparent transparent;
+}
+.lds-ring div:nth-child(1) {
+	animation-delay: -0.45s;
+}
+.lds-ring div:nth-child(2) {
+	animation-delay: -0.3s;
+}
+.lds-ring div:nth-child(3) {
+	animation-delay: -0.15s;
+}
+@keyframes lds-ring {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+
+
+.wrap{opacity: 0;}
+
+html[user-agent] .wrap{opacity: 1;}
+
+.wrap.external #header{display: none;}
+
+.section h4{margin-bottom: 1.5em; font-size:1.5em; text-align: center;}
+.main .section .area{padding: 4em 2em 0;}
+.section article{margin:4em 3em;}
+.section article+article{margin-top: 4em;}
+.section article h5{margin-bottom: 1.5em; font-size:1.1em;}
+
+#header{position: relative; border-bottom: 1px solid #efefef;}
+#header h1{position: absolute; padding: 0 2em; left: 0; top: 0; bottom: 0;}
+#header h1 a{position: relative; display: block; left: -2px; font-size:1em; font-weight: 700; text-decoration:none;}
+#header h1 a[href="/"]{overflow: hidden; width: 36px; height: 58px; text-indent: -9999px; line-height: 58px;}
+#header h1 a:after {content: "\40";font-size: 35px;font-family: "Font Awesome 6 Free";font-weight: 100;-webkit-text-stroke: 2.4px #fafafa;color: #000;position: absolute;text-indent: 0;left: 0;top: 0;z-index: 1;}
+
+
+#header #nav{display: none;}
+#header #nav:checked+nav{border:1px solid #efefef;}
+#header #nav:checked+nav ul{overflow:inherit; max-height: inherit;}
+
+#header label[for="nav"]{position: absolute; right: 1em; top: 0; height: 100%; z-index: 10; cursor: pointer;}
+
+#header nav:after{content: "\f107"; font-family: "Font Awesome 6 Free"; position: absolute; top: -3.1em; right: 0; font-size: 0.8em; font-weight: 600;}
+#header #nav:checked+nav:after{content: "\f106";}
+#header label[for="nav"] canvas{position: absolute; left: 0; top: 0; bottom: 0; margin: auto 0; border: 1px solid #000; border-radius: 50%; padding: 2px; width: 26px; height: 26px;}
+#header label[for="nav"] em{display: block; padding-left: 2em; padding-right: 1.5em; line-height: 3.9em;}
+#header label[for="nav"] em:empty{padding-left: 3em;}
+#header label[for="nav"] em:empty:before{content: "Sign In"}
+
+#header nav{position: absolute; right: 1em; top: 100%; min-width: 81px;  z-index: 2;}
+#header nav ul{overflow: hidden; max-height: 0; zoom:0.8;}
+#header nav ul{background: #fff;}
+#header nav a{display: block; padding: 1em; line-height: 1.5em; font-size: 1em; height: 1.5em;}
+#header nav a[href*="/address/#"]{background: #000; color: #fff;}
+#header nav a:empty{position: relative; padding: 0.2em; height: 0; z-index: -1;}
+
+
+/*#header oauth a[href*="/account/"]:before{content: "\f555"; margin-right: 5px; font-family: "Font Awesome 6 Free"; font-weight: 600;}*/
+
+
+
+
+
+
+.icon{font-weight: 400;font-family: 'Noto Color Emoji', sans-serif;text-align: center;}
+
+.aside{position: relative; display: block; padding:100px 0; text-align: center; background-color: #f6f6f6; z-index: 1;}
+.aside .tb .tc{position: relative;z-index: 0;}
+.aside .tb .tc .icon{position: static; font-size: 80px;}
+.aside .tb .tc .text{display: block; padding-top: 50px;}
+.aside .tb .tc .text span{display: block; line-height: 1.3; font-size: 40px; font-weight: bold; word-break: keep-all; color: #000;}
+
+.aside .tb .tc .text em{display: inline-block; margin-top: 40px; padding: 18px 50px 21px; border-radius: 7px; font-size:18px; font-weight: 400; background-color: #235bf5; color: #fff;}
+
+qr{position: relative; display: none; text-align: center;}
+
+.qr-code{position: relative; display: block; padding: 0;}
+.qr-code img{position: relative; display: block; width: 100%; z-index: 1;}
+
+
+
+.wrap[oauth] .main oauth forms{margin-top: 50px;}
+
+.main oauth forms{position: relative; display: block; max-width: 320px; margin: 0 auto; padding: 0 2em; box-sizing: border-box;}
+.main oauth forms .title{margin-bottom: 40px; font-size:20px;}
+.main oauth forms .title p{margin-bottom: 20px; font-size: 1em; font-weight: bold;}
+.main oauth forms .title a{font-size: 0.7em;}
+.main oauth forms.mailto.loading .lds-ring {top: -170px;}
+.main oauth forms.mailto.loading .verify{display: block;}
+.main oauth forms .verify{display: none; position: absolute; top: 116%; left: -3em; right: -3em; line-height: 1.3; font-weight: bold; font-size: 1.3em; text-align: center; text-transform: capitalize;}
+.main oauth forms .title a{}
+
+.main oauth forms.mailto.loading a[href="/login/"]{display: block;}
+
+.main oauth forms .lds-ring a[href="/login/"]{display: none; position: absolute; left: -3em; right: -3em; top: 100%; margin-top: 5em; font-size: 1.2em; text-decoration: underline;}
+
+.main oauth.on .items{border-bottom: 1px solid #ddd;}
+/*.main oauth.on .items>ul{z-index: 1; opacity: 1;}*/
+.main oauth.on .tip{display: block;}
+.main oauth .tip{position: relative; margin: 50px -50px 80px; z-index: -1;}
+.main oauth .tip em{display: block; margin-bottom: 20px; font-size:16px;}
+.main oauth .tip p{font-size:10px;}
+
+.main oauth .tb{width: 100%; height: 100%;}
+.main oauth .tc{text-align:center; vertical-align:middle;}
+
+.main oauth forms:after{content:"";position: fixed;left: -3em;right: -3em; top: -2em;bottom: -10em;z-index: -1;background-color: rgba(255,255,255,0.0);transition-duration: 0.5s;}
+/*.main oauth .items>ul{position: relative; opacity: 0; z-index: -1;}*/
+.main oauth .items{position: relative; margin: 0 auto; max-width: 320px;}
+.main oauth forms.loading:after{z-index: 10; background-color: rgba(255,255,255,0.9); backdrop-filter: blur(5px);}
+.main oauth .items>ul li+li{margin-top: 15px;}
+
+.main oauth a[href*="Kakao"]{display: block;padding: 20px;border-radius:5px;font-size: 20px;line-height: 25px;font-weight: bold;color: #000;background: #FEE500;}
+.main oauth a[href*="Kakao"]:before{content:"";font-family: xeicon;font-weight: 900;font-size: 25px;line-height: 25px;margin-right: 10px;vertical-align: top;-webkit-text-stroke: 0.2px;}
+
+.main oauth a[href*="Email"]{display: block;padding: 1em;border-radius: 5px;font-size: 1em;line-height: 20px;font-weight: bold;color: #000;background: #ddd;text-align: center;/* box-shadow: 0 0 0 1px #e4e4e4; */}
+
+.main oauth a[href*="phone"]{background: #235bf5; color: #fff;}
+
+.main oauth a[href*="naver"]{background-color: #03c75a; color:#fff;}
+.main oauth a[href*="daum"]{background-color: #FEE500;}
+.main oauth a[href*="nate"]{background-color: #ff2c2e; color:#fff;}
+.main oauth a[href*="google"]{background-color: #fff;box-shadow: inset 0 0 0 1px #e4e4e4;}
+.main oauth a[href*="apple"]{background-color: #000; color:#fff;}
+
+
+forms .msg{position: absolute; opacity: 0; left: 0; right: 0; top: 0; bottom: 0; z-index: -1; transition-duration: 1s; background: #fff;}
+forms .msg .icon{font-family: xeicon; font-size: 80px; margin-bottom: 30px;}
+forms .tb{width: 100%; height: 100%;}
+forms .tc{text-align: center; vertical-align: middle;}
+forms .text span{font-size:20px;}
+
+forms.complete .msg{z-index: 0;opacity: 1}
+forms.complete strong{font-size:0}
+forms.complete strong:after;{content:"인증이 완료되었습니다"; font-size:20px;}
+.main oauth forms.complete .guide{opacity: 0}
+
+
+#headline{position: relative; margin: 4em 0 7em;text-align: center; z-index: 0;}
+#headline h2{margin-top: 0.1em; font-size: 3em; font-weight: 100; line-height: 1.2; word-break: keep-all;}
+#headline strong{display: inline-block; position: relative; font-size: 1em;}
+#headline span{display: block; margin-top: 25px; font-size: 18px; font-weight: 100; line-height: 1.3; word-break: keep-all;}
+
+#headline a{font-size: 1em; color:#235bf5;}
+#headline a.verify{display: inline-block; margin-top: 40px; padding: 18px 50px 21px; border-radius: 7px; text-decoration: inherit; font-size:18px; font-weight: 400; background-color: #235bf5; color: #fff;}
+
+
+
+form[name="pricing"]{text-align: center;}
+form[name="pricing"] label{display: block;}
+form[name="pricing"] label span{font-weight: 100;}
+form[name="pricing"] label input{display: none;}
+form[name="pricing"] label input:checked+span{font-weight: 700;}
+
+i.fa:after{font-family: "Font Awesome 6 Free";}
+
+i.fa.doc{position: relative;}
+i.fa.doc span{position: absolute; left: 0; right: 0; bottom: 20px; text-align: center; font-weight: 500; font-size:1em;}
+i.fa.doc:after{content: "\f15b"; font-weight: 100; font-size: 100px; color: #222; -webkit-text-stroke: 6px #fff;}
+
+
+#footer{overflow: hidden; background: #f6f6f6;}
+#footer .terms a{color:#666;}
+#footer .terms a+a{margin-left: 15px;}
+
+#footer .info{overflow: hidden; margin: 0 auto; padding: 1em 2em; max-width: 900px; box-sizing: border-box;}
+#footer .info .copyright{float: left; font-size:0.7em;}
+#footer .info .links a{float: left; font-size: 0.7em;}
+#footer .info .links a+a{margin-left: 2em;}
+
+#footer .info .links{float:right;}
+
+
+.title_style01{display: block;margin-bottom: 40px; text-align: center;}
+.title_style01 .title{margin-bottom:15px;}
+.title_style01 .title span{font-size:34px; font-weight:bold; word-break: keep-all; line-height: 1.5;}
+.title_style01 .desc span{display: block; font-size:20px; font-weight: 100; word-break: keep-all; line-height: 1.5;}
+.title_style01 a{display: none;}
+
+
+.browser{position: relative; overflow: hidden; margin: auto; border-radius: 9px; width: 70%; box-shadow: 0 8px 30px rgba(0,0,0,.12); background-color: #fff;}
+.browser canvas{display: block; width: 100%;}
+.browser .status_bar{position: absolute;left: 0;top: 0;right: 0;padding: 12px 12px 12px; border-bottom:1px solid #ddd; z-index: 1; }
+.browser .status_bar .dot{float: left; margin-top: 7px; width: 10px; height: 10px; border-radius: 50%;}
+.browser .status_bar[style] .dot{margin-top: 0;}
+.browser .status_bar .dot+.dot{margin-left: 7px;}
+.browser .status_bar .dot:first-child{background-color: #ff5f56;}
+.browser .status_bar .dot:first-child+.dot{background-color: #ffbd2e;}
+.browser .status_bar .dot:first-child+.dot+.dot{background-color: #27c93f;}
+
+.browser .status_bar .address{margin: 0 auto; width: 240px; height: 25px; line-height: 25px; text-align: center; background-color: #f6f6f6;}
+
+.browser .html{position: absolute; left: 0; top: 49px; right: 0; bottom: 0;}
+.browser .html .body:after{content: "";position: absolute;left: 0;top: 0;bottom: 0;right: 0;z-index: 1;overflow: hidden;/* overflow-y: scroll; */}
+
+.browser .html .body .qr img{display: block; margin: 0 auto;}
+
+.browser .html .body.success .qr,
+.browser .html .body.success .sms_link{opacity: 0.2;}
+
+.browser.mobile .phone .sms_form{position: absolute;left: 0;right: 0;bottom: 0;height: 41px;}
+.browser.mobile .phone .sms_form input[type="text"]{position: absolute; left: 0; right: 0; bottom: 0; padding-bottom: 1px; height: 40px; padding-left: 40px; border-top:1px solid #ddd;}
+.browser.mobile .phone .sms_form .send{position: absolute;top: 0;right: 5px;width: 40px;height: 40px;line-height: 40px;text-align: center;z-index: 1;}
+.browser.mobile .phone .sms_form .send:after{content: "\f1d8";font-family: "Font Awesome 6 Free";font-weight: 600;font-size: 16px;color: #747474;}
+.browser.mobile .phone .sms_form .camera{position: absolute;top: 0; left: 0;width: 40px;height: 40px;line-height: 41px;text-align: center;z-index: 1;}
+.browser.mobile .phone .sms_form .camera:after{content: "\f030";font-family: "Font Awesome 6 Free";font-weight: 600;font-size: 16px;color: #747474;}
+.browser.mobile .phone .msg{position: absolute; right: 10px; top: 60px; padding: 15px; border-radius: 10px; background-color: #f6f6f6;}
+
+.browser.mobile .phone .text{padding: 20px; text-align: center; opacity: 0.7}
+
+
+[style]+.html{top: 34px;}
+.browser .html .body{margin: 0 auto;padding: 0 50px 50px;overflow-y: scroll;position: relative;height: 100%; box-sizing: border-box;}
+.browser .html .body oauth{padding-top: 0; padding-bottom: 0;}
+.browser .html .body *{font-size: 13px;}
+.browser .html .title{padding:25px 0; text-align: center;}
+.browser .html .title span{font-size: 20px; font-weight: bold;}
+.browser .html .title em{display: block; margin-top: 15px; font-size: 13px;}
+
+.browser .html .full_calendar_nav{margin-bottom: 20px; text-align: center;}
+.browser .html .full_calendar_nav .currentDate{margin: 0 15px;}
+
+.browser .html .field+.field{margin-top: 20px;}
+.browser .html .field .legend{margin-bottom: 10px; font-weight: bold;}
+.browser .html .field .input{position: relative; padding-left: 30px;}
+.browser .html .field .input+.input{margin-top: 5px;}
+.browser .html .field .input input[type="checkbox"]{position: absolute; left: 0; top: 0; bottom: 0; margin: auto 0; width: 20px; height: 20px;}
+.browser .html .field .input span{display: block; height: 30px; line-height: 20px;}
+.browser .html .field input[type="text"]{display: block; width: 100%; padding: 5px 10px; border: 1px solid #ddd; box-sizing: border-box;}
+.browser .html .field input[type="submit"]{display: block; width: 100%; height: 40px; font-weight: bold;}
+
+.browser .html .body table{width: 100%;}
+.browser .html .body table th{background-color: #f6f6f6;}
+.browser .html .body table th,
+.browser .html .body table td{padding: 7px 5px; border: 1px solid #f6f6f6; word-break: keep-all;}
+
+
+.ts_wrap{position: relative;}
+.ts_wrap ul{position: absolute; left: 0px; top: 0px;}
+
+.image .ts_wrap li{padding: 0 5px; box-sizing: border-box;}
+
+.image .ts_body .ts-controls .ts-prev,
+.image .ts_body .ts-controls .ts-next{display: none;}
+.image .ts_body .ts-controls .ts-paging{display: block; margin-top: 25px; text-align: center;}
+.image .ts_body .ts-controls .ts-paging button{display: inline-block; font-size: 0; background-color: transparent;}
+.image .ts_body .ts-controls .ts-paging button+button{margin-left: 10px;}
+.image .ts_body .ts-controls .ts-paging button:after{font-size:16px;}
+.image .ts_body .ts-controls .ts-paging button:first-child:after{content: "인증시작"; }
+.image .ts_body .ts-controls .ts-paging button:first-child+button:after{content: "코드발송"; }
+.image .ts_body .ts-controls .ts-paging button:first-child+button+button:after{content: "인증완료"; }
+.image .ts_body .ts-controls .ts-paging button.ts-paging-active:after{font-weight: bold;}
+
+.browser.mobile .sms_link{position: relative; margin-top: 20px; padding-top: 30px; text-align: center;}
+.browser.mobile .sms_link:after{content: ""; margin: 0 auto; position: absolute; left: 0; right: 0; top: 0; width: 30px; height: 1px; background-color: #ddd;}
+.browser.mobile .sms_link a{display: inline-block; margin-bottom: 15px; padding: 10px 20px; border:1px solid #ddd; border-radius: 5px;}
+.browser.mobile .html .title em{font-size: 7px; line-height: 1.3;}
+
+.browser.mobile .back{position: absolute; left: 15px; top: 1em; font-size: 17px;}
+.browser.mobile .back:after{content: "\f053"; font-family: "Font Awesome 6 Free"; font-weight: 600;}
+.ts_wrap li:first-child+li .browser.mobile .status_bar .address{background-color: inherit;}
+
+{content: "\f058";}
+
+.placeholder{background-color: #f6f6f6;}
+
+.article{margin-bottom: 70px;}
+
+.article>.tb[style]{width: 55%;}
+.article>.tb>.tc[style]{width: 55%;}
+.article>.tb>.tc[style] .image{padding: 50px 0; }
+
+calendar{display: block;}
+
+calendar table{width: 100%;}
+calendar table th,
+calendar table td{position: relative; padding: 7px; width: 14.28%; max-width: 17.28%; min-width: 17.28%;}
+
+
+
+calendar tr .sunday .day{color: red;/* border-right: 1px solid #ddd; */}
+calendar table td .day{display: block; margin-bottom: 10px;}
+calendar table td ul{margin: -5px;}
+calendar table td ul li.time_record+li.time_record{margin-top: -2.5px;}
+calendar table td .time_record{position: relative; display: inline-block; margin: 5px; padding:2px; border:1px solid #ddd; border-radius: 4px; cursor: pointer; z-index: 2;}
+calendar table td .time_record em{position: relative;z-index: -1;font-weight: 300;}
+calendar table td .time_record em:not(:empty):before{content:"/"}
+calendar table td .time_record a:before{/* padding: 5px; *//* border-radius: 4px; *//* background-color: #ddd; */}
+calendar table td .time_record.am a:before{content: "오전/"; display: inline-block;}
+calendar table td .time_record.pm a:before{content: "오후/"; display: inline-block;}
+calendar table td .time_record.am.pm a:before{content: "오전·오후/"; display: inline-block;}
+calendar table td .time_record.am.pm.overtime a:before{content: "종일·당직/"; display: inline-block;}
+calendar table td .time_record.pm.overtime a:before{content: "오후·당직/"; display: inline-block;}
+calendar table td .time_record.am.overtime a:before{content: "오전·당직/"; display: inline-block;}
+calendar table td .time_record.overtime a:before{content: "당직/";display: inline-block;font-weight: 300;}
+calendar table td.current .day:after{content:"Today"; position: absolute; right: 5px; bottom: 10px; margin-right: 2px; float:right; font-size:6px;}
+calendar table td {background-color: #FFFFFF; border: 1px solid #f6f6f6; min-height: 40px; height: 40px; vertical-align: top; font-size:6px;}
+calendar table th{background-color: #f6f6f6;}
+calendar table td.on{box-shadow: inset 0 0 0px 2px #000;}
+
+calendar tr.current td{}
+calendar tr.current td.current{background-color: #ddd;}
+calendar tr.current td.current{font-weight: bold;}
+
+popup outbox{margin: 1em 0;}
+popup inbox outbox form{margin-bottom: 2em;}
+popup outbox form{overflow: hidden; position: relative; border-radius: 0.5em; border:1px solid #ddd;}
+popup outbox form input[type="text"]{display: block; padding: 1.1em 2em 1.3em; width: 100%; box-sizing: border-box;}
+popup outbox form input[type="submit"]{position: absolute; right: 0.5em; top: 0; bottom: 0; /* height: 1em; */ margin: auto 0; padding: 0.5em; text-decoration: underline; background: transparent; font-size: 1em; text-transform: uppercase; color: #1b74e4;}
+
+p.guide{display: block; border-radius: 0.5em; font-size: 0.8em; width: 100%; height: 3em; line-height:3em; color: #000;}
+
+input+p.guide{margin-top: 1em;}
+popup article{margin-left: auto; margin-right: auto; max-width:560px;}
+.msg_form form{position:relative;}
+.msg_form form input.subject{overflow:hidden; overflow-y:auto; display: block; border:1px solid #ddd; border-radius:0.5em; width: 100%; font-size:1em; height: 3em; padding: 0 2em;}
+.msg_form form input.send{display: block; padding: 0 1em; border-radius:0.5em; font-size: 0.9em; width: 100%; height: 3em; font-weight: bold;text-transform: uppercase; background-color: #1b74e4; color:#fff; cursor:pointer;}
+
+outbox.like_form .like{display: block; margin-top: 1em; padding: 0 1em; border:1px solid #ddd; border-radius: 0.5em; font-size: 1em; width: 100%; height: 3em; line-height:3em; font-weight: bold; text-transform: uppercase; color: #000; cursor:pointer;}
+
+popup{}
+.msg_form{}
+
+outbox.like_form .like{color:red; background-color: inherit;}
+
+
+inbox.cont{padding: 2em 3em 2em; border:1px solid #ddd; border-radius: 0.5em;}
+
+
+inbox session a{font-size:0.8em;}
+inbox session a+a{margin-left:1em;}
+
+inbox session modify input[name="subject"]{display: none;}
+
+inbox session{}
+
+inbox session>*{display: inline-block; }
+inbox session>*+*{margin-left: 10px;}
+inbox session input[type="submit"]{display: none;}
+
+inbox mail.modify session modify{display: block; width: 100%;}
+inbox mail.modify session modify prompt{position: absolute; top: 0; left: 0; bottom: 1px; margin: auto 0; height: 1em; font-size: 0.8em;}
+inbox mail.modify session modify form{position: relative; display: block; width: 100%; box-sizing: border-box; padding-left: 35px;}
+inbox mail.modify session modify input[name="subject"]{margin: 10px 0; padding: 10px 10px; border:1px solid #ddd; border-radius: 10px; width: 100%; box-sizing: border-box;}
+inbox mail.modify session modify input[type="submit"]{position: absolute; right: 1em; top: 0; bottom: 1px; background: transparent; font-size: 0.8em; text-transform: uppercase; color: #1b74e4;}
+
+inbox mail.modify session delete{display: none;}
+inbox mail.modify session modify input[name="subject"],
+inbox mail.modify session input[type="submit"]{display: block;}
+inbox mail.modify from,
+inbox mail.modify subject,
+inbox mail.modify content{display: none;}
+
+inbox content{display: none;}
+
+inbox .like{background-color: inherit;}
+
+inbox time{display: block; margin: 1em 0 1em; font-size:1em;}
+
+inbox from{margin-bottom:1em;}
+inbox from a{font-weight:bold;}
+
+mail flags{margin: 2em 0 0;}
+mail flags .like_form{display: inline-block;}
+mail flags flag{position: relative; z-index: 0;}
+mail flags flag *{font-size: 0.8em; text-transform: uppercase; background-color: transparent;}
+mail flags flag label:after{content:""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 1;}
+mail flags flag count{position: relative; z-index: -1;}
+mail flags form{display: inline-block;}
+mail flags form+form{margin-left: 10px;}
+
+inbox{}
+inbox inbox{margin:0 0 0 1em;}
+inbox mail+mail{margin-top: 2em; padding-top:1em;}
+
+
+reply form,
+input[name="reply"]{display: none;}
+input[name="reply"]:checked+reply label{font-size:0;}
+input[name="reply"]:checked+reply label:after{content:"Close"; font-size:1em;}
+input[name="reply"]:checked+reply form{display: block;}
+
+more button[type="submit"]{position:relative; display: block; width: 3em; height: 3em; margin: 3em auto 2em; border: 1px solid #ccc; border-radius: 50%; line-height: 1; background: inherit; font-size: 0; cursor:pointer;}
+more button[type="submit"]:after,
+more button[type="submit"]:before{content:""; position:absolute; margin:auto; left:0; right:0; top:0; bottom:0; background:#ccc;}
+
+more button[type="submit"]:after{width:1px; height:50%;}
+more button[type="submit"]:before{width:50%; height:1px;}
+
+
+
+		mail .display-block{display:block;}
+		mail *{margin: 0; padding: 0; text-decoration:none; list-style:none; line-height:1;}
+		mail, inbox mail[id],outbox,inbox,subject,content,oembed,session,flags,from,to,cc{display: block;}
+		count:empty:before{content:"0";}
+
+
+		more,
+		mail input[name="fold"],
+		mail input[name="reply"],
+		inbox outbox form{display: none;}
+		inbox mail:last-child more{display:block;}
+		oembed{position:relative;}
+		oembed img{display:block; width:100%;}
+		oembed img+iframe{position:absolute; left:0; top:0; height:100%;}
+		oembed iframe{width:100%;}
+		
+		mail label[for*="fold"]:after{content:"fold";}
+		mail input[name="fold"]:checked+content label[for*="fold"]:after{content:"More Content";}
+		
+		input[name="fold"]:checked+content *{display:none;}
+		input[name="fold"]:checked+content label[for*="fold"],
+		outbox input:checked+form{display:block;}
+
+
+
+.pricing:before{content: "Pricing"; display: block; margin-bottom: 1em; text-align: center; font-size: 34px; font-weight: bold;}
+.pricing .items .item{position: relative; display: block; padding: 3.5em; box-sizing: border-box; z-index: 0;}
+.pricing .items .item:after{content: ""; position: absolute; left: 15px; top: 15px; right: 15px; bottom: 15px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); z-index: -1;}
+.pricing .items .item:first-child+.item:after{border-color:#000;}
+.pricing .items .item:last-child:after{border-color: #000; background-color: #235bf5;}
+.pricing .items .item:last-child *{color:#fff;}
+
+.pricing .items .item .subject{display: block; margin-bottom: 15px;}
+.pricing .items .item .subject strong{display: block; font-weight: bold; font-size: 1.2em;}
+.pricing .items .item .price{display: block;}
+.pricing .items .item .price em{display: block; font-size: 2em; font-weight: bold;}
+.pricing .items .item .price em:after{content: "\f159"; margin-left: 4px; font-family: "Font Awesome 6 Free"; font-weight: 600; font-size: 0.6em;}
+.pricing .items .item .price span{font-size: 2em; font-weight: bold;}
+
+.pricing .items .item .desc{display: block; margin-top: 1.5em; padding-top: 1.5em; border-top:1px solid #ddd;}
+.pricing .items .item .desc .ul{display: block;}
+.pricing .items .item .desc .li{display: block; position: relative; padding-left: 30px; line-height: 1.8; word-break: keep-all;}
+.pricing .items .item .desc .li:before{content: "\f00c"; position: absolute; left: 5px; top: 1px; font-family: "Font Awesome 6 Free"; font-weight: 600;}
+.pricing .items .item .desc .li u{text-decoration: underline;}
+
+.main.step03[modify] .pricing{display: none;}
+.main.step03 .pricing .items .item{width: 100%;}
+
+@media (min-width: 1000px) {
+	#header oauth{right: 0;}
+
+	.pricing{margin-top: 50px}
+	.pricing .items{overflow: hidden; margin: 0 auto; padding: 20px; max-width: 1000px; box-sizing: border-box;}
+	.pricing .items .item{float: left; width: 33.33%; min-height: 420px;}
+
+	.browser{display: inline-block;}
+
+	.article .area .browser:first-child{margin-left: 140px;}
+	.article .area .ts_wrap .browser:first-child{margin-left: 0;}
+	.article.full .browser{display: block;}
+	.browser+.browser{position: absolute; left:43%; width:50%; top:43%} 
+	
+	.image .ts_body{position: absolute; left:60%; width:50%; top:15%; max-width: 300px;}
+	.image .ts_wrap{}
+	.image .ts_wrap .browser{width:100%;}
+	
+	.ts_wrap li .browser{opacity: 0; transition-duration: 0.2s;}
+	.ts_wrap li[aria-hidden="false"] .browser{opacity: 1;}
+	
+
+	.browser.mobile canvas{max-height: 400px;}
+	.browser.mobile .status_bar .address{width:175px;}
+	.browser.mobile .html .body{padding-right: 25px; padding-left: 25px;}
+
+}
+
+
+
+@media (max-width: 999px) {
+	.pricing .items{width: 76%; margin: 0 auto;}
+	.pricing .items .item{padding: 70px;}
+	.pricing .items .item:after{left: 30px; top: 30px; right: 30px; bottom: 30px;}
+
+	.browser .html .body{padding: 0 25px 50px}
+	.main .section .area{padding-left:0; padding-right:0;}
+	.mobile{display: block;}
+	.article>.tb,
+	.article>.tb>.tc{display: block;}
+	.article>.tb>.tc[style]{width:100%;}
+
+	.image .ts_wrap{margin-top: 30px;}
+	.browser.mobile canvas{max-height: 450px;}
+
+	.browser+.browser{margin-top: 40px;}
+}

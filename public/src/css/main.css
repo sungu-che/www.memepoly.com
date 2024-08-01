@@ -1,0 +1,32 @@
+
+/*			#headline strong:after{content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 4px; background-color: #2a3a54}*/
+
+#footer{background: #f6f6f6;}
+
+.main{overflow: hidden;padding: 2em 0;}
+
+
+#overview{}
+#overview .area{}
+#overview p.guide{text-indent:-0.5rem;}
+
+.article.full .tb .tc{width: 100%;}
+
+.title_style01 a{display: inline; margin-left: 5px; text-decoration: underline;}
+
+
+.ts_body.cs{position: relative;}
+.ts_body.cs .ts-controls .ts-paging{display: none;}
+.ts_body.cs .ts-controls>button[type="button"]{position: absolute; top: 50%; font-size: 0; background-color: transparent;}
+.ts_body.cs .ts-controls>button[type="button"]:before{font-family: "Font Awesome 6 Free"; font-weight: 600; font-size: 24px;}
+
+.ts_body.cs .ts-controls .ts-prev{left: 30px;}
+.ts_body.cs .ts-controls .ts-prev:before{content: "\f053";}
+.ts_body.cs .ts-controls .ts-next{right: 30px;}
+.ts_body.cs .ts-controls .ts-next:before{content: "\f054";}
+
+
+.form_nav{text-align: center;}
+.form_nav a{display: inline-block; height: 5em; line-height: 5em; vertical-align: top;}
+.form_nav a+a{margin-left: 1em;}
+.form_nav a img{vertical-align: middle;}
