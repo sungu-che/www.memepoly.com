@@ -10,7 +10,7 @@
 /**::selection{background-color: inherit; color:inherit;}*/
 #root {position: fixed; left: 0; top: 0; right: 0; bottom: 0;}
 
-body{}
+body{opacity: 0.1; background-color: #000 !important;}
 
 #root{}
 
