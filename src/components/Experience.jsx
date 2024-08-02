@@ -31,8 +31,10 @@ export const Experience = () => {
 		z : 4.5
 	});
 
-	grid.size = 40
-	grid.edge = 10 - 1
+	grid.size = 1000000000000000000
+	grid.edge = 1000000000000000000 - 1
+
+	grid.area = 10 - 1
 
 	grid.x = grid.size
 	grid.z = grid.size
@@ -662,83 +664,7 @@ export const Experience = () => {
 			
 		}
 
-		if(props.name.indexOf("open") > -1){
-			var color = ""
-
-			if(selector){
-				if(selector.hash){
-					if(selector.hash == props.hash){
-						color = props.color
-					}
-				}else{
-					color = props.color
-				}
-			}else{
-				color = props.color
-			}
-
-			if(color){
-				// if(cursor){
-				// 	if(cursor.current){
-				// 		if(cursor.current.position){
-				// 			if(props.position.x == cursor.current.position.x && props.position.z == cursor.current.position.z){
-				// 				// props.color = "#000"
-				// 			}
-				// 		}
-				// 	}
-				// }
-
-				// const texture = useLoader(THREE.TextureLoader, src)
-
-			
-				// <group rotation-x={rotation_x} position={props.position}>
-				// 	<mesh rotation-z={Math.PI / 0.0815} position={[0, 0, 0.005]}>
-				// 		<planeGeometry attach="geometry" args={[0.5, 0.5]} />
-				// 		<meshBasicMaterial attach="material" map={texture} transparent />
-				// 	</mesh>
-				// 	<Html className="clipped">
-				// 		<div className="emoji color" x={props.position.x} z={props.position.z}>{props.value}</div>
-				// 	</Html>
-				// </group>
-			
-
-				if(props.name.indexOf("dissolve") > -1){
-					return <>
-						<mesh rotation-x={rotation_x} position={props.position}>
-							<planeGeometry attach="geometry" args={[0.9, 0.9]} />
-							<DissolveMaterial color={props.color} position={props.position} />
-
-							<Text rotation-z={Math.PI / 0.0815} fontSize={0.5} position={[0, 0, 0.1]} color={props.color}>{props.value}</Text>
-						</mesh>
-					</>
-				}else{
-					return <>
-						<mesh rotation-x={rotation_x} position={props.position}>
-							<planeGeometry attach="geometry" args={[0.9, 0.9]} />
-							<meshStandardMaterial attach="material" color={props.color} />
-
-							<Text rotation-z={Math.PI / 0.0815} fontSize={0.5} position={[0, 0, 0.1]} color={props.color}>{props.value}</Text>
-						</mesh>
-					</>
-				}
-			}
-		}else if(props.name == "chord"){
-			return <>
-				<mesh rotation-x={rotation_x} position={props.position}>
-					<planeGeometry attach="geometry" args={[2.9, 2.9]} />
-					<meshStandardMaterial attach="material" color={props.color} />
-				</mesh>
-			</>
-		}else if(props.name == "flag"){
-			return <>
-				<mesh rotation-x={rotation_x} position={props.position}>
-					<planeGeometry attach="geometry" args={[0.9, 0.9]} />
-					<meshStandardMaterial attach="material" color={props.color} />
-
-					<Text rotation-z={Math.PI / 0.0815} fontSize={0.5} position={[0, 0, 0.1]} color="#fff">?</Text>
-				</mesh>
-			</>
-		}else if(props.name == "tutorial"){
+		if(props.name == "tutorial"){
 			return <>
 				<mesh rotation-x={rotation_x} position={props.position}>
 					<planeGeometry attach="geometry" args={[0.9, 0.9]} />
@@ -875,9 +801,16 @@ export const Experience = () => {
 				<meshStandardMaterial attach="material" color={current.color} />
 			</mesh>
 
-			<mesh>
-				<gridHelper onClick={onClick} args={[grid.x, grid.z, grid.center, grid.line]} />
+			<mesh  rotation-x={-Math.PI / 2} onClick={onClick}>
+				<planeGeometry attach="geometry" args={[grid.x, grid.z]} />
+				<meshStandardMaterial attach="material" opacity={0} transparent />
 			</mesh>
+
+
+			{/*<mesh rotation-x={-Math.PI / 2} position={[0, -0.01, 0]}>
+				<planeGeometry attach="geometry" args={[100, 100]} />
+				<meshStandardMaterial attach="material" color={"green"} />
+			</mesh>*/}
 
 			<Suspense>
 				{assets.map((asset) => (

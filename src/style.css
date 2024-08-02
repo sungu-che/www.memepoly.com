@@ -299,11 +299,10 @@ clipped {
 
 
 #life{position: fixed; left: 1em; top: 15px; z-index: 99999999;}
-#life i{font-size: 2em; color:red; -webkit-text-stroke: 1px #000;}
+#life i{font-size: 2em; color:red; -webkit-text-stroke: 3px #000;}
 #life i:before{content: "♡"}
 #life i.on:before{content: "♥"}
-#life.on i{font-size: 1.7em;}
-#life.on i:before{content: "🛡"; font-family: 'Noto Color Emoji'; vertical-align: top;}
+/*#life.on i{-webkit-text-stroke: 3px green;}*/
 
 
 #star{position: fixed; right: 1em; top: 15px; z-index: 99999999;}

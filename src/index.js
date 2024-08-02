@@ -224,7 +224,7 @@ OAuth3.on("ready", function(e){
 						if(typeof data.index != "undefined"){
 							window.setFrameloop("always")
 						}else{
-							window.setFrameloop("never")	
+							window.setFrameloop("never")
 						}
 
 						localStorage.tutorial = "complete"
