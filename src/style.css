@@ -10,7 +10,14 @@
 /**::selection{background-color: inherit; color:inherit;}*/
 #root {position: fixed; left: 0; top: 0; right: 0; bottom: 0;}
 
-body{opacity: 0.1; background-color: #000 !important;}
+/*body{opacity: 0.1; background-color: #000 !important;}*/
+
+.map{position: absolute; overflow: hidden; border-radius: 1em; right: 1em; top: 1em; max-width: 100px; height: 100px; }
+.map canvas{width: 100%; height: 100%; transform: scale(2.5);}
+
+.map .config{display: none;}
+.map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji'; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 1;}
+
 
 #root{}
 
@@ -685,8 +692,8 @@ emojis .tab_content .deck .emoji_asset[emoji="😎"] a:after{content: "x30"; fon
 emojis .tab_content .deck .emoji_asset[emoji="📦"] a:before,
 emojis .tab_content .deck .emoji_asset[emoji="😎"] a:before{content: "📦"; position: absolute; right: 23px; bottom: 0; font-family: 'Noto Emoji'; font-size:13px; color:#fff;}
 
-emojis .tab_content .deck .emoji_asset[type="reward"][balance="0"],
-emojis .tab_content .deck .emoji_asset[method="open"] .cnt{display: none;}
+/*emojis .tab_content .deck .emoji_asset[type="reward"][balance="0"],*/
+/*emojis .tab_content .deck .emoji_asset[method="open"] .cnt{display: none;}*/
 emojis .tab_content .deck .emoji_asset{position: relative; display: inline-block; padding: 0.5em; width: 50px; vertical-align: top; cursor: pointer; transform: scale(1.0); transition: transform 0.15s; pointer-events: initial;}
 emojis .tab_content .deck .emoji_asset:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 3;}
 emojis .tab_content .deck .emoji_asset>a{position: relative; /*overflow: hidden;*/ display: block; margin: auto; width: 53px; height: 56px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0); transition-duration: 0.2s;}

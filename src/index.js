@@ -56,6 +56,38 @@ window.Subscribe = function(){
 	});
 }
 
+var Biomes = {
+	// biomes
+	OCEAN: "#44447a",
+	COAST: "#33335a",
+	LAKESHORE: "#225588",
+	LAKE: "#336699",
+	RIVER: "#225588",
+	MARSH: "#2f6666",
+	ICE: "#99ffff",
+	BEACH: "#a09077",
+	ROAD1: "#442211",
+	ROAD2: "#553322",
+	ROAD3: "#664433",
+	BRIDGE: "#686860",
+	LAVA: "#cc3333",
+
+	// Terrain
+	SNOW: "#ffffff",
+	TUNDRA: "#bbbbaa",
+	BARE: "#888888",
+	SCORCHED: "#555555",
+	TAIGA: "#99aa77",
+	SHRUBLAND: "#889977",
+	TEMPERATE_DESERT: "#c9d29b",
+	TEMPERATE_RAIN_FOREST: "#448855",
+	TEMPERATE_DECIDUOUS_FOREST: "#679459",
+	GRASSLAND: "#88aa55",
+	SUBTROPICAL_DESERT: "#d2b98b",
+	TROPICAL_RAIN_FOREST: "#337755",
+	TROPICAL_SEASONAL_FOREST: "#559944"
+}
+
 window.oembed = function(url){
 	var id = ""
 	var provider = ""
@@ -167,78 +199,6 @@ window.players.self = function(){
 	}
 }
 
-
-
-function generate() {
-	console.time('generate');
-
-	var size = getSize();
-
-	var state = { map : null, noisyEdges : null, roads : null, watersheds : null, lava : null };
-	
-	state.map = map({ width: size.width + 0.0, height: size.height + 0.0 });
-
-	var seed = getIntegerOrStringSeed($(S_seed).val());
-	var shapeSeed = getIntegerOrStringSeed($(S_shapeSeed).val());
-	
-	switch ($(S_islandShape).val()) {
-	case 'bitmap' :
-		var imageData = canvasCore.getImageData(image);
-		var bitmap = canvasCore.makeAverageThresholdBitmap(imageData, _.parseInt($(S_imageThreshold).val()));
-		if ($(S_invertImage).is(':checked')) {
-			bitmap = canvasCore.invertBitmap(bitmap);
-		}
-		state.map.newIsland(islandShape.makeBitmap(bitmap), seed);
-		break;
-	case 'blob' :
-		state.map.newIsland(islandShape.makeBlob(), seed);
-		break;
-	case 'noise' :
-		state.map.newIsland(islandShape.makeNoise(shapeSeed), seed);
-		break;
-	case 'perlin' :
-		state.map.newIsland(islandShape.makePerlin(shapeSeed, $(S_oceanRatio).val()), seed);
-		break;
-	case 'radial' :
-		state.map.newIsland(islandShape.makeRadial(shapeSeed, $(S_islandFactor).val()), seed);
-		break;
-	case 'square' :
-		state.map.newIsland(islandShape.makeSquare(), seed);
-		break;
-	}
-	
-	state.watersheds = watersheds();
-	state.noisyEdges = noisyEdges();
-	state.lava = lava();
-	state.roads = roads();
-
-	var ps = (function (pointSelection, width, height, seed) { switch (pointSelection) {
-		case 'random': return pointSelector.generateRandom(width, height, seed);
-		case 'relaxed': return pointSelector.generateRelaxed(width, height, seed, $(S_lloydIterations).val());
-		case 'square': return pointSelector.generateSquare(width, height);
-		case 'hex': return pointSelector.generateHexagon(width, height);
-		default: throw 'unknown point selector ' + pointSelection;
-	}})($('#pointSelection').val(), state.map.SIZE.width, state.map.SIZE.height, state.map.mapRandom.seed);
-
-	var numberOfLands = $(S_numberOfLands).val();
-	if (numberOfLands.length > 0) {
-		mapLands.tryMutateMapPointsToGetNumberLands(state.map, ps, parseInt(numberOfLands, 10));
-	} else {
-		state.map.go0PlacePoints($(S_numberOfPoints).val(), ps);
-		state.map.go1BuildGraph();
-		state.map.go2AssignElevations($(S_lakeThreshold).val());
-	}
-	state.map.go3AssignMoisture($(S_riverChance).val());
-	state.map.go4DecorateMap();
-	
-	var thresholds = $(S_roadElevationThresholds).val().split(',');
-	state.roads.createRoads(state.map, thresholds);
-	state.watersheds.createWatersheds(state.map);
-	state.noisyEdges.buildNoisyEdges(state.map, state.lava, seed, $(S_edgeNoise).val());
-
-	console.timeEnd('generate');
-	return state;
-}
 
 OAuth3.on("ready", function(e){
 	var random = function(min, max) {
@@ -2911,18 +2871,6 @@ OAuth3.on("ready", function(e){
 			}
 		}
 
-		window.map = {
-			quest : {},
-			score : {},
-			open : {},
-			item : {},
-			thread : {},
-			puzzle : {},
-			follow : {},
-			report : {},
-			reward : {}
-		}
-
 		window.Callback = async function(resp){
 			var url = new URL(window.location.href)
 
@@ -2991,13 +2939,9 @@ OAuth3.on("ready", function(e){
 
 					var self_player
 
-					try{
+					if(window.players.length){
 						self_player = window.players.self()
-					}catch(err){
-					
-					}
-
-					if(!self_player){
+					}else{
 						self_player = {
 							follow : false,
 							self : true,
@@ -3008,6 +2952,9 @@ OAuth3.on("ready", function(e){
 							z : 1.5
 						}
 					}
+
+					console.log('window.players.length',window.players.length);
+
 
 					if(rows.length){
 						var thread
@@ -3610,6 +3557,7 @@ OAuth3.on("ready", function(e){
 						emoji : canvas.toDataURL()
 					}
 
+
 					var _balance = $balance.text()
 
 					$balance
@@ -3646,6 +3594,76 @@ OAuth3.on("ready", function(e){
 					var bingo_body = ""
 
 					var score_board = []
+
+					if(window.map.biomes){
+						if(window.map.biomes.length){
+							window.map.biomes.forEach(function(feature){
+								if(window.players.length){
+									var color = Biomes[feature.biome]
+
+									var point = feature.point
+									
+									point.x = point.x / 2
+									point.y = point.y / 2
+									
+									if(point.x == self_player.x && point.x == self_player.z){
+										var 
+
+										var asset = {
+											id : row.Id,
+											hash : row.From,
+											name : color,
+											value : color,
+											color: color,
+											x : point.x,
+											y : 0,
+											z : point.y
+										}
+
+										_assets.push(asset)
+									}
+									// OCEAN: #44447a,
+									// COAST: #33335a,
+									// LAKESHORE: #225588,
+									// LAKE: #336699,
+									// RIVER: #225588,
+									// MARSH: #2f6666,
+									// ICE: #99ffff,
+									// BEACH: #a09077,
+									// ROAD1: #442211,
+									// ROAD2: #553322,
+									// ROAD3: #664433,
+									// BRIDGE: #686860,
+									// LAVA: #cc3333,
+
+									// // Terrain
+									// SNOW: #ffffff,
+									// TUNDRA: #bbbbaa,
+									// BARE: #888888,
+									// SCORCHED: #555555,
+									// TAIGA: #99aa77,
+									// SHRUBLAND: #889977,
+									// TEMPERATE_DESERT: #c9d29b,
+									// TEMPERATE_RAIN_FOREST: #448855,
+									// TEMPERATE_DECIDUOUS_FOREST: #679459,
+									// GRASSLAND: #88aa55,
+									// SUBTROPICAL_DESERT: #d2b98b,
+									// TROPICAL_RAIN_FOREST: #337755,
+									// TROPICAL_SEASONAL_FOREST: #559944
+
+
+										
+								}else if(!feature.water){
+									if(Math.random() < 0.5){
+										console.log("진입 여부");
+										self_player.x = feature.point.x
+										self_player.y = feature.elevation
+										self_player.z = feature.point.y
+									}
+								}
+							})
+						}
+					}
 
 					if(socket){
 						if(socket.hash){
@@ -5110,8 +5128,7 @@ OAuth3.on("ready", function(e){
 
 						var stickerCnt = 1
 						var rewardLength = Object.keys(window.map.reward).length
-						var li = '<div draggable="false" class="emoji_asset" emoji="🎁" type="reward" balance="'+rewardLength+'"><a class="emoji color">🎁</a><span class="cnt">'+rewardLength+'</span></div>\
-								<div draggable="false" class="emoji_asset" emoji="📦" type="item" method="open"><a class="emoji color">📦</a><span class="cnt">'+cookies.balance+'</span></div>'
+						var li = '<div draggable="false" class="emoji_asset" emoji="🪙" type="item" method="open"><a class="emoji color">🪙</a><span class="cnt">'+cookies.balance+'</span></div>'
 
 						var afterSticker = []
 						
@@ -6360,6 +6377,8 @@ OAuth3.on("ready", function(e){
 
 			
 			document.querySelector("html").setAttribute("user-agent",res.body["user-agent"]);
+
+			
 
 
 			var href = ''
