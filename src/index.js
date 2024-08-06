@@ -56,7 +56,51 @@ window.Subscribe = function(){
 	});
 }
 
-var Biomes = {
+function listToMatrix(list, elementsPerSubArray) {
+	var matrix = [], i, k;
+
+	var feature
+
+	for (i = 0, k = -1; i < list.length; i++) {
+		if (i % elementsPerSubArray === 0) {
+			k++;
+			matrix[k] = [];
+		}
+
+		matrix[k].push(list[i]);
+	}
+
+
+	var index = - (window.grid.area / 2)
+
+	var biomes = []
+
+	matrix.forEach(function(list, k){
+		list.forEach(function(item, i){
+			item.x = index + 0.5
+			item.y = item.elevation
+			item.z = (i - (window.grid.area / 2)) + 0.5
+			
+			if(window.players.length){
+
+			}else if(!item.water){
+				if(Math.random() < 0.5){
+					biomes.x = item.x
+					biomes.y = item.y
+					biomes.z = item.z
+				}
+			}
+
+			biomes.push(item)
+		})
+
+		index += 1
+	})
+
+	return biomes;
+}
+
+window.Biomes = {
 	// biomes
 	OCEAN: "#44447a",
 	COAST: "#33335a",
@@ -3595,33 +3639,57 @@ OAuth3.on("ready", function(e){
 
 					var score_board = []
 
+					console.log('self_player',self_player);
+
 					if(window.map.biomes){
 						if(window.map.biomes.length){
-							window.map.biomes.forEach(function(feature){
+							var _hash = window.location.hash ? window.location.hash : window.location.href
+								_hash = ethers.hashMessage(_hash)
+								_hash = ethers.computeAddress(_hash).toLowerCase()
+
+								console.log('_hash',_hash);
+
+							var biomes = listToMatrix(window.map.biomes, 100)
+
+							console.log('biomes',biomes)
+
+							if(!window.players.length){
+								if(window.current){
+									if(window.current.current.position){
+										window.current.current.position.x = self_player.x = biomes.x
+										window.current.current.position.z = self_player.z = biomes.z
+									}
+								}
+							}else{
+								biomes.x = window.current.current.position.x
+								biomes.z = window.current.current.position.z
+							}
+
+							biomes.forEach(function(b, i){
 								if(window.players.length){
-									var color = Biomes[feature.biome]
+									var _id = ethers.hashMessage(_hash+i)
+										_id = ethers.computeAddress(_id).toLowerCase()
 
-									var point = feature.point
+									var color = window.Biomes[b.biome]
 									
-									point.x = point.x / 2
-									point.y = point.y / 2
-									
-									if(point.x == self_player.x && point.x == self_player.z){
-										var 
-
+									if(
+										(biomes.x - 7 < b.x && biomes.x + 7 > b.x) &&
+										(biomes.z - 7 < b.z && biomes.z + 7 > b.z)
+									){
 										var asset = {
-											id : row.Id,
-											hash : row.From,
-											name : color,
+											id : _id,
+											hash : _hash,
+											name : b.biome,
 											value : color,
 											color: color,
-											x : point.x,
-											y : 0,
-											z : point.y
+											x : b.x,
+											y : b.y,
+											z : b.z
 										}
 
 										_assets.push(asset)
 									}
+
 									// OCEAN: #44447a,
 									// COAST: #33335a,
 									// LAKESHORE: #225588,
@@ -3653,18 +3721,13 @@ OAuth3.on("ready", function(e){
 
 
 										
-								}else if(!feature.water){
-									if(Math.random() < 0.5){
-										console.log("진입 여부");
-										self_player.x = feature.point.x
-										self_player.y = feature.elevation
-										self_player.z = feature.point.y
-									}
 								}
 							})
 						}
 					}
 
+					console.log('self_player',self_player);
+					console.log('_assets',_assets)
 					if(socket){
 						if(socket.hash){
 							try{

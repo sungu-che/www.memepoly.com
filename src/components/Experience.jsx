@@ -34,7 +34,7 @@ export const Experience = () => {
 	grid.size = 1000000000000000000
 	grid.edge = 1000000000000000000 - 1
 
-	grid.area = 10 - 1
+	grid.area = 100
 
 	grid.x = grid.size
 	grid.z = grid.size
@@ -709,6 +709,18 @@ export const Experience = () => {
 					<Html className="clipped">
 						<div className="emoji color" x={props.position.x} z={props.position.z}>{props.value}</div>
 					</Html>
+				</group>
+			</>
+		}else if(window.Biomes[props.name]){
+			return <>
+				<group rotation-x={rotation_x} position={props.position}>
+					<mesh position={[0, 0, 0.005]}>
+						<planeGeometry attach="geometry" args={[1, 1]} />
+						<meshStandardMaterial attach="material" color={props.color} />
+					</mesh>
+					{/*<Html className="clipped">
+						<div className="emoji color" x={props.position.x} z={props.position.z}>{props.value}</div>
+					</Html>*/}
 				</group>
 			</>
 		}else{
