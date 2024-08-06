@@ -8,7 +8,7 @@ import { useState, Suspense } from "react";
 
 function App() {
 	const [frameloop, setFrameloop] = useState("never");
-	const [dpr, setDpr] = useState(OAuth3.isMobile ? 0.8 : 1);
+	const [dpr, setDpr] = useState(1);
 
 	const [effect, setEffect] = useState(true);
 

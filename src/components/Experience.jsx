@@ -9,6 +9,32 @@ import { useFrame, useThree, useLoader } from "@react-three/fiber";
 
 import { DissolveMaterial } from "./DissolveMaterial";
 
+import dirtImg from './images/dirt.jpg';
+import grassImg from './images/grass.jpg';
+import glassImg from './images/glass.png';
+import logImg from './images/log.jpg';
+import woodImg from './images/wood.png';
+
+
+const textures = {
+	dirt : new THREE.TextureLoader().load(dirtImg),
+	grass : new THREE.TextureLoader().load(grassImg),
+	glass : new THREE.TextureLoader().load(glassImg),
+	wood : new THREE.TextureLoader().load(woodImg),
+	log : new THREE.TextureLoader().load(logImg)
+}
+
+textures.dirt.magFilter = THREE.NearestFilter;
+textures.dirt.minFilter = THREE.LinearMipMapLinearFilter;
+textures.grass.magFilter = THREE.NearestFilter;
+textures.grass.minFilter = THREE.LinearMipMapLinearFilter;
+textures.glass.magFilter = THREE.NearestFilter;
+textures.glass.minFilter = THREE.LinearMipMapLinearFilter;
+textures.wood.magFilter = THREE.NearestFilter;
+textures.wood.minFilter = THREE.LinearMipMapLinearFilter;
+textures.log.magFilter = THREE.NearestFilter;
+textures.log.minFilter = THREE.LinearMipMapLinearFilter
+
 var direction = {
 	x : 0,
 	z : 0
@@ -110,6 +136,16 @@ export const Experience = () => {
 			}
 
 			if(position){
+				// if(Object.keys(point).length){
+				// 	var biome = window.map.biomes[point.x+":"+point.z]
+
+				// 	// console.log('biome',biome);
+
+				// 	if(biome){
+				// 		position.y = biome.y
+				// 	}
+				// }
+
 				var fov = 1
 
 				if(window.flutter_inappwebview){
@@ -158,88 +194,101 @@ export const Experience = () => {
 			var player = self()
 
 			if(e.point){
-				if(e.point.x > 0){
-					if(e.point.x >= (grid.edge / 2) - 0.5){
-						e.point.x = (grid.edge / 2) - 1
-					}
-				}
+				// if(e.point.x > 0){
+				// 	if(e.point.x >= (grid.edge / 2) - 0.5){
+				// 		e.point.x = (grid.edge / 2) - 1
+				// 	}
+				// }
 
-				if(e.point.z > 0){
-					if(e.point.z >= (grid.edge / 2) - 0.5){
-						e.point.z = (grid.edge / 2) - 1
-					}
-				}
+				// if(e.point.z > 0){
+				// 	if(e.point.z >= (grid.edge / 2) - 0.5){
+				// 		e.point.z = (grid.edge / 2) - 1
+				// 	}
+				// }
 
-				var edge = (grid.edge / 2) + 1
+				// var edge = (grid.edge / 2) + 1
 
-				if(e.point.x > edge){
-					e.point.x = edge
-				}
+				// if(e.point.x > edge){
+				// 	e.point.x = edge
+				// }
 
-				if(e.point.x < -edge){
-					e.point.x = -edge
-				}
+				// if(e.point.x < -edge){
+				// 	e.point.x = -edge
+				// }
 
-				if(e.point.z > edge){
-					e.point.z = edge
-				}
+				// if(e.point.z > edge){
+				// 	e.point.z = edge
+				// }
 
-				if(e.point.z < -edge){
-					e.point.z = -edge
-				}
+				// if(e.point.z < -edge){
+				// 	e.point.z = -edge
+				// }
 
 				point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
 
-				var x = point.x
-				var z = point.z
+				// var x = point.x
+				// var z = point.z
 
-				if(window.map.open){
-					var recommand
+				// if(window.map.open){
+				// 	var recommand
 
-					var open = window.map.open[player.x+":"+player.z]
+				// 	var open = window.map.open[player.x+":"+player.z]
 
-					if(open){
-						var puzzle = window.map.puzzle[point.x+":"+point.z]
+				// 	if(open){
+				// 		var puzzle = window.map.puzzle[point.x+":"+point.z]
 
-						if(puzzle){
-							var typeof_emoji = window.typeof_emoji(puzzle.value)
+				// 		if(puzzle){
+				// 			var typeof_emoji = window.typeof_emoji(puzzle.value)
 
-							if(typeof_emoji){
-								recommand = puzzle.value
-							}
+				// 			if(typeof_emoji){
+				// 				recommand = puzzle.value
+				// 			}
 
-							var typeof_item = window.typeof_item(puzzle.value)
+				// 			var typeof_item = window.typeof_item(puzzle.value)
 
-							if(typeof_item){
-								if(window.map.item[puzzle.value]){
-									recommand = puzzle.value
-								}
-							}
-						}
-					}
+				// 			if(typeof_item){
+				// 				if(window.map.item[puzzle.value]){
+				// 					recommand = puzzle.value
+				// 				}
+				// 			}
+				// 		}
+				// 	}
 
-					var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
+				// 	var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
 
-					if(recommand){
-						window.map.recommand = recommand
+				// 	if(recommand){
+				// 		window.map.recommand = recommand
 
-						$recommand.html('<a class="emoji color">'+recommand+'</a>')
-					}else{
-						delete window.map.recommand
-						$recommand.removeAttr("emoji")
+				// 		$recommand.html('<a class="emoji color">'+recommand+'</a>')
+				// 	}else{
+				// 		delete window.map.recommand
+				// 		$recommand.removeAttr("emoji")
 
-						var emoji = $recommand.attr("emoji")
+				// 		var emoji = $recommand.attr("emoji")
 
-						if(emoji){
-							$recommand.html('<a class="emoji color">'+emoji+'</a>')
-						}
-					}
-				}
+				// 		if(emoji){
+				// 			$recommand.html('<a class="emoji color">'+emoji+'</a>')
+				// 		}
+				// 	}
+				// }
 
 				window.setFrameloop("demand")
 
 			}else if(e.target.tagName == "CANVAS"){
 				if(typeof point.x != "undefined" && typeof point.z != "undefined"){
+					var biome = window.map.biomes[point.x+":"+point.z]
+
+					point.y = biome.y
+
+					if(biome){
+						console.log('biome.water',biome.water);
+						if(biome.water){
+							return
+						}
+					}
+
+						
+
 					if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
 						if(cookies.hash && players.length){
 							if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
@@ -264,6 +313,10 @@ export const Experience = () => {
 									}
 								}
 
+								window[player.hash].position.y = point.y + 0.5
+								
+								current.current.position.y = point.y + 0.01
+
 								window[player.hash].position.x = current.current.position.x = point.x
 								window[player.hash].position.z = current.current.position.z = point.z
 
@@ -284,6 +337,8 @@ export const Experience = () => {
 								$("emojis").removeClass("on");
 								$("tooltip").removeClass("on");
 								$("#capture>.icon").html('')
+
+								$(".map canvas").css({top : -point.z * 0.7, left : -point.x * 0.7})
 
 								var url = "https://popup.link"
 
@@ -312,6 +367,7 @@ export const Experience = () => {
 
 									$("#capture .xyz .x").html(Math.floor(point.x))
 									$("#capture .xyz .z").html(Math.floor(point.z))
+									
 
 									var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
 
@@ -399,7 +455,6 @@ export const Experience = () => {
 									try{
 										var $tooltip = $player.find("tooltip ul");
 											$tooltip.removeClass("open")
-
 
 										var tooltip_body = ""
 
@@ -624,6 +679,7 @@ export const Experience = () => {
 						}
 					}else{
 						cursor.current.position.x = point.x
+						cursor.current.position.y = point.y + 0.01
 						cursor.current.position.z = point.z
 					}
 				}
@@ -712,15 +768,21 @@ export const Experience = () => {
 				</group>
 			</>
 		}else if(window.Biomes[props.name]){
+			var texture = 'glass'
+
+			var color = props.color;
+
+			var opacity = 1
+
 			return <>
 				<group rotation-x={rotation_x} position={props.position}>
 					<mesh position={[0, 0, 0.005]}>
-						<planeGeometry attach="geometry" args={[1, 1]} />
-						<meshStandardMaterial attach="material" color={props.color} />
+						<boxGeometry attach="geometry" args={[0.99, 0.99]} />
+						<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
 					</mesh>
-					{/*<Html className="clipped">
+					<Html className="clipped">
 						<div className="emoji color" x={props.position.x} z={props.position.z}>{props.value}</div>
-					</Html>*/}
+					</Html>
 				</group>
 			</>
 		}else{
@@ -817,12 +879,6 @@ export const Experience = () => {
 				<planeGeometry attach="geometry" args={[grid.x, grid.z]} />
 				<meshStandardMaterial attach="material" opacity={0} transparent />
 			</mesh>
-
-
-			{/*<mesh rotation-x={-Math.PI / 2} position={[0, -0.01, 0]}>
-				<planeGeometry attach="geometry" args={[100, 100]} />
-				<meshStandardMaterial attach="material" color={"green"} />
-			</mesh>*/}
 
 			<Suspense>
 				{assets.map((asset) => (

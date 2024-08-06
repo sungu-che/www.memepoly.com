@@ -70,16 +70,18 @@ function listToMatrix(list, elementsPerSubArray) {
 		matrix[k].push(list[i]);
 	}
 
-
-	var index = - (window.grid.area / 2)
+	var area = (window.grid ? window.grid.area : 100)
+	var index = - (area / 2)
 
 	var biomes = []
 
 	matrix.forEach(function(list, k){
 		list.forEach(function(item, i){
 			item.x = index + 0.5
-			item.y = item.elevation
-			item.z = (i - (window.grid.area / 2)) + 0.5
+			item.y = item.elevation * 3
+			item.z = (i - area) + 0.5
+
+			window.map.biomes[item.x+":"+item.z] = item
 			
 			if(window.players.length){
 
@@ -3647,8 +3649,6 @@ OAuth3.on("ready", function(e){
 								_hash = ethers.hashMessage(_hash)
 								_hash = ethers.computeAddress(_hash).toLowerCase()
 
-								console.log('_hash',_hash);
-
 							var biomes = listToMatrix(window.map.biomes, 100)
 
 							console.log('biomes',biomes)
@@ -3673,8 +3673,8 @@ OAuth3.on("ready", function(e){
 									var color = window.Biomes[b.biome]
 									
 									if(
-										(biomes.x - 7 < b.x && biomes.x + 7 > b.x) &&
-										(biomes.z - 7 < b.z && biomes.z + 7 > b.z)
+										(biomes.x - 10 < b.x && biomes.x + 10 > b.x) &&
+										(biomes.z - 10 < b.z && biomes.z + 10 > b.z)
 									){
 										var asset = {
 											id : _id,
@@ -3683,7 +3683,7 @@ OAuth3.on("ready", function(e){
 											value : color,
 											color: color,
 											x : b.x,
-											y : b.y,
+											y : b.y - 0.5,
 											z : b.z
 										}
 
@@ -3802,6 +3802,8 @@ OAuth3.on("ready", function(e){
 								var player = JSON.parse("["+position+"]")
 									player.follow = false
 
+								var biome = window.map.biomes[player[0]+":"+player[1]]
+
 								if(cookies.address == row.From || cookies.hash == row.From){
 									self = true
 
@@ -3820,6 +3822,7 @@ OAuth3.on("ready", function(e){
 											if(window.current){
 												if(window.current.current.position){
 													self_player.x = window.current.current.position.x
+													self_player.y = window.current.current.position.y
 													self_player.z = window.current.current.position.z
 												}
 											}
@@ -3829,13 +3832,13 @@ OAuth3.on("ready", function(e){
 											
 
 										player.x = self_player.x
-										player.y = self_player.y
+										player.y = self_player.y + 0.5
 										player.z = self_player.z
 										player.emoji = window.emojis.self
 									}
 								}else{
 									player.x = player[0]
-									player.y = 0.5
+									player.y = biome.y + 0.5
 									player.z = player[1]
 									player.emoji = emoji
 
@@ -9539,11 +9542,18 @@ OAuth3.on("ready", function(e){
 
 							window.setFrameloop("always")
 
+							
+
 							var players = window.players
 
 							var player = window.players.self()
 								player.x = window.current.current.position.x + position.x
+								
 								player.z = window.current.current.position.z + position.z
+
+							var biome = window.map.biomes[player.x+":"+player.z]
+
+							// player.y = biome.y
 
 							var edge = (window.grid.edge / 2) + 1
 
@@ -9558,7 +9568,10 @@ OAuth3.on("ready", function(e){
 									}
 								}
 
-								window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = player.x
+								window[player.hash].position.y = biome.y + 1
+								current.current.position.y = biome.y + 0.01
+
+								window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = player.x								
 								window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = player.z
 
 								if(window.map.open){

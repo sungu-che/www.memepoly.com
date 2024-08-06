@@ -13,7 +13,7 @@
 /*body{opacity: 0.1; background-color: #000 !important;}*/
 
 .map{position: absolute; overflow: hidden; border-radius: 1em; right: 1em; top: 1em; max-width: 100px; height: 100px; }
-.map canvas{width: 100%; height: 100%; transform: scale(2.5);}
+.map canvas{position: relative; width: 100%; height: 100%; transform: scale(2.5);}
 
 .map .config{display: none;}
 .map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji'; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 1;}
@@ -886,7 +886,7 @@ table{border-spacing:0px;border-collapse:collapse;}
 #root player[type="video"] emoji[type="image"] [data-plyr-provider]:empty+picture img{border: 0;}
 
 #root .emoji .address,
-#root .emoji picture *{position: relative; display: block; width: 18vh; height: auto; transition-duration: 0.2s;}
+#root .emoji picture *{position: relative; display: block; width: 18vh; height: auto; transition-duration: 0.2s; filter: drop-shadow(0 1px 2px #000);}
 #root .emoji picture source{display: none;}
 /*{pointer-events: none}*/
 

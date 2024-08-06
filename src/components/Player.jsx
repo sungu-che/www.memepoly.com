@@ -49,10 +49,12 @@ export function Player({
 			if(window.cookies.address){
 				if(window.cookies.address == props_hash){
 					position.x = window.current.current.position.x
+					position.y = window.current.current.position.y + 0.5
 					position.z = window.current.current.position.z
 				}
 			}else if(props_hash == window.cookies.hash){
 				position.x = window.current.current.position.x
+				position.y = window.current.current.position.y + 0.5
 				position.z = window.current.current.position.z
 			}
 		}
@@ -148,7 +150,7 @@ export function Player({
 		<group ref={group} {...props} position={position}>
 			<group>
 				<Html>
-					<player id={props_hash} type={type} self={self} follow={follow} verify={verify} alt={alt} x={position.x} z={position.z}>
+					<player id={props_hash} type={type} self={self} follow={follow} verify={verify} alt={alt} x={position.x} y={position.y} z={position.z}>
 						<emoji type={type} selector={props_hash}>
 							<div className="emoji color">
 								<div data-plyr-provider={provider} data-plyr-embed-id={embed}></div>
