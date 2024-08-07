@@ -157,7 +157,7 @@ export const Experience = () => {
 				if(OAuth3.interval){
 					if(!OAuth3.after){
 						if(window.frameloop == "demand"){
-							// window.setFrameloop("always")
+							window.setFrameloop("always")
 						}
 					}
 
@@ -226,7 +226,7 @@ export const Experience = () => {
 								$("tooltip").removeClass("on");
 								$("#capture>.icon").html('')
 
-								$(".map canvas").css({top : -point.z * 0.4, left : -point.x * 0.4})
+								$(".map canvas").css({top : -((point.z * 1.5) + 70) , left : -((point.x * 1.5) + 15 )})
 
 								var url = "https://emption.red"
 
@@ -300,11 +300,6 @@ export const Experience = () => {
 										window.Tutorial(1, 1)
 									}
 								}else{
-									if(OAuth3.xhr){
-										OAuth3.xhr.abort()
-										delete OAuth3.xhr
-									}
-
 									setTimeout(function(){
 										window.Callback(window.response)
 									}, OAuth3.isMobile ? 500 : 1000)
@@ -463,7 +458,7 @@ export const Experience = () => {
 
 			return <>
 				<group rotation-x={rotation_x} position={props.position}>
-					<mesh position={[0, 0, 0.005]}>
+					<mesh position={[0, 0, 0.005]} onClick={onClick}>
 						<boxGeometry attach="geometry" args={[1, 1]} />
 						<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
 					</mesh>
@@ -560,10 +555,7 @@ export const Experience = () => {
 				<meshStandardMaterial attach="material" color={current.color} />
 			</mesh>
 
-			<mesh  rotation-x={-Math.PI / 2} onClick={onClick}>
-				<planeGeometry attach="geometry" args={[grid.x, grid.z]} />
-				<meshStandardMaterial attach="material" opacity={0} transparent />
-			</mesh>
+			
 
 			<Suspense>
 				{assets.map((asset) => (

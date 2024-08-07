@@ -330,7 +330,7 @@ OAuth3.on("ready", function(e){
 
 						if(document.referrer.indexOf("https://www.oauth.network") > -1 || document.referrer.indexOf("http://localhost") > -1){
 							try{
-								// window.setFrameloop("demand")
+								window.setFrameloop("demand")
 
 								window.com = data
 
@@ -2909,7 +2909,7 @@ OAuth3.on("ready", function(e){
 			var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
 				cc_address = ethers.computeAddress(cc_address).toLowerCase()
 
-			if(OAuth3.xhr && resp.timeStamp){
+			if(OAuth3.xhr){
 				OAuth3.xhr.abort()
 				delete OAuth3.xhr
 
@@ -3654,6 +3654,8 @@ OAuth3.on("ready", function(e){
 									if(window.current.current.position){
 										window.current.current.position.x = self_player.x = biomes.x
 										window.current.current.position.z = self_player.z = biomes.z
+
+										$(".map canvas").css({top : -((biomes.z * 1.5) + 70) , left : -((biomes.x * 1.5) + 15 )})
 									}
 								}
 							}else{
@@ -4486,11 +4488,11 @@ OAuth3.on("ready", function(e){
 						}else{
 							window.setDpr(0.7)
 							try{
-								// if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
-								// 	window.setFrameloop("demand")
-								// }else{
-								// 	window.setFrameloop("always")
-								// }
+								if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
+									window.setFrameloop("demand")
+								}else{
+									window.setFrameloop("always")
+								}
 							}catch(err){
 								window.setFrameloop("always")
 							}
@@ -6963,11 +6965,11 @@ OAuth3.on("ready", function(e){
 			document.querySelector('#header label[for="nav"]').appendChild(icon);
 
 			window.addEventListener('focus', function(){
-				// window.setFrameloop("always")
+				window.setFrameloop("always")
 			})
 
 			window.addEventListener('blur', function(){
-				// window.setFrameloop("demand")
+				window.setFrameloop("demand")
 			})
 
 			window.addEventListener('change', function(e){
@@ -9021,11 +9023,6 @@ OAuth3.on("ready", function(e){
 							}else{
 								$go.removeAttr("href")
 								$go.removeAttr("way")
-							}
-
-							if(OAuth3.xhr){
-								OAuth3.xhr.abort()
-								delete OAuth3.xhr
 							}
 
 							window.Callback(window.response)
