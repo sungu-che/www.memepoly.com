@@ -136,16 +136,6 @@ export const Experience = () => {
 			}
 
 			if(position){
-				// if(Object.keys(point).length){
-				// 	var biome = window.map.biomes[point.x+":"+point.z]
-
-				// 	// console.log('biome',biome);
-
-				// 	if(biome){
-				// 		position.y = biome.y
-				// 	}
-				// }
-
 				var fov = 0.5
 
 				if(window.flutter_inappwebview){
@@ -167,7 +157,7 @@ export const Experience = () => {
 				if(OAuth3.interval){
 					if(!OAuth3.after){
 						if(window.frameloop == "demand"){
-							window.setFrameloop("always")
+							// window.setFrameloop("always")
 						}
 					}
 
@@ -184,104 +174,20 @@ export const Experience = () => {
 
 		var cookies = window.cookies
 
-		// if(window.leftButtonDown && window.rightButtonDown){
-		// 	return
-		// }
-
 		var $body = $("body")
 
 		try{
-			var player = self()
-
 			if(e.point){
-				// if(e.point.x > 0){
-				// 	if(e.point.x >= (grid.edge / 2) - 0.5){
-				// 		e.point.x = (grid.edge / 2) - 1
-				// 	}
-				// }
-
-				// if(e.point.z > 0){
-				// 	if(e.point.z >= (grid.edge / 2) - 0.5){
-				// 		e.point.z = (grid.edge / 2) - 1
-				// 	}
-				// }
-
-				// var edge = (grid.edge / 2) + 1
-
-				// if(e.point.x > edge){
-				// 	e.point.x = edge
-				// }
-
-				// if(e.point.x < -edge){
-				// 	e.point.x = -edge
-				// }
-
-				// if(e.point.z > edge){
-				// 	e.point.z = edge
-				// }
-
-				// if(e.point.z < -edge){
-				// 	e.point.z = -edge
-				// }
-
 				point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
-
-				// var x = point.x
-				// var z = point.z
-
-				// if(window.map.open){
-				// 	var recommand
-
-				// 	var open = window.map.open[player.x+":"+player.z]
-
-				// 	if(open){
-				// 		var puzzle = window.map.puzzle[point.x+":"+point.z]
-
-				// 		if(puzzle){
-				// 			var typeof_emoji = window.typeof_emoji(puzzle.value)
-
-				// 			if(typeof_emoji){
-				// 				recommand = puzzle.value
-				// 			}
-
-				// 			var typeof_item = window.typeof_item(puzzle.value)
-
-				// 			if(typeof_item){
-				// 				if(window.map.item[puzzle.value]){
-				// 					recommand = puzzle.value
-				// 				}
-				// 			}
-				// 		}
-				// 	}
-
-				// 	var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
-
-				// 	if(recommand){
-				// 		window.map.recommand = recommand
-
-				// 		$recommand.html('<a class="emoji color">'+recommand+'</a>')
-				// 	}else{
-				// 		delete window.map.recommand
-				// 		$recommand.removeAttr("emoji")
-
-				// 		var emoji = $recommand.attr("emoji")
-
-				// 		if(emoji){
-				// 			$recommand.html('<a class="emoji color">'+emoji+'</a>')
-				// 		}
-				// 	}
-				// }
-
-				window.setFrameloop("demand")
-
 			}else if(e.target.tagName == "CANVAS"){
 				if(typeof point.x != "undefined" && typeof point.z != "undefined"){
+					var player = self()
+
 					var biome = window.map.biomes[point.x+":"+point.z]
 
 					point.y = biome.y
 
 					if(biome){
-						console.log('biome.water',biome.water);
 						if(biome.water){
 							return
 						}
@@ -400,8 +306,8 @@ export const Experience = () => {
 									}
 
 									setTimeout(function(){
-										window.Callback(window.response)	
-									}, OAuth3.isMobile ? 500 : 250)
+										window.Callback(window.response)
+									}, OAuth3.isMobile ? 500 : 1000)
 								}
 							}
 						}
@@ -498,14 +404,67 @@ export const Experience = () => {
 		}else if(window.Biomes[props.name]){
 			var texture = 'glass'
 
-			var color = props.color;
+			var opacity = 0
 
-			var opacity = 1
+			var color = props.color
+
+			if(props.name == "ROAD1" || 
+				props.name == "ROAD2" ||
+				props.name == "ROAD3" || 
+				props.name == "BRIDGE"){
+				texture = "wood"
+			}else if(props.name == "SUBTROPICAL_DESERT" ||
+				props.name == "TAIGA" ||
+				props.name == "LAVA" ||
+				props.name == "TEMPERATE_DESERT"
+				){
+				texture = "dirt"
+
+			}else{
+				texture = "glass"
+
+				opacity = 0.7
+			}
+
+			// OCEAN: "#44447a",
+			// COAST: "#33335a",
+			// LAKESHORE: "#225588",
+			// LAKE: "#336699",
+			// RIVER: "#225588",
+			// MARSH: "#2f6666",
+
+			// BEACH: "#a09077",
+			// ICE: "#99ffff",
+			// LAVA: "#cc3333",
+
+			
+			// ROAD1: "#442211",
+			// ROAD2: "#553322",
+			// ROAD3: "#664433",
+			// BRIDGE: "#686860",
+
+			
+
+			// // Terrain
+			// SNOW: "#ffffff",
+			// TUNDRA: "#bbbbaa",
+			// BARE: "#888888",
+			// SCORCHED: "#555555",
+			// TAIGA: "#99aa77",
+			// SHRUBLAND: "#889977",
+			// TEMPERATE_DESERT: "#c9d29b",
+			// TEMPERATE_RAIN_FOREST: "#448855",
+			// TEMPERATE_DECIDUOUS_FOREST: "#679459",
+			// GRASSLAND: "#88aa55",
+			// SUBTROPICAL_DESERT: "#d2b98b",
+			// TROPICAL_RAIN_FOREST: "#337755",
+			// TROPICAL_SEASONAL_FOREST: "#559944"
+
 
 			return <>
 				<group rotation-x={rotation_x} position={props.position}>
 					<mesh position={[0, 0, 0.005]}>
-						<boxGeometry attach="geometry" args={[0.99, 0.99]} />
+						<boxGeometry attach="geometry" args={[1, 1]} />
 						<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
 					</mesh>
 					<Html className="clipped">
@@ -572,18 +531,16 @@ export const Experience = () => {
 
 		window.gl = gl
 
-		var canvas = gl.domElement
-
 		window.addEventListener('click', onClick);
-		window.addEventListener('contextmenu', onContextmenu);
-		canvas.addEventListener('webglcontextlost', onContextLost, false);
+		gl.domElement.addEventListener('webglcontextlost', onContextLost, false);
 
 		return () => {
 			window.removeEventListener('click', onClick);
-			window.removeEventListener('contextmenu', onContextmenu);
-			canvas.removeEventListener('webglcontextlost', onContextLost, false)
+			gl.domElement.removeEventListener('webglcontextlost', onContextLost, false)
 		}
 	})
+
+	var fog = OAuth3.isMobile ? ["#fff", 10, 20] : ["#fff", 10, 14]
 
 	return (
 		<>
@@ -591,7 +548,7 @@ export const Experience = () => {
 				<Environment files="warehouse.hdr" />
 			</Suspense>
 
-			<fog attach="fog" args={["#fff", 10, 34]} />
+			<fog attach="fog" args={fog} />
 
 			<mesh ref={cursor} rotation-x={-Math.PI / 2} position={[1.5, -0.001, 1.5]}>
 				<planeGeometry attach="geometry" args={[0.6, 0.6]} />

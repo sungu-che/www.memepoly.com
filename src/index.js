@@ -330,7 +330,7 @@ OAuth3.on("ready", function(e){
 
 						if(document.referrer.indexOf("https://www.oauth.network") > -1 || document.referrer.indexOf("http://localhost") > -1){
 							try{
-								window.setFrameloop("demand")
+								// window.setFrameloop("demand")
 
 								window.com = data
 
@@ -485,22 +485,6 @@ OAuth3.on("ready", function(e){
 	$body
 		.attr("mode", mode)
 		.attr("axis", (w > h ? "x" : "y"))
-
-	// var socket
-
-	// try{
-	// 	socket = io.connect(OAuth3.localhost ? "https://referer.glitch.me" : "https://ecdn.glitch.me",{
-	// 		extraHeaders : {
-	// 			hash : window.location.hash
-	// 		}
-	// 	});
-
-	// 	socket.on("connected", hash => {
-	// 		socket.hash = hash
-	// 	});
-	// }catch(err){
-
-	// }
 
 	if(window.flutter_inappwebview){
 		$body.attr("app", OAuth3.isMobile)
@@ -3655,7 +3639,7 @@ OAuth3.on("ready", function(e){
 
 					var score_board = []
 
-					console.log('self_player',self_player);
+					// console.log('self_player',self_player);
 
 					if(window.map.biomes){
 						if(window.map.biomes.length){
@@ -3677,7 +3661,7 @@ OAuth3.on("ready", function(e){
 								biomes.z = window.current.current.position.z
 							}
 
-							var size = OAuth3.isMobile ? 5 : 8
+							var size = OAuth3.isMobile ? 8 : 11
 
 							biomes.forEach(function(b, i){
 								if(window.players.length){
@@ -3741,31 +3725,9 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					console.log('self_player',self_player);
-					console.log('_assets',_assets)
-					// if(socket){
-					// 	if(socket.hash){
-					// 		try{
-					// 			var hash = socket.hash.replace("#","")
-
-					// 			if(cc_address.indexOf(hash) == -1){
-					// 				var canvas = blockies.create({seed: socket.hash.replace("#","0x")})
-
-					// 				_players.push({
-					// 					self : false,
-					// 					hash : hash,
-					// 					x : -1.5,
-					// 					y : 0.5,
-					// 					z : -1.5,
-					// 					emoji : canvas.toDataURL()
-					// 				})
-					// 			}
-					// 		}catch(err){
-
-					// 		}
-					// 	}
-					// }
-
+					// console.log('self_player',self_player);
+					// console.log('_assets',_assets)
+					
 					if(rows.length){
 						if(!window.map.follow[self_player.hash]){
 							window.map.follow[self_player.hash] = []
@@ -4522,13 +4484,13 @@ OAuth3.on("ready", function(e){
 						if(diff || frameloop){
 							window.setFrameloop("always")
 						}else{
-							window.setDpr(1)
+							window.setDpr(0.7)
 							try{
-								if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
-									window.setFrameloop("demand")
-								}else{
-									window.setFrameloop("always")
-								}
+								// if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
+								// 	window.setFrameloop("demand")
+								// }else{
+								// 	window.setFrameloop("always")
+								// }
 							}catch(err){
 								window.setFrameloop("always")
 							}
@@ -7000,146 +6962,12 @@ OAuth3.on("ready", function(e){
 
 			document.querySelector('#header label[for="nav"]').appendChild(icon);
 
-			window.ButtonDown
-
-			window.leftButtonDown = false;
-			window.rightButtonDown = false;
-
-			var onMineSweeper = function(e) {
-				try{
-					if(window.players){
-						if(window.players.length){
-							if(cookies.address || cookies.hash){
-								var player = window.players.self()
-
-								if(window.leftButtonDown && !window.rightButtonDown){
-									window.leftButtonDown = false
-									return
-								}
-
-								if(player.x == window.cursor.current.position.x && player.z == window.cursor.current.position.z && !open && window.rightButtonDown && window.leftButtonDown){
-									return
-								}
-
-								var url = "https://popup.link";
-
-								if(OAuth3.localhost){
-									url = "http://localhost:3001"
-								}
-
-								var body = {
-									emoji : window.emojis.self
-								}
-
-								var query = {
-									href : window.location.href,
-									hash : cookies.hash,
-									token : cookies.token,
-									x : window.cursor.current.position.x,
-									z : window.cursor.current.position.z
-								}
-
-								var _assets = window.assets;
-
-								var id = cookies.hash+"["+query.x+","+query.z+"]"
-
-								var open = window.map.open[query.x+":"+query.z]
-
-								if(window.rightButtonDown && window.leftButtonDown && open){
-									// $('player[self="true"] .tooltip .Chord').click()
-									body.cc = "chord"
-
-									_assets.push({
-										id : id,
-										hash : player.hash,
-										name : "chord",
-										value : "",
-										color: "yellow",
-										x : window.cursor.current.position.x,
-										y : -0.04,
-										z : window.cursor.current.position.z
-									})
-
-								}else if(!open){
-									// $('player[self="true"] .tooltip .Flag').click()
-
-									body.cc = "flag"
-
-									_assets.push({
-										id : id,
-										hash : player.hash,
-										name : "flag",
-										value : "",
-										color: "orange",
-										x : window.cursor.current.position.x,
-										y : -0.08,
-										z : window.cursor.current.position.z
-									})
-
-									window.rightButtonDown = false;
-								}
-
-								if(body.cc){
-									emojiChanged("🫥")
-
-									if(OAuth3.xhr){
-										OAuth3.xhr.abort()
-										delete OAuth3.xhr
-									}
-
-									OAuth3.xhr = OAuth3.fetch({
-										method : "POST",
-										query : query,
-										body : body,
-										url : url
-									}, window.Callback)
-
-									window.assets.set(_assets)	
-								}
-							}
-						}
-					}
-				}catch(err){
-
-				}
-					
-			}
-
-			$body.mousedown(function(e) {
-				if(window.ButtonDown){
-					clearTimeout(window.ButtonDown)
-					delete window.ButtonDown
-
-					window.leftButtonDown = false
-					window.rightButtonDown = false
-				}
-
-				if(e.which == 1) {
-					window.leftButtonDown = true;
-				} else if (e.which == 3) {
-					window.rightButtonDown = true;
-				}
-			});
-
-			$body.mouseup(function(e) {
-				onMineSweeper(e)
-
-				window.ButtonDown = setTimeout(function(){
-					if(e.which == 1) {
-						window.leftButtonDown = false;
-					} else if (e.which == 3) {
-						window.rightButtonDown = false;
-					}
-					delete window.ButtonDown
-				}, 10)
-			});
-
 			window.addEventListener('focus', function(){
-				window.setFrameloop("always")
+				// window.setFrameloop("always")
 			})
 
 			window.addEventListener('blur', function(){
-				window.setFrameloop("demand")
+				// window.setFrameloop("demand")
 			})
 
 			window.addEventListener('change', function(e){
@@ -7806,9 +7634,9 @@ OAuth3.on("ready", function(e){
 										$body.attr("zoom", _far.x)
 
 										if(_far.x == 10){
-											window.setDpr(0.8)
+											window.setDpr(0.7)
 										}else{
-											window.setDpr(1)
+											window.setDpr(0.7)
 										}
 
 										window.far.set(_far)
@@ -9771,14 +9599,6 @@ OAuth3.on("ready", function(e){
 						if(!window.tutorial){
 							delete window.response
 						}
-
-						// try{
-						// 	if(socket){
-						// 		socket.emit("connected", window.location.hash)
-						// 	}
-						// }catch(err){
-
-						// }
 					}, 2000)
 				}
 			}
