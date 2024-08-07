@@ -146,7 +146,7 @@ export const Experience = () => {
 				// 	}
 				// }
 
-				var fov = 1
+				var fov = 0.5
 
 				if(window.flutter_inappwebview){
 					if(cookies.address){
@@ -155,7 +155,7 @@ export const Experience = () => {
 				}
 
 				if(Object.keys(window.com).length){
-					fov = 1
+					fov = 0.5
 				}
 
 				if(window.frameloop == "always"){
@@ -184,9 +184,9 @@ export const Experience = () => {
 
 		var cookies = window.cookies
 
-		if(window.leftButtonDown && window.rightButtonDown){
-			return
-		}
+		// if(window.leftButtonDown && window.rightButtonDown){
+		// 	return
+		// }
 
 		var $body = $("body")
 
@@ -285,26 +285,13 @@ export const Experience = () => {
 						if(biome.water){
 							return
 						}
-					}
-
-						
+					}						
 
 					if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
 						if(cookies.hash && players.length){
 							if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
 
 							}else{
-								if(window.tutorial){
-									if(typeof window.tutorial.x != "undefined"){
-										if(window.tutorial.x == cursor.current.position.x && window.tutorial.z == cursor.current.position.z){
-
-										}else{
-											return
-										}
-									}
-								}
-
-
 								if(window.camera){
 									if(window.camera.hash){
 										if(window.camera.hash != player.hash){
@@ -320,15 +307,10 @@ export const Experience = () => {
 								window[player.hash].position.x = current.current.position.x = point.x
 								window[player.hash].position.z = current.current.position.z = point.z
 
-								var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
-
-								delete window.map.recommand
-								$recommand.removeAttr("emoji")
-
 								OAuth3.interval = setInterval(interval, 2000)
 
 								var $player = $('player[id="'+player.hash+'"]')
-								$player.removeClass("select_puzzle")
+								// $player.removeClass("select_puzzle")
 
 								$("body")
 									.removeClass("loading")
@@ -338,9 +320,9 @@ export const Experience = () => {
 								$("tooltip").removeClass("on");
 								$("#capture>.icon").html('')
 
-								$(".map canvas").css({top : -point.z * 0.7, left : -point.x * 0.7})
+								$(".map canvas").css({top : -point.z * 0.4, left : -point.x * 0.4})
 
-								var url = "https://popup.link"
+								var url = "https://emption.red"
 
 								if(OAuth3.localhost){
 									url = "http://localhost:3001"
@@ -356,186 +338,6 @@ export const Experience = () => {
 								if(window.location.hash){
 									cc_address = window.location.hash.replace("#","")
 								}
-
-								if(window.dialog){
-									cc_address = (window.dialog.to.indexOf("0x") == 0 ? window.dialog.to : "0x"+window.dialog.to).replace("0x","")
-								}
-
-								if(window.map.open){
-									var open = window.map.open[point.x+":"+point.z]
-									var $capture = $("#capture")
-
-									$("#capture .xyz .x").html(Math.floor(point.x))
-									$("#capture .xyz .z").html(Math.floor(point.z))
-									
-
-									var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
-
-									if(open){
-										$capture.addClass("on")
-										$("#capture>.icon").html(blockies.create({seed: (open.hash.indexOf("0x") == 0 ? open.hash : "0x"+open.hash)}))
-
-										var scoreboard = window.map.score[open.hash]
-
-										$("#capture>.icon").append('<div class="address">\
-											<span>'+open.hash+'</span>\
-											<span dir="rtl">'+open.hash+'</span>\
-											<rank>'+scoreboard.rank+'</rank>\
-											<score>'+scoreboard.score+'</score>\
-										</div>')
-
-										if(window.map.puzzle[point.x+":"+point.z]){
-											$recommand.html("")
-										}else{
-											if(window.map.puzzle){
-												var recommnads = []
-
-												for(var _x = -1; _x < 2; _x++){
-													for(var _z = -1; _z < 2; _z++){
-														if(point.x == (point.x+_x) && point.z == (point.z+_z)){
-															continue;
-														}
-
-														var puzzle = window.map.puzzle[(point.x+_x)+':'+(point.z+_z)]
-
-														recommnads.push(puzzle);
-													}
-												}
-
-												if(recommnads.length){
-													var li = ""
-
-													for(var r = 0; r < recommnads.length; r++){
-														var recommnad = recommnads[r]
-
-														if(recommnad){
-															var emoji = recommnad.value
-
-															if(window.typeof_item(emoji)){
-																if(window.map.item[emoji]){
-																	li = '<a class="emoji color">'+emoji+'</a>'
-																}
-															}else{
-																li = '<a class="emoji color">'+emoji+'</a>'
-															}
-														}
-													}
-
-													$recommand.html(li)
-												}else{
-													$recommand.html("")
-												}
-											}
-										}
-									}else{
-										$recommand.html("")
-										$capture.removeClass("on")
-										
-										var scoreboard = window.map.score[cc_address]
-
-										if(!scoreboard){
-											scoreboard = window.map.score["0x"+cc_address]
-										}
-
-										$("#capture>.icon")
-											.html(blockies.create({seed: "0x"+cc_address}))
-											.append('<div class="address">\
-												<span>'+cc_address+'</span>\
-												<span dir="rtl">'+cc_address+'</span>\
-												<rank>'+(scoreboard ? scoreboard.rank : "0")+'</rank>\
-												<score>'+(scoreboard ? scoreboard.score : "0")+'</score>\
-											</div>')
-										
-
-										if($capture.hasClass("open_rank")){
-											$capture.click()
-										}
-									}
-
-									try{
-										var $tooltip = $player.find("tooltip ul");
-											$tooltip.removeClass("open")
-
-										var tooltip_body = ""
-
-										if(player.hash.toLowerCase() == cookies.hash || player.hash.toLowerCase() == cookies.address){
-											var isPlayground = player.emoji.indexOf("data:image") > -1
-
-											if(isPlayground){
-												if(player.hash.toLowerCase() == cc_address){
-													tooltip_body = '<li>\
-														<a class="hashType Dialog '+(cookies.email ? 'verify' : '')+'">Dialog</a>\
-													</li>\
-													<li>\
-														<a class="hashType Flow '+(cookies.email ? 'verify' : '')+'">Flow</a>\
-													</li>\
-													<li>\
-														<a class="hashType Withdrawal '+(cookies.email ? 'verify' : '')+'">Withdrawal</a>\
-													</li>'
-												}else{
-													tooltip_body = '<li>\
-														<a class="hashType Portal">Portal</a>\
-													</li>\
-													<li></li>\
-													<li></li>'
-												}
-												
-											}else if(open){
-												if(open.hash == player.hash.toLowerCase()){
-													$tooltip.addClass("open","true")
-												}
-
-												// Random
-
-												tooltip_body = '<li>\
-													<a class="hashType Portal">Portal</a>\
-												</li>\
-												<li>\
-													<a class="hashType Chord">Build</a>\
-												</li>\
-												<li>\
-													<a class="hashType Mine">Mine</a>\
-												</li>'
-											}else{
-												tooltip_body = '<li>\
-													<a class="hashType Flag">Flag</a>\
-												</li>\
-												<li>\
-													<a class="hashType Chord">Build</a>\
-												</li>\
-												<li>\
-													<a class="hashType Open">Open</a>\
-												</li>'
-											}
-												
-										}else{
-											// Random
-											tooltip_body = '<li>\
-												<a class="hashType Dialog">Swap</a>\
-											</li>\
-											<li>\
-												<a class="hashType Follow">Follow</a>\
-											</li>\
-											<li>\
-												<a class="hashType Report">Send</a>\
-											</li>'
-										}
-
-										var before_body = $tooltip.html()
-											before_body = before_body.replace(/\t/gi,"").trim()
-
-										var after_body = tooltip_body.replace(/\t/gi,"").trim()
-
-										if(before_body != after_body){
-											$tooltip.html(tooltip_body)
-										}
-									}catch(err){
-										console.log("Err",err);
-									}
-								}else{
-									$('.deck .emojis .emoji_asset[method="recommand"]').html("")
-								}
-
 
 								var edge = (grid.edge / 2) - 1
 
@@ -592,88 +394,14 @@ export const Experience = () => {
 										window.Tutorial(1, 1)
 									}
 								}else{
-									var query = {
-										href : window.location.href,
-										hash : cookies.hash,
-										token : cookies.token,
-										x : point.x,
-										y : point.y,
-										z : point.z
-									}
-
-									if(window.dialog){
-										query.href = window.location.origin + (window.dialog.to.indexOf("0x") == 0 ? window.dialog.to : "0x"+window.dialog.to).replace("0x","#")
-									}
-
-									// if(Object.keys(window.com).length){
-									// 	var _from = (cookies.address ? cookies.address : "0x"+cookies.hash) * 1
-									// 	var _to = window.com.address * 1
-									// 	var _address
-
-									// 	if(_from > _to){
-									// 		_address = ethers.hashMessage(_from.toString() + _to.toString())
-									// 		_address = ethers.computeAddress(_address).toLowerCase()
-									// 	}else{
-									// 		_address = ethers.hashMessage(_to.toString() + _from.toString())
-									// 		_address = ethers.computeAddress(_address).toLowerCase()
-									// 	}
-
-									// 	query.to = _address
-									// 	query.href = window.location.origin + _address.replace("0x","#")
-									// }
-
-									var _to = ""
-
-									if($body.attr("bingo") == "dialog"){
-										if(window.dialog){
-											_to = window.dialog.to
-											if(window.cookies.to){
-												_to = window.cookies.to
-											}
-
-											_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1									
-
-										}else if(Object.keys(window.com).length){
-											_to = window.com.address * 1
-										}else if(window.location.hash){
-											_to = window.location.hash.replace("#","0x") * 1
-										}
-									}
-
-									if(_to){
-										var _from = (cookies.address ? cookies.address : "0x"+cookies.hash) * 1
-
-										var _address
-
-										if(_from > _to){
-											_address = ethers.hashMessage(_from.toString() + _to.toString())
-											_address = ethers.computeAddress(_address).toLowerCase()
-										}else{
-											_address = ethers.hashMessage(_to.toString() + _from.toString())
-											_address = ethers.computeAddress(_address).toLowerCase()
-										}
-
-										query.href = window.location.origin +"/"+ _address.replace("0x","#")
-										query.to = _address
-									}
-
-									if(!window.Polling){
-										return
-									}
-
 									if(OAuth3.xhr){
 										OAuth3.xhr.abort()
 										delete OAuth3.xhr
 									}
 
-									OAuth3.xhr = OAuth3.fetch({
-										method : "POST",
-										url : url,
-										body : {
-											emoji : window.emojis.self
-										},
-										query : query
-									}, window.Callback);
+									setTimeout(function(){
+										window.Callback(window.response)	
+									}, OAuth3.isMobile ? 500 : 250)
 								}
 							}
 						}
@@ -863,7 +591,7 @@ export const Experience = () => {
 				<Environment files="warehouse.hdr" />
 			</Suspense>
 
-			<fog attach="fog" args={["#333", 4, 14]} />
+			<fog attach="fog" args={["#fff", 10, 34]} />
 
 			<mesh ref={cursor} rotation-x={-Math.PI / 2} position={[1.5, -0.001, 1.5]}>
 				<planeGeometry attach="geometry" args={[0.6, 0.6]} />

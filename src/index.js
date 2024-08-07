@@ -78,7 +78,7 @@ function listToMatrix(list, elementsPerSubArray) {
 	matrix.forEach(function(list, k){
 		list.forEach(function(item, i){
 			item.x = index + 0.5
-			item.y = item.elevation * 3
+			item.y = item.elevation * 5
 			item.z = (i - area) + 0.5
 
 			window.map.biomes[item.x+":"+item.z] = item
@@ -486,21 +486,21 @@ OAuth3.on("ready", function(e){
 		.attr("mode", mode)
 		.attr("axis", (w > h ? "x" : "y"))
 
-	var socket
+	// var socket
 
-	try{
-		socket = io.connect(OAuth3.localhost ? "https://referer.glitch.me" : "https://ecdn.glitch.me",{
-			extraHeaders : {
-				hash : window.location.hash
-			}
-		});
+	// try{
+	// 	socket = io.connect(OAuth3.localhost ? "https://referer.glitch.me" : "https://ecdn.glitch.me",{
+	// 		extraHeaders : {
+	// 			hash : window.location.hash
+	// 		}
+	// 	});
 
-		socket.on("connected", hash => {
-			socket.hash = hash
-		});
-	}catch(err){
+	// 	socket.on("connected", hash => {
+	// 		socket.hash = hash
+	// 	});
+	// }catch(err){
 
-	}
+	// }
 
 	if(window.flutter_inappwebview){
 		$body.attr("app", OAuth3.isMobile)
@@ -2999,14 +2999,28 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					console.log('window.players.length',window.players.length);
-
-
 					if(rows.length){
 						var thread
 
 						for(var r = 0; r < rows.length; r++){
 							var row = rows[r];
+
+							var hashtag = row.Cc.match(/\B#[A-Za-z0-9\-\.\_]+\b/g)
+
+							var biome 
+
+							if(hashtag.length){
+								if(window.Biomes[hashtag[0]]){
+									var position = open_row.Cc.split(" #open")[0]
+
+									var asset = JSON.parse("["+position+"]")
+
+									var _x = asset[0]
+									var _z = asset[1]
+
+									biome = window.map.biomes[_x+":"+_z]
+								}
+							}
 
 							if(row.Cc.indexOf("#follow") > -1){
 								if(!window.map.follow[row.From]){
@@ -3651,8 +3665,6 @@ OAuth3.on("ready", function(e){
 
 							var biomes = listToMatrix(window.map.biomes, 100)
 
-							console.log('biomes',biomes)
-
 							if(!window.players.length){
 								if(window.current){
 									if(window.current.current.position){
@@ -3665,16 +3677,19 @@ OAuth3.on("ready", function(e){
 								biomes.z = window.current.current.position.z
 							}
 
+							var size = OAuth3.isMobile ? 5 : 8
+
 							biomes.forEach(function(b, i){
 								if(window.players.length){
-									var _id = ethers.hashMessage(_hash+i)
-										_id = ethers.computeAddress(_id).toLowerCase()
+									// var _id = ethers.hashMessage(_hash+i)
+									// 	_id = ethers.computeAddress(_id).toLowerCase()
+									var _id = i
 
 									var color = window.Biomes[b.biome]
 									
 									if(
-										(biomes.x - 10 < b.x && biomes.x + 10 > b.x) &&
-										(biomes.z - 10 < b.z && biomes.z + 10 > b.z)
+										(biomes.x - size < b.x && biomes.x + size > b.x) &&
+										(biomes.z - size < b.z && biomes.z + size > b.z)
 									){
 										var asset = {
 											id : _id,
@@ -3728,28 +3743,28 @@ OAuth3.on("ready", function(e){
 
 					console.log('self_player',self_player);
 					console.log('_assets',_assets)
-					if(socket){
-						if(socket.hash){
-							try{
-								var hash = socket.hash.replace("#","")
+					// if(socket){
+					// 	if(socket.hash){
+					// 		try{
+					// 			var hash = socket.hash.replace("#","")
 
-								if(cc_address.indexOf(hash) == -1){
-									var canvas = blockies.create({seed: socket.hash.replace("#","0x")})
+					// 			if(cc_address.indexOf(hash) == -1){
+					// 				var canvas = blockies.create({seed: socket.hash.replace("#","0x")})
 
-									_players.push({
-										self : false,
-										hash : hash,
-										x : -1.5,
-										y : 0.5,
-										z : -1.5,
-										emoji : canvas.toDataURL()
-									})
-								}
-							}catch(err){
+					// 				_players.push({
+					// 					self : false,
+					// 					hash : hash,
+					// 					x : -1.5,
+					// 					y : 0.5,
+					// 					z : -1.5,
+					// 					emoji : canvas.toDataURL()
+					// 				})
+					// 			}
+					// 		}catch(err){
 
-							}
-						}
-					}
+					// 		}
+					// 	}
+					// }
 
 					if(rows.length){
 						if(!window.map.follow[self_player.hash]){
@@ -3872,467 +3887,6 @@ OAuth3.on("ready", function(e){
 										z : player.z,
 										emoji : player.emoji
 									}
-
-
-									if(cookies.address == row.From || cookies.hash == row.From){
-
-									}else{
-										
-									}
-
-									try{
-										var connection = peers[peerId]
-
-										if(connection){
-											connecting.push(peerId)
-										}
-										
-										if(cookies.address == row.From || cookies.hash == row.From){
-											// 시그널 값 추가
-										}else if(!connection){
-											// console.log("진입",peers);
-											connection = new RTCPeerConnection({ iceServers: iceServers })
-											connection.hash = peerId
-
-											if(peerId.indexOf("0x") == 0){
-												// 인증 사용자
-												connection.index = peerId * 1
-											}else{
-												// 미인증 사용자
-												connection.index = ("0x"+peerId) * 1
-											}
-
-											var hash = ""
-											var index = ""
-
-											if(cookies.address){
-												// 인증 사용자
-												hash = cookies.address
-												index = cookies.address * 1
-											}else{
-												// 미인증 사용자
-												hash = cookies.hash
-												index = ("0x"+cookies.hash) * 1
-											}
-
-											var channel = connection.createDataChannel('data');
-
-											connection.channel = channel
-
-											channel.connection = connection
-
-											var onopen = function(event){
-												// console.log('event', event);
-											}
-
-											var onmessage = async function(event){
-												try{
-													var data = JSON.parse(event.data)
-
-													var peerId = event.target.connection.hash
-
-													try{
-														if(data.localstream){
-															event.target.connection.localstream = data.localstream
-														}
-													}catch(err){
-
-													}
-
-
-													if(typeof data.signal != "undefined"){
-														if(data.signal){
-
-														}else{
-															var connected
-															try{
-																connected = peers[peerId][data.method].track
-															}catch(err){
-
-															}
-
-															if(connected){
-																setStream(event.target.connection, data.method)	
-															}
-														}
-
-														if(Object.keys(localstream).length == 0){
-															delete peers[peerId].live
-															delete peers[peerId].method
-															delete peers[peerId].reverse
-
-															peers[peerId].localstream = {}
-
-															delete peers[peerId]['getUserMedia']
-															delete peers[peerId]['getDisplayMedia']
-
-															$('[id="'+peerId+'"][alt="player"] stream').remove()
-														}
-													}else if(event.target.connection && Object.keys(localstream).length){
-														var peerIndex
-
-														if(peerId.indexOf("0x") == 0){
-															// 인증 사용자
-															peerIndex = peerId * 1
-														}else{
-															// 미인증 사용자
-															peerIndex = ("0x"+peerId) * 1
-														}
-
-														var hash = ""
-														var index = ""
-
-														if(cookies.address){
-															// 인증 사용자
-															hash = cookies.address
-															index = cookies.address * 1
-														}else{
-															// 미인증 사용자
-															hash = cookies.hash
-															index = ("0x"+cookies.hash) * 1
-														}
-														
-														var reverse = data.reverse ? data.reverse : ""
-														var _method = reverse ? reverse : data.method
-
-														// // 
-														var peerstream = data.localstream
-
-														var _localstream = localstream[_method]
-
-
-														var peer_enabled = ""
-
-														if(typeof peerstream[_method] != "undefined"){
-															peer_enabled = peerstream[_method].enabled
-														}
-
-														var peer_enabled = ""
-														var _peer_enabled = ""
-
-														var method_ = ""
-
-														if(_method == "getDisplayMedia"){
-															method_ = "getUserMedia"
-														}else if(_method == "getUserMedia"){
-															method_ = "getDisplayMedia"
-														}
-
-														if(peerstream){
-															if(peerstream[_method]){
-																peer_enabled = peerstream[_method].enabled
-															}
-															if(peerstream[method_]){
-																_peer_enabled = peerstream[method_].enabled
-															}
-														}
-
-
-														// console.log("onmessage data",data);
-
-														var connected_
-														try{
-															connected_ = peers[peerId][method_].track
-														}catch(err){
-
-														}
-
-														// var skip
-
-														// console.log("peerstream",peerstream);
-
-														// console.log("method_",method_);
-														// console.log("connected_",connected_);
-
-														// console.log("_peer_enabled",_peer_enabled);
-
-														var _local_method = ""
-														if(event.target.connection[_method]){
-															_local_method = event.target.connection[_method].method
-														}
-
-														if(_peer_enabled && _local_method && _local_method == _peer_enabled){
-															reverse = true
-														}else if((!connected_ && !_localstream && event.target.connection[method_])){
-															reverse = true
-														}
-
-														if(reverse){
-															// console.log("리버스 진입");
-
-															if(_method == "getDisplayMedia"){
-																_method = "getUserMedia"
-															}else if(_method == "getUserMedia"){
-																_method = "getDisplayMedia"
-															}
-
-															reverse = _method
-														}else{
-															if(Object.keys(localstream).length == Object.keys(data.localstream).length){
-																delete peers[peerId].method
-																delete peers[peerId].reverse
-															}
-														}
-
-														var stream_connection = event.target.connection[_method]
-
-														if(!stream_connection && data.reverse){
-															stream_connection = event.target.connection[data.reverse]
-														}
-
-														if(!stream_connection){
-															stream_connection = {}
-														}
-
-														if(reverse && !peers[peerId].reverse){
-															stream_connection.signal = true
-
-															peers[peerId].live = peers[peerId].method = peers[peerId].reverse = reverse
-														}
-
-														var created = stream_connection.method
-
-														if(peers[peerId].reverse){
-															// console.log("signal 리버스 진입")
-
-															reverse = peers[peerId].live = peers[peerId].method = peers[peerId].reverse
-														}
-
-														// console.log("stream_connection",stream_connection);
-														// console.log("created ,_method",created ,_method);
-
-														if(peers[peerId].reverse || (!reverse && created == _method && Object.keys(stream_connection).length)){
-															if(typeof data.tab != "undefined"){
-																peers[peerId].tab = true
-															}
-															
-															if(typeof data.video != "undefined"){
-																peers[peerId].video = true
-															}
-
-															if(typeof data.audio != "undefined"){
-																peers[peerId].audio = true
-															}
-
-															setTimeout(async function(event, stream_connection, data){
-																clearTimeout(stream_connection.timeout)
-
-																if(data.candidate && !event.target.connection.signal && !stream_connection.iceCandidate){
-																	stream_connection.iceCandidate = data.candidate
-																	peers[peerId].addIceCandidate(new RTCIceCandidate(data.candidate))
-
-																	stream_connection.timeout = setTimeout(function(){
-																		delete event.target.connection.signal
-																	},10000)
-
-																}else if(data.type == "offer"){
-																	var desc = new RTCSessionDescription(data)
-																	var stuff = stream_connection.setRemoteDescription(desc)
-
-																	var answer = stream_connection.createAnswer()
-																	stream_connection.setLocalDescription(answer)
-
-																}else if(data.type == "answer"){
-																	var desc = new RTCSessionDescription(data)
-																	var stuff = stream_connection.setRemoteDescription(desc)
-
-																}else{
-																	// console.log("stream_connection.signal",stream_connection.signal);
-																	// console.log("_method",_method);
-
-
-																	var json = {
-																		method : data.method
-																	}
-
-																	if(!OAuth3.isMobile){
-																		json.tab = true
-																	}
-
-																	if(hasMicrophone){
-																		json.audio = true
-																	}
-
-																	if(hasWebcam){
-																		json.video = true
-																	}
-
-																	if(reverse){
-																		json.reverse = reverse
-																	}
-
-
-																	json.localstream = localStream(peerId)
-
-																	if(typeof stream_connection.signal == "undefined"){
-																		stream_connection.signal = true
-
-																		event.target.connection.channel.send(JSON.stringify(json))
-
-																		// console.log("진입체크");
-
-																	}else{
-																		if(stream_connection.signal){
-																			stream_connection.signal = false
-
-																			event.target.connection.channel.send(JSON.stringify(json))
-
-																			if(reverse){
-																				if(_method == "getDisplayMedia"){
-																					peers[peerId].method = "getDisplayMedia"
-																					peers[peerId].reverse = "getDisplayMedia"
-																					peers[peerId].live = "getDisplayMedia"
-																				}else if(_method == "getUserMedia"){
-																					peers[peerId].method = "getUserMedia"
-																					peers[peerId].reverse = "getUserMedia"
-																					peers[peerId].live = "getUserMedia"
-																				}
-																			}
-
-																			// console.log("시그널 리버스");
-
-																			
-																			// console.log('peers[peerId].method',peers[peerId].method);
-																			// console.log('peers[peerId].reverse',peers[peerId].reverse);
-
-																		}else if(stream_connection.signal != null){
-																			if(peerIndex < index){
-																				stream_connection.signal = null
-
-																				// console.log("완료");
-
-																				var _description = stream_connection.createOffer()
-																				stream_connection.setLocalDescription(_description)
-																			}else{
-																				event.target.connection.channel.send(JSON.stringify(json))
-
-																				// console.log("완료");
-																			}
-																		}
-																	}
-
-																	stream_connection.timeout = setTimeout(function(){
-																		delete event.target.connection.signal
-																	},10000)
-																}
-															}, Math.random() * 400, event, stream_connection, data)
-														}else{
-															var live = false
-
-															try{
-																// console.log("peers[peerId].live",peers[peerId].live);
-
-																var live_method = ""
-
-																if(peers[peerId].live && !peers[peerId].reverse){
-																	if(peers[peerId].live == "getDisplayMedia"){
-																		live_method = "getUserMedia"
-																	}else if(peers[peerId].live == "getUserMedia"){
-																		live_method = "getDisplayMedia"
-																	}
-																}
-
-																if(live_method){
-																	var _live_method = event.target.connection[live_method].method
-
-																	// console.log("live_method",live_method);
-
-																	if(typeof _live_method == "undefined" && event.target.connection[live_method].track){
-																		live = true
-																	}
-																}else{
-																	if(event.target.connection[_method].track){
-																		live = true
-																	}
-																}
-															}catch(err){
-																if(!localstream[_method]){
-																	live = true
-																}
-															}
-
-															// console.log("addStream _method",_method)
-															// console.log("!live",!live);
-															
-															if(!live){
-																addStream(peerId, _method)
-															}
-														}
-													}
-
-													if(Object.keys(localstream).length != Object.keys(data.localstream).length){
-														delete peers[peerId].method
-														delete peers[peerId].reverse
-													}
-												}catch(err){
-													// console.log("onmessage err",err);
-												}
-											}
-
-											channel.onopen = onopen
-											channel.onmessage = onmessage
-
-											connection.ondatachannel = (event) => {
-												// console.log("ondatachannel event",event)
-
-												var connection = event.target
-
-												channel.onopen = onopen
-												channel.onmessage = onmessage
-												connection.channel = event.channel
-
-												var json = {}
-
-												if(!OAuth3.isMobile){
-													json.tab = true
-												}
-
-												if(hasMicrophone){
-													json.audio = true
-												}
-
-												if(hasWebcam){
-													json.video = true
-												}
-
-												json.localstream = localStream(peerId)
-
-												if(connection['getDisplayMedia']){
-													// json.init  = true
-													json.method = 'getDisplayMedia'
-													connection.channel.send(JSON.stringify(json))
-												}
-
-												if(connection['getUserMedia']){
-													// json.init  = true
-													json.method = 'getUserMedia'
-													connection.channel.send(JSON.stringify(json))
-												}
-											}
-
-
-											connection.onicecandidate = (event) => {
-												var connection = event.target
-
-												if(connection.index < index){
-													connection.pendingOfferDescription = connection.localDescription
-													connection.pendingOfferDescription.hash = connection.hash
-												}else{
-													connection.pendingAnswerDescription = connection.localDescription
-													connection.pendingAnswerDescription.hash = connection.hash
-												}
-											}
-
-											if(connection.index < index){
-												var _description = await connection.createOffer()
-												connection.setLocalDescription(_description)
-											}
-											
-											peers[peerId] = connection
-										}
-									}catch(err){
-										// console.log("Err",err);
-									}
 								}
 							}else if(row.Cc.indexOf("#thread") > -1){
 								_threads.push(row)
@@ -4349,65 +3903,6 @@ OAuth3.on("ready", function(e){
 									$('.emojis .emoji_asset[emoji="'+row.Subject+'"]').addClass("on")
 								}else{
 									$('.emojis .emoji_asset').removeClass("on")
-								}
-							}else if(row.Cc.indexOf("#description") > -1){
-								var connection = peers[peerId]
-
-								if(connection){
-									if(cookies.address == row.From || cookies.hash == row.From){
-										if(connection.pendingOfferDescription){
-											connection.pendingOfferDescription.flag = row.Flag
-											
-										}else if(connection.pendingAnswerDescription){
-											connection.pendingAnswerDescription.flag = row.Flag
-
-										}
-									}else if(ethers.isAddress(peerId)){
-										var date = new Date(row.Date).getTime()
-
-										var remote_description = ""
-										try{
-											remote_description = JSON.parse(row.Subject)
-										}catch(err){
-
-										}
-
-										try{
-											if(connection.connectionState == "connected" && connection.signalingState == "stable"){
-
-											}else{
-												if(remote_description.type && typeof sessionStorage[row.Id] == "undefined"){
-													if(remote_description.type == "offer" && row.To == player_hash){
-														sessionStorage[row.Id] = true
-
-														connection.hash = peerId
-
-														var desc = new RTCSessionDescription(remote_description)
-														var stuff = connection.setRemoteDescription(desc)
-
-														var answer = await connection.createAnswer()
-														await connection.setLocalDescription(answer)
-
-													}else if(remote_description.type == "answer" && connection.pendingOfferDescription){
-														if(connection.pendingOfferDescription.hash == peerId){
-															// console.log("remote_description",remote_description);
-															// console.log("typeof",typeof sessionStorage[row.Id] == "undefined");
-															sessionStorage[row.Id] = true
-
-															var desc = new RTCSessionDescription(remote_description)
-															var stuff = connection.setRemoteDescription(desc)
-
-															delete connection.pendingOfferDescription
-														}
-													}
-												}
-											}
-
-										}catch(err){
-											// connection = undefined
-											// console.log("Err",err);
-										}
-									}
 								}
 							}else if(row.Cc.indexOf("#link") > -1){
 								var position = row.Cc.split(" #link")[0]
@@ -9656,48 +9151,6 @@ OAuth3.on("ready", function(e){
 									var $player = $('player[id="'+player.hash+'"][alt="player"]')
 									var $tooltip = $player.find("tooltip ul");
 										$tooltip.removeClass("open")
-
-									if(player.hash == cookies.hash || player.hash == cookies.address){
-										if(open){
-											if(open.hash == player.hash){
-												$tooltip.addClass("open","true")
-											}
-
-											// Random
-
-											$tooltip.html('<li>\
-												<a class="hashType Portal">Portal</a>\
-											</li>\
-											<li>\
-												<a class="hashType Chord">Build</a>\
-											</li>\
-											<li>\
-												<a class="hashType Mine">Mine</a>\
-											</li>')
-										}else{
-											$tooltip.html('<li>\
-												<a class="hashType Flag">Flag</a>\
-											</li>\
-											<li>\
-												<a class="hashType Chord">Build</a>\
-											</li>\
-											<li>\
-												<a class="hashType Open">Open</a>\
-											</li>')
-										}
-											
-									}else{
-										// Random
-										$tooltip.html('<li>\
-											<a class="hashType Portal">Portal</a>\
-										</li>\
-										<li>\
-											<a class="hashType Follow">Follow</a>\
-										</li>\
-										<li>\
-											<a class="hashType Report">Report</a>\
-										</li>')
-									}
 								}
 
 
@@ -9741,6 +9194,13 @@ OAuth3.on("ready", function(e){
 								$go.removeAttr("href")
 								$go.removeAttr("way")
 							}
+
+							if(OAuth3.xhr){
+								OAuth3.xhr.abort()
+								delete OAuth3.xhr
+							}
+
+							window.Callback(window.response)
 						}
 					}
 				}
@@ -10312,13 +9772,13 @@ OAuth3.on("ready", function(e){
 							delete window.response
 						}
 
-						try{
-							if(socket){
-								socket.emit("connected", window.location.hash)
-							}
-						}catch(err){
+						// try{
+						// 	if(socket){
+						// 		socket.emit("connected", window.location.hash)
+						// 	}
+						// }catch(err){
 
-						}
+						// }
 					}, 2000)
 				}
 			}
