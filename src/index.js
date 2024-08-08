@@ -4263,7 +4263,7 @@ OAuth3.on("ready", function(e){
 											From : address,
 											To : cc_address,
 											Cc : b.x+','+b.z+" #"+b.biome+" "+cc_address+" @"+emoji,
-											Subject : b.biome,
+											Subject : "",
 											Flag : "",
 											Date : _date
 										}
