@@ -139,7 +139,7 @@ export function Player({
 		if(window.typeof_emoji(props.emoji)){
 			type = "image"
 			hex = props.emoji.codePointAt(0).toString(16)
-			// srcset = `https://fonts.gstatic.com/s/e/notoemoji/latest/${hex}/512.webp`
+			
 			src = `/src/fonts/emoji/animated/${hex}.webp`
 		}
 	}

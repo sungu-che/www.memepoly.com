@@ -302,7 +302,7 @@ export const Experience = () => {
 								}else{
 									setTimeout(function(){
 										window.Callback(window.response)
-									}, OAuth3.isMobile ? 500 : 1000)
+									}, OAuth3.isMobile ? 500 : 300)
 								}
 							}
 						}
@@ -455,18 +455,24 @@ export const Experience = () => {
 			// TROPICAL_RAIN_FOREST: "#337755",
 			// TROPICAL_SEASONAL_FOREST: "#559944"
 
-
-			return <>
-				<group rotation-x={rotation_x} position={props.position}>
-					<mesh position={[0, 0, 0.005]} onClick={onClick}>
-						<boxGeometry attach="geometry" args={[1, 1]} />
-						<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
-					</mesh>
-					<Html className="clipped">
-						<div className="emoji color" x={props.position.x} z={props.position.z}>{props.value}</div>
-					</Html>
-				</group>
-			</>
+			if(color){
+				return <>
+					<group rotation-x={rotation_x} position={props.position}>
+						<mesh position={[0, 0, 0.005]} onClick={onClick}>
+							<boxGeometry attach="geometry" args={[1, 1]} />
+							<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
+						</mesh>
+					</group>
+				</>
+			}else{
+				return <>
+					<group position={props.position}>
+						<Html className="clipped">
+							<div className="emoji color" x={props.position.x} z={props.position.z} color={window.Biomes[props.name]}></div>
+						</Html>
+					</group>
+				</>
+			}
 		}else{
 			return <>
 				<group position={props.position}>
@@ -535,7 +541,7 @@ export const Experience = () => {
 		}
 	})
 
-	var fog = OAuth3.isMobile ? ["#fff", 10, 20] : ["#fff", 10, 14]
+	var fog = OAuth3.isMobile ? ["#fff", 10, 20] : ["#fff", 10, 20]
 
 	return (
 		<>

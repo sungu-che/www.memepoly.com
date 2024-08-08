@@ -1,3 +1,5 @@
+var timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000
+
 if(!OAuth3.isMobile){
 	document.querySelector(".react .three").className = "three pc";
 }
@@ -56,7 +58,7 @@ window.Subscribe = function(){
 	});
 }
 
-function listToMatrix(list, elementsPerSubArray) {
+function listToBiomes(list, elementsPerSubArray) {
 	var matrix = [], i, k;
 
 	var feature
@@ -275,9 +277,7 @@ OAuth3.on("ready", function(e){
 			lang = "en";
 		}
 	}else{
-		var timezoneOffset = new Date().toString();
-
-		if(timezoneOffset.getTimezoneOffset() == -540){
+		if(timezoneOffset == -32400000){
 			lang = "ko";
 		}else{
 			lang = "en";
@@ -2955,6 +2955,7 @@ OAuth3.on("ready", function(e){
 					window.map.follow = {}
 					window.map.report = {}
 					window.map.reward = {}
+					window.map.create = []
 
 					var seed = cc_address+""
 
@@ -3088,7 +3089,6 @@ OAuth3.on("ready", function(e){
 					if(window.tutorial){
 						clearInterval(window.Polling)
 
-						var timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000
 						var _date = new Date(new Date() - timezoneOffset) // 10s ago
 							_date = _date.toISOString()
 								.replace(/T/, ' ')
@@ -3641,91 +3641,81 @@ OAuth3.on("ready", function(e){
 
 					// console.log('self_player',self_player);
 
-					if(window.map.biomes){
-						if(window.map.biomes.length){
-							var _hash = window.location.hash ? window.location.hash : window.location.href
-								_hash = ethers.hashMessage(_hash)
-								_hash = ethers.computeAddress(_hash).toLowerCase()
+					var biomes = listToBiomes(window.map.biomes, 100)
 
-							var biomes = listToMatrix(window.map.biomes, 100)
+					if(!window.players.length){
+						if(window.current){
+							if(window.current.current.position){
+								window.current.current.position.x = self_player.x = biomes.x
+								window.current.current.position.z = self_player.z = biomes.z
 
-							if(!window.players.length){
-								if(window.current){
-									if(window.current.current.position){
-										window.current.current.position.x = self_player.x = biomes.x
-										window.current.current.position.z = self_player.z = biomes.z
+								$(".map canvas").css({top : -((biomes.z * 1.5) + 70) , left : -((biomes.x * 1.5) + 15 )})
+							}
+						}
+					}else{
+						biomes.x = window.current.current.position.x
+						biomes.z = window.current.current.position.z
+					}
 
-										$(".map canvas").css({top : -((biomes.z * 1.5) + 70) , left : -((biomes.x * 1.5) + 15 )})
-									}
+					var size = OAuth3.isMobile ? 8 : 11
+
+					biomes.forEach(function(b, i){
+						if(window.players.length){
+							var _id = crc32(cc_address+i).toString(32).toUpperCase()
+
+							var color = window.Biomes[b.biome]
+							
+							if(
+								(biomes.x - size < b.x && biomes.x + size > b.x) &&
+								(biomes.z - size < b.z && biomes.z + size > b.z)
+							){
+								var asset = {
+									id : _id,
+									hash : cc_address,
+									name : b.biome,
+									value : color,
+									color: color,
+									x : b.x,
+									y : b.y - 0.5,
+									z : b.z
 								}
-							}else{
-								biomes.x = window.current.current.position.x
-								biomes.z = window.current.current.position.z
+
+								_assets.push(asset)
 							}
 
-							var size = OAuth3.isMobile ? 8 : 11
+							// OCEAN: #44447a,
+							// COAST: #33335a,
+							// LAKESHORE: #225588,
+							// LAKE: #336699,
+							// RIVER: #225588,
+							// MARSH: #2f6666,
+							// ICE: #99ffff,
+							// BEACH: #a09077,
+							// ROAD1: #442211,
+							// ROAD2: #553322,
+							// ROAD3: #664433,
+							// BRIDGE: #686860,
+							// LAVA: #cc3333,
 
-							biomes.forEach(function(b, i){
-								if(window.players.length){
-									// var _id = ethers.hashMessage(_hash+i)
-									// 	_id = ethers.computeAddress(_id).toLowerCase()
-									var _id = i
-
-									var color = window.Biomes[b.biome]
-									
-									if(
-										(biomes.x - size < b.x && biomes.x + size > b.x) &&
-										(biomes.z - size < b.z && biomes.z + size > b.z)
-									){
-										var asset = {
-											id : _id,
-											hash : _hash,
-											name : b.biome,
-											value : color,
-											color: color,
-											x : b.x,
-											y : b.y - 0.5,
-											z : b.z
-										}
-
-										_assets.push(asset)
-									}
-
-									// OCEAN: #44447a,
-									// COAST: #33335a,
-									// LAKESHORE: #225588,
-									// LAKE: #336699,
-									// RIVER: #225588,
-									// MARSH: #2f6666,
-									// ICE: #99ffff,
-									// BEACH: #a09077,
-									// ROAD1: #442211,
-									// ROAD2: #553322,
-									// ROAD3: #664433,
-									// BRIDGE: #686860,
-									// LAVA: #cc3333,
-
-									// // Terrain
-									// SNOW: #ffffff,
-									// TUNDRA: #bbbbaa,
-									// BARE: #888888,
-									// SCORCHED: #555555,
-									// TAIGA: #99aa77,
-									// SHRUBLAND: #889977,
-									// TEMPERATE_DESERT: #c9d29b,
-									// TEMPERATE_RAIN_FOREST: #448855,
-									// TEMPERATE_DECIDUOUS_FOREST: #679459,
-									// GRASSLAND: #88aa55,
-									// SUBTROPICAL_DESERT: #d2b98b,
-									// TROPICAL_RAIN_FOREST: #337755,
-									// TROPICAL_SEASONAL_FOREST: #559944
+							// // Terrain
+							// SNOW: #ffffff,
+							// TUNDRA: #bbbbaa,
+							// BARE: #888888,
+							// SCORCHED: #555555,
+							// TAIGA: #99aa77,
+							// SHRUBLAND: #889977,
+							// TEMPERATE_DESERT: #c9d29b,
+							// TEMPERATE_RAIN_FOREST: #448855,
+							// TEMPERATE_DECIDUOUS_FOREST: #679459,
+							// GRASSLAND: #88aa55,
+							// SUBTROPICAL_DESERT: #d2b98b,
+							// TROPICAL_RAIN_FOREST: #337755,
+							// TROPICAL_SEASONAL_FOREST: #559944
 
 
-										
-								}
-							})
+								
 						}
-					}
+					})
 
 					// console.log('self_player',self_player);
 					// console.log('_assets',_assets)
@@ -4153,13 +4143,7 @@ OAuth3.on("ready", function(e){
 							}
 						}
 
-						var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
-
-						if($recommand.length){
-							$recommand.removeAttr("emoji")
-						}
-
-
+						
 						var x = self_player.x
 						var z = self_player.z
 
@@ -4224,99 +4208,75 @@ OAuth3.on("ready", function(e){
 							// $('.deck .follows .emoji_asset[hash="'+host_address+'"]').append(blockies.create({seed: host_address}))
 						}
 
-						if(Object.keys(score_board).length){
-							var ranking = []
+						
+					
+						var size = OAuth3.isMobile ? 8 : 11
 
-							for(var address in score_board){
-								if(score_board.hasOwnProperty(address)) {
-									var score = score_board[address]
+						biomes.forEach(function(b, i){
+							if(window.players.length){
+								var _id = crc32(cc_address+b.biome+b.x+b.z).toString(32).toUpperCase()
 
-									ranking.push({
-										hash : address,
-										score : score ? score : 0
-									})
+								if(
+									(biomes.x - size < b.x && biomes.x + size > b.x) &&
+									(biomes.z - size < b.z && biomes.z + size > b.z) &&
+									!window.map.biomes[_id]
+								){
+									if(Math.random() < 0.1){
+										var _date = new Date(new Date() - timezoneOffset)
+											_date = _date.toISOString()
+												.replace(/T/, ' ')
+												.replace(/\..+/, '')
+
+										var color = window.Biomes[b.biome]
+
+										var emoji = window.Biomes[color]
+
+										var _asset = {
+											id : _id,
+											hash : cc_address,
+											name : b.biome,
+											value : "",
+											color: "",
+											x : b.x,
+											y : b.y - 0.5,
+											z : b.z
+										}
+
+										_assets.push(_asset)
+
+
+
+										_players.push({
+											type : "player",
+											self : "",
+											hash : window.randomHash(),
+											x : b.x,
+											y : b.y - 0.5,
+											z : b.z,
+											emoji : emoji
+										})
+
+										window.map.biomes[_id] = _asset
+
+										var _row = {
+											Id : _id,
+											From : address,
+											To : cc_address,
+											Cc : b.x+','+b.z+" #"+b.biome+" "+cc_address+" @"+emoji,
+											Subject : b.biome,
+											Flag : "",
+											Date : _date
+										}
+
+										window.map.pending[_id] = _row
+
+										window.map.pending.push(_row)
+									}else{
+										window.map.biomes[_id] = true
+									}
 								}
 							}
-
-							ranking.sort(function (a, b) {return a.score - b.score});
-							ranking.reverse()
-
-							var score_body = ""
-
-							for(var p = 0; p < ranking.length; p++){
-								var rank = ranking[p]
-
-								window.map.score[rank.hash] = {
-									rank : (p+1),
-									score: rank.score
-								}
-
-								var _hash = rank.hash.indexOf("0x") == 0 ? rank.hash.replace("0x","") : rank.hash
-
-								score_body += '<li>\
-									<div class="item" hash="'+rank.hash+'">\
-										<div class="icon"></div>\
-										<div class="address">\
-											<address>\
-												<span>'+_hash+'</span>\
-												<span dir="rtl">'+_hash+'</span>\
-												<rank>'+(p+1)+'</rank>\
-												<score>'+rank.score+'</score>\
-											</address>\
-										</div>\
-									</div>\
-								</li>'
-							}
-
-							$("#rank ol").html(score_body)
-
-							for(var p = 0; p < ranking.length; p++){
-								var rank = ranking[p]
-
-								var _hash = rank.hash.indexOf("0x") == 0 ? rank.hash.replace("0x","") : rank.hash
-
-								$('#rank .item[hash="'+rank.hash+'"] .icon').append(blockies.create({seed: "0x"+_hash}))
-							}
-						}
-
-						if(_players.length){
-							var $capture = $("#capture")
-
-							$("#capture .xyz .x").html(Math.floor(self_player.x))
-							$("#capture .xyz .z").html(Math.floor(self_player.z))
-
-							if(open){
-								$capture.addClass("on")
-								$("#capture>.icon").html(blockies.create({seed: (open.From.indexOf("0x") == 0 ? open.From : "0x"+open.From)}))
-								
-								var scoreboard = window.map.score[open.From]
-
-								$("#capture>.icon").append('<div class="address">\
-									<span>'+open.From+'</span>\
-									<span dir="rtl">'+open.From+'</span>\
-									<rank>'+scoreboard.rank+'</rank>\
-									<score>'+scoreboard.score+'</score>\
-								</div>')
-							}else{
-								$capture.removeClass("on")
-
-								var scoreboard = window.map.score["0x"+cc_address]
-
-								if(!scoreboard){
-									scoreboard = window.map.score[cc_address]
-								}
-
-
-								$("#capture>.icon")
-									.html(blockies.create({seed: "0x"+cc_address}))
-									.append('<div class="address">\
-										<span>'+cc_address+'</span>\
-										<span dir="rtl">'+cc_address+'</span>\
-										<rank>'+(scoreboard ? scoreboard.rank : "0")+'</rank>\
-										<score>'+(scoreboard ? scoreboard.score : "0")+'</score>\
-									</div>')
-							}
-						}
+						})
 					}
 
 					try{
