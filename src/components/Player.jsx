@@ -137,6 +137,7 @@ export function Player({
 		alt = "player"
 
 		if(window.typeof_emoji(props.emoji)){
+			console.log('props.emoji',props.emoji);
 			type = "image"
 			hex = props.emoji.codePointAt(0).toString(16)
 			

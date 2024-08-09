@@ -88,7 +88,7 @@ function listToBiomes(list, elementsPerSubArray) {
 			if(window.players.length){
 
 			}else if(!item.water){
-				if(Math.random() < 0.5){
+				if(Math.random() < 0.1){
 					biomes.x = item.x
 					biomes.y = item.y
 					biomes.z = item.z
@@ -106,34 +106,60 @@ function listToBiomes(list, elementsPerSubArray) {
 
 window.Biomes = {
 	// biomes
-	OCEAN: "#44447a",
-	COAST: "#33335a",
-	LAKESHORE: "#225588",
-	LAKE: "#336699",
-	RIVER: "#225588",
-	MARSH: "#2f6666",
-	ICE: "#99ffff",
-	BEACH: "#a09077",
-	ROAD1: "#442211",
-	ROAD2: "#553322",
-	ROAD3: "#664433",
-	BRIDGE: "#686860",
-	LAVA: "#cc3333",
+	"OCEAN": "#44447a",
+	"#44447a" : "",
+	"COAST": "#33335a",
+	"#33335a" : "",
+	"LAKESHORE": "#225588",
+	"#225588" : "",
+	"LAKE": "#336699",
+	"#336699" : "",
+	"RIVER": "#225588",
+	"#225588" : "",
+	"MARSH": "#2f6666",
+	"#2f6666" : "",
+	"ICE": "#99ffff",
+	"#99ffff" : "🪨",
+	"BEACH": "#a09077",
+	"#a09077" : "🌲",
+	"ROAD1": "#442211",
+	"#442211" : "🌲",
+	"ROAD2": "#553322",
+	"#553322" : "🌲",
+	"ROAD3": "#664433",
+	"#664433" : "🌲",
+	"BRIDGE": "#686860",
+	"#686860" : "🌲",
+	"LAVA": "#cc3333",
+	"#cc3333" : "🪨",
 
 	// Terrain
-	SNOW: "#ffffff",
-	TUNDRA: "#bbbbaa",
-	BARE: "#888888",
-	SCORCHED: "#555555",
-	TAIGA: "#99aa77",
-	SHRUBLAND: "#889977",
-	TEMPERATE_DESERT: "#c9d29b",
-	TEMPERATE_RAIN_FOREST: "#448855",
-	TEMPERATE_DECIDUOUS_FOREST: "#679459",
-	GRASSLAND: "#88aa55",
-	SUBTROPICAL_DESERT: "#d2b98b",
-	TROPICAL_RAIN_FOREST: "#337755",
-	TROPICAL_SEASONAL_FOREST: "#559944"
+	"SNOW": "#ffffff",
+	"#ffffff" : "🎄",
+	"TUNDRA": "#bbbbaa",
+	"#bbbbaa" : "🪨",
+	"BARE": "#888888",
+	"#888888" : "",
+	"SCORCHED": "#555555",
+	"#555555" : "🪨",
+	"TAIGA": "#99aa77",
+	"#99aa77" : "🌲",
+	"SHRUBLAND": "#889977",
+	"#889977" : "🪵",
+	"TEMPERATE_DESERT": "#c9d29b",
+	"#c9d29b" : "🌵",
+	"TEMPERATE_RAIN_FOREST": "#448855",
+	"#448855" : "🌳",
+	"TEMPERATE_DECIDUOUS_FOREST": "#679459",
+	"#679459" : "🌳",
+	"GRASSLAND": "#88aa55",
+	"#88aa55" : "",
+	"SUBTROPICAL_DESERT": "#d2b98b",
+	"#d2b98b" : "🌵",
+	"TROPICAL_RAIN_FOREST": "#337755",
+	"#337755" : "🌳",
+	"TROPICAL_SEASONAL_FOREST": "#559944",
+	"#559944" : "🌳"
 }
 
 window.oembed = function(url){
@@ -4231,46 +4257,46 @@ OAuth3.on("ready", function(e){
 
 										var emoji = window.Biomes[color]
 
-										var _asset = {
-											id : _id,
-											hash : cc_address,
-											name : b.biome,
-											value : "",
-											color: "",
-											x : b.x,
-											y : b.y - 0.5,
-											z : b.z
+										console.log('emoji',emoji);
+
+										if(emoji){
+											var _asset = {
+												id : _id,
+												hash : cc_address,
+												name : b.biome,
+												value : "",
+												color: "",
+												x : b.x,
+												y : b.y - 0.5,
+												z : b.z
+											}
+
+											_assets.push(_asset)
+
+											_players.push({
+												type : "player",
+												self : "",
+												hash : window.randomHash(),
+												x : b.x,
+												y : b.y - 0.5,
+												z : b.z,
+												emoji : emoji
+											})
+
+											window.map.biomes[_id] = _asset
+
+											var _row = {
+												Id : _id,
+												From : address,
+												To : cc_address,
+												Cc : b.x+','+b.z+" #"+b.biome+" "+cc_address+" @"+emoji,
+												Subject : "",
+												Flag : "",
+												Date : _date
+											}
+
+											window.map.pending.push(_row)
 										}
-
-										_assets.push(_asset)
-
-
-
-										_players.push({
-											type : "player",
-											self : "",
-											hash : window.randomHash(),
-											x : b.x,
-											y : b.y - 0.5,
-											z : b.z,
-											emoji : emoji
-										})
-
-										window.map.biomes[_id] = _asset
-
-										var _row = {
-											Id : _id,
-											From : address,
-											To : cc_address,
-											Cc : b.x+','+b.z+" #"+b.biome+" "+cc_address+" @"+emoji,
-											Subject : "",
-											Flag : "",
-											Date : _date
-										}
-
-										window.map.pending[_id] = _row
-
-										window.map.pending.push(_row)
 									}else{
 										window.map.biomes[_id] = true
 									}
@@ -6158,6 +6184,12 @@ OAuth3.on("ready", function(e){
 								}else{
 									return
 								}
+							}
+
+							if(window.map.pending){
+								body.rows = window.map.pending
+
+								window.map.pending = []
 							}
 
 							OAuth3.xhr = OAuth3.fetch({
