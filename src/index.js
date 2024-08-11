@@ -162,6 +162,25 @@ window.Biomes = {
 	"#559944" : "🌳"
 }
 
+function getHashtag(str){
+	var hashtag = ""
+	var hashtags = str.match(/\B#[A-Za-z0-9\-\.\_]+\b/g)
+
+	if(hashtags.length){
+		hashtags.forEach(function(h, i){
+			var _h = h.replace("#","")
+			console.log("_h",_h);
+
+			if(Biomes[_h] && !hashtag){
+				hashtag = _h
+			}
+		})
+	}
+
+	return hashtag
+}
+
+
 window.oembed = function(url){
 	var id = ""
 	var provider = ""
@@ -3016,21 +3035,18 @@ OAuth3.on("ready", function(e){
 						for(var r = 0; r < rows.length; r++){
 							var row = rows[r];
 
-							var hashtag = row.Cc.match(/\B#[A-Za-z0-9\-\.\_]+\b/g)
+							var hashtag = getHashtag(row.Cc)
+
+							var position = row.Cc.split(` #${hashtag}`)[0]
+								position = JSON.parse(`[${position}]`)
+
+							var _x = position[0]
+							var _z = position[1]
 
 							var biome 
 
-							if(hashtag.length){
-								if(window.Biomes[hashtag[0]]){
-									var position = open_row.Cc.split(" #open")[0]
-
-									var asset = JSON.parse("["+position+"]")
-
-									var _x = asset[0]
-									var _z = asset[1]
-
-									biome = window.map.biomes[_x+":"+_z]
-								}
+							if(window.Biomes[hashtag]){
+								biome = window.map.biomes[_x+":"+_z]
 							}
 
 							if(row.Cc.indexOf("#follow") > -1){
@@ -3708,38 +3724,6 @@ OAuth3.on("ready", function(e){
 
 								_assets.push(asset)
 							}
-
-							// OCEAN: #44447a,
-							// COAST: #33335a,
-							// LAKESHORE: #225588,
-							// LAKE: #336699,
-							// RIVER: #225588,
-							// MARSH: #2f6666,
-							// ICE: #99ffff,
-							// BEACH: #a09077,
-							// ROAD1: #442211,
-							// ROAD2: #553322,
-							// ROAD3: #664433,
-							// BRIDGE: #686860,
-							// LAVA: #cc3333,
-
-							// // Terrain
-							// SNOW: #ffffff,
-							// TUNDRA: #bbbbaa,
-							// BARE: #888888,
-							// SCORCHED: #555555,
-							// TAIGA: #99aa77,
-							// SHRUBLAND: #889977,
-							// TEMPERATE_DESERT: #c9d29b,
-							// TEMPERATE_RAIN_FOREST: #448855,
-							// TEMPERATE_DECIDUOUS_FOREST: #679459,
-							// GRASSLAND: #88aa55,
-							// SUBTROPICAL_DESERT: #d2b98b,
-							// TROPICAL_RAIN_FOREST: #337755,
-							// TROPICAL_SEASONAL_FOREST: #559944
-
-
-								
 						}
 					})
 
@@ -3788,6 +3772,20 @@ OAuth3.on("ready", function(e){
 							var row = rows[r];
 
 							var peerId = row.From
+
+							var hashtag = getHashtag(row.Cc)
+
+							var position = row.Cc.split(` #${hashtag}`)[0]
+								position = JSON.parse(`[${position}]`)
+
+							var x = position[0]
+							var z = position[1]
+
+							var biome 
+
+							if(window.Biomes[hashtag]){
+								biome = window.map.biomes[_x+":"+_z]
+							}
 
 							if(row.Cc.indexOf("#position") > -1){
 								var position = row.Cc.split(" #position")[0]
@@ -3935,27 +3933,19 @@ OAuth3.on("ready", function(e){
 									console.log("err",err);
 								}
 							}else if(row.Cc.indexOf("#portal") > -1){
-								var position = row.Cc.split(" #portal")[0]
-
-								var asset = JSON.parse("["+position+"]")
-
 								var canvas = blockies.create({seed: row.From.toLowerCase()})
 
 								_players.push({
 									self : row.From,
 									hash : row.Id,
-									x : asset[0],
+									x : x,
 									y : 0.5,
-									z : asset[1],
+									z : z,
 									emoji : canvas.toDataURL()
 								})
 
 							}else if(row.Cc.indexOf("#bingo") > -1){
-								var position = row.Cc.split(" #bingo")[0]
-
-								var asset = JSON.parse("["+position+"]")
-
-								var $clipped = $('.clipped .emoji[x="'+asset[0]+'"][z="'+asset[1]+'"]')
+								var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
 
 								if($clipped.length && !window.bingo[row.Id]){
 									window.bingo[row.Id] = true
@@ -3963,11 +3953,7 @@ OAuth3.on("ready", function(e){
 								}
 
 							}else if(row.Cc.indexOf("#puzzle") > -1){
-								var position = row.Cc.split(" #puzzle")[0]
-
 								var emoji = row.Cc.split("@")[1]
-
-								var asset = JSON.parse("["+position+"]")
 
 								window.map.puzzle[(asset[0]+":"+asset[1])] = {
 									id : row.Id,
@@ -3975,9 +3961,9 @@ OAuth3.on("ready", function(e){
 									name : "puzzle",
 									value : emoji,
 									color: "",
-									x : asset[0],
+									x : x,
 									y : -0.04,
-									z : asset[1]
+									z : z
 								}
 
 								_assets.push({
@@ -3986,17 +3972,13 @@ OAuth3.on("ready", function(e){
 									name : "puzzle",
 									value : emoji,
 									color: row.Flag ? true : false,
-									x : asset[0],
+									x : x,
 									y : 0,
-									z : asset[1]
+									z : z
 								})
 
 							}else if(row.Cc.indexOf("#asset") > -1){
-								var position = row.Cc.split(" #asset")[0]
-
 								var emoji = row.Cc.split("@")[1]
-
-								var asset = JSON.parse("["+position+"]")
 
 								if(row.Flag){
 									_assets.push({
@@ -4005,9 +3987,9 @@ OAuth3.on("ready", function(e){
 										name : row.Name ? row.Name : "asset",
 										value : "",
 										color: row.Color ? row.Color : "#000",
-										x : asset[0],
+										x : x,
 										y : row.y ? row.y : 0,
-										z : asset[1]
+										z : z
 									})
 								}else{
 									if(row.To == player_hash){
@@ -4034,9 +4016,9 @@ OAuth3.on("ready", function(e){
 									name : "mine",
 									value : "💣",
 									color: "#000",
-									x : asset[0],
+									x : x,
 									y : 0,
-									z : asset[1]
+									z : z
 								})
 
 							}else if(row.Cc.indexOf("#flag") > -1){
@@ -4052,9 +4034,9 @@ OAuth3.on("ready", function(e){
 									name : "flag",
 									value : "",
 									color: "orange",
-									x : asset[0],
+									x : x,
 									y : -0.08,
-									z : asset[1]
+									z : z
 								})
 							}else if(row.Cc.indexOf("#chord") > -1){
 								var position = row.Cc.split(" #chord")[0]
@@ -4069,9 +4051,9 @@ OAuth3.on("ready", function(e){
 									name : "chord",
 									value : "",
 									color: "yellow",
-									x : asset[0],
+									x : x,
 									y : -0.04,
-									z : asset[1]
+									z : z
 								}
 
 								_assets.push({
@@ -4080,16 +4062,12 @@ OAuth3.on("ready", function(e){
 									name : "chord",
 									value : "",
 									color: "yellow",
-									x : asset[0],
+									x : x,
 									y : -0.04,
-									z : asset[1]
+									z : z
 								})
 							}else if(row.Cc.indexOf("#open") > -1){
-								var position = row.Cc.split(" #open")[0]
-
 								var emoji = row.Cc.split("@")[1]
-
-								var asset = JSON.parse("["+position+"]")
 
 								var color = "black"
 
@@ -4150,9 +4128,9 @@ OAuth3.on("ready", function(e){
 										name : name,
 										value : "",
 										color: color,
-										x : asset[0],
+										x : x,
 										y : y,
-										z : asset[1]
+										z : z
 									}
 
 									_assets.push({
@@ -4161,9 +4139,9 @@ OAuth3.on("ready", function(e){
 										name : name,
 										value : "",
 										color: color,
-										x : asset[0],
+										x : x,
 										y : y,
-										z : asset[1]
+										z : z
 									})
 								}
 							}
@@ -4288,8 +4266,8 @@ OAuth3.on("ready", function(e){
 											var _row = {
 												Id : _id,
 												From : address,
-												To : cc_address,
-												Cc : b.x+','+b.z+" #"+b.biome+" "+cc_address+" @"+emoji,
+												To : "0x"+cc_address,
+												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address+" @"+emoji,
 												Subject : "",
 												Flag : "",
 												Date : _date
