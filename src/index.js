@@ -3684,6 +3684,10 @@ OAuth3.on("ready", function(e){
 					// console.log('self_player',self_player);
 
 					var biomes = listToBiomes(window.map.biomes, 100)
+					
+					var size = OAuth3.isMobile ? 8 : 11
+
+					var isBiome = false
 
 					if(!window.players.length){
 						if(window.current){
@@ -3698,34 +3702,6 @@ OAuth3.on("ready", function(e){
 						biomes.x = window.current.current.position.x
 						biomes.z = window.current.current.position.z
 					}
-
-					var size = OAuth3.isMobile ? 8 : 11
-
-					biomes.forEach(function(b, i){
-						if(window.players.length){
-							var _id = crc32(cc_address+i).toString(32).toUpperCase()
-
-							var color = window.Biomes[b.biome]
-							
-							if(
-								(biomes.x - size < b.x && biomes.x + size > b.x) &&
-								(biomes.z - size < b.z && biomes.z + size > b.z)
-							){
-								var asset = {
-									id : _id,
-									hash : cc_address,
-									name : b.biome,
-									value : color,
-									color: color,
-									x : b.x,
-									y : b.y - 0.5,
-									z : b.z
-								}
-
-								_assets.push(asset)
-							}
-						}
-					})
 
 					// console.log('self_player',self_player);
 					// console.log('_assets',_assets)
@@ -3778,24 +3754,40 @@ OAuth3.on("ready", function(e){
 							var position = row.Cc.split(` #${hashtag}`)[0]
 								position = JSON.parse(`[${position}]`)
 
+							var emoji = row.Cc.split("@")[1]
+
 							var x = position[0]
 							var z = position[1]
 
-							var biome 
+							var biome = window.map.biomes[x+":"+z]
 
 							if(window.Biomes[hashtag]){
-								biome = window.map.biomes[_x+":"+_z]
+								var b = window.map.biomes[row.Id]
+
+								if(b){
+									var _asset = {
+										id : row.Id,
+										hash : cc_address,
+										name : hashtag,
+										value : "",
+										color: "",
+										x : b.x,
+										y : b.y,
+										z : b.z
+									}
+
+									_assets.push(_asset)
+
+									window.map.biomes[row.Id] = _asset
+								}
 							}
 
 							if(row.Cc.indexOf("#position") > -1){
-								var position = row.Cc.split(" #position")[0]
+								var player = {
+									follow : false	
+								}
 
-								var emoji = row.Cc.split("@")[1]
-
-								var player = JSON.parse("["+position+"]")
-									player.follow = false
-
-								var biome = window.map.biomes[player[0]+":"+player[1]]
+								
 
 								if(cookies.address == row.From || cookies.hash == row.From){
 									self = true
@@ -4208,79 +4200,98 @@ OAuth3.on("ready", function(e){
 
 								}
 							}
+
 							// $('.deck .follows .emoji_asset[hash="'+host_address+'"] canvas').remove()
 							// $('.deck .follows .emoji_asset[hash="'+host_address+'"]').append(blockies.create({seed: host_address}))
 						}
 
-						
-					
-						var size = OAuth3.isMobile ? 8 : 11
-
 						biomes.forEach(function(b, i){
 							if(window.players.length){
-								var _id = crc32(cc_address+b.biome+b.x+b.z).toString(32).toUpperCase()
+								var _id = crc32(cc_address+i).toString(32).toUpperCase()
 
+								var color = window.Biomes[b.biome]
+								
 								if(
 									(biomes.x - size < b.x && biomes.x + size > b.x) &&
-									(biomes.z - size < b.z && biomes.z + size > b.z) &&
-									!window.map.biomes[_id]
+									(biomes.z - size < b.z && biomes.z + size > b.z)
 								){
-									if(Math.random() < 0.1){
-										var _date = new Date(new Date() - timezoneOffset)
-											_date = _date.toISOString()
-												.replace(/T/, ' ')
-												.replace(/\..+/, '')
+									var _id = crc32(cc_address+b.biome+b.x+b.z).toString(32).toUpperCase()
 
-										var color = window.Biomes[b.biome]
-
-										var emoji = window.Biomes[color]
-
-										console.log('emoji',emoji);
-
-										if(emoji){
-											var _asset = {
-												id : _id,
-												hash : cc_address,
-												name : b.biome,
-												value : "",
-												color: "",
-												x : b.x,
-												y : b.y - 0.5,
-												z : b.z
-											}
-
-											_assets.push(_asset)
-
-											_players.push({
-												type : "player",
-												self : "",
-												hash : window.randomHash(),
-												x : b.x,
-												y : b.y - 0.5,
-												z : b.z,
-												emoji : emoji
-											})
-
-											window.map.biomes[_id] = _asset
-
-											var _row = {
-												Id : _id,
-												From : address,
-												To : "0x"+cc_address,
-												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address+" @"+emoji,
-												Subject : "",
-												Flag : "",
-												Date : _date
-											}
-
-											window.map.pending.push(_row)
-										}
-									}else{
-										window.map.biomes[_id] = true
+									if(window.map.biomes[_id]){
+										isBiome = true
 									}
+
+									var asset = {
+										id : _id,
+										hash : cc_address,
+										name : b.biome,
+										value : color,
+										color: color,
+										x : b.x,
+										y : b.y - 0.5,
+										z : b.z
+									}
+
+									_assets.push(asset)
 								}
 							}
 						})
+
+						if(!isBiome){
+							biomes.forEach(function(b, i){
+								if(window.players.length){
+									var _id = crc32(cc_address+b.biome+b.x+b.z).toString(32).toUpperCase()
+
+									if(
+										(biomes.x - size < b.x && biomes.x + size > b.x) &&
+										(biomes.z - size < b.z && biomes.z + size > b.z) &&
+										!window.map.biomes[_id]
+									){
+										if(Math.random() < 0.1){
+											var _date = new Date(new Date() - timezoneOffset)
+												_date = _date.toISOString()
+													.replace(/T/, ' ')
+													.replace(/\..+/, '')
+
+											var color = window.Biomes[b.biome]
+
+											var emoji = window.Biomes[color]
+
+											console.log('emoji',emoji);
+
+											if(emoji){
+												var _asset = {
+													id : _id,
+													hash : cc_address,
+													name : b.biome,
+													value : "",
+													color: "",
+													x : b.x,
+													y : b.y - 0.5,
+													z : b.z
+												}
+
+												_assets.push(_asset)
+
+												window.map.biomes[_id] = _asset
+
+												var _row = {
+													Id : _id,
+													From : address,
+													To : "0x"+cc_address,
+													Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address+" @"+emoji,
+													Subject : "",
+													Flag : "",
+													Date : _date
+												}
+
+												window.map.pending.push(_row)
+											}
+										}
+									}
+								}
+							})
+						}
 					}
 
 					try{
