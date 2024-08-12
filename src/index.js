@@ -58,6 +58,155 @@ window.Subscribe = function(){
 	});
 }
 
+async function getSigner(e) {
+		var $unlock = $(".metamask-unlock")
+
+		if(window.ethereum){
+			var isUnlocked = await window.ethereum._metamask.isUnlocked()
+
+			if(isUnlocked){
+				var accounts = await ethereum.request({ method: 'eth_requestAccounts' })
+
+				if(accounts.length){
+					var signer = await provider.getSigner()
+
+					var signature = ""
+
+					var refrash = false
+
+					if($cookies.signature){
+						signature = $cookies.signature
+					}else{
+						refrash = true
+						signature = await signer.signMessage($cookies.message)
+					}
+
+					var EOA = ""
+
+					if(signature){
+						ethers.verifyMessage($cookies.message, signature)
+						
+						EOA = EOA.toLowerCase()
+					}
+
+
+					if(signer.address.toLowerCase() != EOA && EOA){
+						refrash = true
+						signature = await signer.signMessage($cookies.message)
+
+						EOA = ethers.verifyMessage($cookies.message, signature)
+					}
+
+					$cookies.signature = signature
+					signer.signature = signature
+
+					$('.assets .asset[unlock="metamask"]').closest("li").remove()
+
+					var selector = $unlock.data().selector
+
+					if(selector){
+						refrash = true
+					}
+
+					if(getSigner.refrash){
+						refrash = getSigner.refrash
+
+						delete getSigner.refrash
+					}
+
+					if(refrash){
+						var networkName = await getNetwork()
+
+						OAuth3.fetch({
+							method : "GET",
+							url : api_host,
+							query : {
+								chain : networkName,
+								signature : signature,
+								referer : "https://oauth.email/",
+								flag : "transfer off "+networkName,
+								chain : networkName,
+								limit : 500
+							}
+						}, async function(res){
+							var _cookies = JSON.parse(res.body.cookies)
+							var $forms = document.querySelector("forms.api")
+							var body = ""
+
+							$cookies = _cookies
+
+							$(".asset[empty]").remove()
+
+							if(address == _cookies.address){
+								await getTokenBalance(_cookies.ft, signer, _cookies.ca)
+								await getNfts(_cookies.nft, signer, _cookies.ca)
+
+								var $assets = document.querySelectorAll(".collection .assets .asset")
+
+								var len = $assets.length
+
+								if(len){
+									for(var i = 0; i < len; i++){
+										var el = $assets[i]
+										var data = el.dataset
+
+										if(data.contract){
+											var icon = blockies.create({seed: data.contract})
+
+											var $icon = el.querySelector('.icon')
+
+											if($icon){
+												$icon.appendChild(icon)
+											}
+										}
+									}
+								}
+							}
+
+							if(selector){
+								if(selector != ".asset"){
+									try{
+										$(selector).click()
+										$unlock.data("selector","")
+									}catch(err){
+
+									}
+								}
+							}
+						})
+					}
+
+					return signer
+				}
+			}else if(e){
+				var el = e.target
+
+				var unlock = el.getAttribute("unlock")
+
+				if(unlock){
+					try{
+						await ethereum.request({ method: 'eth_requestAccounts' })
+
+						getSigner.refrash = true
+
+						getSigner()
+					}catch(err){
+						// 에러 발생시 언락해달라는 알림 표시
+						el.className = "asset notice"
+					}
+				}else{
+					var selector = "."+el.className.replace(/ /gi,".")
+					
+					$unlock.data("selector", selector)
+				}
+			}
+		}else{
+			$unlock.text("MetaMask Install & Refrash")
+			$unlock.attr("target", "_blank")
+			$unlock.attr("href", "https://metamask.io/download/")
+		}
+	}
+
 function listToBiomes(list, elementsPerSubArray) {
 	var matrix = [], i, k;
 
@@ -169,7 +318,6 @@ function getHashtag(str){
 	if(hashtags.length){
 		hashtags.forEach(function(h, i){
 			var _h = h.replace("#","")
-			console.log("_h",_h);
 
 			if(Biomes[_h] && !hashtag){
 				hashtag = _h
@@ -3787,8 +3935,6 @@ OAuth3.on("ready", function(e){
 									follow : false	
 								}
 
-								
-
 								if(cookies.address == row.From || cookies.hash == row.From){
 									self = true
 
@@ -4091,7 +4237,7 @@ OAuth3.on("ready", function(e){
 
 								if(window.players){
 									if(!window.map[(asset[0]+":"+asset[1])] && window.players.length){
-										window.setDpr(0.8)
+										window.setDpr(1)
 										frameloop = true
 										name += " dissolve"
 
@@ -4461,7 +4607,7 @@ OAuth3.on("ready", function(e){
 						if(diff || frameloop){
 							window.setFrameloop("always")
 						}else{
-							window.setDpr(0.7)
+							window.setDpr(1)
 							try{
 								if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
 									window.setFrameloop("demand")
@@ -4628,7 +4774,25 @@ OAuth3.on("ready", function(e){
 
 						var stickerCnt = 1
 						var rewardLength = Object.keys(window.map.reward).length
-						var li = '<div draggable="false" class="emoji_asset" emoji="🪙" type="item" method="open"><a class="emoji color">🪙</a><span class="cnt">'+cookies.balance+'</span></div>'
+
+						var li = ""
+
+					
+						if(window.ethereum){
+							var isUnlocked = await window.ethereum._metamask.isUnlocked()
+
+							if(isUnlocked){
+								li += '<div draggable="false" class="emoji_asset"><a class="metamask unlock"><img src="/src/images/MetaMask_Fox.svg" alt="metamask"></a></div>'
+							}
+						}else{
+							// 설치 유도 버튼
+							li += '<div draggable="false" class="emoji_asset"><a class="metamask" target="_blank" href="https://metamask.io/download/"><img src="/src/images/MetaMask_Fox.svg" alt="metamask"></a></div>'
+						}
+
+
+						
+
+						li += '<div draggable="false" class="emoji_asset" emoji="🪙" type="item" method="open"><a class="emoji color">🪙</a><span class="cnt">'+cookies.balance+'</span></div>'
 
 						var afterSticker = []
 						
@@ -7617,9 +7781,9 @@ OAuth3.on("ready", function(e){
 										$body.attr("zoom", _far.x)
 
 										if(_far.x == 10){
-											window.setDpr(0.7)
+											window.setDpr(1)
 										}else{
-											window.setDpr(0.7)
+											window.setDpr(1)
 										}
 
 										window.far.set(_far)
@@ -8363,249 +8527,13 @@ OAuth3.on("ready", function(e){
 											emojiChanged("🫥")
 										}
 
-										var piece = {
-											id : "",
-											value : method == "open" ? "📦" : emoji,
-											hash : player.hash,
-											x : player.x,
-											z : player.z
-										}
-
 										body.cc = "puzzle"
-										body.puzzles = []
-
-										var bingo = []
-
-										bingo.x = 1
-										bingo.z = 1
-
-										bingo._tr = 1
-										bingo._tl = 1
-										bingo._bl = 1
-										bingo._br = 1
-
-										var puzzles = JSON.stringify(window.map.puzzle)
-											puzzles = JSON.parse(puzzles)
-
-										puzzles[player.x+":"+player.z] = piece
-
-										var bingoLimit = emoji == "😎" ? 1 : 2
-
-										for(var _x = -2; _x < 3; _x++){
-											for(var _z = -2; _z < 3; _z++){
-												var puzzle = puzzles[((player.x+_x)+":"+(player.z+_z))]
-
-												if(puzzle){
-													if(emoji == puzzle.value || emoji == "😎"){
-														if(_x == 0){
-															// column
-															var _puzzle = puzzles[(player.x+_x)+":"+(player.z+_z)]
-
-															if(_puzzle){
-																if(emoji == _puzzle.value || emoji == "😎"){
-																	if(bingo.x > bingoLimit){
-																		for(var i = _z - bingo.x; i <= _z; i++){
-																			var puzl = puzzles[(player.x)+":"+(player.z+i)]
-
-																			if(puzl){
-																				if(!bingo[puzl.id] && (puzl.value == emoji || emoji == "😎")){
-																					bingo[puzl.id] = true
-
-																					puzl.emoji = puzl.value+""
-																					delete puzl.value
-																					delete puzl.name
-																					body.puzzles.push(puzl)
-																				}
-																			}
-																		}
-																	}
-
-																	bingo.x++
-																}
-															}
-														}
-
-														if(_z == 0){
-															// row
-															var _puzzle = puzzles[(player.x+_x)+":"+(player.z+_z)]
-
-															if(_puzzle){
-																if(emoji == _puzzle.value || emoji == "😎"){
-																	if(bingo.z > bingoLimit){
-																		for(var i = _x - bingo.z; i <= _x; i++){
-																			var puzl = puzzles[(player.x+i)+":"+(player.z)]
-
-																			if(puzl){
-																				if(!bingo[puzl.id] && (puzl.value == emoji || emoji == "😎")){
-																					bingo[puzl.id] = true
-
-																					puzl.emoji = puzl.value+""
-																					delete puzl.value
-																					delete puzl.name
-																					body.puzzles.push(puzl)
-																				}
-																			}
-																		}
-																	}
-
-																	bingo.z++
-																}
-															}
-														}
-
-														if(
-															(_x == 0 && _z == 0) ||
-															(_x < 0 && _z < 0 && (_x == _z)))
-														{
-															// cross
-															if(bingo._tl > bingoLimit){
-																var len = bingo._tl 
-
-																for(var i = _x - bingo._tl; i <= _x; i++){
-																	var puzl = puzzles[(player.x+i)+":"+(player.z+i)]
-
-																	if(puzl){
-																		if(!bingo[puzl.id] && (puzl.value == emoji || emoji == "😎")){
-																			bingo[puzl.id] = true
-																			
-																			puzl.emoji = puzl.value+""
-																			delete puzl.value
-																			delete puzl.name
-																			body.puzzles.push(puzl)
-																		}
-																	}
-																}
-															}
-
-															bingo._tr++
-															bingo._tl++
-														}
-
-														if(
-															(_x == 0 && _z == 0) ||
-															(_x > 0 && _z < 0 && (_x == Math.abs(_z)))
-														){
-															// cross
-															if(bingo._tr > bingoLimit){
-																var len = bingo._tr 
-																for(var i = _x - bingo._tr; i <= _x; i++){
-																	var puzl = puzzles[(player.x-i)+":"+(player.z+i)]
-
-																	if(puzl){
-																		if(!bingo[puzl.id] && (puzl.value == emoji || emoji == "😎")){
-																			bingo[puzl.id] = true
-																			
-																			puzl.emoji = puzl.value+""
-																			delete puzl.value
-																			delete puzl.name
-																			body.puzzles.push(puzl)
-																		}
-																	}
-																}
-															}
-
-															bingo._tr++
-															bingo._tl++
-														}
-
-														if(
-															(_x == 0 && _z == 0) ||
-															(_x > 0 && _z > 0 && (_x == _z))
-														){
-															// cross
-															if(bingo._br > bingoLimit){
-																var len = bingo._br 
-																for(var i = _z - bingo._br; i <= _z; i++){
-																	var puzl = puzzles[(player.x-i)+":"+(player.z-i)]
-
-																	if(puzl){
-																		if(!bingo[puzl.id] && (puzl.value == emoji || emoji == "😎")){
-																			bingo[puzl.id] = true
-																			
-																			puzl.emoji = puzl.value+""
-																			delete puzl.value
-																			delete puzl.name
-																			body.puzzles.push(puzl)
-																		}
-																	}
-																}
-															}
-
-															bingo._br++
-															bingo._bl++
-														}
-
-														
-														if(
-															(_x == 0 && _z == 0) ||
-															(_x < 0 && _z > 0 && (Math.abs(_x) == _z))
-														){
-															// cross
-															if(bingo._bl > bingoLimit){
-																var len = bingo._bl 
-																for(var i = _z - bingo._bl; i <= _z; i++){
-																	var puzl = puzzles[(player.x+i)+":"+(player.z-i)]
-
-																	if(puzl){
-																		if(!bingo[puzl.id] && (puzl.value == emoji || emoji == "😎")){
-																			bingo[puzl.id] = true
-																			
-																			puzl.emoji = puzl.value+""
-																			delete puzl.value
-																			delete puzl.name
-																			body.puzzles.push(puzl)
-																		}
-																	}
-																}
-															}
-
-															bingo._br++
-															bingo._bl++
-														}
-													}
-												}
-											}
-										}
-
-										if(body.puzzles.length){
-											var _assets = window.assets;
-
-											_assets.push({
-												id : "",
-												hash : piece.hash,
-												name : "puzzle",
-												value : piece.emoji,
-												color: false,
-												x : piece.x,
-												y : 0,
-												z : piece.z
-											})
-
-											// var assets_ = JSON.stringify(_assets)
-
-											window.assets.set(_assets)
-										}else if(body.puzzles.length == 0){
-											piece.emoji = piece.value+""
-
-											delete piece.value
-											
-											body.puzzles = [piece]
-										}
 
 										if(type == "emoji"){
-											if(emoji == "😎"){													
-												emojiChanged(emoji, null, true)
-												window.emojis.self = player_emoji
-											}else if(body.puzzles.length == 0){
-												emojiChanged(emoji)
-
-												return
-											}else{
-												body.emoji = emoji
-												
-												emojiChanged(emoji, null, true)
-												window.emojis.self = emoji
-											}
+											body.emoji = emoji
+											
+											emojiChanged(emoji, null, true)
+											window.emojis.self = emoji
 										}
 
 										var query = {
@@ -8615,7 +8543,6 @@ OAuth3.on("ready", function(e){
 											x : player.x,
 											z : player.z
 										}
-
 
 										if($body.attr("bingo") == "dialog"){
 											var _to = ""
@@ -8665,7 +8592,6 @@ OAuth3.on("ready", function(e){
 
 										player = window.players.self()
 
-										
 										$body.attr("bingo", Object.keys(window.com).length ? "dialog" : true)
 										$body.removeAttr("class")
 
