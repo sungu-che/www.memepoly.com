@@ -4789,9 +4789,6 @@ OAuth3.on("ready", function(e){
 							li += '<div draggable="false" class="emoji_asset"><a class="metamask" target="_blank" href="https://metamask.io/download/"><img src="/src/images/MetaMask_Fox.svg" alt="metamask"></a></div>'
 						}
 
-
-						
-
 						li += '<div draggable="false" class="emoji_asset" emoji="🪙" type="item" method="open"><a class="emoji color">🪙</a><span class="cnt">'+cookies.balance+'</span></div>'
 
 						var afterSticker = []
