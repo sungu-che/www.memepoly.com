@@ -12,7 +12,7 @@
 
 body{background-color: #fff !important;}
 
-.map{position: absolute; overflow: hidden; border-radius: 1em; right: 1em; top: 1em; width: 100px; height: 100px; }
+.map{position: absolute; overflow: hidden; right: 0; top: 0; width: 100px; height: 100px; }
 .map canvas{position: relative; width: 100%; height: 100%; transform: scale(2.5);}
 
 .map .config{display: none;}
@@ -73,13 +73,13 @@ body[zoom="10"] .plyr--video .plyr__controls{display: none;}
 
 input[name="green"]{display: none;}
 
-input[name="red"]{position: fixed; left: 0; right: 0; top: 0; -webkit-appearance: none; outline: none; opacity: 0.5; z-index: 1;}
-input[name="red"]{color: #000; margin: 0; border-radius: 0; height: 5px; background-color: red;}
+input[name="red"]{position: fixed; left: 0; right: 50%; bottom: 0; -webkit-appearance: none; outline: none; opacity: 0.5; z-index: 1;}
+input[name="red"]{color: #000; margin: 0; border-radius: 0; height: 1em; background-color: red;}
 input[name="red"]::-webkit-slider-thumb {height: 0; -webkit-appearance: none;}
 input[name="red"]::-webkit-slider-runnable-track {border-radius: 0; height: 6px;}
 
-input[name="blue"]{position: fixed; left: 0; right: 0; bottom: 0; -webkit-appearance: none; outline: none; opacity: 0.5; z-index: 1;}
-input[name="blue"]{color: #000; margin: 0; border-radius: 0; height: 5px; background-color: blue;}
+input[name="blue"]{position: fixed; left: 50%; right: 0; bottom: 0; -webkit-appearance: none; outline: none; opacity: 0.5; z-index: 1;}
+input[name="blue"]{color: #000; margin: 0; border-radius: 0; height: 1em; background-color: blue;}
 input[name="blue"]::-webkit-slider-thumb {height: 0; -webkit-appearance: none;}
 input[name="blue"]::-webkit-slider-runnable-track {border-radius: 0; height: 6px;}
 
@@ -309,7 +309,7 @@ clipped {
 
 #life{position: fixed; left: 1em; top: 15px; z-index: 99999999;}
 #life i{font-size: 2em; color:red; -webkit-text-stroke: 3px #000;}
-#life i:before{content: "♡"}
+#life i:before{content: "♡";}
 #life i.on:before{content: "♥"}
 /*#life.on i{-webkit-text-stroke: 3px green;}*/
 
@@ -693,10 +693,6 @@ emojis .deck{position: relative; margin: auto; max-width:600px; text-align: left
 
 emojis .tab_content .deck{padding: 1em 1.5em 0 0.3em; min-height: 70px;  z-index: 1;}
 emojis .tab_content .deck .emoji_asset:empty{display: none;}
-emojis .tab_content .deck .emoji_asset[emoji="📦"] a:after,
-emojis .tab_content .deck .emoji_asset[emoji="😎"] a:after{content: "x30"; font-weight: 900; position: absolute; right: 0; bottom: 0px; font-family: 'Noto Sans KR', sans-serif; font-size:13px; color:#fff; }
-emojis .tab_content .deck .emoji_asset[emoji="📦"] a:before,
-emojis .tab_content .deck .emoji_asset[emoji="😎"] a:before{content: "📦"; position: absolute; right: 23px; bottom: 0; font-family: 'Noto Emoji'; font-size:13px; color:#fff;}
 
 /*emojis .tab_content .deck .emoji_asset[type="reward"][balance="0"],*/
 /*emojis .tab_content .deck .emoji_asset[method="open"] .cnt{display: none;}*/
@@ -1075,7 +1071,7 @@ html[user-agent] .footer{display: block;}
 
 
 
-.footer{position: fixed; display: none; left: 1em; right: 1em; bottom: -2px; z-index: 99999999999999; opacity: 0.5;}
+.footer{position: fixed; display: none; left: 0.5em; right: 0.5em; bottom: -2.5px; z-index: 99999999999999;}
 .footer .cc{float: right;}
 .footer .cc a{position: relative; display: inline-block; vertical-align: top}
 .footer .cc a:first-child:after{content: ""; position: absolute; right: 0; bottom: 2px; width: 60px; height: 0.1px; background-color: #000;}
@@ -1085,7 +1081,7 @@ html[user-agent] .footer{display: block;}
 .footer .cc img{display: block; width: 70px; vertical-align: bottom;}
 
 .footer .info{float: left;}
-.footer .info *{font-size: 8px; color: #54585d;}
+.footer .info *{font-size: 8px; color: #fff; opacity: 0.7}
 .footer .info .links span{margin-right: 0.5em;}
 .footer .info .links a{margin: 0 0.5em;}
 
@@ -1140,6 +1136,9 @@ html[user-agent] body[axis="y"]:before{padding: 50vh; border:50vw solid #000;}
 
 body[referer] emojis .tab_content .deck .emoji_asset[method="notify"]{display: inline-block;}
 
+body.loading .map,
+body.loading input[name="red"],
+body.loading input[name="blue"],
 body.loading #header nav:after,
 body.loading .zoom_toggle,
 body.loading #capture,

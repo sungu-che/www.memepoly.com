@@ -4775,21 +4775,7 @@ OAuth3.on("ready", function(e){
 						var stickerCnt = 1
 						var rewardLength = Object.keys(window.map.reward).length
 
-						var li = ""
-
-					
-						if(window.ethereum){
-							var isUnlocked = await window.ethereum._metamask.isUnlocked()
-
-							if(isUnlocked){
-								li += '<div draggable="false" class="emoji_asset"><a class="metamask unlock"><img src="/src/images/MetaMask_Fox.svg" alt="metamask"></a></div>'
-							}
-						}else{
-							// 설치 유도 버튼
-							li += '<div draggable="false" class="emoji_asset"><a class="metamask" target="_blank" href="https://metamask.io/download/"><img src="/src/images/MetaMask_Fox.svg" alt="metamask"></a></div>'
-						}
-
-						li += '<div draggable="false" class="emoji_asset" emoji="🪙" type="item" method="open"><a class="emoji color">🪙</a><span class="cnt">'+cookies.balance+'</span></div>'
+						var li = '<div draggable="false" class="emoji_asset" emoji="🪙" type="item" method="open"><a class="emoji color">🪙</a><span class="cnt">'+cookies.balance+'</span></div>'
 
 						var afterSticker = []
 						
