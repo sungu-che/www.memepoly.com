@@ -323,6 +323,16 @@ export const Experience = () => {
 	}
 
 	const Asset = function(props){
+		var url = new URL(window.location.href)
+
+		var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
+			cc_address = ethers.computeAddress(cc_address).toLowerCase()
+			cc_address = cc_address.replace("0x","")
+
+		if(window.location.hash){
+			cc_address = window.location.hash.replace("#","")
+		}
+
 		var href = "";
 		var src = "";
 		var emoji = "";
@@ -358,39 +368,9 @@ export const Experience = () => {
 					<Text rotation-z={Math.PI / 0.0815} fontSize={0.5} position={[0, 0, 0.1]} color="#fff">!</Text>
 				</mesh>
 			</>
-		}else if(props.name == "puzzle"){
-			var hex = props.value.codePointAt(0).toString(16)
-
-			// if(isNaN(hex)){
-				src = `/src/fonts/emoji/emoji_u${hex}.png`
-			// }else{
-			// 	var emojis = props.value.split("_")
-				
-			// 	src = `https://www.gstatic.com/android/keyboard/emojikitchen/20201001/${emojis[0]}/${emojis[0]}_${emojis[1]}.png`
-			// }
-
-			const texture = useLoader(THREE.TextureLoader, src)
-
+		}else if(props.name == "bomb"){
 			return <>
-				<group rotation-x={rotation_x} position={props.position}>
-					<mesh rotation-z={Math.PI / 0.0815} position={[0, 0, 0.005]}>
-						<planeGeometry attach="geometry" args={[0.5, 0.5]} />
-						<meshBasicMaterial attach="material" map={texture} transparent />
-					</mesh>
-					<Html className="clipped">
-						<div className="emoji color" x={props.position.x} z={props.position.z}>{props.value}</div>
-					</Html>
-				</group>
-			</>
-		}else if(props.name == "mine"){
-			const texture = useLoader(THREE.TextureLoader, '/src/fonts/emoji/emoji_u1f4a3.png')
-
-			return <>
-				<group rotation-x={rotation_x} position={props.position}>
-					<mesh rotation-z={Math.PI / 0.0815} position={[0, 0, 0.005]}>
-						<planeGeometry attach="geometry" args={[0.5, 0.5]} />
-						<meshBasicMaterial attach="material" map={texture} transparent />
-					</mesh>
+				<group position={props.position}>
 					<Html className="clipped">
 						<div className="emoji color" x={props.position.x} z={props.position.z}>{props.value}</div>
 					</Html>
@@ -402,6 +382,12 @@ export const Experience = () => {
 			var opacity = 0
 
 			var color = props.color
+
+			var _id = crc32(cc_address+props.name+props.position.x+props.position.z).toString(32).toUpperCase()
+
+			if(window.map.biomes[_id]){
+				emoji = window.Biomes[color]
+			}
 
 			if(props.name == "ROAD1" || 
 				props.name == "ROAD2" ||
@@ -421,58 +407,17 @@ export const Experience = () => {
 				opacity = 0.7
 			}
 
-			// OCEAN: "#44447a",
-			// COAST: "#33335a",
-			// LAKESHORE: "#225588",
-			// LAKE: "#336699",
-			// RIVER: "#225588",
-			// MARSH: "#2f6666",
-
-			// BEACH: "#a09077",
-			// ICE: "#99ffff",
-			// LAVA: "#cc3333",
-
-			
-			// ROAD1: "#442211",
-			// ROAD2: "#553322",
-			// ROAD3: "#664433",
-			// BRIDGE: "#686860",
-
-			
-
-			// // Terrain
-			// SNOW: "#ffffff",
-			// TUNDRA: "#bbbbaa",
-			// BARE: "#888888",
-			// SCORCHED: "#555555",
-			// TAIGA: "#99aa77",
-			// SHRUBLAND: "#889977",
-			// TEMPERATE_DESERT: "#c9d29b",
-			// TEMPERATE_RAIN_FOREST: "#448855",
-			// TEMPERATE_DECIDUOUS_FOREST: "#679459",
-			// GRASSLAND: "#88aa55",
-			// SUBTROPICAL_DESERT: "#d2b98b",
-			// TROPICAL_RAIN_FOREST: "#337755",
-			// TROPICAL_SEASONAL_FOREST: "#559944"
-
-			if(color){
-				return <>
-					<group rotation-x={rotation_x} position={props.position}>
-						<mesh position={[0, 0, 0.005]} onClick={onClick}>
-							<boxGeometry attach="geometry" args={[1, 1]} />
-							<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
-						</mesh>
-					</group>
-				</>
-			}else{
-				return <>
-					<group position={props.position}>
-						<Html className="clipped">
-							<div className="emoji color" x={props.position.x} z={props.position.z} color={window.Biomes[props.name]}></div>
-						</Html>
-					</group>
-				</>
-			}
+			return <>
+				<group position={props.position}>
+					<mesh position={[0, 0, 0.005]} onClick={onClick}>
+						<boxGeometry attach="geometry" args={[1, 1]} />
+						<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
+					</mesh>
+					<Html className="clipped on">
+						<div className="emoji color" x={props.position.x} z={props.position.z} color={window.Biomes[props.name]}>{emoji}</div>
+					</Html>
+				</group>
+			</>
 		}else{
 			return <>
 				<group position={props.position}>

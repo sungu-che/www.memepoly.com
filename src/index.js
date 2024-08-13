@@ -4346,9 +4346,6 @@ OAuth3.on("ready", function(e){
 
 								}
 							}
-
-							// $('.deck .follows .emoji_asset[hash="'+host_address+'"] canvas').remove()
-							// $('.deck .follows .emoji_asset[hash="'+host_address+'"]').append(blockies.create({seed: host_address}))
 						}
 
 						biomes.forEach(function(b, i){
@@ -4406,7 +4403,7 @@ OAuth3.on("ready", function(e){
 											console.log('emoji',emoji);
 
 											if(emoji){
-												var _asset = {
+												window.map.biomes[_id] = {
 													id : _id,
 													hash : cc_address,
 													name : b.biome,
@@ -4416,10 +4413,6 @@ OAuth3.on("ready", function(e){
 													y : b.y - 0.5,
 													z : b.z
 												}
-
-												_assets.push(_asset)
-
-												window.map.biomes[_id] = _asset
 
 												var _row = {
 													Id : _id,
@@ -4595,6 +4588,8 @@ OAuth3.on("ready", function(e){
 								}
 							}
 						}
+
+						console.log('_assets',_assets);
 
 						if(window.assets){
 							if(JSON.stringify(window.assets) != JSON.stringify(_assets)){

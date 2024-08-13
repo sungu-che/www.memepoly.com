@@ -283,9 +283,9 @@ canvas[data-engine]{display: block; width: auto; height: 100%;}
 body[zoom="10"] .clipped.on,
 body[zoom="10"] .clipped.on clipped{width: 6vh; height: 6vh;}
 
-.clipped{display: none;}
+/*.clipped{display: none;}*/
 .clipped{position: relative; opacity: 0;width: 0; height: 0; z-index: -1;}
-.clipped.on{width: 12vh; height: 12vh;}
+.clipped.on{width: 12vh; height: 12vh; opacity: 1;}
 /*clipped .emoji{font-size: 6em}*/
 
 clipped {
