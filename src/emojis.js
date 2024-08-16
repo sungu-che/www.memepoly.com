@@ -1,7 +1,11 @@
 window.emojis = [
 	{
-		icon : "",
-		method : "recommand",
+		icon : "💣",
+		type : "emoji",
+		webp : true
+	},
+	{
+		icon : "⚡",
 		type : "emoji",
 		webp : true
 	},

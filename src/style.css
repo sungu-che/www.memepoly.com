@@ -71,17 +71,6 @@ body[zoom="10"] .plyr--video .plyr__controls{display: none;}
 #header{}
 #header .area{display: none;}
 
-input[name="green"]{display: none;}
-
-input[name="red"]{position: fixed; left: 0; right: 50%; bottom: 0; -webkit-appearance: none; outline: none; opacity: 0.5; z-index: 1;}
-input[name="red"]{color: #000; margin: 0; border-radius: 0; height: 1em; background-color: red;}
-input[name="red"]::-webkit-slider-thumb {height: 0; -webkit-appearance: none;}
-input[name="red"]::-webkit-slider-runnable-track {border-radius: 0; height: 6px;}
-
-input[name="blue"]{position: fixed; left: 50%; right: 0; bottom: 0; -webkit-appearance: none; outline: none; opacity: 0.5; z-index: 1;}
-input[name="blue"]{color: #000; margin: 0; border-radius: 0; height: 1em; background-color: blue;}
-input[name="blue"]::-webkit-slider-thumb {height: 0; -webkit-appearance: none;}
-input[name="blue"]::-webkit-slider-runnable-track {border-radius: 0; height: 6px;}
 
 
 #header a.tutorial{display: none; position: absolute; left: -70px; top: 0; bottom: 0; margin: auto 0; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 30px; height: 30px; z-index: 1; box-sizing: border-box;}
@@ -287,6 +276,8 @@ body[zoom="10"] .clipped.on clipped{width: 6vh; height: 6vh;}
 .clipped{position: relative; opacity: 0;width: 0; height: 0; z-index: -1;}
 .clipped.on{width: 12vh; height: 12vh; opacity: 1;}
 /*clipped .emoji{font-size: 6em}*/
+
+.clipped .emoji{font-size: 4em;}
 
 clipped {
 	position: absolute;
@@ -701,6 +692,8 @@ emojis .tab_content .deck .emoji_asset:after{content: ""; position: absolute; le
 emojis .tab_content .deck .emoji_asset>a{position: relative; /*overflow: hidden;*/ display: block; margin: auto; width: 53px; height: 56px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0); transition-duration: 0.2s;}
 emojis .tab_content .deck .emoji_asset>a.emoji{top: -3px;}
 emojis .tab_content .deck .emoji_asset:hover>a{transform: scale(1.2);}
+
+/*{filter: grayscale(1);}*/
 emojis .tab_content .deck .emoji_asset[method="recommand"] a{text-shadow: 0 0 0 #ffffff; animation: recommand 2s cubic-bezier(0.5, 0, 0.5, 1) infinite;}
 
 /*emojis .deck .emoji_asset[emoji="mic"]{display: none;}*/
@@ -1137,8 +1130,6 @@ html[user-agent] body[axis="y"]:before{padding: 50vh; border:50vw solid #000;}
 body[referer] emojis .tab_content .deck .emoji_asset[method="notify"]{display: inline-block;}
 
 body.loading .map,
-body.loading input[name="red"],
-body.loading input[name="blue"],
 body.loading #header nav:after,
 body.loading .zoom_toggle,
 body.loading #capture,
@@ -1151,12 +1142,12 @@ body[referer] #intro{transition-duration: 1s;}
 #intro{position: fixed; left: 0; right: 0; top: 0; bottom: 0; opacity: 0; transition-duration: 0s; transition-delay: 0s;}
 #intro .tb{width: 100%; height: 100%; z-index: 3;}
 #intro .tc{text-align: center; vertical-align: middle;}
-#intro .title{height: 1em; font-size:7em;}
+#intro .title{display: none; height: 1em; font-size:7em;}
 #intro .title .emoji{position: relative; font-size:1em; animation: edle1 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
 #intro .title .emoji img{display: block; margin: 0 auto; width: 18vh; height: 18vh;}
 #intro .title .emoji canvas{display: block; margin: 0 auto; padding: 4px; border:3px solid #fff; border-radius: 50%; width: 14vh; height: 14vh; background-color: #fff; box-sizing: border-box; opacity: 0.5;}
-#intro .coptyright{}
-#intro .coptyright p{font-size: 20px; font-weight: 700; color:#fff; text-shadow: 0 0 5px #ffffff}
+#intro .coptyright{margin-bottom: 3em;}
+#intro .coptyright p{font-size: 5em; font-weight: 900; color:#fff; text-shadow: 0 0 5px #ffffff}
 
 #intro .coptyright .address{display: inline-block; font-size: 0; white-space: nowrap; vertical-align: bottom;}
 #intro .coptyright .address *{vertical-align: top;}
@@ -1167,7 +1158,15 @@ body[referer] #intro{transition-duration: 1s;}
 #intro .coptyright .address address span+span{margin-left: -32px;}
 
 
-
+#intro .notice{margin: 0 auto 2em; padding: 0.7em 1em; max-width: 300px; text-align: left; background-color: #ffa50094;}
+#intro .notice p:first-child{font-size: 0.9em; font-weight: 900;}
+#intro .notice p{font-size: 0.6em; line-height: 1.5; color:#000;}
+#intro .snb{margin: 0 auto; max-width: 400px; text-align: center; }
+#intro .snb li+li{margin-top: 1px;}
+#intro .snb li:first-child{margin-bottom: 1.3em;}
+#intro .snb li a{display: block; padding: 0.5em; font-size: 2em; font-weight: 300; text-align: center; color: #fff; opacity: 0.7}
+#intro .snb li a:hover,
+#intro .snb li a.on{opacity: 1}
 
 
 .layer{display: none; position: fixed; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(0,0,0,0); z-index: 999999999;}
@@ -1894,97 +1893,6 @@ body[chat] form.message fieldset{right: 0;}
 
 body[referer][mode="first"] #root{bottom: 140px;}
 
-
-
-/*body[referer] .aside.focus form.message input[name="message"] {background-color: transparent;}*/
-body[referer] .aside.focus form[name="oauth.network"][intent="flows"].dialog field[type="flow"]{display: block;}
-body[referer].loading .aside .loading strong{}
-
-body[referer] form.message fieldset{right: 0;}
-
-
-
-
-body[referer].loading #intro .title{margin-top: -20px;}
-
-body[referer] #intro .title{height: auto}
-body[referer] #intro .title .emoji{animation: none;}
-body[referer] form.message{bottom: 1em !important; right: 5.5em;}
-body[referer] emojis{display: block; bottom: 5.5em !important;}
-body[referer] form.message a.close{display: none;}
-
-body[referer] emojis .deck{margin-bottom: -15px;}
-body[referer] emojis .deck .emoji_asset>a{height: 43px}
-/*body[referer] emojis .deck{min-height: 52px}*/
-body[referer] emojis .deck .emoji_asset{padding-bottom: 0;}
-
-body[referer][bingo] #root player{opacity: 1 !important}
-body[referer] emojis .deck .emoji_asset[emoji="sms"],
-body[referer] #go[href],
-body[referer] .aside .status a[href="/login/"],
-body[referer] #capture,
-body[referer] #header .area,
-body[referer] .emojis_filter .emoji{display: none;}
-
-
-body[referer] #root .emoji picture *,
-body[referer] #root emoji{transition-duration: 0s;}
-body[referer][mode="first"] emojis .deck .emoji_asset[emoji="😎"]{display: none;}
-
-body[referer].loading #intro{position: fixed; opacity: 1;}
-body[referer].loading #intro .title{float: none; display: block; margin: auto; width: 70px; height: 70px;}
-body[referer].loading #intro .coptyright{margin-top: 0; padding:1em 0; text-align: center;}
-body[referer].loading #intro .tb{background-color: transparent; height: 100%}
-
-body[referer] #intro .title{float: left; width: 60px; height: 60px;}
-
-body[referer] #intro .title canvas,
-body[referer] #intro .title img{display: block; padding: 3px; border-width: 1px; width: 100%; height: 100%; transform: scale(0.8); box-sizing: border-box; background-color: transparent;}
-body[referer] #intro .coptyright address{display: block; margin-top: 6px;}
-body[referer] #intro .title img[src*="oauth.network"]{filter: invert(100%);}
-
-
-body[referer] .footer{left: 0.5em; right: 0.5em;}
-
-body[referer].loading form.message,
-body[referer].loading form[name="oauth.network"]{display: none;}
-
-body[referer][scrolling] #intro .tb{position: fixed; left: 0; right: 0; bottom: initial;}
-/*body[referer][scrolling] #intro .coptyright{position: absolute; margin-top: 0; left: 50px; right: 0; top: 0; bottom: 0; text-align: left;}*/
-
-body[referer][bingo] #root canvas[data-engine]{opacity: 1 !important;}
-
-body[referer][bingo="dialog"] messages{padding-top: 7em;}
-
-body[referer] #intro{z-index: 1; opacity: 1; transition-delay: 0s; pointer-events: none;}
-body[referer] #intro .tb{position: fixed; top: 0.77em; overflow: hidden; border-radius: 1em; height: auto; background-color: #000a; box-sizing: border-box; z-index: 2; transform:scale(0.918);}
-
-body[referer] #intro .coptyright{margin-top: 0; padding:1em 0; text-align: left;}
-body[referer] #intro .coptyright *{color:#fff;}
-body[referer] #intro .coptyright ._head{font-weight: bold; margin-bottom: 3px; line-height: 1.5; font-size: 15px;}
-body[referer] #intro .coptyright ._body{}
-
-body[referer] #intro .coptyright *{overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-body[referer] #intro .coptyright ._head{font-size: 13px;}
-body[referer] #intro .coptyright ._body{white-space:pre; line-height: 1.4; font-size: 10px;}
-
-body[referer] messages>ul{overflow: hidden; height: auto;}
-body[referer] messages>ul>li items{position: relative; z-index: 2;}
-body[referer] messages>ul>li:first-child{margin-top: 20px;}
-body[referer] messages>ul>li:last-child{margin-bottom: 300px;}
-
-
-
-body[referer] .zoom_toggle{display: none;}
-body[referer] .bg{opacity: 0; transition: opacity 1s;}
-
-body[referer].loading #intro{position: fixed; pointer-events: initial;}
-body[referer].loading #intro .bg{display: block; opacity: 1;}
-
-
-body[referer] #intro .tc{position: relative; z-index: 10;}
-
-body[referer].contenteditable form[name="oauth.network"].form [type="checkbox"]{display: none;}
 
 
 body.contenteditable form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flow{position: relative; overflow: hidden; text-overflow: ellipsis; white-space: pre; display: block; text-align: left; line-height: 4em; height: 4em; padding: 0 15px 0 35px; cursor: pointer;}

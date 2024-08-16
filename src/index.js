@@ -3924,7 +3924,7 @@ OAuth3.on("ready", function(e){
 										z : b.z
 									}
 
-									_assets.push(_asset)
+									// _assets.push(_asset)
 
 									window.map.biomes[row.Id] = _asset
 								}
@@ -4089,31 +4089,6 @@ OAuth3.on("ready", function(e){
 									window.bingo[row.Id] = true
 									bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
 								}
-
-							}else if(row.Cc.indexOf("#puzzle") > -1){
-								var emoji = row.Cc.split("@")[1]
-
-								window.map.puzzle[(asset[0]+":"+asset[1])] = {
-									id : row.Id,
-									hash : row.From,
-									name : "puzzle",
-									value : emoji,
-									color: "",
-									x : x,
-									y : -0.04,
-									z : z
-								}
-
-								_assets.push({
-									id : row.Id,
-									hash : row.From,
-									name : "puzzle",
-									value : emoji,
-									color: row.Flag ? true : false,
-									x : x,
-									y : 0,
-									z : z
-								})
 
 							}else if(row.Cc.indexOf("#asset") > -1){
 								var emoji = row.Cc.split("@")[1]
@@ -4293,17 +4268,16 @@ OAuth3.on("ready", function(e){
 							var follow_body = ''
 
 							if(host_address.indexOf(cc_address) == -1){
-								follow_body = '<li>\
-									<div class="emoji_asset lounge" type="player" method="" hash="'+host_address.replace("0x","")+'">\
-										<span class="address">\
-											<address>\
-												<strong>Lounge</strong>\
-											</address>\
-										</span>\
-									</div>\
-								</li>'
+								// follow_body = '<li>\
+								// 	<div class="emoji_asset lounge" type="player" method="" hash="'+host_address.replace("0x","")+'">\
+								// 		<span class="address">\
+								// 			<address>\
+								// 				<strong>XIM.CITY</strong>\
+								// 			</address>\
+								// 		</span>\
+								// 	</div>\
+								// </li>'
 							}
-								
 
 							var follows = window.map.follow[self_player.hash]
 
@@ -4364,7 +4338,7 @@ OAuth3.on("ready", function(e){
 										isBiome = true
 									}
 
-									var asset = {
+									_assets.push({
 										id : _id,
 										hash : cc_address,
 										name : b.biome,
@@ -4373,9 +4347,7 @@ OAuth3.on("ready", function(e){
 										x : b.x,
 										y : b.y - 0.5,
 										z : b.z
-									}
-
-									_assets.push(asset)
+									})
 								}
 							}
 						})
@@ -4589,7 +4561,7 @@ OAuth3.on("ready", function(e){
 							}
 						}
 
-						console.log('_assets',_assets);
+						
 
 						if(window.assets){
 							if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
@@ -4700,71 +4672,6 @@ OAuth3.on("ready", function(e){
 								},50);
 							});
 
-							delete window.map.recommand
-
-							var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
-							if($recommand.length){
-								$recommand.removeAttr("emoji")
-							}
-						}
-
-						var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
-
-						if($recommand.length){
-							if(open){
-								if(window.map.puzzle && !window.map.recommand){
-									if(window.map.puzzle[x+":"+z]){
-										$recommand.html("")
-									}else{
-										var recommnads = []
-
-										for(var _x = -1; _x < 2; _x++){
-											for(var _z = -1; _z < 2; _z++){
-												if(x == (x+_x) && z == (z+_z)){
-													continue;
-												}
-
-												var puzzle = window.map.puzzle[(x+_x)+':'+(z+_z)]
-
-												if(puzzle){
-													recommnads.push(puzzle);	
-												}
-											}
-										}
-
-										if(recommnads.length){
-											var li = ""
-
-											var recommnad = ""
-
-											for(var r = 0; r < recommnads.length; r++){
-												var recommnad = recommnads[r]
-
-												if(recommnad){
-													var emoji = recommnad.value
-
-													recommnad = emoji
-
-													if(window.typeof_item(emoji)){
-														if(window.map.item[emoji]){
-															li = '<a class="emoji color">'+emoji+'</a>'
-														}
-													}else{
-														li = '<a class="emoji color">'+emoji+'</a>'
-													}
-												}
-											}
-
-											$recommand.html(li)
-											$recommand.attr("emoji", recommnad)
-										}else{
-											$recommand.html("")
-										}
-									}
-								}
-							}else if(!window.map.recommand){
-								$recommand.html("")
-							}
 						}
 
 						var stickerCnt = 1
@@ -5921,10 +5828,10 @@ OAuth3.on("ready", function(e){
 							}
 
 							if(_address.indexOf(cc_address) > -1){
-								$body.removeAttr("class")
+								// $body.removeAttr("class")
 							}
 						}catch(err){
-							$body.removeAttr("class")
+							// $body.removeAttr("class")
 						}
 					}
 
@@ -8155,17 +8062,6 @@ OAuth3.on("ready", function(e){
 
 									var open = window.map.open[(player.x+":"+player.z)]
 
-									if(method == "recommand"){
-										emoji = $this.text()
-										method = ""
-
-										if(window.typeof_item(emoji)){
-											type = "item"
-										}else{
-											type = "emoji"
-										}
-									}
-
 									var body = {
 										emoji : window.typeof_emoji(emoji) ? emoji : window.emojis.self
 									}
@@ -8778,96 +8674,10 @@ OAuth3.on("ready", function(e){
 									}
 								}
 
-								window[player.hash].position.y = biome.y + 1
-								current.current.position.y = biome.y + 0.01
+								window[player.hash].position.y = window.current.current.position.y = window.cursor.current.position.y = biome.y + 0.001
 
 								window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = player.x								
 								window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = player.z
-
-								if(window.map.open){
-									var open = window.map.open[player.x+":"+player.z]
-
-									var $capture = $("#capture")
-
-									$("#capture .xyz .x").html(Math.floor(player.x))
-									$("#capture .xyz .z").html(Math.floor(player.z))
-
-									var $recommand = $('.deck .emojis .emoji_asset[method="recommand"]')
-
-									if(open){
-										$capture.addClass("on")
-										$("#capture>.icon").html(blockies.create({seed: "0x"+open.hash}))
-
-										var scoreboard = window.map.score[open.hash]
-
-										$("#capture>.icon").append('<div class="address">\
-											<span>'+open.hash+'</span>\
-											<span dir="rtl">'+open.hash+'</span>\
-											<rank>'+scoreboard.rank+'</rank>\
-											<score>'+scoreboard.score+'</score>\
-										</div>')
-
-										if(window.map.puzzle[player.x+":"+player.z]){
-											$recommand.html("")
-										}else{
-											if(window.map.puzzle){
-												var recommnads = []
-
-												for(var _x = -1; _x < 2; _x++){
-													for(var _z = -1; _z < 2; _z++){
-														if(player.x == (player.x+_x) && player.z == (player.z+_z)){
-															continue;
-														}
-
-														var puzzle = window.map.puzzle[(player.x+_x)+':'+(player.z+_z)]
-
-														recommnads.push(puzzle);
-													}
-												}
-
-												if(recommnads.length){
-													var li = ""
-
-													for(var r = 0; r < recommnads.length; r++){
-														var recommnad = recommnads[r]
-
-														if(recommnad){
-															var emoji = recommnad.value
-
-															if(emoji){
-																if(window.typeof_item(emoji)){
-																	if(window.map.item[emoji]){
-																		li = '<a class="emoji color">'+emoji+'</a>'
-																	}
-																}else{
-																	li = '<a class="emoji color">'+emoji+'</a>'
-																}
-															}
-														}
-													}
-
-													$recommand.html(li)
-												}else{
-													$recommand.html("")
-												}
-											}
-										}
-									}else{
-										$recommand.html("")
-										$capture.removeClass("on")
-										$("#capture>.icon").html('')
-										
-
-										if($capture.hasClass("open_rank")){
-											$capture.click()
-										}
-									}
-
-									var $player = $('player[id="'+player.hash+'"][alt="player"]')
-									var $tooltip = $player.find("tooltip ul");
-										$tooltip.removeClass("open")
-								}
-
 
 								if(window.tutorial){
 									if(window.tutorial.name == "Move" && window.tutorial.step == 1){
@@ -9359,7 +9169,7 @@ OAuth3.on("ready", function(e){
 
 					var player = window.players.self()
 
-					var default_img = '<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">'
+					var default_img = '' //'<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">'
 
 					if(Object.keys(window.com).length){
 						if(window.com.logo){
@@ -9392,7 +9202,7 @@ OAuth3.on("ready", function(e){
 							</span>')
 						}else{
 							$("#intro .title .emoji").html('<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">')
-							$("#intro .coptyright p").html('Lounge')
+							$("#intro .coptyright p").html('XIM.CITY')
 						}	
 					}
 
