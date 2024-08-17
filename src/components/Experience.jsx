@@ -506,7 +506,7 @@ export const Experience = () => {
 		}
 	})
 
-	var fog = OAuth3.isMobile ? ["#fff", 10, 20] : ["#fff", 10, 20]
+	var fog = OAuth3.isMobile ? ["#000", 10, 20] : ["#000", 10, 20]
 
 	return (
 		<>

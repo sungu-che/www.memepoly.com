@@ -10,16 +10,22 @@
 /**::selection{background-color: inherit; color:inherit;}*/
 #root {position: fixed; left: 0; top: 0; right: 0; bottom: 0;}
 
-body{background-color: #fff !important;}
+/*body{background-color: #fff !important;}*/
 
-.map{position: absolute; overflow: hidden; right: 0; top: 0; width: 100px; height: 100px; }
+.map{position: absolute; overflow: hidden; right: 0; top: 0; width: 100px; height: 100px; opacity: 0; pointer-events: none; transition-duration: 0.5s;}
 .map canvas{position: relative; width: 100%; height: 100%; transform: scale(2.5);}
 
 .map .config{display: none;}
 .map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji'; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 1;}
 
 
-#root{}
+#root{opacity: 0; transition-duration: 0.5s;}
+body[mode] .map,
+body[mode] .aside emojis,
+body[mode] #life,
+body[mode] #root{opacity: 1; pointer-events: initial;}
+body[mode] #intro{opacity: 0; pointer-events: none;}
+emojis{opacity: 0; transition-duration: 0.5s; }
 
 /*.plyr__control,
 .plyr__controls{display: none;}*/
@@ -298,7 +304,7 @@ clipped {
 
 .loading #life{display: none;}
 
-#life{position: fixed; left: 1em; top: 15px; z-index: 99999999;}
+#life{position: fixed; left: 1em; top: 15px; z-index: 99999999; opacity: 0; transition-duration: 0.5s; pointer-events: none;}
 #life i{font-size: 2em; color:red; -webkit-text-stroke: 3px #000;}
 #life i:before{content: "♡";}
 #life i.on:before{content: "♥"}
@@ -502,7 +508,7 @@ form.message input[name="message"]::selection{background-color: #fde030;}
 #localVideo{position: absolute; width: 250px; height: 170px; left: 20px; top: 20px; object-fit: cover; background-color: #000;}
 #remoteVideo{position: absolute; width: 250px; height: 170px; left: 280px; top: 20px; object-fit: cover; background-color: #000;}
 
-.aside{}
+.aside{pointer-events: none;}
 .aside:after{content: ""; position: fixed; left: 0; right: 0; bottom: 0; z-index: 0; box-shadow: 0 0 200px 80px #000; transition-duration: 0.2s;}
 body[bingo="dialog"] .aside:after{box-shadow: 0 0 200px 200px #000000d0;}
 body[bingo="dialog"] .aside.focus:after{box-shadow: 0 0 200px 300px #000000d0;}
@@ -1135,35 +1141,31 @@ body.loading .zoom_toggle,
 body.loading #capture,
 body.loading a[href="/login/"]{display: none;}
 body.loading #root player,
-body.loading emojis{opacity: 0; transition-delay: 0;}
+body.loading #intro .snb,
+body.loading #intro .notice,
+body.loading emojis{opacity: 0; transition-delay: 0; transition-duration: 0s;}
 body.loading .aside emojis{display: none;}
-body.loading #intro{opacity: 1; z-index: 2; transition-duration: 1s; transition-delay: 1.5s;}
-body[referer] #intro{transition-duration: 1s;}
-#intro{position: fixed; left: 0; right: 0; top: 0; bottom: 0; opacity: 0; transition-duration: 0s; transition-delay: 0s;}
+body.loading #intro{opacity: 1;}
+
+/*body.paging #intro{opacity: 0; transition-duration: 0.5s; transition-delay: 0s;}*/
+
+
+#intro{position: fixed; left: 0; right: 0; top: 0; bottom: 0; opacity: 1; transition-duration: 0s; transition-delay: 0s; z-index: 10;}
 #intro .tb{width: 100%; height: 100%; z-index: 3;}
 #intro .tc{text-align: center; vertical-align: middle;}
-#intro .title{display: none; height: 1em; font-size:7em;}
-#intro .title .emoji{position: relative; font-size:1em; animation: edle1 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
-#intro .title .emoji img{display: block; margin: 0 auto; width: 18vh; height: 18vh;}
-#intro .title .emoji canvas{display: block; margin: 0 auto; padding: 4px; border:3px solid #fff; border-radius: 50%; width: 14vh; height: 14vh; background-color: #fff; box-sizing: border-box; opacity: 0.5;}
-#intro .coptyright{margin-bottom: 3em;}
-#intro .coptyright p{font-size: 5em; font-weight: 900; color:#fff; text-shadow: 0 0 5px #ffffff}
 
-#intro .coptyright .address{display: inline-block; font-size: 0; white-space: nowrap; vertical-align: bottom;}
-#intro .coptyright .address *{vertical-align: top;}
-#intro .coptyright .address address{display: inline-block;}
-
-#intro .coptyright .address address span{display: inline-block; overflow: hidden; text-overflow: ellipsis; padding:0 5px; width: 80px; box-sizing: border-box; font-size: 1.2em; color: #fff;}
-#intro .coptyright .address address span:first-child{padding-left: 0;}
-#intro .coptyright .address address span+span{margin-left: -32px;}
+#intro .title{margin-bottom: 3em;}
+#intro .title p{font-size: 5em; font-weight: 900; color:#fff; text-shadow: 0 0 5px #ffffff}
 
 
-#intro .notice{margin: 0 auto 2em; padding: 0.7em 1em; max-width: 300px; text-align: left; background-color: #ffa50094;}
+
+#intro .notice{margin: 0 auto 2em; padding: 0.7em 1em; max-width: 300px; text-align: left; background-color: #ffa50094; opacity: 1; transition-duration: 0.5s}
 #intro .notice p:first-child{font-size: 0.9em; font-weight: 900;}
 #intro .notice p{font-size: 0.6em; line-height: 1.5; color:#000;}
-#intro .snb{margin: 0 auto; max-width: 400px; text-align: center; }
-#intro .snb li+li{margin-top: 1px;}
+#intro .snb{margin: 0 auto; max-width: 400px; text-align: center; opacity: 1; transition-duration: 0.5s;}
+#intro .snb li+li{margin-top: 1em}
 #intro .snb li:first-child{margin-bottom: 1.3em;}
+#intro .snb li:first-child a{font-size: 2.7em;}
 #intro .snb li a{display: block; padding: 0.5em; font-size: 2em; font-weight: 300; text-align: center; color: #fff; opacity: 0.7}
 #intro .snb li a:hover,
 #intro .snb li a.on{opacity: 1}
@@ -1890,8 +1892,6 @@ body.contenteditable form[name="oauth.network"][contenteditable] field[contented
 
 body[chat] form.message a.close{display: none;}
 body[chat] form.message fieldset{right: 0;}
-
-body[referer][mode="first"] #root{bottom: 140px;}
 
 
 

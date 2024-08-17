@@ -24,7 +24,55 @@
 			body{}
 		</style>
 	</head>
-	<body tooltip="true" mode="third" address="" style="position: relative; overflow: hidden; overflow-y:scroll; background-color: #555;">
+	<!-- 
+
+
+		/address
+
+			/GET
+				rows
+					{asset}
+					{asset}
+					{asset}
+					{asset}
+					{asset}
+
+					app chain
+
+
+				rows
+					{off chain}
+
+
+			RPC
+				root network 에서
+					nft 가져오기
+						contract address
+						token id
+
+					/POST
+						rows
+							{asset}
+								asset setApproveAll 활성화 상태 표기
+
+				UI
+					기존
+						상단 asset 리스트
+
+						하단 히스토리
+
+					변경
+						보유 app asset, 블록체인 asset 리스트
+
+						본인 trade 리스트만 노출
+						보유 관련 asset trade 리스트도 노출
+
+						3000개씩 가져와서 프론트에서 필터하기
+
+
+
+	 -->
+	<body tooltip="true" address="" style="position: relative; overflow: hidden; overflow-y:scroll; background-color: #000;">
 		<div class="wrap third">
 			<div id="header">
 				<input id="nav" type="checkbox">
@@ -60,11 +108,6 @@
 				<div class="tb">
 					<div class="tc">
 						<div class="title">
-							<div class="emoji color">
-								<!-- <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt=""> -->
-							</div>
-						</div>
-						<div class="coptyright">
 							<p>XIM.CITY</p>
 						</div>
 						<div class="notice">
@@ -75,13 +118,13 @@
 						<div class="snb">
 							<ul>
 								<li>
-									<a href="">Build It</a>
+									<a class="enter">Build It</a>
 								</li>
 								<li>
-									<a href="">Charater</a>
+									<a class="inventory">Inventory</a>
 								</li>
 								<li>
-									<a href="">Trading</a>
+									<a class="exchange">Exchange</a>
 								</li>
 							</ul>
 						</div>
@@ -254,7 +297,7 @@
 							</form>
 						</div>
 
-						<div class="aside" sort="sticker">
+						<div class="aside" sort="emoji">
 							<div class="area">
 								<div class="status">
 									<div class="loading">
@@ -435,11 +478,11 @@
 									</a>
 									<div class="scroll tab_nav emojis_filter">
 										<div class="deck">
-											<a class="emoji color" type="emoji">
+											<a class="emoji color on" type="emoji">
 												<span>emotion</span>
 												<cnt></cnt>
 											</a>
-											<a class="emoji color on" type="sticker">
+											<a class="emoji color" type="sticker">
 												<span>items</span>
 												<cnt></cnt>
 											</a>
