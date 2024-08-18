@@ -1,19 +1,17 @@
-import { Environment, Html, Text } from "@react-three/drei";
+import { Environment, Html, Text } from "@react-three/drei"
 
-import { Suspense, useEffect, useRef, useState, useMemo } from "react";
+import { Suspense, useEffect, useRef, useState, useMemo } from "react"
 
-import { Player } from "./Player";
+import { Player } from "./Player"
 
-import * as THREE from "three";
-import { useFrame, useThree, useLoader } from "@react-three/fiber";
+import * as THREE from "three"
+import { useFrame, useThree, useLoader } from "@react-three/fiber"
 
-import { DissolveMaterial } from "./DissolveMaterial";
-
-import dirtImg from './images/dirt.jpg';
-import grassImg from './images/grass.jpg';
-import glassImg from './images/glass.png';
-import logImg from './images/log.jpg';
-import woodImg from './images/wood.png';
+import dirtImg from './images/dirt.jpg'
+import grassImg from './images/grass.jpg'
+import glassImg from './images/glass.png'
+import logImg from './images/log.jpg'
+import woodImg from './images/wood.png'
 
 
 const textures = {
@@ -24,15 +22,15 @@ const textures = {
 	log : new THREE.TextureLoader().load(logImg)
 }
 
-textures.dirt.magFilter = THREE.NearestFilter;
-textures.dirt.minFilter = THREE.LinearMipMapLinearFilter;
-textures.grass.magFilter = THREE.NearestFilter;
-textures.grass.minFilter = THREE.LinearMipMapLinearFilter;
-textures.glass.magFilter = THREE.NearestFilter;
-textures.glass.minFilter = THREE.LinearMipMapLinearFilter;
-textures.wood.magFilter = THREE.NearestFilter;
-textures.wood.minFilter = THREE.LinearMipMapLinearFilter;
-textures.log.magFilter = THREE.NearestFilter;
+textures.dirt.magFilter = THREE.NearestFilter
+textures.dirt.minFilter = THREE.LinearMipMapLinearFilter
+textures.grass.magFilter = THREE.NearestFilter
+textures.grass.minFilter = THREE.LinearMipMapLinearFilter
+textures.glass.magFilter = THREE.NearestFilter
+textures.glass.minFilter = THREE.LinearMipMapLinearFilter
+textures.wood.magFilter = THREE.NearestFilter
+textures.wood.minFilter = THREE.LinearMipMapLinearFilter
+textures.log.magFilter = THREE.NearestFilter
 textures.log.minFilter = THREE.LinearMipMapLinearFilter
 
 var direction = {
@@ -43,6 +41,7 @@ var direction = {
 
 export const Experience = () => {
 	const [players, setPlayers] = useState([]);
+
 	const [assets, setAssets] = useState([]);
 
 	const [camera, setCamera] = useState({});
@@ -67,11 +66,11 @@ export const Experience = () => {
 	grid.center = "#000"
 	grid.line = "#000"
 
-	const current = useRef();
-	const cursor = useRef();
+	const current = useRef()
+	const cursor = useRef()
 
-	current.color = "white";
-	cursor.color = "white";
+	current.color = "white"
+	cursor.color = "white"
 
 	const self = function(){
 		var cookies = window.cookies
@@ -553,7 +552,7 @@ export const Experience = () => {
 					<Player
 						key={player.hash}
 						uid={player.hash}
-						name="Player"
+						team={player.team}
 						hash={player.hash}
 						emoji={player.emoji}
 						self={player.self}

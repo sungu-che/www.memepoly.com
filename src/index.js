@@ -756,7 +756,7 @@ OAuth3.on("ready", function(e){
 			window.speed = 0.1
 
 			window.far.set(_far)
-			window.setDpr(1)
+			
 
 			$body.removeAttr("zoom")
 			$body.removeAttr("class")
@@ -3006,12 +3006,6 @@ OAuth3.on("ready", function(e){
 
 					var frameloop = false
 
-					var connecting = []
-
-					var signaling = false
-
-					var props = []
-
 					var open = ""
 
 					var sticker = []
@@ -3041,9 +3035,6 @@ OAuth3.on("ready", function(e){
 						biomes.x = window.current.current.position.x
 						biomes.z = window.current.current.position.z
 					}
-
-					// console.log('self_player',self_player);
-					// console.log('_assets',_assets)
 					
 					if(rows.length){
 						if(!window.map.follow[self_player.hash]){
@@ -3121,7 +3112,7 @@ OAuth3.on("ready", function(e){
 								}
 							}
 
-							if(row.Cc.indexOf("#position") > -1){
+							if(row.Subject == "#position"){
 								var player = {
 									follow : false	
 								}
@@ -3174,7 +3165,7 @@ OAuth3.on("ready", function(e){
 										rows[row.From] = true
 
 										_players.push({
-											type : "player",
+											team : hashtag,
 											follow : player.follow,
 											self : player.self,
 											hash : row.From,
@@ -3234,30 +3225,13 @@ OAuth3.on("ready", function(e){
 										emoji : link
 									})
 
-									var playerProp = peers[row.Id]
-
 									_players.cnt += 1
 
-									if(!peers[row.Id]){
-										peers[row.Id] = {
-											hash : row.Id,
-											id : oembed.id,
-											provider : oembed.provider,
-											emoji : link
-										}
-									}
 
 									row.hash = row.Id
 									row.oembed = oembed
 									row.emoji = link
 
-									if(playerProp){
-										if(!playerProp.index && playerProp.emoji != self_player.emoji){
-											props.push(row)
-										}
-									}else{
-										props.push(row)
-									}
 								}catch(err){
 									console.log("err",err);
 								}
@@ -3403,7 +3377,7 @@ OAuth3.on("ready", function(e){
 
 								if(window.players){
 									if(!window.map[(asset[0]+":"+asset[1])] && window.players.length){
-										window.setDpr(1)
+										
 										frameloop = true
 										name += " dissolve"
 
@@ -3690,26 +3664,6 @@ OAuth3.on("ready", function(e){
 								$('emojis .deck .players .emoji_asset[hash="'+cc_address+'"]').append(blockies.create({seed: "0x"+cc_address.toLowerCase()}))
 							}
 
-							if(_players.length){
-								for(var a = 0; a < _players.length; a++){
-									var _player = _players[a]
-
-									var connected = false
-
-									if(peers[_player.hash]){
-										if(peers[_player.hash].iceConnectionState == "connected" && peers[_player.hash].connectionState == "connected"){
-											connected = true
-										}
-									}
-
-									var $player = $('emojis .deck .players .emoji_asset[hash="'+_player.hash+'"]')
-
-									if(connected){
-										$player.attr('connection', connection)
-									}
-								}
-							}
-
 							var $mode = $('input[name="mode"]:checked')
 							var mode = $mode.val()
 
@@ -3748,8 +3702,6 @@ OAuth3.on("ready", function(e){
 							}
 						}
 
-						
-
 						if(window.assets){
 							if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
 								diff = true
@@ -3761,7 +3713,7 @@ OAuth3.on("ready", function(e){
 						if(diff || frameloop){
 							window.setFrameloop("always")
 						}else{
-							window.setDpr(1)
+							
 							try{
 								if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
 									window.setFrameloop("demand")
@@ -3948,32 +3900,8 @@ OAuth3.on("ready", function(e){
 							}
 						}
 
-						if(Object.keys(peers).length){
-							for(var peer in peers){
-								if(peers.hasOwnProperty(peer)) {
-									
-									var connect = connecting.find(function(c){
-										if(c.connectionState){
-											if(c.hash == peer.hash){
-												return true
-											}else{
-												return false
-											}
-										}else{
-											return true
-										}
-									});
-
-									if(!connect){
-										delete peers[peer.hash]
-									}
-								}
-							}
-						}
-
-						
 					}catch(err){
-						// console.log("err",err);
+						console.log("err",err);
 					}
 
 					setTimeout(function(){
@@ -4118,270 +4046,6 @@ OAuth3.on("ready", function(e){
 
 						var plyrs = []
 
-						if(props){
-							if(props.length){
-								var end = false
-
-								for(var i = 0; i < props.length; i++){
-									var prop = props[i]
-
-									if(peers[prop.hash]){
-										if(peers[prop.hash].oembed){
-											plyrs[prop.hash] = peers[prop.hash]
-
-											var $player = document.querySelector('[id="'+prop.hash+'"]')
-
-											if($player){
-												var $plyr = $player.querySelector('[id="'+prop.hash+'"] .plyr')
-
-												var $thumb = $('emojis .deck .players .emoji_asset[hash="'+prop.hash+'"]')
-
-												try{
-													if(peers[prop.hash].emoji == prop.emoji){
-														if(peers[prop.hash].seek != $plyr.querySelector('input[data-plyr="seek"]').value){
-															$thumb.addClass("playing")
-														}else{
-															$thumb.removeClass("playing")
-															delete peers[prop.hash].seek
-														}
-
-														peers[prop.hash].seek = $plyr.querySelector('input[data-plyr="seek"]').value * 1
-
-														if(peers[prop.hash].seek > (OAuth3.localhost ? 99 : 99.5)){
-															if(!peers[prop.hash].count){
-																sessionStorage[prop.hash] = peers[prop.hash].count = 1
-															}else{
-																sessionStorage[prop.hash] = peers[prop.hash].count++
-															}
-
-															delete peers[prop.hash].seek
-
-															end = peers[prop.hash]
-														}
-													}else{
-														peers[prop.hash].destroy()
-
-														$plyr.outerHTML = '<div data-plyr-provider data-plyr-embed-id></div>'
-														$player.querySelector('picture').innerHTML = '<img src="'+prop.oembed.src+'">'
-
-														$thumb.removeClass("playing")
-														// delete peers[prop.hash].destroy
-														delete peers.playing
-														delete peers[prop.hash].seek
-													}
-												}catch(err){
-
-												}
-											}
-										}
-									}
-
-									if(prop.oembed){
-										plyrs.push(prop.hash)
-										var video_selector = '[id="'+prop.hash+'"][alt="player"] [data-plyr-provider]'
-
-										var $video_emoji = $(video_selector)
-
-										var oembed = window.oembed(new URL(prop.emoji))
-
-										if($video_emoji.length && !peers[prop.hash].oembed && (!peers.playing || prop.hash == peers.playing)){
-											try{
-												$('[id="'+prop.hash+'"][alt="player"]').attr("type","video")
-												$video_emoji.attr("data-plyr-provider",prop.oembed.provider)
-												$video_emoji.attr("data-plyr-embed-id",prop.oembed.id)
-
-												// var autoplay = Object.keys(plyrs).length > 0 ? false : true
-
-												var count = 0
-
-												if(sessionStorage[prop.hash]){
-													count = sessionStorage[prop.hash] * 1
-												}else{
-													sessionStorage[prop.hash] = 0
-												}
-
-												peers[prop.hash] = new Plyr(video_selector, {
-													autoplay : true,
-													muted : true,
-													loop : {
-														active : false
-													},
-													volume: 0
-												});
-												peers[prop.hash].play()
-												peers[prop.hash].count = count
-												peers[prop.hash].hash = prop.hash
-												peers[prop.hash].emoji = prop.emoji
-												peers[prop.hash].oembed = prop.oembed
-
-												peers[prop.hash].Id = prop.Id
-												peers[prop.hash].From = prop.From
-												peers[prop.hash].To = prop.To
-												peers[prop.hash].Cc = prop.Cc
-												peers[prop.hash].Subject = prop.Subject
-												peers[prop.hash].Flag = prop.Flag
-												peers[prop.hash].Date = prop.Date
-												peers.playing = prop.hash
-
-												_messages.push(prop)
-
-
-												
-											}catch(err){
-												console.log("err",err);
-											}
-										}
-
-										var count = 0
-
-										if(sessionStorage[prop.hash]){
-											count = sessionStorage[prop.hash] * 1
-										}else{
-											sessionStorage[prop.hash] = 0
-										}
-
-										peers[prop.hash].count = count
-										peers[prop.hash].hash = prop.hash
-										peers[prop.hash].emoji = prop.emoji
-										peers[prop.hash].oembed = oembed
-
-										peers[prop.hash].Id = prop.Id
-										peers[prop.hash].From = prop.From
-										peers[prop.hash].To = prop.To
-										peers[prop.hash].Cc = prop.Cc
-										peers[prop.hash].Subject = prop.Subject
-										peers[prop.hash].Flag = prop.Flag
-										peers[prop.hash].Date = prop.Date
-									}else{
-										var type = ""
-										var _url = ""
-
-										try{
-											_url = new URL(prop.emoji)
-										}catch(err){
-
-										}
-
-										if(_url){
-											if(window.location.host == _url.host){
-												href = _url.href
-
-												type = "portal"
-											}else{
-												var oembed = window.oembed(_url)
-
-												if(oembed.provider){
-													provider = oembed.provider
-													embed = oembed.id
-													
-													type = "video"
-												}else if(_url.href.indexOf(".gif") > -1 || _url.href.indexOf(".jpg") > -1 || _url.href.indexOf(".jpeg") > -1 || _url.href.indexOf(".png") > -1 || _url.href.indexOf(".webp") > -1){
-													type = "image"
-													src = _url.href
-												}
-											}
-										}else{
-											var animation = window.typeof_emoji(prop.emoji)
-
-											if(animation){
-												type = "image"
-											}else{
-												type = "text"
-											}
-										}
-
-										$('[id="'+prop.hash+'"][alt="player"]').attr("type",type)
-									}
-								}
-
-								if(end){
-									try{
-										delete peers.playing
-										delete peers[end.hash].seek
-
-										sessionStorage[end.hash] = end.count + 1
-
-										var muted = end.muted
-
-										end.destroy()
-
-										var src = 'https://i.ytimg.com/vi/'+end.oembed.id+'/default.jpg'
-
-										var $player = document.querySelector('[id="'+end.hash+'"]')
-											$player.querySelector('picture').innerHTML = '<img src="'+src+'">'
-
-										var $plyr = $player.querySelector('[id="'+end.hash+'"] .plyr')
-										if($plyr){											
-											$plyr.outerHTML = '<div data-plyr-provider data-plyr-embed-id></div>'
-										}
-
-										var $thumb = $('emojis .deck .players .emoji_asset[hash="'+end.hash+'"]')
-
-										$thumb.removeClass("playing")
-
-										// delete peers[end.hash].destroy
-
-
-										var index = plyrs.indexOf(end.hash)
-
-										if(plyrs[index+1]){
-											prop = plyrs[plyrs[index+1]]
-										}else{
-											prop = plyrs[plyrs[0]]
-										}
-										
-										try{
-											var video_selector = '[id="'+prop.hash+'"][alt="player"] [data-plyr-provider]'
-
-											var $video_emoji = $(video_selector)
-
-											$('[id="'+prop.hash+'"][alt="player"]').attr("type","video")
-											$video_emoji.attr("data-plyr-provider",prop.oembed.provider)
-											$video_emoji.attr("data-plyr-embed-id",prop.oembed.id)
-											
-
-											peers[prop.hash] = new Plyr(video_selector, {
-												autoplay : true,
-												muted : muted,
-												loop : {
-													active : false
-												},
-												volume: muted ? 0 : 1
-											});
-
-											var count = 0
-
-											if(sessionStorage[prop.hash]){
-												count = sessionStorage[prop.hash] * 1
-											}else{
-												sessionStorage[prop.hash] = 0
-											}
-											peers[prop.hash].play()
-											peers[prop.hash].count = count
-											peers[prop.hash].hash = prop.hash
-											peers[prop.hash].emoji = prop.emoji
-											peers[prop.hash].oembed = prop.oembed
-
-											peers[prop.hash].Id = prop.Id
-											peers[prop.hash].From = prop.From
-											peers[prop.hash].To = prop.To
-											peers[prop.hash].Cc = prop.Cc
-											peers[prop.hash].Subject = prop.Subject
-											peers[prop.hash].Flag = prop.Flag
-											peers[prop.hash].Date = prop.Date
-											peers.playing = prop.hash
-
-											_messages.push(prop)
-										}catch(err){
-											console.log("err",err);
-										}
-									}catch(err){
-										console.log("Err",err);
-									}
-								}
-							}
-						}
-
 						$('.emoji[type="threads"] cnt').text(_threads.length)
 
 						if(_threads.length){
@@ -4475,18 +4139,7 @@ OAuth3.on("ready", function(e){
 											emoji : link
 										})
 
-										var playerProp = peers[row.Id]
-
 										_players.cnt += 1
-
-										if(!peers[row.Id]){
-											peers[row.Id] = {
-												hash : row.Id,
-												id : oembed.id,
-												provider : oembed.provider,
-												emoji : link
-											}
-										}
 
 										row.hash = row.Id
 										row.oembed = oembed
@@ -4494,13 +4147,6 @@ OAuth3.on("ready", function(e){
 										row.x = assets[0]
 										row.z = assets[1]
 
-										if(playerProp){
-											if(!playerProp.index && playerProp.emoji != self_player.emoji){
-												props.push(row)
-											}
-										}else{
-											props.push(row)
-										}
 
 										$(".item.playlist").remove()
 
@@ -6206,35 +5852,6 @@ OAuth3.on("ready", function(e){
 									return
 								}
 
-								if($this.hasClass("plyr__poster")){
-									var $$player = $this.closest("player")
-									var hash = $$player.attr("id")
-
-									var plyr = peers[hash]
-
-									var currentTime = plyr.currentTime
-
-									if($body.attr("tooltip")){
-										$body.removeAttr("tooltip")
-										$$player.find("tooltip").removeClass("on")
-										
-										$('.emoji_asset.playing').removeClass('playing')
-
-										peers[hash].play()
-										
-										// if(OAuth3.isMobile){
-										// 	peers[hash].play()
-										// }else{
-										// 	$$player.find("iframe")[0].contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*')
-										// }
-									}else{
-										$body.attr("tooltip","true")
-										$$player.find("tooltip").addClass("on")
-										$$player.find("iframe")[0].contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*')
-									}
-
-									return
-								}
 
 								if($this.closest("#header").length){
 									var href = $this[0].href
@@ -6415,146 +6032,6 @@ OAuth3.on("ready", function(e){
 
 											Zoom()
 										}
-
-										var before = peers[peers.playing]
-
-										if(focus != peers.playing){
-											var prop = peers[focus]
-
-											if(prop){
-												if(prop.oembed){
-													try{
-														var $player = document.querySelector('[id="'+before.hash+'"]')
-
-														var $plyr = $player.querySelector('[id="'+before.hash+'"] .plyr')
-
-														try{
-															before.destroy()
-														}catch(err){
-															console.log("Err",err);
-														}
-
-														$plyr.outerHTML = '<div data-plyr-provider data-plyr-embed-id></div>'
-														$player.querySelector('picture').innerHTML = '<img src="'+before.oembed.src+'">'
-
-														// delete peers[prop.hash].destroy
-														delete peers.playing
-														delete peers[before.hash].seek
-
-														var $thumb = $('emojis .deck .players .emoji_asset[hash="'+before.hash+'"]')
-
-														$thumb.removeClass("playing")
-													}catch(err){
-														// console.log("Err",err);
-													}
-
-													try{
-														var video_selector = '[id="'+prop.hash+'"][alt="player"] [data-plyr-provider]'
-
-														var $video_emoji = $(video_selector)
-
-
-														$('[id="'+prop.hash+'"][alt="player"]').attr("type","video")
-														$video_emoji.attr("data-plyr-provider",prop.oembed.provider)
-														$video_emoji.attr("data-plyr-embed-id",prop.oembed.id)
-														var count = 0
-
-														if(sessionStorage[prop.hash]){
-															count = sessionStorage[prop.hash] * 1
-														}else{
-															sessionStorage[prop.hash] = 0
-														}
-
-														peers[prop.hash] = new Plyr(video_selector, {
-															autoplay : true,
-															muted : false,
-															loop : {
-																active : false
-															},
-															volume: 1
-														});
-														peers[prop.hash].play()
-														peers[prop.hash].count = count
-														peers[prop.hash].hash = prop.hash
-														peers[prop.hash].emoji = prop.emoji
-														peers[prop.hash].oembed = prop.oembed
-
-														peers[prop.hash].Id = prop.Id
-														peers[prop.hash].From = prop.From
-														peers[prop.hash].To = prop.To
-														peers[prop.hash].Cc = prop.Cc
-														peers[prop.hash].Subject = prop.Subject
-														peers[prop.hash].Flag = prop.Flag
-														peers[prop.hash].Date = prop.Date
-														peers.playing = prop.hash
-
-														// _messages.push(prop)
-
-														var $playlist = $(".item.playlist")
-
-														$playlist.attr("id",prop.hash)
-
-
-														$playlist[0].outerHTML = '<li id="'+prop.Id+'" class="item playlist self">\
-															<div class="thumb"><img src="'+prop.oembed.src+'"></div>\
-															<div class="text">\
-																<span class="icon" data-from="'+prop.From+'"></span>\
-															</div>\
-														</li>'
-
-														var $icons = $("messages li .icon")
-
-														if($icons.length){
-															$icons.each(function(i, el){
-																var hash = el.dataset.from
-
-																var $icon = $icons.eq(i)
-
-																try{
-																	$icon.find('canvas').remove()
-																	$icon.append(blockies.create({seed: "0x"+hash}))
-																}catch(err){
-
-																}
-															})
-														}
-
-														var $icons = $("talks li .icon")
-
-														if($icons.length){
-															$icons.each(function(i, el){
-																var hash = el.dataset.from
-
-																var $icon = $icons.eq(i)
-
-																try{
-																	$icon.find('canvas').remove()
-																	$icon.append(blockies.create({seed: "0x"+hash}))
-																}catch(err){
-
-																}
-															})						
-														}
-														var $messages = $("messages")
-
-														$messages.addClass("on")
-
-														if(OAuth3.timeout){
-															delete OAuth3.timeout
-														}else{
-															OAuth3.timeout = setTimeout(function(){
-																if(!$aside.hasClass("on")){
-																	$messages.removeClass("on")
-																	$("talks").removeClass("on")
-																}
-															},3000)
-														}
-													}catch(err){
-														// console.log("Err",err);
-													}
-												}
-											}
-										}
 									}
 								}
 
@@ -6610,9 +6087,9 @@ OAuth3.on("ready", function(e){
 										$body.attr("zoom", _far.x)
 
 										if(_far.x == 10){
-											window.setDpr(1)
+											
 										}else{
-											window.setDpr(1)
+											
 										}
 
 										window.far.set(_far)
