@@ -90,7 +90,7 @@ export const Experience = () => {
 			hash : player.hash,
 			follow : player.follow,
 			self : player.self,
-			type : player.type,
+			team : player.team,
 			x : position.x,
 			y : player.position.y,
 			z : position.z

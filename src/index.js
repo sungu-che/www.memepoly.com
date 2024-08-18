@@ -319,7 +319,7 @@ function getHashtag(str){
 		hashtags.forEach(function(h, i){
 			var _h = h.replace("#","")
 
-			if(Biomes[_h] && !hashtag){
+			if(!hashtag){
 				hashtag = _h
 			}
 		})
@@ -2321,6 +2321,7 @@ OAuth3.on("ready", function(e){
 
 				window.response = resp
 			}
+			console.log('cookies',cookies);
 
 			try{
 				if(window.players){
@@ -2358,6 +2359,7 @@ OAuth3.on("ready", function(e){
 						self_player = window.players.self()
 					}else{
 						self_player = {
+							team : cookies.team ? cookies.team : "",
 							follow : false,
 							self : true,
 							hash : cookies.address ? cookies.address : cookies.hash,
@@ -2367,6 +2369,8 @@ OAuth3.on("ready", function(e){
 							z : 1.5
 						}
 					}
+
+					console.log('self_player',self_player)
 
 					if(rows.length){
 						var thread
@@ -2467,506 +2471,6 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					if(window.tutorial){
-						clearInterval(window.Polling)
-
-						var _date = new Date(new Date() - timezoneOffset) // 10s ago
-							_date = _date.toISOString()
-								.replace(/T/, ' ')
-								.replace(/\..+/, '')
-
-						var x = self_player.x
-						var z = self_player.z
-
-						rows = [{
-							Id : randomHash(), 
-							From : self_player.hash, 
-							To : cc_address, 
-							Cc : 1.5+','+1.5+' #position '+cc_address,
-							Subject : "", 
-							Flag : "",
-							Date : _date
-						}]
-
-						if(window.tutorial.name){
-							var _rows = window.tutorial.rows ? window.tutorial.rows : []
-
-							if(window.tutorial.name == "Move"){
-								
-							}else if(window.tutorial.name == "MineSweeper"){
-								if(window.tutorial.step == 0){
-									if(resp.body.body.cc == "open"){
-										window.tutorial.step = 1
-										$body.attr("step", 1)
-
-										var _row = {}
-
-										for(var _x = -1; _x < 2; _x++){
-											for(var _z = -1; _z < 2; _z++){
-												var open = false
-												if(
-													(x == (x+_x) && z == (z+_z)) ||
-													_x == _z
-												){
-													open = true
-												}
-
-												if(open){
-													var open_row = {
-														Id : randomHash(), 
-														From : self_player.hash, 
-														To : cc_address, 
-														Cc : (x+_x)+','+(z+_z)+' #open '+cc_address,
-														Subject : "", 
-														Flag : "",
-														Date : _date
-													}
-
-													window.tutorial.opens[(x+_x)+':'+(z+_z)] = open_row
-													_rows.push(open_row)
-												}else{
-													var mine_row = {
-														Id : randomHash(), 
-														From : self_player.hash, 
-														To : self_player.hash, 
-														Cc : (x+_x)+','+(z+_z)+' #asset '+cc_address+' @💣',
-														Subject : "", 
-														Flag : "",
-														Date : _date
-													}
-													
-													window.tutorial.mines[(x+_x)+':'+(z+_z)] = mine_row
-													_rows.push(mine_row)
-
-													_row = {
-														Id : randomHash(), 
-														From : self_player.hash, 
-														To : cc_address, 
-														Cc : (x+_x)+','+(z+_z)+' #asset '+cc_address,
-														Subject : "", 
-														Flag : cc_address,
-														Date : _date,
-														Name : "tutorial",
-														Color : "green",
-														y : -0.08
-													}
-
-													window.tutorial.x = x+_x
-													window.tutorial.z = z+_z
-												}
-											}
-										}
-
-										_rows.push(_row)
-									}
-								}else if(window.tutorial.step == 2){
-									if(resp.body.body.cc == "flag"){
-										window.tutorial.step = 3
-										$body.attr("step", 3)
-
-										var open_row
-
-										for(var i = 0;  i < _rows.length; i++){
-											var _row = _rows[i]
-											if(_row.Cc.indexOf("#open") > -1){
-												open_row = _row
-											}
-										}
-
-										var position = open_row.Cc.split(" #open")[0]
-
-										var asset = JSON.parse("["+position+"]")
-
-										var _x = asset[0]
-										var _z = asset[1]
-
-										window.tutorial.x = _x
-										window.tutorial.z = _z
-
-										_rows.push({
-											Id : randomHash(), 
-											From : self_player.hash, 
-											To : cc_address, 
-											Cc : open_row.Cc.replace("open", "asset"),
-											Subject : "", 
-											Flag : cc_address,
-											Date : _date,
-											Name : "tutorial",
-											Color : "green",
-											y : -0.08
-										})
-
-										var flag_row = {
-											Id : randomHash(), 
-											From : self_player.hash, 
-											To : cc_address, 
-											Cc : x+','+z+' #flag '+cc_address,
-											Subject : "", 
-											Flag : "",
-											Date : _date
-										}
-										_rows.push(flag_row)
-										window.tutorial.flags[x+':'+z] = flag_row
-									}else{
-										_rows.splice(_rows.length-1, 1)	
-									}
-								}else if(window.tutorial.step == 4){
-									if(resp.body.body.cc == "chord"){
-										var index
-
-										for(var _x = -1; _x < 2; _x++){
-											for(var _z = -1; _z < 2; _z++){
-												var mine_row = window.tutorial.mines[(x+_x)+':'+(z+_z)]
-												var mine_cc = mine_row ? mine_row.Cc : ""
-
-												var flag_row = window.tutorial.flags[(x+_x)+':'+(z+_z)]
-												var flag_cc = flag_row ? flag_row.Cc : ""
-												
-												for(var i = 0;  i < _rows.length; i++){
-													if(_rows[i].Name){
-														index = i
-													}else if(_rows[i].Cc == flag_cc){
-
-														_rows[i].Cc = _rows[i].Cc.replace('#flag',"#open")
-
-														window.tutorial.opens[(x+_x)+':'+(z+_z)] = _rows[i]
-													}else if(_rows[i].Cc == mine_cc){
-														_rows[i].Flag = cc_address
-														_rows[i].Cc = _rows[i].Cc
-															.replace("#asset", "#open")
-															.replace(" @💣", "")
-
-														window.tutorial.opens[(x+_x)+':'+(z+_z)] = _rows[i]
-													}
-												}
-
-												delete window.tutorial.flags[(x+_x)+':'+(z+_z)]
-												delete window.tutorial.mines[(x+_x)+':'+(z+_z)]
-											}
-										}
-
-										if(typeof index != "undefined"){
-											_rows.splice(index, 1)
-											window.tutorial.x -= 1
-											window.tutorial.z -= 1
-											setTimeout(function(){
-												$('.aside').attr("sort","emoji")
-												window.Tutorial(3)
-											},100)
-										}
-									}
-								}
-							}else if(window.tutorial.name == "Puzzle"){
-								if(window.tutorial.step == 0){
-									_rows.push({
-										Id : randomHash(), 
-										From : self_player.hash, 
-										To : cc_address, 
-										Cc : window.tutorial.x+','+window.tutorial.z+' #asset '+cc_address,
-										Subject : "", 
-										Flag : cc_address,
-										Date : _date,
-										Name : "tutorial",
-										Color : "green",
-										y : -0.08
-									})
-
-									for(var i = 0; i < _rows.length; i++){
-										var _row = _rows[i]
-
-										if(_row.Cc.indexOf("#open") > -1){
-											var position = _row.Cc.split(" #open")[0]
-
-											var asset = JSON.parse("["+position+"]")
-
-											var _x = asset[0]
-											var _z = asset[1]
-
-											if(_x == window.tutorial.x && _z == window.tutorial.z){
-
-											}else{
-												var puzzle_row = {
-													Id : randomHash(), 
-													From : self_player.hash, 
-													To : cc_address, 
-													Cc : _x+','+_z+' #puzzle '+cc_address+' @😄',
-													Subject : "#puzzle", 
-													Flag : cc_address,
-													Date : _date
-												}
-
-												_rows.push(puzzle_row)
-											}
-										}
-									}
-								}else if(window.tutorial.step == 1){
-									var puzzle_rows = []
-
-									if(resp.body.body.cc == "puzzle"){
-										for(var i = 0; i < _rows.length; i++){
-											var _row = _rows[i]
-
-											if(_row.Cc.indexOf("#puzzle") > -1){
-												var position = _row.Cc.split(" #puzzle")[0]
-
-												var asset = JSON.parse("["+position+"]")
-
-												var _x = asset[0]
-												var _z = asset[1]
-
-												var emoji = window.emojis[random(4, window.emojis.length-1)]
-
-												if(_x == window.tutorial.x && _z == window.tutorial.z){
-													
-												}else{
-													_rows[i].Cc = _rows[i].Cc.replace("#puzzle","#bingo")
-												}
-
-												var puzzle_row = {
-													Id : randomHash(), 
-													From : self_player.hash, 
-													To : cc_address, 
-													Cc : _x+','+_z+' #puzzle '+cc_address+' @'+emoji.icon,
-													Subject : "#puzzle", 
-													Flag : cc_address,
-													Date : _date
-												}
-
-												puzzle_rows.push(puzzle_row)
-											}
-										}
-
-										_rows = _rows.concat(puzzle_rows)
-
-										window.tutorial.step = 2
-										$body.attr("step", 2)
-									}	
-								}else if(window.tutorial.step == 2){
-									if(resp.body.body.cc == "puzzle"){
-										for(var i = 0; i < _rows.length; i++){
-											var _row = _rows[i]
-
-											delete window.bingo[_row.Id]
-
-											if(_row.Cc.indexOf("#puzzle") > -1){
-												var position = _row.Cc.split(" #puzzle")[0]
-
-												var asset = JSON.parse("["+position+"]")
-
-												var _x = asset[0]
-												var _z = asset[1]
-
-												if(_x == window.tutorial.x && _z == window.tutorial.z){
-													var puzzle_row = {
-														Id : randomHash(), 
-														From : self_player.hash, 
-														To : cc_address, 
-														Cc : _x+','+_z+' #bingo '+cc_address+' @😄',
-														Subject : "#bingo", 
-														Flag : cc_address,
-														Date : _date
-													}
-
-													_rows.push(puzzle_row)
-												}else{
-													_rows[i].Cc = _rows[i].Cc.replace("#puzzle","#bingo")
-												}
-											}
-										}
-
-										setTimeout(function(){
-											window.Tutorial(4)
-
-											$('.aside').attr("sort","sticker")
-										},100)
-									}
-								}
-							}else if(window.tutorial.name == "Sticker"){
-								if(window.tutorial.step == 0){
-									if(resp.body.body.cc == "puzzle"){
-										var item = window.items[[random(1, window.items.length-1)]]
-
-										_rows.push({
-											Id : randomHash(), 
-											From : cc_address, 
-											To : self_player.hash, 
-											Cc : x+','+z+' #asset '+cc_address+' @'+item.char,
-											Subject : "#asset", 
-											Flag : "",
-											Date : _date
-										})
-
-										window.tutorial.step = 1
-										$body.attr("step", 1)
-									}
-								}else if(window.tutorial.step == 1){
-									if(resp.body.body.puzzles){
-										if(resp.body.body.puzzles.length){
-											var emoji = resp.body.body.puzzles[0].emoji
-
-											_rows.splice(_rows.length-1, 1)	
-
-											_rows.push({
-												Id : randomHash(), 
-												From : self_player.hash, 
-												To : cc_address, 
-												Cc : x+','+z+' #puzzle '+cc_address+' @'+emoji,
-												Subject : "#puzzle", 
-												Flag : "",
-												Date : _date
-											})
-
-											window.tutorial.step = 2
-											$body.attr("step", 2)
-
-											window.tutorial.x -= 1
-											window.tutorial.z -= 1
-
-											for(var i = 0; i < _rows.length; i++){
-												if(_rows[i].Name){
-													_rows[i].Cc = window.tutorial.x+','+window.tutorial.z+' #asset '+cc_address
-												}
-											}
-										}
-									}
-								}
-							}else if(window.tutorial.name == "Mine"){
-								if(window.tutorial.step == 0){
-									var isMine = false
-
-									try{
-										if(resp.body.body.puzzles[0].emoji == "💣"){
-											isMine = true
-										}
-									}catch(err){
-										console.log("Err",err);
-									}
-									if(isMine){
-										var index
-
-										for(var i = 0;  i < _rows.length; i++){
-											if(_rows[i].Name){
-												_rows[i] = undefined
-											}else if(_rows[i].Cc == (x+','+z+' #open '+cc_address)){
-												_rows[i] = undefined
-											}
-										}
-
-										var mine_row = {
-											Id : randomHash(),
-											From : self_player.hash, 
-											To : cc_address,
-											Cc : x+','+z+' #mine '+cc_address,
-											Subject : "", 
-											Flag : "",
-											Date : _date
-										}
-
-										_rows.push(mine_row)
-
-										window.tutorial.x += 1
-										window.tutorial.z += 1
-
-										_rows.push({
-											Id : randomHash(), 
-											From : self_player.hash, 
-											To : cc_address, 
-											Cc : window.tutorial.x+','+window.tutorial.z+' #asset '+cc_address,
-											Subject : "", 
-											Flag : cc_address,
-											Date : _date,
-											Name : "tutorial",
-											Color : "green",
-											y : -0.08
-										})
-
-										window.tutorial.step = 1
-										$body.attr("step", 1)
-									}
-								}
-							}else if(window.tutorial.name == "Portal"){
-								if(window.tutorial.step == 0){
-									var isPortal = false
-
-									if(resp.body.body.cc == "portal"){
-										isPortal = true
-									}
-
-									if(isPortal){
-										_rows.splice(_rows.length-1, 1)	
-
-										window.tutorial.portal = randomHash()
-
-										_rows.push({
-											Id : window.tutorial.portal, 
-											From : (self_player.hash.indexOf("0x") > -1 ? self_player.hash : "0x"+self_player.hash), 
-											To : cc_address, 
-											Cc : x+','+z+' #portal 0x'+cc_address,
-											Subject : "", 
-											Flag : "",
-											Date : date
-										})
-
-										window.tutorial.x -= 1
-
-										_rows.push({
-											Id : randomHash(), 
-											From : self_player.hash, 
-											To : cc_address, 
-											Cc : window.tutorial.x+','+window.tutorial.z+' #asset '+cc_address,
-											Subject : "", 
-											Flag : cc_address,
-											Date : _date,
-											Name : "tutorial",
-											Color : "green",
-											y : -0.08
-										})
-
-										window.tutorial.step = 1
-										$body.attr("step", 1)
-
-										localStorage.tutorial = "complete"
-									}
-								}
-							}else if(window.tutorial.name == "Withdrawal"){
-								window.location.hash = self_player.hash.replace("0x","")
-
-								if(window.tutorial.step == 0){
-									$body.attr("tutorial", "Withdrawal")
-									$body.attr("step", 0)
-								}
-							}
-
-							if(!window.tutorial.rows && _rows.length > 0){
-								window.tutorial.rows = _rows
-							}
-
-							_rows = rowsTrim(_rows)
-
-							rows = rows.concat(_rows);
-						}else{
-							window.tutorial.rows = []
-							window.tutorial.opens = {}
-							window.tutorial.mines = {}
-							window.tutorial.flags = {}
-							window.tutorial.z = window.tutorial.x = 1.5
-							window[self_player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = 1.5
-							window[self_player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = 1.5
-
-							rows.push({
-								Id : randomHash(), 
-								From : self_player.hash, 
-								To : cc_address, 
-								Cc : 1.5+','+1.5+' #asset '+cc_address,
-								Subject : "", 
-								Flag : cc_address,
-								Date : _date,
-								Name : "tutorial",
-								Color : "green",
-								y : -0.08
-							})
-						}
-					}
 
 					var player_hash = self_player.hash
 
@@ -3018,7 +2522,7 @@ OAuth3.on("ready", function(e){
 
 					var biomes = listToBiomes(window.map.biomes, 100)
 					
-					var size = OAuth3.isMobile ? 8 : 11
+					var size = OAuth3.isMobile ? 13 : 15
 
 					var isBiome = false
 
@@ -3057,7 +2561,7 @@ OAuth3.on("ready", function(e){
 							cc_player.hash = cc_address.toUpperCase()
 						}
 
-						_players.push(cc_player)
+						// _players.push(cc_player)
 
 						if(window.com){
 							if(window.com.rows){
@@ -3150,9 +2654,9 @@ OAuth3.on("ready", function(e){
 										player.emoji = window.emojis.self
 									}
 								}else{
-									player.x = player[0]
-									player.y = biome.y + 0.5
-									player.z = player[1]
+									player.x = x
+									player.y = (biome ? biome.y : 0) + 0.5
+									player.z = z
 									player.emoji = emoji
 
 									if(window.map.follow[self_player.hash]){
@@ -3163,6 +2667,8 @@ OAuth3.on("ready", function(e){
 								if(!window.map.report[row.From]){
 									if(!rows[row.From]){
 										rows[row.From] = true
+
+
 
 										_players.push({
 											team : hashtag,
@@ -3216,7 +2722,7 @@ OAuth3.on("ready", function(e){
 									var oembed = window.oembed(url)
 
 									_players.push({
-										type : "player",
+										team : "",
 										self : row.From,
 										hash : row.Id,
 										x : asset[0],
@@ -3239,6 +2745,7 @@ OAuth3.on("ready", function(e){
 								var canvas = blockies.create({seed: row.From.toLowerCase()})
 
 								_players.push({
+									team : "",
 									self : row.From,
 									hash : row.Id,
 									x : x,
@@ -4130,7 +3637,7 @@ OAuth3.on("ready", function(e){
 										var oembed = window.oembed(url)
 
 										_players.push({
-											type : "player",
+											team : "",
 											self : row.From,
 											hash : row.Id,
 											x : asset[0],

@@ -148,99 +148,6 @@ body .layer form[name="Tutorial"] .index select option{background-color: #fff;}
 
 #header #nav:checked+.area nav form[name="person"]{display: block;}
 
-body[mode="first"] .zoom_toggle,
-body[mode="first"] #capture{display: none;}
-
-body[mode="first"] emojis .scroll .deck>div,
-body[mode="first"] .emojis_filter .emoji{display: none;}
-body[mode="first"] emojis .scroll .deck>div.emojis,
-body[mode="first"] .emojis_filter .emoji[type="emoji"]{display: inline-block;}
-
-body[mode="first"] #root.fiber>div>div,
-body[mode="first"] #root canvas[data-engine]{display: none !important;}
-body[mode="first"] #root.fiber>div{display: block !important; justify-content: center;}
-body[mode="first"] #root.fiber div.flex{float: left; position: static !important; display: block !important; transform:inherit !important; flex-basis: auto}
-body[mode="first"] #root.fiber div.flex>div{position: static !important; display: table; width: 100%; height: 100%;}
-body[mode="first"] #root.fiber div.flex>div player{position: relative; display: table-cell; text-align: center; vertical-align: middle;}
-body[mode="first"] #root.fiber div.flex>div player tooltip.on{top: 4.8em; left: 0.75em;}
-body[mode="first"] #root.fiber div.flex>div player tooltip li:first-child a, 
-body[mode="first"] #root.fiber div.flex>div player tooltip li:last-child a{top: 0;}
-body[mode="first"] #root emoji,
-body[mode="first"] #root .emoji{display: inline-block; position: static; top: inherit; left: inherit; width: auto; height: auto;}
-
-body[mode="first"] #root player stream.cast{top: 0; left: 0; width: 100%; height: 100%; z-index: 0;}
-body[mode="first"] #root player stream.mic video{display: none;}
-
-
-body[mode="first"][tooltip="true"] #root player stream a.screen{display: block;}
-body[mode="first"] #root player stream a.screen{display: none; overflow: hidden; position: absolute; font-size: 35px; background: #fff; border-radius: 5px; font-family: 'Material Symbols Outlined'; z-index: 3;}
-body[mode="first"] #root player stream a.screen.full{right: 0.4em;top: 1.5em;}
-body[mode="first"] #root player stream a.screen.wide{right: 40px; bottom: 40px;}
-body[mode="first"] #root player stream a.screen.close{right: 0; top: 40px; display: none;}
-body[mode="first"] #root player stream a.screen.pip{right: 0.4em;top: 2.8em;bottom: initial;}
-body[mode="first"] #root player stream a.screen.mic{left: 0; top: 40px;}
-body[mode="first"] #root player stream a.screen.volume{right: 0.4em;left: initial;top: 4.1em;bottom: initial;}
-
-
-
-
-body[mode="first"] #root player tooltip li:first-child{display: none;}
-body[mode="first"] #root player tooltip li{display: block;}
-body[mode="first"] #root player tooltip li+li{margin-left: 0; margin-top: 10px;}
-
-body[mode="first"] #root player tooltip li a.Open,
-body[mode="first"] #root player tooltip li a.Chord,
-body[mode="first"] #root player tooltip li a.Mine{display: none;}
-
-body[mode="first"] #root .emoji picture *{position: absolute; left: 0.3em; top: 0.3em; width: 10vh !important; height: auto !important; transition-duration: 0s}
-
-body[mode="first"] #root player[self="true"] .address address:after{padding-left: 5px; line-height: 32px}
-body[mode="first"] #root player .address{position: absolute; top: 2.5vh; left: 12vh; font-size: initial; text-align: left; transition-duration: 0s; opacity: 1}
-body[mode="first"] #root player .address span{line-height: 34px}
-body[mode="first"] #root player talks{top: 4.5em; left: 5.5em; text-align: left;}
-
-body[mode="first"] #root player .getUserMedia.getDisplayMedia stream.videocam{border-width: 2px; border-radius: 50%; left: 0.3em; top: 0.3em; width: 10vh; height: 10vh;}
-body[mode="first"] #root player .getUserMedia.getDisplayMedia stream.videocam video{transform: scale(2);}
-
-body[mode="first"] #root player .getUserMedia stream.videocam{position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-width:0; border-radius: 0}
-body[mode="first"] #root player .getUserMedia stream.videocam video{transform: inherit;}
-
-body[mode="first"] #root.fiber[count="1"] div.flex{width: 100vw; height: 100vh;}
-
-
-body[mode="first"][axis="x"] #root.fiber[count="2"] div.flex{width: 50vw; height: 100vh;}
-body[mode="first"][axis="x"] #root.fiber[count="3"] div.flex{width: 33.33vw; height: 100vh;}
-body[mode="first"][axis="x"] #root.fiber[count="4"] div.flex{width: 50vw; height: 50vh;}
-
-body[mode="first"][axis="x"] #root.fiber[count="5"] div.flex,
-body[mode="first"][axis="x"] #root.fiber[count="6"] div.flex{width: 33.33vw; height: 50vh;}
-
-body[mode="first"][axis="x"] #root.fiber[count="7"] div.flex,
-body[mode="first"][axis="x"] #root.fiber[count="8"] div.flex{width: 25vw; height: 50vh;}
-
-
-body[mode="first"][axis="x"] #root.fiber[count="9"] div.flex,
-body[mode="first"][axis="x"] #root.fiber[count="10"] div.flex,
-body[mode="first"][axis="x"] #root.fiber[count="11"] div.flex,
-body[mode="first"][axis="x"] #root.fiber[count="12"] div.flex{width: 25vw; height: 33.33vh;}
-
-
-body[mode="first"][axis="y"] #root.fiber[count="2"] div.flex{width: 100vw; height: 50vh;}
-body[mode="first"][axis="y"] #root.fiber[count="3"] div.flex{width: 100vw; height: 33.33vh;}
-
-body[mode="first"][axis="y"] #root.fiber[count="4"] div.flex{width: 50vw; height: 50vh;}
-
-body[mode="first"][axis="y"] #root.fiber[count="5"] div.flex,
-body[mode="first"][axis="y"] #root.fiber[count="6"] div.flex{width: 50vw; height: 33.33vh;}
-
-body[mode="first"][axis="y"] #root.fiber[count="7"],
-body[mode="first"][axis="y"] #root.fiber[count="8"] div.flex{width: 50vw; height: 25vh;}
-
-body[mode="first"][axis="y"] #root.fiber[count="9"] div.flex,
-body[mode="first"][axis="y"] #root.fiber[count="10"] div.flex,
-body[mode="first"][axis="y"] #root.fiber[count="11"] div.flex,
-body[mode="first"][axis="y"] #root.fiber[count="12"] div.flex{width: 33.33vw; height: 25vh;}
-
 
 @keyframes balance {
 	0% {
@@ -396,6 +303,11 @@ player .address{text-align: center; text-shadow: 0 0 3px black;  opacity: 0; fon
 player .address address{display: block;}
 player .address address span{display: inline-block; overflow: hidden; text-overflow: ellipsis; padding: 5px; width: 50px; font-size: 12px; text-transform: lowercase; color: #fff; box-sizing: border-box;}
 player .address address span+span{margin-left: -26px;}
+
+
+player[team] emoji:before{display: block; padding: 5px 0; width: 18vh; text-align: center; text-transform: capitalize; vertical-align: top; font-size: 12px; font-weight: bold;}
+player[team="doge"] emoji:before{content: "#doge"; color: #fff;}
+player[team="pepe"] emoji:before{content: "#pepe"; color: #4aad02}
 
 body[zoom="10"] talks{bottom: 13vh; left: -105px;}
 
@@ -1151,9 +1063,9 @@ body.loading #intro{opacity: 1;}
 /*body.paging #intro{opacity: 0; transition-duration: 0.5s; transition-delay: 0s;}*/
 
 
-#intro{position: fixed; left: 0; right: 0; top: 0; bottom: 0; opacity: 1; transition-duration: 0s; transition-delay: 0s; z-index: 10;}
+#intro{position: fixed; left: 0; right: 0; top: 0; bottom: 0; opacity: 1; transition-duration: 0s; transition-delay: 0s; z-index: 10; overflow: hidden; overflow-y: scroll;}
 #intro .tb{width: 100%; height: 100%; z-index: 3;}
-#intro .tc{text-align: center; vertical-align: middle;}
+#intro .tc{padding: 2em; text-align: center; vertical-align: middle;}
 
 #intro .title{margin-bottom: 3em;}
 #intro .title p{font-size: 5em; font-weight: 900; color:#fff; text-shadow: 0 0 5px #ffffff}
@@ -1353,7 +1265,7 @@ body[tutorial] .layer.on+.aside .area{display: block;}
 }
 body[axis="x"] .bg{width: 100vh; height: 100vh;}
 body[axis="y"] .bg{width: 100vw; height: 100vw;}
-#intro .bg{position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; transform: scale(1.7);}
+#intro .bg{position: fixed; left: 0; right: 0; top: 0; bottom: 0; margin: auto; transform: scale(1.7);}
 .constelacao {
 	position: absolute;
 	margin: auto;

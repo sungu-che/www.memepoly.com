@@ -145,6 +145,7 @@ export function Player({
 		}
 	}
 
+	console.log('props',props);
 
 
 	return (
@@ -156,7 +157,6 @@ export function Player({
 							<div className="emoji color">
 								<div data-plyr-provider={provider} data-plyr-embed-id={embed}></div>
 								<picture>
-									{/*<source srcset={srcset} type="image/webp" />*/}
 									<img draggable="false" src={src} alt={alt} width="32" height="32" />
 								</picture>
 								<i>{emoji}</i>
