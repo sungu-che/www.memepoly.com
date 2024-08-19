@@ -524,8 +524,6 @@ export const Experience = () => {
 				<meshStandardMaterial attach="material" color={current.color} />
 			</mesh>
 
-			
-
 			<Suspense>
 				{assets.map((asset) => (
 					<Asset 
