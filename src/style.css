@@ -305,9 +305,12 @@ player .address address span{display: inline-block; overflow: hidden; text-overf
 player .address address span+span{margin-left: -26px;}
 
 
-player[team] emoji:before{display: block; padding: 5px 0; width: 18vh; text-align: center; text-transform: capitalize; vertical-align: top; font-size: 12px; font-weight: bold;}
-player[team="doge"] emoji:before{content: "#doge"; color: #fff;}
-player[team="pepe"] emoji:before{content: "#pepe"; color: #4aad02}
+player[team] emoji:before{display: block; padding: 5px 0; width: 18vh; text-align: center; text-transform: capitalize; vertical-align: top; font-size: 1.2em; font-weight: bold; text-shadow: 0 0 3px black}
+player[team] .emoji:after{content: ""; position: absolute; left: 1em; top: -1.8em; overflow: hidden; border:1px solid #000; border-radius: 50%; width: 25px; height: 25px; background-size: 25px;}
+player[team="#doge"] emoji:before{content: "doge"; color: #fff;}
+player[team="#pepe"] emoji:before{content: "pepe"; color: #4aad02}
+player[team="#doge"] .emoji:after{background-image: url(/src/images/doge.png)}
+player[team="#pepe"] .emoji:after{background-image: url(/src/images/pepe.png)}
 
 body[zoom="10"] talks{bottom: 13vh; left: -105px;}
 
@@ -507,6 +510,7 @@ emojis .deck .players ul li{display: inline-block;}
 
 .emoji_asset .metamask img{position: absolute; left: 0; right: 0; top: -0.5em; margin: 0 auto; padding: 0;}
 
+emojis .tab_content .deck .emoji_asset[emoji="notifications"]{display: none;}
 /*.emoji_asset.playing:before{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; border-radius: 50%; width: 10px; height: 10px; background-color: #fff;}*/
 
 @keyframes playing {
@@ -747,7 +751,7 @@ emojis .scroll::-webkit-scrollbar-track {}
 
 
 
-player tooltip{position: absolute; overflow: hidden; width: 0; height: 0; left: -6.3em; top: -8em; white-space: nowrap;}
+player tooltip{display: none; position: absolute; overflow: hidden; width: 0; height: 0; left: -6.3em; top: -8em; white-space: nowrap;}
 player tooltip.on{width: auto; height: auto; overflow: visible;}
 player tooltip a{opacity: 0; transition-duration: 0.3s; z-index: -1; cursor: pointer;}
 player tooltip.on a{opacity: 1; z-index: 11;}

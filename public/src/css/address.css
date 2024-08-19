@@ -1,0 +1,684 @@
+details summary:before{content:"상담내용 "}
+
+.footer{position: relative; padding-bottom: 1.2em}
+html[user-agent] body:before{display: none;}
+body[mode] #intro{overflow: hidden; opacity: 1; z-index: 1;}
+
+.main{position: relative; min-height: 820px; z-index: 2;}
+.main .area{box-sizing: border-box;}
+
+.main wallet[layer] .collection,
+.main wallet[layer]>.area,		
+.main wallet[layer]+.area{display: none;}
+.main wallet[layer] .layer{position: relative;}
+
+.back{text-align: right;}
+.back a{color: #fff;}
+
+@media (min-width: 630px) {
+	.main{padding: 1em 2em;}
+}
+
+@media (max-width: 629px) {
+	
+}
+
+.popup{display: none}
+
+.layer{position: absolute; left: 0; right: 0; top: 0; bottom: 0; padding: 2em; background-color: #fff; opacity: 0; z-index: -1}
+.layer.on{opacity: 1 z-index: 3}
+
+wallet[address]{display: block;}
+wallet[layer="buy"] .layer .buy.popup{display: block}
+wallet[layer="buy"] .layer .buy.popup .step{overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 0 7px 0px #aeaeae33}
+
+
+wallet[layer="send"] .layer .transfer.popup{display: block}
+
+wallet[layer="send"] .layer.step01 .transfer.popup .qr{display: none}
+wallet[layer="send"] .layer.step02 .transfer.popup .btns a{display: block}
+
+wallet[layer="send"] .layer.step02 .transfer.popup .qr{display: block}
+
+wallet[layer="send"] .layer.step01 .transfer.popup .recipient li{display: block}
+wallet[layer="send"] .layer .transfer.popup .recipient li{display: none}
+wallet[layer="send"] .layer .transfer.popup .recipient li.on{display: block; background: #f6f6f6}
+
+wallet[layer="send"] .layer .transfer.popup .recipient li .host{margin-bottom: 0.5em}
+wallet[layer="send"] .layer .transfer.popup .recipient li .host em{font-size:1.2em; font-weight: bold}
+wallet[layer="send"] .layer .transfer.popup .recipient li .address em{font-weight: 100}
+
+/*		wallet[layer="send"] .layer .transfer.popup .tx-from{border-bottom: 1px solid #eee}*/
+
+
+/*		wallet[layer="send"] .layer .transfer.popup .tx-from:before{content: "From"}*/
+wallet[layer="send"] .layer .transfer.popup .tx-to:before{content: "To"}
+
+wallet[layer="send"] .layer .transfer.popup .tx-address{position: relative}
+wallet[layer="send"] .layer .transfer.popup .tx-address:before{position: absolute; left: 5.8em; top: 1.7em; font-weight: 100}
+
+wallet[layer="send"] .layer .transfer.popup .tx-address .icon{position: absolute; left: 1.5em; top: 0; bottom: 0; margin: auto 0; border: 1px solid #0376c9; border-radius: 50%; padding: 2px; width: 40px; height: 40px}
+wallet[layer="send"] .layer .transfer.popup .tx-address .icon canvas{width: 100%; display: block; border-radius: 50%}
+
+wallet[layer="send"] .layer .transfer.popup .tx-address input{display: block; padding: 3.2em 1em 2em 5.8em; border-radius: 10px; width: 100%; font-weight: 700; box-sizing: border-box; text-overflow: ellipsis; outline: none; background: #fff; box-shadow: 0 0 7px 0px #aeaeae33}
+
+
+form[name="buy"] .mempool{position: relative; margin-top: 3em; margin-bottom: 2em; padding-top: 2em;}
+form[name="buy"] .mempool:before{content:"Transaction Details"; position: absolute; left: 0; top: 0; font-weight: bold; font-size:0.9em}
+form[name="buy"] .mempool li+li{margin-top: 2em;}
+
+
+form[name="buy"] .mempool .op-item .icons{position: relative; z-index: -1; overflow: hidden; border:1px solid #ddd; border-radius: 10px; background-color: #fff;}
+form[name="buy"] .mempool .op-item:hover .icons{box-shadow: 0 0 7px 0px #aeaeae33;}
+
+form[name="buy"] .mempool .op-item .icons .icon{position: relative; width: 100%; padding: 1em 1em 1em 0; text-align: left; z-index: -1; box-sizing: border-box; float: left;}
+form[name="buy"] .mempool .op-item .icons .icon:first-child{padding-left: 0; background: #fff;}
+
+
+
+
+form[name="buy"] .mempool .op-item .icon{position: relative; text-align: left;}
+
+form[name="buy"] .mempool .op-item .icon>em{display: block; padding: 0.5em 0 0.5em 4.5em; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="buy"] .mempool .op-item .icon>span{display: block; padding: 0 0 0.5em 4.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="buy"] .mempool .op-item .icon img{position: absolute; left: 1.2em; top: 0; bottom: 0; width: 40px; height: 40px; background-color: #fff; z-index: 1; margin: auto 0;}
+form[name="buy"] .mempool .op-item .icon canvas{position: absolute; left: 1.2em; top: 0; bottom: 0; margin: auto 0; border: 1px solid; border-radius: 50%; padding: 2px; width: 32px; height: 32px; background-color: #fff;}
+
+
+form[name="buy"] .mempool .op-item>.icon span:before{font-weight: bold; margin-right: 0.5em;}
+form[name="buy"] .mempool .op-item>.icon.to span:before{content: "To"; }
+form[name="buy"] .mempool .op-item>.icon.from span:before{content: "From"; }
+
+form[name="buy"] .mempool .op-item>.icon{overflow: hidden; margin-bottom: 1em;}
+form[name="buy"] .mempool .op-item>.icon span{display: inline; font-size: 0.7em; padding: 0; margin: 0 0 0 7px; line-height: 25px;}
+form[name="buy"] .mempool .op-item>.icon canvas{position: static; float: left; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 20px; height: 20px; background-color: #fff;}
+
+
+wallet[layer="send"] .layer.step02 .step.step01{display: block}
+wallet[layer="send"] .layer.step02 .step.step01 .title,
+wallet[layer="send"] .layer.step02 .step.step01 .btns{display: none}
+wallet[layer="send"] .layer.step02 .transfer.popup .tx-address input{background-color: #f2f4f6}
+wallet[layer="send"] .layer.step02 .transfer.popup .field.summary{padding: 0; border-bottom: 0; background-color: transparent;}
+
+wallet[layer="send"] .layer.step02 .transfer.popup .field.summary .label{display: none}
+
+wallet[layer="send"] .layer.step02 .transfer.popup .field.summary .icon{padding: 0;}
+wallet[layer="send"] .layer.step02 .transfer.popup .field.summary .icon input[name="amount"]{margin-top: 1em; padding: 5em 1em 1.5em 5.8em; width: 100%; display: block; box-sizing: border-box; border: 1px solid #ddd; border-radius: 10px;}
+
+wallet[layer="send"] .layer.step02 .transfer.popup .field.summary .icon span{position: absolute; left: 0; top: 1.5em; padding: 0 0 0 5.8em;}
+
+wallet[layer="send"] .layer.step02 .transfer.popup .field.summary .icon>em{position: absolute; left: 0; top: 3.2em; white-space: nowrap; padding: 0 0 0 5.8em;}
+wallet[layer="send"] .layer.step02 .transfer.popup .field.summary .icon canvas{position: absolute; left: 1.5em; top: 1.5em; bottom:inherit; margin: auto 0; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 40px; height: 40px}
+
+
+wallet[layer="send"] .layer .step{display: none}
+
+
+wallet[layer="send"] .layer.step01 .step.step01{display: block}
+wallet[layer="send"] .layer.step02 .step.step02{display: block}
+wallet[layer="send"] .layer.step03 .step.step03{display: block}
+wallet[layer="send"] .layer.step04 .step.step04{display: block}
+
+wallet[layer="send"] .layer.step04 .step.step04 .desc,
+wallet[layer="send"] .layer.step04 .step.step04 .desc span{margin-bottom: 0}
+
+
+wallet[layer="swap"] .layer .swap.popup{display: block; position: relative;}
+
+wallet[layer="swap"] .layer.step01 .swap.popup .qr{display: none}
+wallet[layer="swap"] .layer.step02 .swap.popup .btns a{display: block}
+
+wallet[layer="swap"] .layer.step02 .swap.popup .qr{position: relative; display: block}
+
+wallet[layer="swap"] .layer.step01 .swap.popup .recipient li{display: block}
+wallet[layer="swap"] .layer .swap.popup .recipient li{display: none}
+wallet[layer="swap"] .layer .swap.popup .recipient li.on{display: block; background: #f6f6f6}
+
+wallet[layer="swap"] .layer .swap.popup .recipient li .host{margin-bottom: 0.5em}
+wallet[layer="swap"] .layer .swap.popup .recipient li .host em{font-size:1.2em; font-weight: bold}
+wallet[layer="swap"] .layer .swap.popup .recipient li .address em{font-weight: 100}
+
+wallet[layer="swap"] .layer .swap.popup .tx-from{}
+
+
+wallet[layer="swap"] .layer.step01 .title{position: static; margin:1em 0}
+
+wallet[layer="swap"] .layer .swap.popup .tx-address .amount{position: absolute; bottom: 0; left: 5.8em;}
+
+wallet[layer="swap"] .layer .swap.popup .tx-address+.tx-address{margin-top: 4em}
+wallet[layer="swap"] .layer .swap.popup .tx-address.tx-to{margin-bottom: 2em; border:1px solid #ddd; border-radius: 10px; background: #fff;}
+wallet[layer="swap"] .layer .swap.popup .tx-address.tx-to .token span:empty{}
+wallet[layer="swap"] .layer .swap.popup .tx-address.tx-to .token em{}
+/*		wallet[layer="swap"] .layer .swap.popup .tx-address.tx-to .token em:empty{}*/
+
+wallet[layer="swap"] .layer .swap.popup .tx-address{position: relative; margin-top: 2em}
+wallet[layer="swap"] .layer .swap.popup .tx-address:before{position: absolute; left: 0; top: -2em}
+
+wallet[layer="swap"] .layer .swap.popup .tx-from:before{content: "From"; top: -1em}
+wallet[layer="swap"] .layer .swap.popup .tx-to:before{content: "To"}
+
+wallet[layer="swap"] .layer .swap.popup .tx-address .icon{}
+wallet[layer="swap"] .layer .swap.popup .tx-address .icon.loading .token *{font-size:0}
+wallet[layer="swap"] .layer .swap.popup .tx-address .icon.loading .token em:after{content:"Loading..."; font-size:1rem}
+
+wallet[layer="swap"] .layer .swap.popup .tx-address .icon>em{position: absolute; left: 5.8em; top: 1.9em; white-space: nowrap}
+wallet[layer="swap"] .layer .swap.popup .tx-address .icon .token{position: absolute; left: 5.8em; top: 1.9em}
+wallet[layer="swap"] .layer .swap.popup .tx-address .icon canvas{position: absolute; left: 1.5em; top: 1.5em; margin: auto 0; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 40px; height: 40px}
+wallet[layer="swap"] .layer .swap.popup .tx-address .icon img{position: absolute; left: 20px; top: -2px; bottom: 0; margin: auto 0; border: 0; border-radius: 0; padding: 0; width: 46px; height: 46px; background: #fff; z-index: 1;}
+
+wallet[layer="swap"] .layer .swap.popup .tx-address input[type="text"]{display: block; padding: 3em 0 2em 5.8em; width: 100%; font-weight: 300; box-sizing: border-box; text-overflow: ellipsis; outline: none; background: transparent}
+wallet[layer="swap"] .layer .swap.popup .tx-address input[type="number"]{display: block; margin-left: 40%; border:1px solid #ddd; border-radius: 10px; width: 60%; padding: 1em; text-align: right; background: #fff; box-sizing: border-box}
+
+wallet[layer="swap"] .layer.step02 .step.step01{display: block}
+wallet[layer="swap"] .layer.step02 .step.step01 .title,
+wallet[layer="swap"] .layer.step02 .step.step01 .btns{display: none}
+wallet[layer="swap"] .layer.step02 .swap.popup .tx-address input[name="amount"]{margin-top: 1em; background-color: #f2f4f6}
+wallet[layer="swap"] .layer.step02 .swap.popup .field.summary{border-top: 1px solid #ddd; border-bottom: 0; background: transparent}
+
+wallet[layer="swap"] .layer.step02 .swap.popup .field.summary .label{display: none}
+
+
+wallet[layer="swap"] .layer .step{display: none}
+
+
+wallet[layer="swap"] .layer.step01 .step.step01{display: block}
+wallet[layer="swap"] .layer.step02 .step.step02{display: block}
+wallet[layer="swap"] .layer.step03 .step.step03{display: block}
+
+
+wallet[layer="swap"] .layer.step03 .step.step03 .desc,
+wallet[layer="swap"] .layer.step03 .step.step03 .desc span{margin-bottom: 0}
+
+.recipient{display: none}
+.recipient ul:not(:empty){border-top: 1px solid #eee}
+
+.recipient li{position: relative; z-index: 1; padding: 1.5em 2em; border-bottom: 1px solid #eee; line-height: 1.5; cursor: pointer}
+.recipient li:after{content: ""; position: absolute; left: 0;right: 0;top: 0;bottom: 0; z-index: 2}
+
+
+.layer .layerBack{position: absolute; top: -2.7em; left: 0; z-index: 1; cursor: pointer;}
+.layer .layerBack:after{content: "\f104"; font-family: "Font Awesome 6 Free"; font-size: 20px; font-weight: 600; -webkit-text-stroke: 1px #fff;}
+
+.layer .layerHide{position: absolute; top: -2.7em; right: 0; z-index: 1; cursor: pointer}
+.layer .layerHide:after{content: "\f00d"; font-family: "Font Awesome 6 Free"; font-size: 20px; font-weight: 600; -webkit-text-stroke: 1px #fff;}
+
+.layer .title{margin: 0; text-align: center; position: absolute; top: -2.5em; left: 0; right: 0}
+.layer .title em{font-size: 1em; font-weight: bold}
+.layer .desc{margin-bottom: 3em;line-height: 1.8; text-align: center}
+.layer .desc p{font-size: 1.3em; line-height:1.2}
+.layer .desc span{font-size: 1em; display: block; line-height: 1.5; margin: 2em 0 -1em}
+
+.layer .btns{margin:20px -1em 0; padding: 0.5em}
+.layer .btns .tb{width: 100%}
+.layer .btns .tc{width: 50%; padding: 0.5em}
+.layer .btns a{position: relative; display: block; padding: 0; border: 1px solid; border-radius: 100px; width: 100%; height: 40px; line-height: 38px; font-weight: 300; font-size: 1em; background-color: #fff; cursor: pointer; color: #0376c9; box-sizing: border-box; text-align: center; z-index: 1}
+.layer .btns a.submit{background-color: #0376c9; color:#fff}
+.layer .btns a.disabled{opacity: 0.2; z-index: -1}
+
+
+
+
+forms{position: relative; display: block}
+
+
+wallet form[name="account.oauth.network"],
+wallet .collection{display: none;}
+
+.main[type="inventory"] wallet form[name="account.oauth.network"]
+.main[type="inventory"] wallet .collection{display: block;}
+
+.main[type="exchange"] .scroll-table{display: block;}
+
+.scroll-table{display: none; position: relative; padding: 0 0 5em;}
+.scroll-table:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: -1;}
+.scroll-table .scroll-body{}
+
+.tab-nav{margin-bottom: 2em}
+.tab-nav ul li+li{margin-left: 1em}
+.tab-nav ul li{display: inline; font-size:1.2em; font-weight: bold; text-transform: capitalize; opacity: 0.3; cursor: pointer}
+.tab-nav ul li.on{opacity: 1}
+
+
+.assets.loading{position: relative; z-index: -1; opacity: 0.4}
+
+.assets .approve .asset{opacity: 1}
+
+
+.assets .asset{position: relative; display: block; padding: 1.5em; border: 1px solid #efefef; border-radius: 5px; z-index: 0;}
+.assets .asset.on{border-color:#fff}
+.assets .asset[data-allowance="0"]{opacity: 0.5;}
+.assets .asset[data-approve="false"]{opacity: 0.5;}
+
+.assets .asset.checked {opacity: 1; border-color:#fff}
+
+.assets .asset:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 2; cursor: pointer}
+.assets .asset .icon{z-index: -1; display: block; position: relative; text-align: left}
+
+.assets .asset .icon em{display: block; padding-left: 4.5em; line-height: 46px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+
+.assets .asset .icon img,
+.assets .asset .icon canvas{position: absolute; left: 0; top: 0; padding: 2px; border: 1px solid #fff; border-radius: 50%; width: 40px; height: 40px}
+.assets .asset .icon img{border: 0; border-radius: 0; padding: 0; width: 46px; height: 46px; background: #fff; z-index: 1;}
+.assets .asset .icon canvas+canvas{display: none}
+
+
+.assets .asset[oauth] .icon:after{content: "\40"; position: absolute; left: -4px; top: 3px; padding: 0px; border-radius: 50%; width: 40px; height: 40px; line-height: 40px; text-align: center; font-size: 54px; font-family: "Font Awesome 6 Free"; font-weight: 100; -webkit-text-stroke: 3.5px #fff; color: #fff}
+
+.assets .asset[oauth] .icon canvas{display: none}
+
+.assets .asset[unlock="metamask"].notice:before{content: "1"; position: absolute; left: 32px; top: 32px; border-radius: 4px; width: 16px; height: 16px; line-height: 16px; text-align: center; background: #0376c9; color: #fff; font-size: 10px; z-index: 1;}
+.assets .asset[unlock="metamask"]{opacity: 1}
+.assets .asset[unlock="metamask"] .icon:after{content: ""; position: absolute; left: 0; top: 0; bottom: 0; margin: auto 0; padding: 2px; width: 28px; height: 28px; background: url(/static/img/common/metamask-logo.png) no-repeat center; background-size: 100%;}
+
+
+wallet.loading .layer form{opacity: 0}
+wallet.loading .area{min-height: 200px}
+.lds-ring{display: block; opacity: 1; z-index: 0}
+
+
+form[name="oauth.network"][client]{display: none}
+form[name="oauth.network"][client][contenteditable]{display: block}
+
+form[name="account.oauth.network"]{}
+form[name="account.oauth.network"],
+form[name="account.oauth.network"] fieldset{display: block}
+form[name="account.oauth.network"] fields{display: table}
+form[name="account.oauth.network"] field{display: table-cell; padding: 0 1em;}
+form[name="account.oauth.network"] field+field{margin-top: 2em;}
+form[name="account.oauth.network"] fieldset{position: relative; display: block}
+
+form[name="account.oauth.network"] label{display: block}
+
+form[name="account.oauth.network"] label a{text-decoration: underline; margin-left: 7px; font-size: 10px; text-transform: uppercase;}
+form[name="account.oauth.network"] label em{text-transform: capitalize;}
+
+form[name="account.oauth.network"] label span{display: block; margin-bottom: 10px; font-size:10px; font-weight: 100}
+/*		form[name="account.oauth.network"] label span{display: none}*/
+form[name="account.oauth.network"] input{display: block; margin: 7px 0; border:0; width: 100%; height: 22px; font-weight: 100; box-sizing: border-box; background-color: transparent}
+/*		form[name="account.oauth.network"] input[name="phone"]{position: absolute; right: 3em; top: 0; text-align: right; z-index: 1}*/
+
+
+
+wallet{display: block;}
+wallet *{color: #fff;}
+
+wallet .tc{padding:1em 0;}
+wallet .tc+.tc{}
+
+wallet.unlock form.popup{display: none !important}
+
+.main wallet .area{position: relative; overflow: hidden;}
+wallet .layer .area{overflow: inherit; margin-top: 2em; max-width: 400px;}
+
+wallet form[name="account.oauth.network"] .address{position: relative; line-height: 31px}
+wallet form[name="account.oauth.network"] .address em{display: block; padding-left: 42px; font-weight: 100; font-size: 0.9em; line-height: 31px;}
+wallet form[name="account.oauth.network"] .address img,
+wallet form[name="account.oauth.network"] .address canvas{position: absolute; left: 0; top: 0; padding: 2px; border: 1px solid #fff; border-radius: 50%; width: 26px; height: 26px}
+
+wallet.tip fieldset,
+wallet.tip .btns{opacity: 0.2}
+wallet.tip .btns a{font-weight: 100; text-decoration: none}
+
+wallet .collection .btns{margin: 20px 0;}
+wallet .collection .btns a+a{margin-left: 0.5em}
+wallet .collection .btns a{display: inline-block; padding: 6px 10px 8px; border-radius: 5px; font-size: 0.8em; text-transform: capitalize; cursor: pointer; background-color: #efefef; color: #444;}
+wallet .collection .btns a.disabled{opacity: 0.2}
+
+
+
+wallet .field{position: relative; padding: 2em}
+wallet .field .oauth span:after{content: "OAUTH"; margin-left: 4px}
+wallet .field+.field .label{position: absolute; left: 2em; top: 2em}
+wallet .field+.field .label span{font-size: 1.2em; font-weight: bold}
+wallet .field+.field .input{padding: 5% 0 0 0; text-align: right}
+wallet .field+.field .input span{font-size: 1.2em}
+wallet .field+.field .input.eth span:after{content: "ETH" margin-left: 4px}
+
+wallet .field+.field:before{content: ""; position: absolute; bottom: 0; left: 1em; right: 1em; height: 1px; background-color: #ddd}
+wallet .field:last-child:before{opacity: 0}
+
+wallet .field.summary{border-bottom: 1px solid #ddd; background-color: #f2f4f6}
+wallet .field.summary .label{margin-top: -0.2em; margin-bottom: 0.5em}
+wallet .field.summary .label span{display: inline-block; padding: 0.5em; border: 1px solid #ddd; border-radius: 8px; font-size: 0.8em; font-weight: 100}
+wallet .field.summary .input span{font-size: 1.5em}
+
+
+wallet .layer .result .field:first-child{display: none}
+
+wallet .layer .result .field+.field:before{display: none}
+wallet .layer .result .field+.field{padding: 0}
+wallet .layer .result .field+.field .label{left: 0; top: 1.5em}
+wallet .layer .result .field+.field .label span{font-size: 1em; text-transform: capitalize}
+
+wallet .layer .result .field+.field .input{padding: 3em 0 0 0}
+wallet .layer .result .field+.field .input input{padding: 1em; width: 100%; box-sizing: border-box; text-overflow: ellipsis; overflow: hidden; border: 1px solid #efefef; background: #f6f6f6}
+
+
+wallet[layer] .layer{opacity: 1; z-index: 10}
+
+qr{position: relative; display: block; text-align: center}
+qr:before,
+qr:after{content: ""; position: absolute; margin: auto; background-color: #fafafa; z-index: 0 }
+
+qr:before{top: 40px; bottom: 40px; left: 0; right: 0}
+qr:after{top: 0; bottom: 0; left: 40px; right: 40px}
+
+
+.collection::-webkit-scrollbar {height: 5px;}
+.collection::-webkit-scrollbar-thumb {background-color: #ddd;background-clip: border-box;}
+.collection::-webkit-scrollbar-track {background-color: transparent;}
+
+
+.collection{position: relative; overflow: hidden; overflow-x: scroll; margin-top: -2em; padding-top: 2em; z-index: 1;}
+/*.collection .assets ul:empty{height: 0;}*/
+.collection .assets ul{position: relative; padding: 0 0 0 50%; height: 100px; white-space: nowrap; box-sizing: border-box;}
+.collection .assets ul li+li{margin-left: 1em;}
+.collection .assets ul li{display: inline-block;}
+.collection .assets ul li:first-child{position: relative; margin-left: -422px;}
+.collection .assets ul li:last-child{margin-right: 95%;}
+.collection .assets ul li .asset{}
+.collection .assets ul li .asset .btns{display: none; position: absolute; left: 0; bottom: -4em;}
+.collection .assets ul li .asset.on .btns{display: block;}
+
+
+
+.collection .assets .asset[oauth] .icon:after{content: "\40"; position: absolute; left: -4px; top: 3px; padding: 0px; border-radius: 50%; width: 40px; height: 40px; line-height: 40px; text-align: center; color: #fff; font-size: 35px; font-family: "Font Awesome 6 Free"; font-weight: 100; -webkit-text-stroke: 2.4px #fafafa;}
+.collection .assets .asset .icon img,
+.collection .assets .asset .icon canvas{position: absolute; left: 0; top: 0; bottom: 0; margin: auto 0; padding: 2px; border: 1px solid #fff; border-radius: 50%; width: 26px; height: 26px;}
+
+.collection .assets .asset .icon img{border: 0; border-radius: 0; padding: 0; width: 32px; height: 32px; background: #fff; z-index: 1;}
+
+.collection .assets ul li .asset{position: relative; display: block; padding: 0.3em 0.8em;}
+.collection .assets ul li .asset .icon em{display: block; padding-left: 4em; line-height: 46px; overflow: hidden; text-overflow: ellipsis; font-size: 10px; white-space: nowrap;}
+
+#assets:checked+.collection .assets ul{height: inherit; white-space: inherit;}
+
+#assets{display: none;}
+
+form[name="account.oauth.network"] .balance{position: relative; margin: 2em 0;}
+form[name="account.oauth.network"] .balance em:after{ margin-left: 5px; font-size: 1em}
+/*		form[name="account.oauth.network"].oauth .balance em:after{content: "OAUTH"}*/
+/*		form[name="account.oauth.network"].eth .balance em:after{content:"ETH"}*/
+
+form[name="account.oauth.network"].eth .btns a.buy{opacity: 0.2}
+
+form[name="account.oauth.network"] .balance em:empty:before{content: "0"}
+form[name="account.oauth.network"] a.tip{display: block; margin: 2em auto; padding: 1em; border: 1px solid #ddd; border-radius: 1em; text-align: center; text-decoration: underline; color: #235bf5}
+
+.scroll-head{position: sticky; top: 0; z-index: 1;}
+.scroll-head .txs .tx{border-bottom: 1px solid #ddd; border-radius: 0.5em; background-color: #fff;}
+.scroll-head .txs .tx>label{padding: 1em 0.6em;}
+.scroll-head .txs .tx strong{display: block; font-size:12px}
+
+.scroll-body .txs .tx:hover{background-color: #f6f6f6;}
+
+.txs .tx{position: relative; display: table; width: 100%;}
+.txs .tx+.tx{border-top:1px solid #efefef;}
+
+
+.txs .tx>label{position: relative; overflow: hidden; display: table-cell;  padding: 0.6em; box-sizing: border-box; vertical-align: top;}
+.txs .tx>label+label{margin-top: 8px}
+.txs .tx em{position: absolute; left: -9999px; top: -9999px; padding: 4px 0; font-size: 11px}
+.txs .tx a,
+.txs .tx span{display: block; text-overflow: ellipsis; overflow: hidden; padding: 4px 0; font-size: 12px; min-height: 12px;}
+
+.txs .tx .status{display: none; position: relative; max-width: 40px; min-width: 40px; width: 40px; text-align: center;}
+.txs .tx .status:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0;}
+.txs .tx .status input{margin: auto; vertical-align: middle;}
+
+/*		.txs .tx .value span:after{content: " OAUTH"; font-size:10px; font-weight: 100}*/
+.txs .tx .method{max-width: 100px; min-width: 100px; width: 100px; text-align: center;}
+
+.txs .tx .timestamp{max-width: 150px; min-width: 150px; width: 150px; text-align: center;}
+
+.txs .tx .chain{max-width: 80px; min-width: 80px; width: 80px; text-align: center;}
+
+.txs .tx .from,
+.txs .tx .to{max-width: 120px; min-width: 120px; width: 120px;}
+
+.txs .tx .hash{max-width: 130px; min-width: 130px; width: 130px; overflow: hidden; text-overflow: ellipsis;}
+
+@media (max-width: 910px) {
+	wallet form[name="account.oauth.network"] .tb,
+	wallet form[name="account.oauth.network"] .tc{display: block;}
+
+	.collection .assets ul{padding: 0 0 4em}
+	.collection .assets ul li:first-child{margin-left: 2em;}
+	.collection .assets ul li:last-child{margin-right: 2em;}
+
+}
+
+.layer.step02 form[name="swap"] .assets{display: none}
+
+/*wallet[layer="swap"] .layer.step01 .btns a.submit{opacity: 0.2 z-index: -1}
+wallet[layer="swap"] .layer.step01.on .btns a.submit{opacity: 1 z-index: 0}*/
+
+wallet[layer="swap"] .layer.step02 .swap.popup .tx-address.tx-to{background-color: #f2f4f6}
+wallet[layer="swap"] .layer.step02 .swap.popup .tx-address:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 2}
+
+form[name="swap"] .assets{overflow: hidden; overflow-y: scroll; max-height: 194px;}
+form[name="swap"] .assets::-webkit-scrollbar {width: 10px}
+form[name="swap"] .assets::-webkit-scrollbar-thumb {background-color: #ddd;background-clip: border-box}
+form[name="swap"] .assets::-webkit-scrollbar-track {background-color: transparent}
+
+form[name="swap"] .assets .asset{border:0}
+form[name="swap"] .assets .asset .icon em{padding: 0.5em 0 0.5em 4.3em; line-height: 1}
+form[name="swap"] .assets .asset .icon span{display: block; padding: 0 0 0.4em 4.3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .assets .asset .balance em{display: block}
+
+
+form[name="swap"] .step.step01 .title label{padding: 0 0.4em; opacity: 0.5}
+form[name="swap"] .step.step01 .title label.on{opacity: 1}
+
+form[name="swap"] .swap-tab,
+form[name="swap"] .swap-tab-nav{display: none}
+form[name="swap"] .swap-tab-nav:checked+.swap-tab{display: block; margin-top: 1em;}
+
+.layer form.popup .metadata span{font-size: 1em; line-height: 1.5}
+
+.layer form.popup .metadata .icon{position: relative; text-align: left; padding: 0 1.5em 1.5em;}
+.layer form.popup .metadata .icon em{display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0.5em 0 0.5em 4.3em; line-height: 1; }
+.layer form.popup .metadata .icon span{display: block; padding: 0 0 0.4em 4.3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1}
+.layer form.popup .metadata .icon canvas{position: absolute; left: 1.5em; top: -1.5em; bottom: 0; margin: auto 0; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 40px; height: 40px;}
+.layer form.popup .metadata .icon img{position: absolute; left: 1.5em; top: -1.5em; bottom: 0; margin: auto 0; width: 45px; height: 45px; z-index: 1; background: #fafafa;}
+
+.layer form.popup .metadata .icon.oauth:after{content: "\40"; position: absolute; left: 17px; top: 18px; padding: 0px; border-radius: 50%; width: 53px; height: 53px; line-height: 53px; text-align: center; font-size: 53px; font-family: "Font Awesome 6 Free"; font-weight: 100; -webkit-text-stroke: 4px #fff; background: #fff; color: #fff; opacity: 1; z-index: 1;}
+.layer form.popup .metadata .icon.oauth span:after{margin-left: 0;}
+
+
+.layer form.popup .metadata ._image{overflow: hidden; margin-bottom: 1em; padding-top: 2em; background-color: #fff;}
+.layer form.popup .metadata ._image img{display: block; margin: 0 auto 2em; max-height: 300px;}
+.layer form.popup .metadata ._name{margin-bottom: 0.2em;}
+.layer form.popup .metadata ._name span{font-weight: 900;}
+.layer form.popup .metadata ._desc{margin-bottom: 2em;}
+.layer form.popup .metadata ._desc span{font-weight: 100; font-size:0.9em}
+
+
+.layer form.popup .metadata{overflow: hidden; position: relative;}
+.layer form.popup .metadata_more{display: none;}
+.layer form.popup .metadata_more+div span{overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;}
+.layer form.popup .metadata_more+div label{font-size: 0.9em; margin-top: 0.5em; display: inline-block;}
+.layer form.popup .metadata_more+div label:after{content: "more";}
+.layer form.popup .metadata_more:checked+div span{display: block;}
+.layer form.popup .metadata_more:checked+div label:after{content: "close"}
+
+.layer form.popup .metadata .ts-controls .ts-paging{display: none;}
+
+.layer form.popup .metadata .ts-controls button{position: absolute; top: 17px; background-color: transparent; cursor: pointer;}
+.layer form.popup .metadata .ts-controls button:before{font-family: 'Font Awesome 6 Free'; font-weight: 600;}
+
+.layer form.popup .metadata .ts-controls .ts-prev{left: 7px}
+
+.layer form.popup .metadata .ts-controls .ts-prev:before{content: "\f053";}
+
+.layer form.popup .metadata .ts-controls .ts-next{right: 7px}
+.layer form.popup .metadata .ts-controls .ts-next:before{content: "\f054";}
+
+.layer form[name="swap"] .metadata:before{content: "Swap"; position: absolute; left: 0; right: 0; top: -2.5em; text-align: center; z-index: -1; font-weight: bold;}
+
+form[name="swap"] .swap-pool{}
+form[name="swap"] .swap-pool.loading{position: relative; min-height: 250px;}
+form[name="swap"] .swap-items ul{display: none;}
+form[name="swap"] .swap-items .swap-pool:empty+ul{display: block}
+
+form[name="swap"] .swap-items .swap-item{cursor: pointer;}
+
+form[name="swap"] .swap-items .swap-item+.swap-item{margin-top: 2em;}
+
+form[name="swap"] .swap-items .swap-item .icons{position: relative; z-index: -1; overflow: hidden; border:1px solid #ddd; border-radius: 10px; background-color: #fff;}
+form[name="swap"] .swap-items .swap-item:hover .icons{box-shadow: 0 0 7px 0px #aeaeae33;}
+
+form[name="swap"] .swap-items .swap-item .icons .icon{position: relative; width: 50%; padding: 1em 1em 1em 0; text-align: left; z-index: -1; box-sizing: border-box; float: left;}
+form[name="swap"] .swap-items .swap-item .icons .icon:first-child{padding-left: 0; background: #fff;}
+form[name="swap"] .swap-items .swap-item .icons .icon>span{display: none;}
+form[name="swap"] .swap-items .swap-item .icons .icon.to{border-left: 1px solid #ddd; padding: 1em 4.5em 1em 0; text-align: right;}
+
+form[name="swap"] .swap-items .swap-item .icons .icon.to:after{content: "\f079"; font-family: 'Font Awesome 6 Free'; font-weight: 600; background: #fff; font-size: 0.8em; border: 1px solid #ddd; border-radius: 50%; padding: 0; position: absolute; left: -13px; top: 0; bottom: 0; margin: auto 0; width: 25px; height: 25px; line-height: 25px; text-align: center;}
+
+form[name="swap"] .swap-items .swap-item .icons .icon>em{}
+form[name="swap"] .swap-items .swap-item .icons .icon.to canvas{right: 1.2em; left: inherit;}
+
+form[name="swap"] .swap-items .swap-item .icon.from{overflow: hidden; margin-bottom: 1em;}
+form[name="swap"] .swap-items .swap-item .icon.from span{display: inline; font-size: 0.7em; padding: 0; margin: 0 0 0 7px; line-height: 25px;}
+form[name="swap"] .swap-items .swap-item .icon.from canvas{position: static; float: left; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 20px; height: 20px; background-color: #fff;}
+
+
+
+form[name="swap"] .swap-items .swap-item .icon{position: relative; text-align: left;}
+
+form[name="swap"] .swap-items .swap-item .icon>em{display: block; padding: 0.5em 0 0.5em 4.5em; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .swap-items .swap-item .icon>span{display: block; padding: 0 0 0.4em 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .swap-items .swap-item .icon canvas{position: absolute; left: 1.2em; top: 0.7em; border: 1px solid; border-radius: 50%; padding: 2px; width: 32px; height: 32px; background-color: #fff;}
+
+
+
+
+form[name="swap"] .swap-detail{}
+form[name="swap"] .swap-detail .icons{position: relative; margin: 1em 0; z-index: 0;}
+form[name="swap"] .swap-detail .icons .icon{padding: 1.5em 1.5em; text-align: left; min-height: 48px; z-index: 0;}
+
+form[name="swap"] .swap-detail .icons .icon:before{position: absolute; left: 0; top: 0;}
+
+form[name="swap"] .swap-detail .icons .icon.cc{margin-bottom: 0.5em; padding-top: 3em; z-index: 1;}
+
+form[name="swap"] .swap-detail .icons .icon.to.assets{display: block; overflow: hidden; padding: 0; padding-top: 2em; max-height: inherit; min-height: 91px; background-color: transparent;}
+
+form[name="swap"] .swap-detail .icons .icon.to.assets .asset{margin-bottom: 0; opacity: 1;}
+form[name="swap"] .swap-detail .icons .icon.to.assets:after{content: ""; position: absolute; left: 0; right: 0; top: 2em; bottom: 0; border:1px solid #ddd; border-radius: 10px; background-color: #fff; z-index: -1;}
+
+
+form[name="swap"] .swap-detail .icons .icon.to.assets .asset+.asset{margin-top: 1em;}
+
+form[name="swap"] .swap-detail .icons .ts-controls .ts-paging{display: none;}
+
+form[name="swap"] .swap-detail .icons .ts-controls button{position: absolute; bottom: 39px; background-color: transparent; cursor: pointer;}
+form[name="swap"] .swap-detail .icons .ts-controls button:before{font-family: 'Font Awesome 6 Free'; font-weight: 600;}
+
+form[name="swap"] .swap-detail .icons .ts-controls .ts-prev{left: 7px}
+
+form[name="swap"] .swap-detail .icons .ts-controls .ts-prev:before{content: "\f053";}
+
+form[name="swap"] .swap-detail .icons .ts-controls .ts-next{right: 7px}
+form[name="swap"] .swap-detail .icons .ts-controls .ts-next:before{content: "\f054";}
+
+form[name="swap"] .swap-detail .icons .icon.to:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 1;}
+form[name="swap"] .swap-detail .icons .icon.to{cursor: pointer;}
+
+form[name="swap"] .swap-detail .icons .icon.to:before{content: "To"; display: block; font-family: 'Noto Sans KR', sans-serif;}
+form[name="swap"] .swap-detail .icons .icon.cc:before{content: "From"; display: block; font-family: 'Noto Sans KR', sans-serif;}
+
+
+form[name="swap"] .swap-detail .icon.from{overflow: hidden; text-align: left;}
+form[name="swap"] .swap-detail .icon.from span{display: inline; font-size: 0.7em; padding: 0; margin: 0 0 0 7px; line-height: 25px;}
+form[name="swap"] .swap-detail .icon.from canvas{position: static; float: left; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 20px; height: 20px; background-color: #fff;}
+
+
+
+form[name="swap"] .swap-detail .icon{position: relative;}
+
+form[name="swap"] .swap-detail .icon>em{display: block; padding: 0 0 0.5em 4.3em; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .swap-detail .icon>span{display: block; padding: 0 0 0.4em 4.3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .swap-detail .icon img{position: absolute; left: 1.5em; top: 0; bottom: 0; margin: auto 0; border: 0; border-radius: 0; padding: 0; width: 46px; height: 46px; background: #fff; z-index: 1;}
+form[name="swap"] .swap-detail .icon canvas{position: absolute; left: 1.5em; top: 0; bottom: 0; margin: auto 0; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 40px; height: 40px; background-color: #fff; z-index: -1;}
+form[name="swap"] .swap-detail .icon.cc canvas{top:0.5em}
+form[name="swap"] .swap-detail .assets .asset{padding: 0;}
+
+form[name="swap"] .swap-pool .qr:empty+.pool-items{display: block;}
+
+form[name="swap"] .pool-items{overflow: hidden; margin-top: 4em;}
+form[name="swap"] .pool-items ul{display: block;}
+form[name="swap"] .pool-items ul:before{content: "Pool"; display: block; margin-bottom: 1em;}
+
+/*		form[name="swap"] .pool-items .pool-item .icon{z-index: -1; display: block; position: relative; text-align: left}
+
+form[name="swap"] .pool-items .pool-item .icon em{display: block; padding-left: 4.5em; line-height: 46px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .pool-items .pool-item .icon img{z-index: 1 background: #fff}
+form[name="swap"] .pool-items .pool-item .icon img,
+form[name="swap"] .pool-items .pool-item .icon canvas{position: absolute; left: 0; top: 0; padding: 2px; border: 1px solid #fff; border-radius: 50%; width: 40px; height: 40px}
+form[name="swap"] .pool-items .pool-item .icon canvas+canvas{display: none}
+
+
+form[name="swap"] .pool-items .pool-item{position: relative; padding: 1.5em; border: 1px solid #ddd; border-radius: 10px; background: #fff; z-index: 1;}
+form[name="swap"] .pool-items .pool-item:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 3;}
+form[name="swap"] .pool-items .pool-item .icon em{padding: 0.5em 0 0.5em 4.3em; line-height: 1}
+form[name="swap"] .pool-items .pool-item .icon span{display: block; padding: 0 0 0.4em 4.3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .pool-items .pool-item .balance em{display: block}*/
+
+form[name="swap"] .pool-items .pool-item .icons{position: relative; z-index: -1; overflow: hidden; border:1px solid #ddd; border-radius: 10px; background-color: #fff;}
+form[name="swap"] .pool-items .pool-item:hover .icons{box-shadow: 0 0 7px 0px #aeaeae33;}
+
+form[name="swap"] .pool-items .pool-item .icons .icon{position: relative; width: 50%; padding: 1em 1em 1em 0; text-align: left; z-index: -1; box-sizing: border-box; float: left;}
+form[name="swap"] .pool-items .pool-item .icons .icon:first-child{padding-left: 0; background: #fff;}
+form[name="swap"] .pool-items .pool-item .icons .icon>span{display: none;}
+form[name="swap"] .pool-items .pool-item .icons .icon.to{border-left: 1px solid #ddd; padding: 1em 4.5em 1em 0; text-align: right;}
+
+form[name="swap"] .pool-items .pool-item .icons .icon.to:after{content: "\f079"; font-family: 'Font Awesome 6 Free'; font-weight: 600; background: #fff; font-size: 0.8em; border: 1px solid #ddd; border-radius: 50%; padding: 0; position: absolute; left: -13px; top: 0; bottom: 0; margin: auto 0; width: 25px; height: 25px; line-height: 25px; text-align: center;}
+
+form[name="swap"] .pool-items .pool-item .icons .icon>em{}
+form[name="swap"] .pool-items .pool-item .icons .icon.to canvas{right: 1.2em; left: inherit;}
+
+form[name="swap"] .pool-items .pool-item .icon.from{overflow: hidden; margin-bottom: 1em;}
+form[name="swap"] .pool-items .pool-item .icon.from span{display: inline; font-size: 0.7em; padding: 0; margin: 0 0 0 7px; line-height: 25px;}
+form[name="swap"] .pool-items .pool-item .icon.from canvas{position: static; float: left; border: 1px solid #fff; border-radius: 50%; padding: 2px; width: 20px; height: 20px; background-color: #fff;}
+
+
+
+form[name="swap"] .pool-items .pool-item .icon{position: relative; text-align: left;}
+
+form[name="swap"] .pool-items .pool-item .icon>em{display: block; padding: 0.5em 0 0.5em 4.5em; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .pool-items .pool-item .icon>span{display: block; padding: 0 0 0.4em 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+form[name="swap"] .pool-items .pool-item .icon canvas{position: absolute; left: 1.2em; top: 0.7em; border: 1px solid; border-radius: 50%; padding: 2px; width: 32px; height: 32px; background-color: #fff;}
+
+
+
+form[name="swap"] .swap-detail .icons ul+canvas{display: none;}
+
+form[name="swap"] .swap-detail .icons ul{display: block;}
+form[name="swap"] .swap-detail .icons ul,
+form[name="swap"] .swap-detail .icons li{position: relative; min-width: 100%; height: 100%;}
+
+swap{display: block;}
+swap[name="pool"] .pool-submit{display: none; margin-top: 2em; padding: 1em; border-radius: 10px; text-align: center; background-color: #235bf5; color: #fff;}
+swap[name="pool"] input[name="quantity"][max]+.pool-submit{display: block;}
+swap[name="pool"] input[name="quantity"]{display: block; margin-left: 40%; border:1px solid #ddd; border-radius: 10px; width: 60%; padding: 1em; text-align: right; background: #fff; box-sizing: border-box;}
+
+.layer.step02 form[name="swap"] .swap-pool{position: relative; z-index: -1;}
+.layer.step02 form[name="swap"] .swap-pool:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 1;}
+
+.layer.step02 form[name="swap"] .swap-pool .pool-submit{display: none;}
+
+.layer.step02 swap[name="pool"] input[name="quantity"]{pointer-events:none}
+.layer.step02 swap[name="pool"] input[name="quantity"],
+.layer.step02 form[name="swap"] .swap-detail .icons .icon{background-color: #fafafa;}
+.layer.step02 form[name="swap"] .swap-detail .icons .icon span,
+.layer.step02 form[name="swap"] .swap-detail .icons .icon em{opacity: 0.5;}
+
+.layer.step02.step00 form[name="swap"] .swap-pool:before{content: "\f079"; position: absolute; left: 0; right: 0; top: -2.4em; margin: 0 auto; font-family: "Font Awesome 6 Free"; font-size: 20px; font-weight: 600; width: 40px; height: 40px; line-height: 40px; text-align: center; background: #fff; border: 1px solid #ddd; border-radius: 50%;}
+
+.layer.step02.step00 form[name="swap"] .swap-detail{display: none;}
+.layer.step02.step00 form[name="swap"] .pool-items{display: block;}
+.layer.step02.step00 form[name="swap"] .pool-items li{display: none;}
+.layer.step02.step00 form[name="swap"] .pool-items li.on{display: block;}
+.layer.step02 form[name="swap"] .pool-items{display: none;}
+.layer.step02 form[name="swap"] .swap-detail .icons:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 2;}
+

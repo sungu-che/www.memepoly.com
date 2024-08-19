@@ -19,7 +19,7 @@ function App() {
 
 	return (
 		<>
-			<Canvas frameloop={frameloop} camera={{ position: [6, 6, 6], fov: 40 }} performance={{ current: 1, min: 0.1, max: 1, debounce: 200}} gl={{ antialias: true, alpha: true }}>
+			<Canvas frameloop={frameloop} camera={{ position: [6, 6, 6], fov: 40 }} performance={{ current: 1, min: 1, max: 1, debounce: 200}} gl={{ antialias: false, alpha: false }}>
 				<Suspense>
 					<EffectComposer>
 						<Bloom luminanceThreshold mipmapBlur luminanceSmoothing intensity />

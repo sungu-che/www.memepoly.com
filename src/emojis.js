@@ -5,11 +5,6 @@ window.emojis = [
 		webp : true
 	},
 	{
-		icon : "⚡",
-		type : "emoji",
-		webp : true
-	},
-	{
 		icon : "😎",
 		type : "emoji",
 		webp : true

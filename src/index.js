@@ -7,7 +7,7 @@ if(!OAuth3.isMobile){
 window.emojis.self = "😀"
 
 window.Subscribe = function(){
-	var $form = document.querySelector('form[name="popup.link"]');
+	var $form = document.querySelector('form[name="xim.city"]');
 
 	if(OAuth3.xhr){
 		OAuth3.xhr.abort()
@@ -30,7 +30,7 @@ window.Subscribe = function(){
 		z : window.cursor.current.position.z
 	}
 
-	var url = "https://popup.link";
+	var url = "https://xim.city";
 
 	if(OAuth3.localhost){
 		url = "http://localhost:3001"
@@ -57,155 +57,6 @@ window.Subscribe = function(){
 		}
 	});
 }
-
-async function getSigner(e) {
-		var $unlock = $(".metamask-unlock")
-
-		if(window.ethereum){
-			var isUnlocked = await window.ethereum._metamask.isUnlocked()
-
-			if(isUnlocked){
-				var accounts = await ethereum.request({ method: 'eth_requestAccounts' })
-
-				if(accounts.length){
-					var signer = await provider.getSigner()
-
-					var signature = ""
-
-					var refrash = false
-
-					if($cookies.signature){
-						signature = $cookies.signature
-					}else{
-						refrash = true
-						signature = await signer.signMessage($cookies.message)
-					}
-
-					var EOA = ""
-
-					if(signature){
-						ethers.verifyMessage($cookies.message, signature)
-						
-						EOA = EOA.toLowerCase()
-					}
-
-
-					if(signer.address.toLowerCase() != EOA && EOA){
-						refrash = true
-						signature = await signer.signMessage($cookies.message)
-
-						EOA = ethers.verifyMessage($cookies.message, signature)
-					}
-
-					$cookies.signature = signature
-					signer.signature = signature
-
-					$('.assets .asset[unlock="metamask"]').closest("li").remove()
-
-					var selector = $unlock.data().selector
-
-					if(selector){
-						refrash = true
-					}
-
-					if(getSigner.refrash){
-						refrash = getSigner.refrash
-
-						delete getSigner.refrash
-					}
-
-					if(refrash){
-						var networkName = await getNetwork()
-
-						OAuth3.fetch({
-							method : "GET",
-							url : api_host,
-							query : {
-								chain : networkName,
-								signature : signature,
-								referer : "https://oauth.email/",
-								flag : "transfer off "+networkName,
-								chain : networkName,
-								limit : 500
-							}
-						}, async function(res){
-							var _cookies = JSON.parse(res.body.cookies)
-							var $forms = document.querySelector("forms.api")
-							var body = ""
-
-							$cookies = _cookies
-
-							$(".asset[empty]").remove()
-
-							if(address == _cookies.address){
-								await getTokenBalance(_cookies.ft, signer, _cookies.ca)
-								await getNfts(_cookies.nft, signer, _cookies.ca)
-
-								var $assets = document.querySelectorAll(".collection .assets .asset")
-
-								var len = $assets.length
-
-								if(len){
-									for(var i = 0; i < len; i++){
-										var el = $assets[i]
-										var data = el.dataset
-
-										if(data.contract){
-											var icon = blockies.create({seed: data.contract})
-
-											var $icon = el.querySelector('.icon')
-
-											if($icon){
-												$icon.appendChild(icon)
-											}
-										}
-									}
-								}
-							}
-
-							if(selector){
-								if(selector != ".asset"){
-									try{
-										$(selector).click()
-										$unlock.data("selector","")
-									}catch(err){
-
-									}
-								}
-							}
-						})
-					}
-
-					return signer
-				}
-			}else if(e){
-				var el = e.target
-
-				var unlock = el.getAttribute("unlock")
-
-				if(unlock){
-					try{
-						await ethereum.request({ method: 'eth_requestAccounts' })
-
-						getSigner.refrash = true
-
-						getSigner()
-					}catch(err){
-						// 에러 발생시 언락해달라는 알림 표시
-						el.className = "asset notice"
-					}
-				}else{
-					var selector = "."+el.className.replace(/ /gi,".")
-					
-					$unlock.data("selector", selector)
-				}
-			}
-		}else{
-			$unlock.text("MetaMask Install & Refrash")
-			$unlock.attr("target", "_blank")
-			$unlock.attr("href", "https://metamask.io/download/")
-		}
-	}
 
 function listToBiomes(list, elementsPerSubArray) {
 	var matrix = [], i, k;
@@ -255,59 +106,59 @@ function listToBiomes(list, elementsPerSubArray) {
 
 window.Biomes = {
 	// biomes
-	"OCEAN": "#44447a",
+	"#OCEAN": "#44447a",
 	"#44447a" : "",
-	"COAST": "#33335a",
+	"#COAST": "#33335a",
 	"#33335a" : "",
-	"LAKESHORE": "#225588",
+	"#LAKESHORE": "#225588",
 	"#225588" : "",
-	"LAKE": "#336699",
+	"#LAKE": "#336699",
 	"#336699" : "",
-	"RIVER": "#225588",
+	"#RIVER": "#225588",
 	"#225588" : "",
-	"MARSH": "#2f6666",
+	"#MARSH": "#2f6666",
 	"#2f6666" : "",
-	"ICE": "#99ffff",
+	"#ICE": "#99ffff",
 	"#99ffff" : "🪨",
-	"BEACH": "#a09077",
+	"#BEACH": "#a09077",
 	"#a09077" : "🌲",
-	"ROAD1": "#442211",
+	"#ROAD1": "#442211",
 	"#442211" : "🌲",
-	"ROAD2": "#553322",
+	"#ROAD2": "#553322",
 	"#553322" : "🌲",
-	"ROAD3": "#664433",
+	"#ROAD3": "#664433",
 	"#664433" : "🌲",
-	"BRIDGE": "#686860",
+	"#BRIDGE": "#686860",
 	"#686860" : "🌲",
-	"LAVA": "#cc3333",
+	"#LAVA": "#cc3333",
 	"#cc3333" : "🪨",
 
 	// Terrain
-	"SNOW": "#ffffff",
+	"#SNOW": "#ffffff",
 	"#ffffff" : "🎄",
-	"TUNDRA": "#bbbbaa",
+	"#TUNDRA": "#bbbbaa",
 	"#bbbbaa" : "🪨",
-	"BARE": "#888888",
+	"#BARE": "#888888",
 	"#888888" : "",
-	"SCORCHED": "#555555",
+	"#SCORCHED": "#555555",
 	"#555555" : "🪨",
-	"TAIGA": "#99aa77",
+	"#TAIGA": "#99aa77",
 	"#99aa77" : "🌲",
-	"SHRUBLAND": "#889977",
+	"#SHRUBLAND": "#889977",
 	"#889977" : "🪵",
-	"TEMPERATE_DESERT": "#c9d29b",
+	"#TEMPERATE_DESERT": "#c9d29b",
 	"#c9d29b" : "🌵",
-	"TEMPERATE_RAIN_FOREST": "#448855",
+	"#TEMPERATE_RAIN_FOREST": "#448855",
 	"#448855" : "🌳",
-	"TEMPERATE_DECIDUOUS_FOREST": "#679459",
+	"#TEMPERATE_DECIDUOUS_FOREST": "#679459",
 	"#679459" : "🌳",
-	"GRASSLAND": "#88aa55",
+	"#GRASSLAND": "#88aa55",
 	"#88aa55" : "",
-	"SUBTROPICAL_DESERT": "#d2b98b",
+	"#SUBTROPICAL_DESERT": "#d2b98b",
 	"#d2b98b" : "🌵",
-	"TROPICAL_RAIN_FOREST": "#337755",
+	"#TROPICAL_RAIN_FOREST": "#337755",
 	"#337755" : "🌳",
-	"TROPICAL_SEASONAL_FOREST": "#559944",
+	"#TROPICAL_SEASONAL_FOREST": "#559944",
 	"#559944" : "🌳"
 }
 
@@ -317,10 +168,8 @@ function getHashtag(str){
 
 	if(hashtags.length){
 		hashtags.forEach(function(h, i){
-			var _h = h.replace("#","")
-
 			if(!hashtag){
-				hashtag = _h
+				hashtag = h
 			}
 		})
 	}
@@ -777,7 +626,7 @@ OAuth3.on("ready", function(e){
 
 				var body = {}
 
-				var url = "https://popup.link/withdrawal"
+				var url = "https://xim.city/withdrawal"
 
 				if(OAuth3.localhost){
 					url = "http://localhost:3001"
@@ -972,7 +821,7 @@ OAuth3.on("ready", function(e){
 					emoji : emoji
 				}
 
-				var url = "https://popup.link"
+				var url = "https://xim.city"
 
 				if(OAuth3.localhost){
 					url = "http://localhost:3001"
@@ -2370,8 +2219,6 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					console.log('self_player',self_player)
-
 					if(rows.length){
 						var thread
 
@@ -2380,7 +2227,7 @@ OAuth3.on("ready", function(e){
 
 							var hashtag = getHashtag(row.Cc)
 
-							var position = row.Cc.split(` #${hashtag}`)[0]
+							var position = row.Cc.split(` ${hashtag}`)[0]
 								position = JSON.parse(`[${position}]`)
 
 							var _x = position[0]
@@ -2518,11 +2365,9 @@ OAuth3.on("ready", function(e){
 
 					var score_board = []
 
-					// console.log('self_player',self_player);
-
 					var biomes = listToBiomes(window.map.biomes, 100)
 					
-					var size = OAuth3.isMobile ? 13 : 15
+					var size = 5
 
 					var isBiome = false
 
@@ -2585,7 +2430,7 @@ OAuth3.on("ready", function(e){
 
 							var hashtag = getHashtag(row.Cc)
 
-							var position = row.Cc.split(` #${hashtag}`)[0]
+							var position = row.Cc.split(` ${hashtag}`)[0]
 								position = JSON.parse(`[${position}]`)
 
 							var emoji = row.Cc.split("@")[1]
@@ -2998,13 +2843,13 @@ OAuth3.on("ready", function(e){
 							if(window.players.length){
 								var _id = crc32(cc_address+i).toString(32).toUpperCase()
 
-								var color = window.Biomes[b.biome]
+								var color = window.Biomes["#"+b.biome]
 								
 								if(
 									(biomes.x - size < b.x && biomes.x + size > b.x) &&
 									(biomes.z - size < b.z && biomes.z + size > b.z)
 								){
-									var _id = crc32(cc_address+b.biome+b.x+b.z).toString(32).toUpperCase()
+									var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
 
 									if(window.map.biomes[_id]){
 										isBiome = true
@@ -3013,7 +2858,7 @@ OAuth3.on("ready", function(e){
 									_assets.push({
 										id : _id,
 										hash : cc_address,
-										name : b.biome,
+										name : "#"+b.biome,
 										value : color,
 										color: color,
 										x : b.x,
@@ -3027,7 +2872,7 @@ OAuth3.on("ready", function(e){
 						if(!isBiome){
 							biomes.forEach(function(b, i){
 								if(window.players.length){
-									var _id = crc32(cc_address+b.biome+b.x+b.z).toString(32).toUpperCase()
+									var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
 
 									if(
 										(biomes.x - size < b.x && biomes.x + size > b.x) &&
@@ -3040,7 +2885,7 @@ OAuth3.on("ready", function(e){
 													.replace(/T/, ' ')
 													.replace(/\..+/, '')
 
-											var color = window.Biomes[b.biome]
+											var color = window.Biomes["#"+b.biome]
 
 											var emoji = window.Biomes[color]
 
@@ -3048,7 +2893,7 @@ OAuth3.on("ready", function(e){
 												window.map.biomes[_id] = {
 													id : _id,
 													hash : cc_address,
-													name : b.biome,
+													name : "#"+b.biome,
 													value : "",
 													color: "",
 													x : b.x,
@@ -4179,7 +4024,7 @@ OAuth3.on("ready", function(e){
 
 					if(isDialog == "notify"){
 						if(cookies.subscription){
-							var $form = document.querySelector('form[name="popup.link"]')
+							var $form = document.querySelector('form[name="xim.city"]')
 
 							if(cookies.vapid == true){
 								// 인증 완료되었다는 메세지 보여주고 닫기 버튼 보여주기
@@ -4267,14 +4112,11 @@ OAuth3.on("ready", function(e){
 			
 			document.querySelector("html").setAttribute("user-agent",res.body["user-agent"]);
 
-			
+			var url = new URL(window.location.href)
 
-
-			var href = ''
-			
 			var address = cookies.address ? cookies.address : ""
-			var email = cookies.email ? cookies.email : ""
 
+			var email = cookies.email ? cookies.email : ""
 
 			if(cookies.email){
 				if(OAuth3.teams){
@@ -4285,6 +4127,11 @@ OAuth3.on("ready", function(e){
 				}
 			}
 
+			var href = url.protocol+"//"+url.host+"/address/#"+(address ? address.replace("0x","") : cookies.hash)
+
+			$('.inventory').attr("href", href+"/inventory")
+			$('.exchange').attr("href", href)
+
 			var query = {
 				href : window.location.href,
 				hash : cookies.hash,
@@ -4294,7 +4141,7 @@ OAuth3.on("ready", function(e){
 				z : 1.5
 			}
 
-			var url = "https://popup.link";
+			var url = "https://xim.city";
 
 			if(OAuth3.localhost){
 				url = "http://localhost:3001"
@@ -4382,7 +4229,7 @@ OAuth3.on("ready", function(e){
 
 					if(typeof self_player != "undefined"){
 						if(cookies.hash && !OAuth3.xhr){
-							var url = "https://popup.link"
+							var url = "https://xim.city"
 
 							if(OAuth3.localhost){
 								url = "http://localhost:3001"
@@ -5261,7 +5108,7 @@ OAuth3.on("ready", function(e){
 
 								var $player = $('player[id="'+player.hash+'"][alt="player"]')
 
-								var url = "https://popup.link";
+								var url = "https://xim.city";
 
 								if(OAuth3.localhost){
 									url = "http://localhost:3001"
@@ -6054,7 +5901,7 @@ OAuth3.on("ready", function(e){
 														host = OAuth3.localhost
 													}
 
-													var url = "https://popup.link/";
+													var url = "https://xim.city/";
 
 													if(OAuth3.localhost){
 														url = "http://localhost:3001/"
@@ -6095,7 +5942,7 @@ OAuth3.on("ready", function(e){
 															delete OAuth3.xhr
 														}
 
-														var _href = "https://popup.link/"+cookies.vapid
+														var _href = "https://xim.city/"+cookies.vapid
 
 														if(!cookies.vapid){
 															$('.emoji_asset[method="notify"]').removeClass("on")
@@ -6119,7 +5966,7 @@ OAuth3.on("ready", function(e){
 																$body.append('<notify><input type="checkbox" id="notify"><div class="tb"><div class="tc"></div></div></notify>')
 															}
 
-															document.querySelector("notify .tc").innerHTML = '<form name="popup.link" action="javascript:Subscribe()">\
+															document.querySelector("notify .tc").innerHTML = '<form name="xim.city" action="javascript:Subscribe()">\
 																<qr>\
 																	<a class="qr-code"></a>\
 																	<label for="notify">\
@@ -6815,7 +6662,7 @@ OAuth3.on("ready", function(e){
 						window.emojis.self = body.emoji
 					}
 
-					var url = "https://popup.link";
+					var url = "https://xim.city";
 
 					if(OAuth3.localhost){
 						url = "http://localhost:3001"

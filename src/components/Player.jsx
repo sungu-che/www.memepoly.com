@@ -145,9 +145,6 @@ export function Player({
 		}
 	}
 
-	console.log('props',props);
-
-
 	return (
 		<group ref={group} {...props} position={position}>
 			<group>

@@ -380,15 +380,15 @@ export const Experience = () => {
 				emoji = window.Biomes[color]
 			}
 
-			if(props.name == "ROAD1" || 
-				props.name == "ROAD2" ||
-				props.name == "ROAD3" || 
-				props.name == "BRIDGE"){
+			if(props.name == "#ROAD1" || 
+				props.name == "#ROAD2" ||
+				props.name == "#ROAD3" || 
+				props.name == "#BRIDGE"){
 				texture = "wood"
-			}else if(props.name == "SUBTROPICAL_DESERT" ||
-				props.name == "TAIGA" ||
-				props.name == "LAVA" ||
-				props.name == "TEMPERATE_DESERT"
+			}else if(props.name == "#SUBTROPICAL_DESERT" ||
+				props.name == "#TAIGA" ||
+				props.name == "#LAVA" ||
+				props.name == "#TEMPERATE_DESERT"
 				){
 				texture = "dirt"
 
@@ -505,15 +505,14 @@ export const Experience = () => {
 		}
 	})
 
-	var fog = OAuth3.isMobile ? ["#000", 10, 20] : ["#000", 10, 20]
+	var fog = ["#000", 8, 13]
 
 	return (
 		<>
 			<Suspense>
 				<Environment files="warehouse.hdr" />
+				<fog attach="fog" args={fog} />
 			</Suspense>
-
-			<fog attach="fog" args={fog} />
 
 			<mesh ref={cursor} rotation-x={-Math.PI / 2} position={[1.5, -0.001, 1.5]}>
 				<planeGeometry attach="geometry" args={[0.6, 0.6]} />
