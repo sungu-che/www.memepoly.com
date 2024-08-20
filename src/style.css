@@ -1361,9 +1361,9 @@ body[axis="y"] .bg{width: 100vw; height: 100vw;}
 }
 
 @media (max-width: 629px) {
-	.constelacao {
+	/*.constelacao {
 		animation: rotate 300s infinite linear;
-	}
+	}*/
 }
 
 

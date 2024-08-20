@@ -360,13 +360,24 @@ export const Experience = () => {
 				</mesh>
 			</>
 		}else if(props.name == "bomb"){
+			var hex = props.value.codePointAt(0).toString(16)
+
+			var src = `/src/fonts/emoji/emoji_u${hex}.png`
+
+			// props.color 값에 따라 스타일 변화
+
 			return <>
 				<group position={props.position}>
+					<mesh rotation-y={Math.PI / 3.8} position={[0.13, 0.5, 0]}>
+						<planeGeometry attach="geometry" args={[1, 1]} />
+						<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, src)} transparent />
+					</mesh>
+
 					<Html className="clipped">
-						<div className="emoji color" x={props.position.x} z={props.position.z}>{props.value}</div>
+						<div className="emoji color" x={props.position.x} z={props.position.z}></div>
 					</Html>
 				</group>
-			</>
+			</>	
 		}else if(window.Biomes[props.name]){
 			var texture = 'glass'
 

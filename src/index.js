@@ -2170,7 +2170,6 @@ OAuth3.on("ready", function(e){
 
 				window.response = resp
 			}
-			console.log('cookies',cookies);
 
 			try{
 				if(window.players){
@@ -2185,7 +2184,6 @@ OAuth3.on("ready", function(e){
 					window.map.open = {}
 					window.map.item = {}
 					window.map.thread = {}
-					window.map.puzzle = {}
 					window.map.follow = {}
 					window.map.report = {}
 					window.map.reward = {}
@@ -5844,6 +5842,8 @@ OAuth3.on("ready", function(e){
 									var $talk = $("talks")
 									var $messages = $("messages")
 
+									console.log('method',method);
+
 									if(type == "player"){
 										var hash = $this.attr("hash")
 
@@ -6057,6 +6057,56 @@ OAuth3.on("ready", function(e){
 												}, window.Callback);
 											}
 										}
+									}else if(emoji == "💣"){
+										emojiChanged("🫥")
+										
+										var query = {
+											href : window.location.href,
+											hash : cookies.hash,
+											token : cookies.token,
+											x : player.x,
+											z : player.z
+										}
+
+										body.cc = "bomb"
+										body.emoji = player_emoji
+
+										var _assets = window.assets;
+
+										// {
+										// 	id : row.Id,
+										// 	hash : cc_address,
+										// 	name : hashtag,
+										// 	value : "",
+										// 	color: "",
+										// 	x : b.x,
+										// 	y : b.y,
+										// 	z : b.z
+										// }
+
+										var biome = window.map.biomes[player.x+":"+player.z]
+
+										_assets.push({
+											id : "",
+											hash : randomHash(),
+											name : "bomb",
+											value : emoji,
+											color: player_emoji,
+											x : player.x,
+											y : biome.y,
+											z : player.z
+										})
+
+										// var assets_ = JSON.stringify(_assets)
+
+										window.assets.set(_assets)
+
+										OAuth3.xhr = OAuth3.fetch({
+											method : "POST",
+											query : query,
+											body : body,
+											url : url
+										}, window.Callback);
 									}else if(open){
 										if(method == "open"){
 											emojiChanged("🫥")

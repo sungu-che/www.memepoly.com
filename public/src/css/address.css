@@ -12,15 +12,23 @@ body[mode] #intro{overflow: hidden; opacity: 1; z-index: 1;}
 .main wallet[layer]+.area{display: none;}
 .main wallet[layer] .layer{position: relative;}
 
-.back{text-align: right;}
-.back a{color: #fff;}
+
+.snb{}
+.snb li{display: inline-block; vertical-align: top;}
+.snb li+li{margin-left: 1em;}
+.snb li a{font-weight: 700; color: #fff; opacity: 0.5}
+.snb li a.on{opacity: 1}
+.back{position: absolute; right: 2em; top: 1.5em;}
+.back a{font-weight: 700; color: #fff;}
 
 @media (min-width: 630px) {
-	.main{padding: 1em 2em;}
+	.snb{margin-bottom: 2em;}
+	.main{padding: 1.5em 2em;}
 }
 
 @media (max-width: 629px) {
-	
+	.snb{margin-bottom: 1em;}
+	.back{right:1em; top:1em;}
 }
 
 .popup{display: none}
@@ -224,12 +232,16 @@ forms{position: relative; display: block}
 wallet form[name="account.oauth.network"],
 wallet .collection{display: none;}
 
-.main[type="inventory"] wallet form[name="account.oauth.network"]
-.main[type="inventory"] wallet .collection{display: block;}
 
-.main[type="exchange"] .scroll-table{display: block;}
+body[type="info"] wallet form[name="account.oauth.network"],
+body[type="Inventory"] wallet .collection,
+body[type="Exchange"] .scroll-table{display: block;}
 
-.scroll-table{display: none; position: relative; padding: 0 0 5em;}
+.scroll-table::-webkit-scrollbar {height: 3px;}
+.scroll-table::-webkit-scrollbar-thumb {background-color: #ccc;}
+.scroll-table::-webkit-scrollbar-track {}
+
+.scroll-table{overflow-x: auto; display: none; position: relative; padding: 0 0 5em;}
 .scroll-table:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: -1;}
 .scroll-table .scroll-body{}
 
@@ -406,7 +418,7 @@ form[name="account.oauth.network"] .balance em:empty:before{content: "0"}
 form[name="account.oauth.network"] a.tip{display: block; margin: 2em auto; padding: 1em; border: 1px solid #ddd; border-radius: 1em; text-align: center; text-decoration: underline; color: #235bf5}
 
 .scroll-head{position: sticky; top: 0; z-index: 1;}
-.scroll-head .txs .tx{border-bottom: 1px solid #ddd; border-radius: 0.5em; background-color: #fff;}
+.scroll-head .txs .tx{border-radius: 0.5em; background-color: #999;}
 .scroll-head .txs .tx>label{padding: 1em 0.6em;}
 .scroll-head .txs .tx strong{display: block; font-size:12px}
 
