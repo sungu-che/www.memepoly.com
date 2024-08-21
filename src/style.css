@@ -20,8 +20,8 @@
 
 
 #root{opacity: 0; transition-duration: 0.5s;}
+body[mode] .aside emojis{opacity: 1}
 body[mode] .map,
-body[mode] .aside emojis,
 body[mode] #life,
 body[mode] #root{opacity: 1; pointer-events: initial;}
 body[mode] #intro{opacity: 0; pointer-events: none;}
@@ -306,7 +306,7 @@ player .address address span+span{margin-left: -26px;}
 
 
 player[team] emoji:before{display: block; padding: 5px 0; width: 18vh; text-align: center; text-transform: capitalize; vertical-align: top; font-size: 1.2em; font-weight: bold; text-shadow: 0 0 3px black}
-player[team] .emoji:after{content: ""; position: absolute; left: 1em; top: -1.8em; overflow: hidden; border:1px solid #000; border-radius: 50%; width: 25px; height: 25px; background-size: 25px;}
+player[team] .emoji:after{content: ""; position: absolute; left: 0.5em; top: -1.8em; overflow: hidden; border:1px solid #000; border-radius: 50%; width: 25px; height: 25px; background-size: 25px;}
 player[team="#doge"] emoji:before{content: "doge"; color: #fff;}
 player[team="#pepe"] emoji:before{content: "pepe"; color: #4aad02}
 player[team="#doge"] .emoji:after{background-image: url(/src/images/doge.png)}
@@ -400,9 +400,9 @@ messages li items item[disabled] span{position: absolute; left: 0; right: 0; top
 body[tutorial] form.message{bottom: 6.5em;}*/
 
 form.message fieldset{position: absolute; left: 0; right: 5em; top: 0; bottom: 0;}
-form.message a.close{position: absolute; right: 0; top: 0; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji'; box-shadow: 0 0 4px #000; background: #000000d6; cursor: pointer;}
+form.message a.close{position: absolute; right: 0; top: 0; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji'; box-shadow: 0 0 4px #000; background: #000000d6; cursor: pointer; pointer-events: initial;}
 
-form.message input[type="submit"]{position: absolute; right: 0; width: 2em; height: 100%; font-family: 'Material Symbols Outlined'; background: transparent; font-size: 1.6em; cursor: pointer;}
+form.message input[type="submit"]{position: absolute; right: 0; width: 2em; height: 100%; font-family: 'Material Symbols Outlined'; background: transparent; font-size: 1.6em; cursor: pointer; pointer-events: initial;}
 
 body[bingo="dialog"] .aside{position: static;}
 body[bingo="dialog"].contenteditable .aside .status{display: block;}
@@ -415,7 +415,7 @@ body[bingo="dialog"].loading .aside .status{display: block;}
 .aside.on form.message{display: block; opacity: 1; z-index: 10;}
 form.message{position: fixed; display: none; margin: auto; max-width: 600px; left: 1em; right: 1em; bottom: 1em; height: 4em; z-index: -1; opacity: 0;}
 form.message .area{display: block; position: relative; height: 100%;}
-form.message input[name="message"]{overflow: hidden; padding:0 1em 4px 1.5em; border:0; border-radius: 1em; width: 100%; height: 100%; box-sizing: border-box; outline:none; background-color: #fff;}
+form.message input[name="message"]{overflow: hidden; padding:0 1em 4px 1.5em; border:0; border-radius: 1em; width: 100%; height: 100%; box-sizing: border-box; outline:none; pointer-events: initial; background-color: #fff;}
 form.message input[name="message"]::selection{background-color: #fde030;}
 
 #chatbox {position: absolute; left: 0; bottom: 50px; z-index: -1; opacity: 0; transition-duration: 0.5s;}
@@ -593,7 +593,7 @@ a.back .emoji{font-size: 2em; color:#fff; cursor: pointer;}
 .aside.more emojis .tab_content .deck{padding: 1em 0; height: 100%; white-space: inherit; text-align: center;}
 .aside.more emojis .tab_content .deck>div{padding-bottom: 1em;}
 
-emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 10; transition-delay: 0.5s; pointer-events:none}
+emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 10; transition-delay: 0.5s;}
 emojis .scroll{overflow: hidden; overflow-x:scroll;}
 
 emojis .scroll .deck>div{display: none;}
@@ -603,7 +603,7 @@ emojis .scroll .deck .emoji_asset:last-child{margin-right: 2%}
 
 /*.aside.more emojis .scroll .deck>div[method="chat"]{left: 0.5em;}*/
 
-emojis .deck{position: relative; margin: auto; max-width:600px; text-align: left; white-space: nowrap;}
+emojis .deck{position: relative; margin: auto; max-width:600px; text-align: left; white-space: nowrap; pointer-events: none;}
 
 emojis .tab_content .deck{padding: 1em 1.5em 0 0.3em; min-height: 70px;  z-index: 1;}
 emojis .tab_content .deck .emoji_asset:empty{display: none;}

@@ -2226,52 +2226,56 @@ OAuth3.on("ready", function(e){
 							var hashtag = getHashtag(row.Cc)
 
 							var position = row.Cc.split(` ${hashtag}`)[0]
+
+							try{
 								position = JSON.parse(`[${position}]`)
 
-							var _x = position[0]
-							var _z = position[1]
+								var _x = position[0]
+								var _z = position[1]
 
-							var biome 
+								var biome 
 
-							if(window.Biomes[hashtag]){
-								biome = window.map.biomes[_x+":"+_z]
-							}
-
-							if(row.Cc.indexOf("#follow") > -1){
-								if(!window.map.follow[row.From]){
-									window.map.follow[row.From] = []
+								if(window.Biomes[hashtag]){
+									biome = window.map.biomes[_x+":"+_z]
 								}
 
-								window.map.follow[row.From].push(row.To)
-							}else if(row.Cc.indexOf("#report") > -1){
-								if(!window.map.report[row.To]){
-									window.map.report[row.To] = []
-								}
+								if(row.Cc.indexOf("#follow") > -1){
+									if(!window.map.follow[row.From]){
+										window.map.follow[row.From] = []
+									}
 
-								window.map.report[row.To].push(row)
+									window.map.follow[row.From].push(row.To)
+								}else if(row.Cc.indexOf("#report") > -1){
+									if(!window.map.report[row.To]){
+										window.map.report[row.To] = []
+									}
 
-							}else if(row.Cc == "#thread"){
-								if(row.Flag.indexOf(cc_address) > -1){
-									thread = row
-								}
-							}else if(row.Cc == "#message"){
-								if(thread){
-									if(!window.dialog && row.Flag && row.To == thread.Flag){
-										if(cookies.from == row.From){
-											window.dialog = {
-												to : cookies.to
+									window.map.report[row.To].push(row)
+
+								}else if(row.Cc == "#thread"){
+									if(row.Flag.indexOf(cc_address) > -1){
+										thread = row
+									}
+								}else if(row.Cc == "#message"){
+									if(thread){
+										if(!window.dialog && row.Flag && row.To == thread.Flag){
+											if(cookies.from == row.From){
+												window.dialog = {
+													to : cookies.to
+												}
+
+												seed = cc_address = window.dialog.to
+											}else if(cookies.to == row.From){
+												window.dialog = {
+													to : cookies.from
+												}
+
+												seed = cc_address = window.dialog.to
 											}
-
-											seed = cc_address = window.dialog.to
-										}else if(cookies.to == row.From){
-											window.dialog = {
-												to : cookies.from
-											}
-
-											seed = cc_address = window.dialog.to
 										}
 									}
 								}
+							}catch(err){
 							}
 						}
 					}
@@ -2429,7 +2433,12 @@ OAuth3.on("ready", function(e){
 							var hashtag = getHashtag(row.Cc)
 
 							var position = row.Cc.split(` ${hashtag}`)[0]
+
+							try{
 								position = JSON.parse(`[${position}]`)
+							}catch(err){
+								position = []
+							}
 
 							var emoji = row.Cc.split("@")[1]
 
@@ -2604,6 +2613,17 @@ OAuth3.on("ready", function(e){
 									window.bingo[row.Id] = true
 									bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
 								}
+							}else if(row.Cc.indexOf("#bomb") > -1){
+								_assets.push({
+									id : row.Id,
+									hash : row.From,
+									name : "bomb",
+									value : "💣",
+									color: "",
+									x : x,
+									y : biome.y ? biome.y : 0,
+									z : z
+								})
 
 							}else if(row.Cc.indexOf("#asset") > -1){
 								var emoji = row.Cc.split("@")[1]
@@ -2781,18 +2801,6 @@ OAuth3.on("ready", function(e){
 
 						if(Object.keys(window.map.follow).length){
 							var follow_body = ''
-
-							if(host_address.indexOf(cc_address) == -1){
-								// follow_body = '<li>\
-								// 	<div class="emoji_asset lounge" type="player" method="" hash="'+host_address.replace("0x","")+'">\
-								// 		<span class="address">\
-								// 			<address>\
-								// 				<strong>XIM.CITY</strong>\
-								// 			</address>\
-								// 		</span>\
-								// 	</div>\
-								// </li>'
-							}
 
 							var follows = window.map.follow[self_player.hash]
 
@@ -6101,12 +6109,19 @@ OAuth3.on("ready", function(e){
 
 										window.assets.set(_assets)
 
+										if(OAuth3.xhr){
+											OAuth3.xhr.abort()
+											delete OAuth3.xhr
+										}
+
 										OAuth3.xhr = OAuth3.fetch({
 											method : "POST",
 											query : query,
 											body : body,
 											url : url
 										}, window.Callback);
+
+										return
 									}else if(open){
 										if(method == "open"){
 											emojiChanged("🫥")
