@@ -4,6 +4,8 @@ if(!OAuth3.isMobile){
 	document.querySelector(".react .three").className = "three pc";
 }
 
+window.bingo = {}
+
 window.emojis.self = "😀"
 
 window.Subscribe = function(){
@@ -2363,12 +2365,17 @@ OAuth3.on("ready", function(e){
 
 					var sticker = []
 
+					var explodes = []
+
 					var bingo_body = ""
 
 					var score_board = []
 
 					var biomes = listToBiomes(window.map.biomes, 100)
-					
+				
+
+					var attack = []
+
 					var size = 5
 
 					var isBiome = false
@@ -2450,7 +2457,7 @@ OAuth3.on("ready", function(e){
 							if(window.Biomes[hashtag]){
 								var b = window.map.biomes[row.Id]
 
-								if(b){
+								if(b && !row.Flag){
 									var _asset = {
 										id : row.Id,
 										hash : cc_address,
@@ -2466,9 +2473,7 @@ OAuth3.on("ready", function(e){
 
 									window.map.biomes[row.Id] = _asset
 								}
-							}
-
-							if(row.Subject == "#position"){
+							}else if(row.Subject == "#position"){
 								var player = {
 									follow : false	
 								}
@@ -2606,29 +2611,37 @@ OAuth3.on("ready", function(e){
 									emoji : canvas.toDataURL()
 								})
 
-							}else if(row.Cc.indexOf("#bingo") > -1){
-								var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
-
-								if($clipped.length && !window.bingo[row.Id]){
-									window.bingo[row.Id] = true
-									bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
-								}
 							}else if(row.Cc.indexOf("#bomb") > -1){
-								_assets.push({
-									id : row.Id,
-									hash : row.From,
-									name : "bomb",
-									value : "💣",
-									color: "",
-									x : x,
-									y : biome.y ? biome.y : 0,
-									z : z
-								})
+								if(row.Flag){
+									explodes.push(row)
+
+									var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
+
+									if($clipped.length && !window.bingo[row.Id]){
+										window.bingo[row.Id] = true
+										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+									}
+
+									if(row.To == address){
+										attack.push(row)
+									}
+								}else{
+									_assets.push({
+										id : row.Id,
+										hash : row.From,
+										name : "bomb",
+										value : "💣",
+										color: "",
+										x : x,
+										y : biome.y ? biome.y : 0,
+										z : z
+									})
+								}
 
 							}else if(row.Cc.indexOf("#asset") > -1){
 								var emoji = row.Cc.split("@")[1]
 
-								if(row.Flag){
+								if(row.Flag){									
 									_assets.push({
 										id : row.Id,
 										hash : row.From,
@@ -2640,6 +2653,7 @@ OAuth3.on("ready", function(e){
 										z : z
 									})
 								}else{
+									// window.Biomes[hashtag]
 									if(row.To == player_hash){
 										if(!sticker[emoji]){
 											sticker[emoji] = []
@@ -2653,147 +2667,40 @@ OAuth3.on("ready", function(e){
 										window.map.item[emoji].push(row)
 									}
 								}
-							}else if(row.Cc.indexOf("#mine") > -1){
-								var position = row.Cc.split(" #mine")[0]
+							}	
+						}
 
-								var asset = JSON.parse("["+position+"]")
 
-								_assets.push({
-									id : row.Id,
-									hash : row.From,
-									name : "mine",
-									value : "💣",
-									color: "#000",
-									x : x,
-									y : 0,
-									z : z
-								})
+						// if(explodes.length){
+						// 	for(var i = 0; i < explodes.length; i++){
+						// 		var bomb = explodes[i]
 
-							}else if(row.Cc.indexOf("#flag") > -1){
-								var position = row.Cc.split(" #flag")[0]
+						// 		for(var _x = -2; _x < 3; _x++){
+						// 			for(var _z = -2; _z < 3; _z++){
+						// 				var $clipped = $('.clipped .emoji[x="'+(bomb.x+_x)+'"][z="'+(bomb.z+_z)+'"]')
 
-								var emoji = row.Cc.split("@")[1]
+						// 				if($clipped.length && !window.bingo[row.Id]){
+						// 					// window.bingo[row.Id] = true
+						// 					bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+						// 				}
+						// 			}
+						// 		}
+						// 	}
+						// }
 
-								var asset = JSON.parse("["+position+"]")
+						console.log('explodes',explodes);
 
-								_assets.push({
-									id : row.Id,
-									hash : row.From,
-									name : "flag",
-									value : "",
-									color: "orange",
-									x : x,
-									y : -0.08,
-									z : z
-								})
-							}else if(row.Cc.indexOf("#chord") > -1){
-								var position = row.Cc.split(" #chord")[0]
+						var $life = $("#life")
+						var life = 5 - attack.length
+						var life_body = ''
 
-								var emoji = row.Cc.split("@")[1]
-
-								var asset = JSON.parse("["+position+"]")
-
-								window.map.open[(asset[0]+":"+asset[1])] = {
-									id : row.Id,
-									hash : row.From,
-									name : "chord",
-									value : "",
-									color: "yellow",
-									x : x,
-									y : -0.04,
-									z : z
-								}
-
-								_assets.push({
-									id : row.Id,
-									hash : row.From,
-									name : "chord",
-									value : "",
-									color: "yellow",
-									x : x,
-									y : -0.04,
-									z : z
-								})
-							}else if(row.Cc.indexOf("#open") > -1){
-								var emoji = row.Cc.split("@")[1]
-
-								var color = "black"
-
-								if(!score_board[row.From]){
-									score_board[row.From] = 0
-								}
-
-								score_board[row.From]++
-
-								if(self_player.x == asset[0] && self_player.z == asset[1]){
-									open = row
-								}
-
-								var y = -0.08
-
-								var name = ""
-
-								if(selector){
-									if(selector.hash){
-										if(selector.hash == row.From){
-											name = "open"
-										}
-									}else{
-										name = "open"
-									}
-								}
-
-								var uProgress = 1
-
-								if(window.players){
-									if(!window.map[(asset[0]+":"+asset[1])] && window.players.length){
-										
-										frameloop = true
-										name += " dissolve"
-
-										uProgress = 0
-
-										if(asset[0] == resp.body.query.x && asset[1] == resp.body.query.z){
-											_messages.push(row)
-
-											if(row.Flag){
-												if(resp.body.body.cc == "chord" || resp.body.body.cc == "open"){
-													window.emojis.self = "🤯"
-												}
-											}
-										}
-									}
-								}
-
-								if(uProgress){
-									window.map[(asset[0]+":"+asset[1])] = uProgress
-								}
-
-								if(name){
-									window.map.open[(asset[0]+":"+asset[1])] = {
-										id : row.Id,
-										hash : row.From,
-										name : name,
-										value : "",
-										color: color,
-										x : x,
-										y : y,
-										z : z
-									}
-
-									_assets.push({
-										id : row.Id,
-										hash : row.From,
-										name : name,
-										value : "",
-										color: color,
-										x : x,
-										y : y,
-										z : z
-									})
-								}
+						if(life){
+							for(var i = 0; i < life; i++){
+								life_body += '<i class="on"></i>'
 							}
 						}
+
+						$life.html(life_body)
 
 						
 						var x = self_player.x
@@ -2875,54 +2782,56 @@ OAuth3.on("ready", function(e){
 							}
 						})
 
-						if(!isBiome){
-							biomes.forEach(function(b, i){
-								if(window.players.length){
-									var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+						if(window.assets){
+							if(window.assets.length && !isBiome){
+								biomes.forEach(function(b, i){
+									if(window.players.length){
+										var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
 
-									if(
-										(biomes.x - size < b.x && biomes.x + size > b.x) &&
-										(biomes.z - size < b.z && biomes.z + size > b.z) &&
-										!window.map.biomes[_id]
-									){
-										if(Math.random() < 0.1){
-											var _date = new Date(new Date() - timezoneOffset)
-												_date = _date.toISOString()
-													.replace(/T/, ' ')
-													.replace(/\..+/, '')
+										if(
+											(biomes.x - size < b.x && biomes.x + size > b.x) &&
+											(biomes.z - size < b.z && biomes.z + size > b.z) &&
+											!window.map.biomes[_id]
+										){
+											if(Math.random() < 0.1){
+												var _date = new Date(new Date() - timezoneOffset)
+													_date = _date.toISOString()
+														.replace(/T/, ' ')
+														.replace(/\..+/, '')
 
-											var color = window.Biomes["#"+b.biome]
+												var color = window.Biomes["#"+b.biome]
 
-											var emoji = window.Biomes[color]
+												var emoji = window.Biomes[color]
 
-											if(emoji){
-												window.map.biomes[_id] = {
-													id : _id,
-													hash : cc_address,
-													name : "#"+b.biome,
-													value : "",
-													color: "",
-													x : b.x,
-													y : b.y - 0.5,
-													z : b.z
+												if(emoji){
+													window.map.biomes[_id] = {
+														id : _id,
+														hash : cc_address,
+														name : "#"+b.biome,
+														value : "",
+														color: "",
+														x : b.x,
+														y : b.y - 0.5,
+														z : b.z
+													}
+
+													var _row = {
+														Id : _id,
+														From : address,
+														To : "0x"+cc_address,
+														Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address+" @"+emoji,
+														Subject : "",
+														Flag : "",
+														Date : _date
+													}
+
+													window.map.pending.push(_row)
 												}
-
-												var _row = {
-													Id : _id,
-													From : address,
-													To : "0x"+cc_address,
-													Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address+" @"+emoji,
-													Subject : "",
-													Flag : "",
-													Date : _date
-												}
-
-												window.map.pending.push(_row)
 											}
 										}
 									}
-								}
-							})
+								})
+							}
 						}
 					}
 

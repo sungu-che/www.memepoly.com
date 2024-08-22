@@ -350,16 +350,7 @@ export const Experience = () => {
 			
 		}
 
-		if(props.name == "tutorial"){
-			return <>
-				<mesh rotation-x={rotation_x} position={props.position}>
-					<planeGeometry attach="geometry" args={[0.9, 0.9]} />
-					<meshStandardMaterial attach="material" color={props.color} />
-
-					<Text rotation-z={Math.PI / 0.0815} fontSize={0.5} position={[0, 0, 0.1]} color="#fff">!</Text>
-				</mesh>
-			</>
-		}else if(props.name == "bomb"){
+		if(props.name == "bomb"){
 			var hex = props.value.codePointAt(0).toString(16)
 
 			var src = `/src/fonts/emoji/emoji_u${hex}.png`
@@ -385,9 +376,7 @@ export const Experience = () => {
 
 			var color = props.color
 
-			var _id = crc32(cc_address+props.name+props.position.x+props.position.z).toString(32).toUpperCase()
-
-			if(window.map.biomes[_id]){
+			if(window.map.biomes[props.uid]){
 				emoji = window.Biomes[color]
 			}
 
@@ -409,11 +398,11 @@ export const Experience = () => {
 				opacity = 0.7
 			}
 
-			
 
-				
 
 			if(emoji){
+
+				console.log('emoji',emoji);
 				var hex = emoji.codePointAt(0).toString(16)
 
 				var src = `/src/fonts/emoji/emoji_u${hex}.png`
@@ -428,10 +417,6 @@ export const Experience = () => {
 							<planeGeometry attach="geometry" args={[1, 1]} />
 							<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, src)} transparent />
 						</mesh>
-
-						<Html className="clipped">
-							<div className="emoji color" x={props.position.x} z={props.position.z}></div>
-						</Html>
 					</group>
 				</>	
 			}else{
@@ -441,10 +426,6 @@ export const Experience = () => {
 							<boxGeometry attach="geometry" args={[1, 1]} />
 							<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
 						</mesh>
-
-						<Html className="clipped">
-							<div className="emoji color" x={props.position.x} z={props.position.z}></div>
-						</Html>
 					</group>
 				</>	
 			}
