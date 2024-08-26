@@ -2435,7 +2435,7 @@ OAuth3.on("ready", function(e){
 									emoji : canvas.toDataURL()
 								})
 
-							}else if(row.Cc.indexOf("#bomb") > -1){
+							}else if(row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb"){
 								bombs.push(row)
 
 								if(row.Flag){
