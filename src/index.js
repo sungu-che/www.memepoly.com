@@ -63,8 +63,6 @@ window.Subscribe = function(){
 function listToBiomes(list, elementsPerSubArray) {
 	var matrix = [], i, k;
 
-	var feature
-
 	for (i = 0, k = -1; i < list.length; i++) {
 		if (i % elementsPerSubArray === 0) {
 			k++;
@@ -81,23 +79,25 @@ function listToBiomes(list, elementsPerSubArray) {
 
 	matrix.forEach(function(list, k){
 		list.forEach(function(item, i){
-			item.x = index + 0.5
-			item.y = item.elevation * 5
-			item.z = (i - area) + 0.5
+			if(item){
+				item.x = index + 0.5
+				item.y = item.elevation * 5
+				item.z = (i - area) + 0.5
 
-			window.map.biomes[item.x+":"+item.z] = item
-			
-			if(window.players.length){
+				window.map.biomes[item.x+":"+item.z] = item
+				
+				if(window.players.length){
 
-			}else if(!item.water){
-				if(Math.random() < 0.1){
-					biomes.x = item.x
-					biomes.y = item.y
-					biomes.z = item.z
+				}else if(!item.water){
+					if(Math.random() < 0.1){
+						biomes.x = item.x
+						biomes.y = item.y
+						biomes.z = item.z
+					}
 				}
-			}
 
-			biomes.push(item)
+				biomes.push(item)
+			}
 		})
 
 		index += 1
@@ -121,9 +121,9 @@ window.Biomes = {
 	"#MARSH": "#2f6666",
 	"#2f6666" : "",
 	"#ICE": "#99ffff",
-	"#99ffff" : "🪨",
+	"#99ffff" : "❄️",
 	"#BEACH": "#a09077",
-	"#a09077" : "🌲",
+	"#a09077" : "🌴",
 	"#ROAD1": "#442211",
 	"#442211" : "🌲",
 	"#ROAD2": "#553322",
@@ -137,27 +137,27 @@ window.Biomes = {
 
 	// Terrain
 	"#SNOW": "#ffffff",
-	"#ffffff" : "🎄",
+	"#ffffff" : "❄️",
 	"#TUNDRA": "#bbbbaa",
 	"#bbbbaa" : "🪨",
 	"#BARE": "#888888",
-	"#888888" : "",
+	"#888888" : "🪨",
 	"#SCORCHED": "#555555",
 	"#555555" : "🪨",
 	"#TAIGA": "#99aa77",
-	"#99aa77" : "🌲",
+	"#99aa77" : "🎄",
 	"#SHRUBLAND": "#889977",
-	"#889977" : "🪵",
+	"#889977" : "🌵",
 	"#TEMPERATE_DESERT": "#c9d29b",
 	"#c9d29b" : "🌵",
 	"#TEMPERATE_RAIN_FOREST": "#448855",
 	"#448855" : "🌳",
 	"#TEMPERATE_DECIDUOUS_FOREST": "#679459",
-	"#679459" : "🌳",
+	"#679459" : "🌾",
 	"#GRASSLAND": "#88aa55",
-	"#88aa55" : "",
+	"#88aa55" : "🌾",
 	"#SUBTROPICAL_DESERT": "#d2b98b",
-	"#d2b98b" : "🌵",
+	"#d2b98b" : "🛢",
 	"#TROPICAL_RAIN_FOREST": "#337755",
 	"#337755" : "🌳",
 	"#TROPICAL_SEASONAL_FOREST": "#559944",
@@ -330,176 +330,10 @@ OAuth3.on("ready", function(e){
 
 	document.querySelector("html").setAttribute("lang",lang);
 
-	window.com = {}
-
 	var dialogFlow = []
 	var form_template = ""
 
 	var flow_template = ""
-
-	if(document.referrer){
-		window.addEventListener("message", function(res){
-			try{
-				var data = res.data[ethers.ZeroAddress]
-
-				if(data){
-					if(Object.keys(data).length > 0){
-						if(typeof data.index != "undefined"){
-							window.setFrameloop("always")
-						}else{
-							window.setFrameloop("never")
-						}
-
-						localStorage.tutorial = "complete"
-
-						var $messages = $("messages")
-						var $talk = $("talks")
-
-						$body
-							.attr("referer", data.href)
-							.attr("bingo", "dialog")
-							.removeAttr("tutorial")
-							.removeAttr("step")
-							.removeClass("contenteditable")
-							.removeClass("loading")
-
-
-						var isDialogFlow
-
-						try{
-							isDialogFlow = !window.dialog.flow ? true : false
-						}catch(err){
-							isDialogFlow = true
-						}
-
-						if(document.referrer.indexOf("https://www.oauth.network") > -1 || document.referrer.indexOf("http://localhost") > -1){
-							try{
-								window.setFrameloop("demand")
-
-								window.com = data
-
-								var resp = data.response
-
-								var cookies = window.cookies = JSON.parse(resp.body.cookies);
-
-								var url = new URL(window.location.href)
-
-								var _to = url.hash.replace("#","0x") * 1
-
-								if(window.players.length == 0){
-									window.players.push({
-										follow : false,
-										self : true,
-										hash : window.cookies.address ? window.cookies.address : window.cookies.hash,
-										emoji : "😀",
-										x : 1.5,
-										y : 0.5,
-										z : 1.5
-									})
-								}
-
-								if(typeof data.index == "undefined"){
-									delete window.com.rows
-
-									if(!window.Polling){
-										window.Polling = setInterval(window.Poll)
-									}
-								}else{
-									window.com.rows = data.rows ? data.rows : []
-
-									if(_to){
-										var _from = (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) * 1
-
-										var _address
-
-										if(_from > _to){
-											_address = ethers.hashMessage(_from.toString() + _to.toString())
-											_address = ethers.computeAddress(_address).toLowerCase()
-										}else{
-											_address = ethers.hashMessage(_to.toString() + _from.toString())
-											_address = ethers.computeAddress(_address).toLowerCase()
-										}
-
-										window.dialog = {
-											to : url.hash.replace("#","0x")
-										}
-
-										if(sessionStorage[_address]){
-											window.Callback(JSON.parse(sessionStorage[_address]))	
-
-											if(window.response && !isDialogFlow){
-												
-												return
-											}
-										}
-									}
-								}
-
-								if(url.hash){
-									var cc_address = url.hash.replace("#","0x")
-
-									if(ethers.isAddress(cc_address)){
-										var default_img = '<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">'
-
-										if(Object.keys(window.com).length){
-											if(window.com.logo){
-												$("#intro .title .emoji").html('<img src="'+window.com.logo+'" alt="">')
-
-												$("#intro .coptyright").html('<div class="_head">'+window.com.head+'</div>\
-												<div class="_body">'+window.com.body+'</div>')
-
-											}else{
-												$("#intro .title .emoji").html("")
-												$("#intro .title .emoji").append(blockies.create({seed: cc_address}))
-
-												$("#intro .coptyright p").html('<span class="address">\
-													<address>\
-														<span>'+cc_address+'</span>\
-														<span dir="rtl">'+cc_address+'</span>\
-													</address>\
-												</span>')
-											}
-
-											if(isDialogFlow){
-												delete window.dialog
-
-												$('messages ul, #rank ol, #capture>.rank_toggle, talks ul').html("")
-												$("form.message").val("")
-
-												$messages.removeClass("on")
-
-												$talk.removeClass("on")
-
-												var $form = document.querySelector('form[name="oauth.network"]')
-
-												if(form_template.length > 0){
-													$form.outerHTML = form_template
-													$form = document.querySelector('form[name="oauth.network"]');
-												}
-
-												$form.className = ""
-
-												getTable("flows")
-											}
-
-											setTimeout(function(){
-												window.setFrameloop("always")
-											}, 100)
-										}
-									}
-								}
-							}catch(err){
-								console.log("err",err);
-							}
-						}
-					}
-				}
-
-			}catch(err){
-				console.log("err",err);
-			}
-		})
-	}
 
 	var $body = $("body")
 	var $nav = $('input[id="nav"]')
@@ -712,10 +546,6 @@ OAuth3.on("ready", function(e){
 	}
 
 	window.Tutorial = function(value, step){
-		if(Object.keys(window.com).length){
-			return
-		}
-
 		var $form = document.forms.Tutorial
 		var $index = $form.index
 
@@ -744,16 +574,12 @@ OAuth3.on("ready", function(e){
 		window.Callback(window.response)
 	}
 
-	function emojiChanged(emoji, peerId, local){
+	function emojiChanged(emoji, local){
 		var player = window.players.self()
 
 		if(player){
 			var _players = window.players
 			var len = players.length
-
-			if(!emoji && peerId){
-				emoji = player.emoji
-			}
 
 			var query = {
 				href : window.location.href,
@@ -776,8 +602,6 @@ OAuth3.on("ready", function(e){
 
 					_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1									
 
-				}else if(Object.keys(window.com).length){
-					_to = window.com.address * 1
 				}else if(window.location.hash){
 					_to = window.location.hash.replace("#","0x") * 1
 				}
@@ -2137,43 +1961,43 @@ OAuth3.on("ready", function(e){
 		}
 
 		window.Callback = async function(resp){
-			var url = new URL(window.location.href)
+			try{
+				var url = new URL(window.location.href)
 
-			var cookies = window.cookies = JSON.parse(resp.body.cookies)
+				var cookies = window.cookies = JSON.parse(resp.body.cookies)
 
-			var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
-				cc_address = ethers.computeAddress(cc_address).toLowerCase()
+				var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
+					cc_address = ethers.computeAddress(cc_address).toLowerCase()
 
-			if(OAuth3.xhr){
-				OAuth3.xhr.abort()
-				delete OAuth3.xhr
+				if(OAuth3.xhr){
+					OAuth3.xhr.abort()
+					delete OAuth3.xhr
 
-				var _address = cc_address
+					var _address = cc_address
 
-				if(window.dialog){
-					var _to = url.hash.replace("#","0x") * 1
+					if(window.dialog){
+						var _to = url.hash.replace("#","0x") * 1
 
-					if(_to){
-						var _from = (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) * 1
+						if(_to){
+							var _from = (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) * 1
 
-						if(_from > _to){
-							_address = ethers.hashMessage(_from.toString() + _to.toString())
-							_address = ethers.computeAddress(_address).toLowerCase()
-						}else{
-							_address = ethers.hashMessage(_to.toString() + _from.toString())
-							_address = ethers.computeAddress(_address).toLowerCase()
+							if(_from > _to){
+								_address = ethers.hashMessage(_from.toString() + _to.toString())
+								_address = ethers.computeAddress(_address).toLowerCase()
+							}else{
+								_address = ethers.hashMessage(_to.toString() + _from.toString())
+								_address = ethers.computeAddress(_address).toLowerCase()
+							}
 						}
 					}
+
+					if(Object.keys(resp.body.body).length == 1 && resp.body.body.emoji){
+						sessionStorage[_address] = JSON.stringify(resp)
+					}
+
+					window.response = resp
 				}
 
-				if(Object.keys(resp.body.body).length == 1 && resp.body.body.emoji){
-					sessionStorage[_address] = JSON.stringify(resp)
-				}
-
-				window.response = resp
-			}
-
-			try{
 				if(window.players){
 					if($go.referer){
 						window.speed = 0.1
@@ -2207,17 +2031,35 @@ OAuth3.on("ready", function(e){
 					if(window.players.length){
 						self_player = window.players.self()
 					}else{
+						var x = 1.5
+						var z = 1.5
+
+						var xyz = cookies.xyz
+						if(xyz){
+							xyz = xyz.split(",")
+
+							x = xyz[0] * 1
+							// y = xyz[1]
+							z = xyz[2] * 1
+						}
+
+						var b = window.map.biomes[`${x}:${z}`]
+						var y = b ? b.y : 0.5
+
 						self_player = {
 							team : cookies.team ? cookies.team : "",
 							follow : false,
 							self : true,
 							hash : cookies.address ? cookies.address : cookies.hash,
 							emoji : "😀",
-							x : 1.5,
-							y : 0.5,
-							z : 1.5
+							x : x,
+							y : y,
+							z : z
 						}
+
 					}
+
+					console.log('rows',rows);
 
 					if(rows.length){
 						var thread
@@ -2306,23 +2148,6 @@ OAuth3.on("ready", function(e){
 
 					var selector = window.selector
 
-					if(Object.keys(window.com).length){
-						var $form = $(document.forms.Tutorial)
-
-						if($form.hasClass("on")){
-							localStorage.tutorial = "complete"
-
-							$form.removeClass("on")
-							$body
-								.attr("referer", window.com.href)
-								.removeAttr("tutorial")
-								.removeAttr("step")
-
-							delete window.tutorial
-						}
-					}
-
-
 					var player_hash = self_player.hash
 
 					var $player = $('player[id="'+player_hash+'"][alt="player"]')
@@ -2365,16 +2190,17 @@ OAuth3.on("ready", function(e){
 
 					var sticker = []
 
-					var explodes = []
+					var bombs = []
 
 					var bingo_body = ""
 
 					var score_board = []
 
 					var biomes = listToBiomes(window.map.biomes, 100)
-				
 
-					var attack = []
+					var pending = []
+
+					var damage = []
 
 					var size = 5
 
@@ -2383,6 +2209,15 @@ OAuth3.on("ready", function(e){
 					if(!window.players.length){
 						if(window.current){
 							if(window.current.current.position){
+								var xyz = cookies.xyz
+
+								if(xyz){
+									xyz = xyz.split(",")
+
+									biomes.x = xyz[0] * 1
+									biomes.z = xyz[2] * 1
+								}
+
 								window.current.current.position.x = self_player.x = biomes.x
 								window.current.current.position.z = self_player.z = biomes.z
 
@@ -2415,27 +2250,8 @@ OAuth3.on("ready", function(e){
 							cc_player.hash = cc_address.toUpperCase()
 						}
 
-						// _players.push(cc_player)
-
-						if(window.com){
-							if(window.com.rows){
-								for(var i = 0; i < window.com.rows.length; i++){
-									var row = window.com.rows[i]
-
-									var _id = ethers.hashMessage(row.From+row.To+row.Cc+row.Subject)
-										_id = ethers.computeAddress(_id).toLowerCase()
-
-									row.Id = _id
-
-									rows.push(row)
-								}
-							}
-						}
-
 						for(var r = 0; r < rows.length; r++){
 							var row = rows[r];
-
-							var peerId = row.From
 
 							var hashtag = getHashtag(row.Cc)
 
@@ -2455,21 +2271,26 @@ OAuth3.on("ready", function(e){
 							var biome = window.map.biomes[x+":"+z]
 
 							if(window.Biomes[hashtag]){
-								var b = window.map.biomes[row.Id]
+								if(row.Flag){
+									delete window.map.biomes[row.Id]
+									
+									var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
 
-								if(b && !row.Flag){
+									if($clipped.length && !window.bingo[row.Id]){
+										window.bingo[row.Id] = true
+										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+									}
+								}else{
 									var _asset = {
 										id : row.Id,
 										hash : cc_address,
 										name : hashtag,
 										value : "",
 										color: "",
-										x : b.x,
-										y : b.y,
-										z : b.z
+										x : x,
+										y : biome.y,
+										z : y
 									}
-
-									// _assets.push(_asset)
 
 									window.map.biomes[row.Id] = _asset
 								}
@@ -2477,6 +2298,9 @@ OAuth3.on("ready", function(e){
 								var player = {
 									follow : false	
 								}
+
+
+								var type = window.typeof_emoji(emoji)
 
 								if(cookies.address == row.From || cookies.hash == row.From){
 									self = true
@@ -2488,8 +2312,6 @@ OAuth3.on("ready", function(e){
 											continue
 										}
 									}
-
-									var type = window.typeof_emoji(emoji)
 
 									if(self_player){
 										try{
@@ -2511,6 +2333,10 @@ OAuth3.on("ready", function(e){
 										player.emoji = window.emojis.self
 									}
 								}else{
+									if(!type && window.map.biomes[row.Id]){
+										delete window.map.biomes[row.Id]
+									}
+
 									player.x = x
 									player.y = (biome ? biome.y : 0) + 0.5
 									player.z = z
@@ -2524,8 +2350,6 @@ OAuth3.on("ready", function(e){
 								if(!window.map.report[row.From]){
 									if(!rows[row.From]){
 										rows[row.From] = true
-
-
 
 										_players.push({
 											team : hashtag,
@@ -2612,18 +2436,22 @@ OAuth3.on("ready", function(e){
 								})
 
 							}else if(row.Cc.indexOf("#bomb") > -1){
+								bombs.push(row)
+
 								if(row.Flag){
-									explodes.push(row)
-
-									var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
-
-									if($clipped.length && !window.bingo[row.Id]){
-										window.bingo[row.Id] = true
-										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+									if(row.To == player_hash){
+										damage.push(row)
 									}
 
-									if(row.To == address){
-										attack.push(row)
+									if(row.Subject == "#bomb"){
+										console.log('폭발진입', row);
+
+										var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
+
+										if($clipped.length && !window.bingo[row.Id]){
+											window.bingo[row.Id] = true
+											bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+										}
 									}
 								}else{
 									_assets.push({
@@ -2641,63 +2469,51 @@ OAuth3.on("ready", function(e){
 							}else if(row.Cc.indexOf("#asset") > -1){
 								var emoji = row.Cc.split("@")[1]
 
-								if(row.Flag){									
-									_assets.push({
-										id : row.Id,
-										hash : row.From,
-										name : row.Name ? row.Name : "asset",
-										value : "",
-										color: row.Color ? row.Color : "#000",
-										x : x,
-										y : row.y ? row.y : 0,
-										z : z
-									})
-								}else{
-									// window.Biomes[hashtag]
-									if(row.To == player_hash){
-										if(!sticker[emoji]){
-											sticker[emoji] = []
-											window.map.item[emoji] = []
-										}
+								if(row.Flag){
+									if(window[row.Flag]){
+										window[row.Flag].emoji = ""
 
-										row.Emoji = emoji
+										var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
 
-										sticker.push(row)
-										sticker[emoji].push(row)
-										window.map.item[emoji].push(row)
+										if($clipped.length && !window.bingo[row.Id]){
+											window.bingo[row.Id] = true
+											bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+										}	
 									}
+								}
+
+								if(row.To == player_hash){
+									if(!sticker[emoji]){
+										sticker[emoji] = []
+										window.map.item[emoji] = []
+									}
+
+									row.Emoji = emoji
+
+									sticker.push(row)
+									sticker[emoji].push(row)
+									window.map.item[emoji].push(row)
 								}
 							}	
 						}
 
-
-						// if(explodes.length){
-						// 	for(var i = 0; i < explodes.length; i++){
-						// 		var bomb = explodes[i]
-
-						// 		for(var _x = -2; _x < 3; _x++){
-						// 			for(var _z = -2; _z < 3; _z++){
-						// 				var $clipped = $('.clipped .emoji[x="'+(bomb.x+_x)+'"][z="'+(bomb.z+_z)+'"]')
-
-						// 				if($clipped.length && !window.bingo[row.Id]){
-						// 					// window.bingo[row.Id] = true
-						// 					bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
-						// 				}
-						// 			}
-						// 		}
-						// 	}
-						// }
-
-						console.log('explodes',explodes);
-
 						var $life = $("#life")
-						var life = 5 - attack.length
+						var life = 5 - damage.length
 						var life_body = ''
 
 						if(life){
 							for(var i = 0; i < life; i++){
 								life_body += '<i class="on"></i>'
 							}
+						}
+
+						console.log('damage.length',damage.length);
+
+						console.log('life',life);
+
+						if(!life){
+							$(".enter")
+							// 결과 페이지로 자동 이동되게
 						}
 
 						$life.html(life_body)
@@ -2752,86 +2568,96 @@ OAuth3.on("ready", function(e){
 							}
 						}
 
+
 						biomes.forEach(function(b, i){
-							if(window.players.length){
-								var _id = crc32(cc_address+i).toString(32).toUpperCase()
+							var _id = crc32(cc_address+i).toString(32).toUpperCase()
 
-								var color = window.Biomes["#"+b.biome]
-								
-								if(
-									(biomes.x - size < b.x && biomes.x + size > b.x) &&
-									(biomes.z - size < b.z && biomes.z + size > b.z)
-								){
-									var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+							var color = window.Biomes["#"+b.biome]
+							
+							if(
+								(biomes.x - size < b.x && biomes.x + size > b.x) &&
+								(biomes.z - size < b.z && biomes.z + size > b.z)
+							){
+								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
 
-									if(window.map.biomes[_id]){
-										isBiome = true
-									}
-
-									_assets.push({
-										id : _id,
-										hash : cc_address,
-										name : "#"+b.biome,
-										value : color,
-										color: color,
-										x : b.x,
-										y : b.y - 0.5,
-										z : b.z
-									})
+								if(window.map.biomes[_id]){
+									isBiome = true
 								}
+
+								_assets.push({
+									id : _id,
+									hash : cc_address,
+									name : "#"+b.biome,
+									value : color,
+									color: color,
+									x : b.x,
+									y : b.y - 0.5,
+									z : b.z
+								})
 							}
 						})
 
-						if(window.assets){
-							if(window.assets.length && !isBiome){
-								biomes.forEach(function(b, i){
-									if(window.players.length){
-										var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+						if(bombs.length){
+							for(var i = 0; i < bombs.length; i++){
+								var bomb = bombs[i]
 
-										if(
-											(biomes.x - size < b.x && biomes.x + size > b.x) &&
-											(biomes.z - size < b.z && biomes.z + size > b.z) &&
-											!window.map.biomes[_id]
-										){
-											if(Math.random() < 0.1){
-												var _date = new Date(new Date() - timezoneOffset)
-													_date = _date.toISOString()
-														.replace(/T/, ' ')
-														.replace(/\..+/, '')
-
-												var color = window.Biomes["#"+b.biome]
-
-												var emoji = window.Biomes[color]
-
-												if(emoji){
-													window.map.biomes[_id] = {
-														id : _id,
-														hash : cc_address,
-														name : "#"+b.biome,
-														value : "",
-														color: "",
-														x : b.x,
-														y : b.y - 0.5,
-														z : b.z
-													}
-
-													var _row = {
-														Id : _id,
-														From : address,
-														To : "0x"+cc_address,
-														Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address+" @"+emoji,
-														Subject : "",
-														Flag : "",
-														Date : _date
-													}
-
-													window.map.pending.push(_row)
+								if(bomb){
+									for(var _x = -2; _x < 3; _x++){
+										for(var _z = -2; _z < 3; _z++){
+											if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
+												if(bomb.Flag){
+													delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
+												}else{
+													window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
 												}
 											}
 										}
-									}
-								})
+									}	
+								}
 							}
+						}
+
+						if(window.assets && !isBiome){
+							biomes.forEach(function(b, i){
+								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+
+								if(
+									(biomes.x - size < b.x && biomes.x + size > b.x) &&
+									(biomes.z - size < b.z && biomes.z + size > b.z) &&
+									!window.map.biomes[_id]
+								){
+									if(Math.random() < 0.1){
+										var _date = new Date(new Date() - timezoneOffset)
+											_date = _date.toISOString()
+												.replace(/T/, ' ')
+												.replace(/\..+/, '')
+
+										var color = window.Biomes["#"+b.biome]
+
+										var emoji = window.Biomes[color]
+
+										if(emoji){
+											window.map.biomes[_id] = {
+												id : _id,
+												hash : cc_address,
+												name : "#"+b.biome,
+												value : "",
+												color: "",
+												x : b.x,
+												y : b.y - 0.5,
+												z : b.z
+											}
+
+											var _row = {
+												Id : _id,
+												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
+											}
+
+											window.map.pending.push(_row)
+										}
+									}
+								}
+							})
 						}
 					}
 
@@ -2971,6 +2797,7 @@ OAuth3.on("ready", function(e){
 
 						if(window.assets){
 							if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
+								console.log("window.assets 진입여부", _assets);
 								diff = true
 								window.assets.set(_assets)
 							}
@@ -3080,10 +2907,10 @@ OAuth3.on("ready", function(e){
 
 						}
 
-						var stickerCnt = 1
+						var stickerCnt = 0
 						var rewardLength = Object.keys(window.map.reward).length
 
-						var li = '<div draggable="false" class="emoji_asset" emoji="🪙" type="item" method="open"><a class="emoji color">🪙</a><span class="cnt">'+cookies.balance+'</span></div>'
+						var li = ''
 
 						var afterSticker = []
 						
@@ -3178,8 +3005,6 @@ OAuth3.on("ready", function(e){
 
 								$body.attr("chat",true)
 							}
-
-							// window.com 없으면 닫기 버튼 없애기
 						}
 						
 						try{
@@ -3954,7 +3779,7 @@ OAuth3.on("ready", function(e){
 								// 모바일 vapid 페이지 인증 페이지로 이동
 							}
 						}
-					}else if(isDialog != "dialog" && !Object.keys(window.com).length){
+					}else if(isDialog != "dialog"){
 						$body.removeAttr("bingo")
 					}
 				}
@@ -3965,19 +3790,6 @@ OAuth3.on("ready", function(e){
 
 				if(typeof window.Polling == "undefined"){
 					if(cookies.hash){
-						if(Object.keys(window.com).length){
-							if(!window.dialog){
-								if(OAuth3.xhr){
-									if(OAuth3.xhr.query.to == "flows" || OAuth3.xhr.query.to == "form"){
-										return
-									}
-								}
-
-								getTable("flows")
-								return
-							}
-						}
-
 						window.Polling = setInterval(window.Poll)
 					}else{
 						window.location.href = OAuth3.host+"/logout"
@@ -4047,13 +3859,28 @@ OAuth3.on("ready", function(e){
 			$('.inventory').attr("href", href+"/inventory")
 			$('.exchange').attr("href", href)
 
+			var x = 1.5
+			var y = 0.5
+			var z = 1.5
+
+			var xyz = cookies.xyz
+			if(xyz){
+				xyz = xyz.split(",")
+
+				x = xyz[0] * 1
+				y = xyz[1] * 1
+				z = xyz[2] * 1
+			}
+
+			
+
 			var query = {
 				href : window.location.href,
 				hash : cookies.hash,
 				token : cookies.token,
-				x : 1.5,
-				y : 0,
-				z : 1.5
+				x : x,
+				y : y,
+				z : z
 			}
 
 			var url = "https://xim.city";
@@ -4126,14 +3953,6 @@ OAuth3.on("ready", function(e){
 						}
 					}catch(err){
 						var player_hash = cookies.address ? cookies.address : cookies.hash
-						window.players.set([{
-							self : true,
-							hash : player_hash,
-							x : 1.5,
-							y : 0.5,
-							z : 1.5,
-							emoji : "😀"
-						}])
 
 						try{
 							self_player = window.players.self()
@@ -4165,14 +3984,19 @@ OAuth3.on("ready", function(e){
 								emoji : window.emojis.message ? window.emojis.message : self_player.emoji
 							}
 
-
 							var query = {
 								href : window.location.href,
 								hash : cookies.hash,
 								token : cookies.token,
-								x : self_player.x ? self_player.x : "1.5",
-								y : self_player.y ? self_player.y : "0",
-								z : self_player.z ? self_player.z : "1.5"
+								x : self_player.x,
+								y : self_player.y,
+								z : self_player.z
+							}
+
+							if(window.cookies){
+								if(window.cookies.nonce){
+									query.nonce = window.cookies.nonce
+								}
 							}
 
 							if(window.Poll.date){
@@ -4192,8 +4016,6 @@ OAuth3.on("ready", function(e){
 
 									_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1
 
-								}else if(Object.keys(window.com).length){
-									_to = window.com.address * 1
 								}else if(window.location.hash){
 									_to = window.location.hash.replace("#","0x") * 1
 								}
@@ -4645,8 +4467,6 @@ OAuth3.on("ready", function(e){
 
 							_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1									
 
-						}else if(Object.keys(window.com).length){
-							_to = window.com.address * 1
 						}else if(window.location.hash){
 							_to = window.location.hash.replace("#","0x") * 1
 						}
@@ -5004,131 +4824,108 @@ OAuth3.on("ready", function(e){
 				click : async function(e){
 					var $this = $(e.target)
 
-					if($this.hasClass("enter")){ 
-						if(cookies.pathname){
-							if(cookies.pathname == window.location.pathname){
-								$body.attr("mode", "third")
-							}else{
+					try{
+						if($this.hasClass("enter")){
+							if(typeof window.cookies.damage != "undefined"){
+								if(cookies.pathname){
+									if(cookies.pathname == window.location.pathname){
+										$body.attr("mode", "third")
+									}else{
 
-							}	
-						}else{
-							$body.attr("mode", "third")
-						}
-					}
-
-					if(window.players){
-						if(window.players.length){
-							if(cookies.address || cookies.hash){
-								var player = window.players.self()
-
-								var $player = $('player[id="'+player.hash+'"][alt="player"]')
-
-								var url = "https://xim.city";
-
-								if(OAuth3.localhost){
-									url = "http://localhost:3001"
-								}
-
-								if($this.hasClass("chat_message")){
-									$aside.addClass("focus")
+									}	
 								}else{
-									$aside.removeClass("focus")
+									$body.attr("mode", "third")
 								}
+							}
+						}
 
+						if(window.players){
+							if(window.players.length){
+								if(cookies.address || cookies.hash){
+									var player = window.players.self()
 
-								if($this.closest("#rank").length){
-									if($this.hasClass("item")){
-										var hash = $this.attr("hash")
+									var $player = $('player[id="'+player.hash+'"][alt="player"]')
 
-										if(hash){
-											window.selector.set({hash : hash})
+									var url = "https://xim.city";
 
-											$go.attr("href","/#"+hash)
-											$go.text("visit")
-											$go.removeAttr("way")
-
-											window.assets.set(window.assets)
-										}
+									if(OAuth3.localhost){
+										url = "http://localhost:3001"
 									}
 
-									return
-								}
-								
-								if($this.hasClass("skip")){
-									localStorage.tutorial = "complete"
-									if(isNaN(localStorage.tutorial)){
-										document.forms.Tutorial.index.value = ""
-										$body.removeAttr("tutorial")
-										$body.removeAttr("step")
-										$(".layer, .layer form.popup").removeClass("on")
-
-										delete window.tutorial
-
-										if(window.location.href == window.response.body.query.href){
-											window.Callback(window.response)
-										}else{
-											delete window.response
-										}
-										window.Polling = setInterval(window.Poll)
+									if($this.hasClass("chat_message")){
+										$aside.addClass("focus")
 									}else{
-										window.location.href = "/"
+										$aside.removeClass("focus")
 									}
-								}
 
-								if($this.hasClass("tutorial")){
-									e.preventDefault()
 
-									var $form = document.forms.Tutorial
+									if($this.closest("#rank").length){
+										if($this.hasClass("item")){
+											var hash = $this.attr("hash")
 
-									var isTutorial = $body.attr("tutorial")
+											if(hash){
+												window.selector.set({hash : hash})
 
-									if(typeof isTutorial != "undefined"){
-										document.forms.Tutorial.index.value = ""
-										$body.removeAttr("tutorial")
-										$body.removeAttr("step")
-										$(".layer, .layer form.popup").removeClass("on")
+												$go.attr("href","/#"+hash)
+												$go.text("visit")
+												$go.removeAttr("way")
 
-										delete window.tutorial
-										if(window.location.href == window.response.body.query.href){
-											if(window.response){
-												window.Callback(window.response)
+												window.assets.set(window.assets)
 											}
+										}
+
+										return
+									}
+									
+									if($this.hasClass("skip")){
+										localStorage.tutorial = "complete"
+										if(isNaN(localStorage.tutorial)){
+											document.forms.Tutorial.index.value = ""
+											$body.removeAttr("tutorial")
+											$body.removeAttr("step")
+											$(".layer, .layer form.popup").removeClass("on")
+
+											delete window.tutorial
+
+											if(window.location.href == window.response.body.query.href){
+												window.Callback(window.response)
+											}else{
+												delete window.response
+											}
+											window.Polling = setInterval(window.Poll)
 										}else{
-											delete window.response
+											window.location.href = "/"
 										}
-										window.Polling = setInterval(window.Poll)
-									}else{
-										$('#header #nav').prop("checked", false)
-
-										$(".layer").addClass("on")
-										$($form).addClass("on")
-
-										clearInterval(window.Polling)
-
-										if(OAuth3.xhr){
-											OAuth3.xhr.abort()
-											delete OAuth3.xhr
-										}
-
-										if(window.tutorial){
-											window.tutorial.name = ""
-											window.tutorial.step = 0
-										}
-
-										window.Tutorial(0)
 									}
 
-									return
-								}
+									if($this.hasClass("tutorial")){
+										e.preventDefault()
 
+										var $form = document.forms.Tutorial
 
-								if($this.closest("#header").length){
-									var href = $this[0].href
+										var isTutorial = $body.attr("tutorial")
 
-									if(href){
-										if(href.indexOf("/logout") > -1){
-											e.preventDefault()
-											
+										if(typeof isTutorial != "undefined"){
+											document.forms.Tutorial.index.value = ""
+											$body.removeAttr("tutorial")
+											$body.removeAttr("step")
+											$(".layer, .layer form.popup").removeClass("on")
+
+											delete window.tutorial
+											if(window.location.href == window.response.body.query.href){
+												if(window.response){
+													window.Callback(window.response)
+												}
+											}else{
+												delete window.response
+											}
+											window.Polling = setInterval(window.Poll)
+										}else{
+											$('#header #nav').prop("checked", false)
+
+											$(".layer").addClass("on")
+											$($form).addClass("on")
+
 											clearInterval(window.Polling)
 
 											if(OAuth3.xhr){
@@ -5136,948 +4933,561 @@ OAuth3.on("ready", function(e){
 												delete OAuth3.xhr
 											}
 
-											OAuth3.xhr = OAuth3.fetch({
-												method : "POST",
-												query : {
-													href : window.location.href,
-													hash : cookies.hash,
-													token : cookies.token
-												},
-												body : {},
-												url : href
-											}, function(){
-												window.location.reload()
-											})
-
-											return
-										}
-									}
-								}
-
-								if($this.closest("dialog")){
-									var $form = document.querySelector('form[name="oauth.network"]')
-
-									if($form.className.indexOf("contenteditable") == -1 && ($this.attr("type") == "flow" || $this[0].tagName == "ITEM" || $this.hasClass("datepicker")) && window.dialog){
-										if(window.dialog.flow){
-											if(window.dialog.flow.response){													
-												var $items = $this.closest("items")
-
-												var $checked
-
-												var Idx = ""
-												var link = ""
-
-												if($this.attr("type") == "flow"){
-													Idx = $this.attr("id")
-
-													window.dialog.index = 0
-												}
-
-												$('messages li').removeClass("on")
-												$('messages li item[type="date"]').removeAttr("checked")
-												$this.closest("li").addClass("on")
-
-												if($this.hasClass("datepicker")){
-													var date = $this.val()
-
-													if(date){
-														
-													}else{
-														return
-													}
-												}
-
-												if($items.length){
-													link = $items.attr("id")
-
-													if($checked){
-														return
-													}
-												}
-
-												if($this.attr("contenteditable") || $this.attr("disabled")){
-													return
-												}
-
-												var flows = []
-
-												try{
-													var group = window.dialog[window.dialog.id]
-
-													if(group.Length){
-														if(!Idx){
-															for(var s = 1; s <= group.Length; s++){
-																var tr = group[s]
-
-																if(tr.Th.Length){
-																	for(var h = 0; h <= tr.Th.Length; h++){
-																		var item = tr.Th[h];
-
-																		if(item){
-																			if(item.link == link){
-																				Idx = item.Flag
-																				window.dialog.index = h
-																			}
-																		}
-																	}
-																}
-															}
-														}
-
-														for(var s = 1; s <= group.Length; s++){
-															var tr = group[s]
-
-															if(tr.Idx == Idx){
-																if(tr.Th.Length){
-																	for(var h = 0; h <= tr.Th.Length; h++){
-																		var item = tr.Th[h];
-
-																		if(item.Id == link){
-																			window.dialog.index = h
-																		}
-																		
-																		flows.push(item)
-																	}
-																}
-															}
-														}
-													}
-												}catch(err){
-													console.log("err",err);
-												}
-												// checked 처리해야함
-
-												if(!window.dialog.index){
-													window.dialog.index = 0
-												}
-
-												// window.dialog.index++
-												window.flows = flows
-												
-
-												if(window.dialog.index < flows.length){
-													getTable('form', false, window.dialog.flow.response, flows)
-												}else{
-													// var callback = function(res){
-													// 	if(OAuth3.xhr){
-													// 		OAuth3.xhr.abort()
-													// 		delete OAuth3.xhr
-													// 	}
-
-													// 	delete window.dialog
-
-													// 	getTable("flows")
-													// }
-
-													// OAuth3.submit($form, callback)
-												}
+											if(window.tutorial){
+												window.tutorial.name = ""
+												window.tutorial.step = 0
 											}
-										}
-									}
-								}
 
-								if($this.closest("emoji").length){
-									var $emoji = $this.closest("emoji")
-
-									var focus = $emoji.attr("selector");
-
-									if(focus){
-										$player = $('player[id="'+focus+'"]')
-
-										var $tooltip = $player.find("tooltip");
-
-										var $emojis = $("emojis")
-
-										var _far = window.far;
-
-										if($tooltip.hasClass("on")){
-											$tooltip.removeClass("on")
-											$body.removeAttr("tooltip")
-
-										}else{
-											$('tooltip').removeClass("on")
-											$tooltip.addClass("on")
-											$body.attr("tooltip", true)
-
-											Zoom()
-										}
-									}
-								}
-
-								if($this.hasClass("feedback")){
-									var $form = document.forms.feedback
-									$form.emoji.value = player.emoji
-									$form.hash.value = cookies.hash
-									$form.token.value = cookies.token
-
-									$(".layer").addClass("on")
-									$($form).addClass("on")
-								}
-
-								if($this.hasClass("zoom")){
-									e.preventDefault()
-
-									var _far = window.far
-
-									if($this.hasClass("up")){
-										_far.x += 1
-										_far.y += 1
-										_far.z += 1
-									}
-
-									if($this.hasClass("down")){
-										_far.x -= 1
-										_far.y -= 1
-										_far.z -= 1									
-									}
-
-									if($this.hasClass("map")){
-										$("tooltip").removeClass("on")
-
-										if(_far.x == 10){
-											_far.x = 4.5
-											_far.y = 4.5
-											_far.z = 4.5
-
-											window.speed = 0.1
-											$this.removeClass("color")
-										}else{
-											_far.x = 10
-											_far.y = 10
-											_far.z = 10
-
-											window.speed = 0.2
-											$this.addClass("color")
-										}
-									}
-
-
-									if(_far.x <= 10){
-										$body.attr("zoom", _far.x)
-
-										if(_far.x == 10){
-											
-										}else{
-											
+											window.Tutorial(0)
 										}
 
-										window.far.set(_far)
+										return
 									}
 
-									if($body.hasClass("select_emoji")){
-										var $player = $('player[id="'+player.hash+'"][alt="player"]')
 
-										$player.removeAttr("class")
-										$body.removeAttr("class")
-									}
-								}
+									if($this.closest("#header").length){
+										var href = $this[0].href
 
-								if($this.hasClass("back")){
-									if($body.hasClass("select_emoji")){
-										var $player = $('player[id="'+player.hash+'"][alt="player"]')
-
-										$player.find("tooltip").addClass("on")
-										$player.removeAttr("class")
-										$body
-											.removeAttr("class")
-											.removeAttr("bingo")
-
-										$("form.portal").val("")
-
-										if(OAuth3.xhr){
-											OAuth3.xhr.abort()
-											delete OAuth3.xhr
-										}
-
-										emojiChanged(window.emojis.self)
-									}
-									// 인벤토리
-								}
-								
-								if($this.hasClass("message")){
-									if($this.hasClass("close")){
-										if(!Object.keys(window.com).length){
-											if($body.attr("bingo") == "dialog"){
-												if($('field[draggable="false"]').hasClass('image_enable')){
-													$('field[draggable="false"]').removeClass('image_enable').removeAttr("style")
-													$('field').removeClass("on")
-													$('field flows').html("")
-
-													return
-												}
+										if(href){
+											if(href.indexOf("/logout") > -1){
+												e.preventDefault()
+												
+												clearInterval(window.Polling)
 
 												if(OAuth3.xhr){
 													OAuth3.xhr.abort()
 													delete OAuth3.xhr
 												}
 
-												delete window.dialog
+												OAuth3.xhr = OAuth3.fetch({
+													method : "POST",
+													query : {
+														href : window.location.href,
+														hash : cookies.hash,
+														token : cookies.token
+													},
+													body : {},
+													url : href
+												}, function(){
+													window.location.reload()
+												})
 
+												return
+											}
+										}
+									}
+
+									if($this.closest("dialog")){
+										var $form = document.querySelector('form[name="oauth.network"]')
+
+										if($form.className.indexOf("contenteditable") == -1 && ($this.attr("type") == "flow" || $this[0].tagName == "ITEM" || $this.hasClass("datepicker")) && window.dialog){
+											if(window.dialog.flow){
+												if(window.dialog.flow.response){													
+													var $items = $this.closest("items")
+
+													var $checked
+
+													var Idx = ""
+													var link = ""
+
+													if($this.attr("type") == "flow"){
+														Idx = $this.attr("id")
+
+														window.dialog.index = 0
+													}
+
+													$('messages li').removeClass("on")
+													$('messages li item[type="date"]').removeAttr("checked")
+													$this.closest("li").addClass("on")
+
+													if($this.hasClass("datepicker")){
+														var date = $this.val()
+
+														if(date){
+															
+														}else{
+															return
+														}
+													}
+
+													if($items.length){
+														link = $items.attr("id")
+
+														if($checked){
+															return
+														}
+													}
+
+													if($this.attr("contenteditable") || $this.attr("disabled")){
+														return
+													}
+
+													var flows = []
+
+													try{
+														var group = window.dialog[window.dialog.id]
+
+														if(group.Length){
+															if(!Idx){
+																for(var s = 1; s <= group.Length; s++){
+																	var tr = group[s]
+
+																	if(tr.Th.Length){
+																		for(var h = 0; h <= tr.Th.Length; h++){
+																			var item = tr.Th[h];
+
+																			if(item){
+																				if(item.link == link){
+																					Idx = item.Flag
+																					window.dialog.index = h
+																				}
+																			}
+																		}
+																	}
+																}
+															}
+
+															for(var s = 1; s <= group.Length; s++){
+																var tr = group[s]
+
+																if(tr.Idx == Idx){
+																	if(tr.Th.Length){
+																		for(var h = 0; h <= tr.Th.Length; h++){
+																			var item = tr.Th[h];
+
+																			if(item.Id == link){
+																				window.dialog.index = h
+																			}
+																			
+																			flows.push(item)
+																		}
+																	}
+																}
+															}
+														}
+													}catch(err){
+														console.log("err",err);
+													}
+													// checked 처리해야함
+
+													if(!window.dialog.index){
+														window.dialog.index = 0
+													}
+
+													window.flows = flows
+
+													if(window.dialog.index < flows.length){
+														getTable('form', false, window.dialog.flow.response, flows)
+													}
+												}
+											}
+										}
+									}
+
+									if($this.closest("emoji").length){
+										var $emoji = $this.closest("emoji")
+
+										var focus = $emoji.attr("selector");
+
+										if(focus){
+											$player = $('player[id="'+focus+'"]')
+
+											var $tooltip = $player.find("tooltip");
+
+											var $emojis = $("emojis")
+
+											var _far = window.far;
+
+											if($tooltip.hasClass("on")){
+												$tooltip.removeClass("on")
+												$body.removeAttr("tooltip")
+
+											}else{
+												$('tooltip').removeClass("on")
+												$tooltip.addClass("on")
+												$body.attr("tooltip", true)
+
+												Zoom()
+											}
+										}
+									}
+
+									if($this.hasClass("feedback")){
+										var $form = document.forms.feedback
+										$form.emoji.value = player.emoji
+										$form.hash.value = cookies.hash
+										$form.token.value = cookies.token
+
+										$(".layer").addClass("on")
+										$($form).addClass("on")
+									}
+
+									if($this.hasClass("zoom")){
+										e.preventDefault()
+
+										var _far = window.far
+
+										if($this.hasClass("up")){
+											_far.x += 1
+											_far.y += 1
+											_far.z += 1
+										}
+
+										if($this.hasClass("down")){
+											_far.x -= 1
+											_far.y -= 1
+											_far.z -= 1									
+										}
+
+										if($this.hasClass("map")){
+											$("tooltip").removeClass("on")
+
+											if(_far.x == 10){
+												_far.x = 4.5
+												_far.y = 4.5
+												_far.z = 4.5
+
+												window.speed = 0.1
+												$this.removeClass("color")
+											}else{
+												_far.x = 10
+												_far.y = 10
+												_far.z = 10
+
+												window.speed = 0.2
+												$this.addClass("color")
+											}
+										}
+
+
+										if(_far.x <= 10){
+											$body.attr("zoom", _far.x)
+
+											if(_far.x == 10){
+												
+											}else{
+												
+											}
+
+											window.far.set(_far)
+										}
+
+										if($body.hasClass("select_emoji")){
+											var $player = $('player[id="'+player.hash+'"][alt="player"]')
+
+											$player.removeAttr("class")
+											$body.removeAttr("class")
+										}
+									}
+
+									if($this.hasClass("back")){
+										if($body.hasClass("select_emoji")){
+											var $player = $('player[id="'+player.hash+'"][alt="player"]')
+
+											$player.find("tooltip").addClass("on")
+											$player.removeAttr("class")
+											$body
+												.removeAttr("class")
+												.removeAttr("bingo")
+
+											$("form.portal").val("")
+
+											if(OAuth3.xhr){
+												OAuth3.xhr.abort()
+												delete OAuth3.xhr
+											}
+
+											emojiChanged(window.emojis.self)
+										}
+										// 인벤토리
+									}
+									
+									if($this.hasClass("message")){
+										if($this.hasClass("close")){
+											if($body.attr("bingo") == "notify"){
 												$form.className = ""
 												$body
 													.removeAttr("class")
 													.removeAttr("bingo")
-
-
-												$("messages ul").html("")
 											}
+
+											$aside.removeClass("on")
+											$("form.message").val("")
+
+											var $messages = $("messages")
+											var $talk = $("talks")
+
+											$messages.removeClass("on")
+
+											$talk.removeClass("on")
 										}
-
-										if($body.attr("bingo") == "notify"){
-											$form.className = ""
-											$body
-												.removeAttr("class")
-												.removeAttr("bingo")
-										}
-
-										$aside.removeClass("on")
-										$("form.message").val("")
-
-										var $messages = $("messages")
-										var $talk = $("talks")
-
-										$messages.removeClass("on")
-
-										$talk.removeClass("on")
 									}
-								}
 
-								if(e.target.name == "message"){
-									$body.removeAttr("tooltip")
-									$("tooltip").removeClass("on")
-								}
+									if(e.target.name == "message"){
+										$body.removeAttr("tooltip")
+										$("tooltip").removeClass("on")
+									}
 
-								if($this.hasClass("hashType")){
-									e.preventDefault()
+									if($this.hasClass("hashType")){
+										e.preventDefault()
 
-									try{
-										var body = {
-											emoji : window.emojis.self
-										}
-
-										var query = {
-											href : window.location.href,
-											hash : cookies.hash,
-											token : cookies.token,
-											x : player.x,
-											z : player.z
-										}
-
-										var $player = $('player[id="'+player.hash+'"][alt="player"]')
-
-										var $$player = $this.closest("player")
-
-										var player_hash = $$player.attr("id")
-
-										var cc_address = ethers.hashMessage(window.location.href.replace(window.location.protocol+"//",""))
-											cc_address = ethers.computeAddress(cc_address).toLowerCase()
-
-										if(window.location.hash){
-											cc_address = window.location.hash.replace("#", "0x")
-										}
-
-										if(window.dialog){
-											if(window.cookies.to){
-												cc_address = window.cookies.to
-											}else{
-												cc_address = window.dialog.to
-											}
-											// cc_address = window.dialog.to.indexOf("0x") == 0 ? window.dialog.to : "0x"+window.dialog.to
-										}
-
-										if($this.hasClass("Send")){
-											$body.addClass("sendbox")
-											return
-										}else if($this.hasClass("Portal")){
-											var open = window.map.open[player.x+":"+player.z]
-
-											var alt = $$player.attr("alt")
-
-											if(alt == "playground"){
-												player_hash = player_hash.toLowerCase().replace("0x","")
+										try{
+											var body = {
+												emoji : window.emojis.self
 											}
 
-											if(alt == "playground" || player.hash.indexOf(player_hash) > -1){
-												var hash = cc_address.replace("0x","").toLowerCase()
-
-												var skip = false
-
-												if(window.tutorial){
-													if(window.tutorial.step){
-														window.onhashchange()
-														player_hash = player.hash		
-													}else{
-														skip = true
-														window.Tutorial(6)
-														body.emoji = player.emoji
-														body.cc = "portal"
-													}
-												}
-
-												if(!skip){
-													window.location.hash = player_hash.replace("0x","").toLowerCase()
-
-													setTimeout(function(){
-														window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = 1.5
-														window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = 1.5
-
-														if(window.tutorial){
-															window.tutorial.rows = []	
-															setTimeout(function(){
-																window.Tutorial(7)
-															},1000)
-														}
-													}, 500)
-													
-													return
-												}
-											}else if(open){
-												body.emoji = player.emoji
-												body.cc = "portal"
-											}
-
-										}else if($this.hasClass("Mine")){
-											body.emoji = player.emoji
-											body.cc = "puzzle"
-											body.puzzles = [{
-												id : "",
-												emoji : "💣",
-												hash : player.hash,
+											var query = {
+												href : window.location.href,
+												hash : cookies.hash,
+												token : cookies.token,
 												x : player.x,
 												z : player.z
-											}]
-
-										}else if($this.hasClass("Chord")){
-											body.cc = "chord"
-
-										}else if($this.hasClass("Flag")){
-											body.cc = "flag"
-
-										}else if($this.hasClass("Open")){
-											body.cc = "open"
-
-										}else if($this.hasClass("Follow")){
-											if(body.to != player.hash){
-												body.cc = "follow"
-												body.to = $$player.attr("id")
 											}
 
-										}else if($this.hasClass("Report")){
-											var $form = document.forms.report
-											$form.to.value = $$player.attr("id")
-											$form.emoji.value = player.emoji
-											$form.hash.value = cookies.hash
-											$form.token.value = cookies.token
+											var $player = $('player[id="'+player.hash+'"][alt="player"]')
 
-											$(".layer").addClass("on")
-											$($form).addClass("on")
+											var $$player = $this.closest("player")
 
-											return
-										}else if($this.hasClass("Withdrawal")){
-											if(cookies.email || window.tutorial){
-												var $form = document.forms.Withdrawal
+											var player_hash = $$player.attr("id")
+
+											var cc_address = ethers.hashMessage(window.location.href.replace(window.location.protocol+"//",""))
+												cc_address = ethers.computeAddress(cc_address).toLowerCase()
+
+											if(window.location.hash){
+												cc_address = window.location.hash.replace("#", "0x")
+											}
+
+											if(window.dialog){
+												if(window.cookies.to){
+													cc_address = window.cookies.to
+												}else{
+													cc_address = window.dialog.to
+												}
+												// cc_address = window.dialog.to.indexOf("0x") == 0 ? window.dialog.to : "0x"+window.dialog.to
+											}
+
+											if($this.hasClass("Send")){
+												$body.addClass("sendbox")
+												return
+											}else if($this.hasClass("Portal")){
+												var open = window.map.open[player.x+":"+player.z]
+
+												var alt = $$player.attr("alt")
+
+												if(alt == "playground"){
+													player_hash = player_hash.toLowerCase().replace("0x","")
+												}
+
+												if(alt == "playground" || player.hash.indexOf(player_hash) > -1){
+													var hash = cc_address.replace("0x","").toLowerCase()
+
+													var skip = false
+
+													if(window.tutorial){
+														if(window.tutorial.step){
+															window.onhashchange()
+															player_hash = player.hash		
+														}else{
+															skip = true
+															window.Tutorial(6)
+															body.emoji = player.emoji
+															body.cc = "portal"
+														}
+													}
+
+													if(!skip){
+														window.location.hash = player_hash.replace("0x","").toLowerCase()
+
+														setTimeout(function(){
+															window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = 1.5
+															window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = 1.5
+
+															if(window.tutorial){
+																window.tutorial.rows = []	
+																setTimeout(function(){
+																	window.Tutorial(7)
+																},1000)
+															}
+														}, 500)
+														
+														return
+													}
+												}else if(open){
+													body.emoji = player.emoji
+													body.cc = "portal"
+												}
+
+											}else if($this.hasClass("Mine")){
+												body.emoji = player.emoji
+												body.cc = "puzzle"
+												body.puzzles = [{
+													id : "",
+													emoji : "💣",
+													hash : player.hash,
+													x : player.x,
+													z : player.z
+												}]
+
+											}else if($this.hasClass("Chord")){
+												body.cc = "chord"
+
+											}else if($this.hasClass("Flag")){
+												body.cc = "flag"
+
+											}else if($this.hasClass("Open")){
+												body.cc = "open"
+
+											}else if($this.hasClass("Follow")){
+												if(body.to != player.hash){
+													body.cc = "follow"
+													body.to = $$player.attr("id")
+												}
+
+											}else if($this.hasClass("Report")){
+												var $form = document.forms.report
+												$form.to.value = $$player.attr("id")
+												$form.emoji.value = player.emoji
 												$form.hash.value = cookies.hash
 												$form.token.value = cookies.token
 
 												$(".layer").addClass("on")
 												$($form).addClass("on")
-											}
 
-											return
-										}else if($this.hasClass("Dialog")){
-											delete window.dialog
+												return
+											}else if($this.hasClass("Withdrawal")){
+												if(cookies.email || window.tutorial){
+													var $form = document.forms.Withdrawal
+													$form.hash.value = cookies.hash
+													$form.token.value = cookies.token
 
-											window.dialog = {
-												to : player_hash
-											}
-
-											if(cc_address == cookies.address){
-												getTable("form",true)
-											}else{
-												getTable("flows")
-											}
-
-											return
-										}else if($this.hasClass("Flow")){
-											delete window.dialog
-
-											if(cc_address == cookies.address){
-												getTable("flows",true)
-											}
-
-											return
-										}
-									}catch(err){
-										// console.log("err",err);
-									}
-
-									var id = cookies.hash+"["+player.x+","+player.z+"]"
-
-									var _assets = window.assets;
-
-									var diff = false
-
-									if(body.cc == "chord"){
-										diff = true
-										
-										_assets.push({
-											id : id,
-											hash : player.hash,
-											name : "chord",
-											value : "",
-											color: "yellow",
-											x : player.x,
-											y : -0.04,
-											z : player.z
-										})
-									}
-
-									if(body.cc == "flag"){
-										diff = true
-
-										if(window.assets[id]){
-											var len = window.assets.length
-
-											var index
-
-											for(var a = 0; a < len; a++){
-												if(window.assets[a].x == player.x && window.assets[a].z == player.z){
-													index = a
+													$(".layer").addClass("on")
+													$($form).addClass("on")
 												}
-											}
 
-											if(typeof index != "undefined"){
-												window.assets.splice(1, index)
-											}
-										}else{
-											_assets.push({
-												id : id,
-												hash : player.hash,
-												name : "flag",
-												value : "",
-												color: "orange",
-												x : player.x,
-												y : -0.08,
-												z : player.z
-											})
-										}
-									}
+												return
+											}else if($this.hasClass("Dialog")){
+												delete window.dialog
 
-									emojiChanged("🫥")
+												window.dialog = {
+													to : player_hash
+												}
 
-									if(diff){
-										window.assets.set(_assets)
-									}
-
-									if(OAuth3.xhr){
-										OAuth3.xhr.abort()
-										delete OAuth3.xhr
-									}
-
-
-
-									if(window.tutorial){
-										setTimeout(function(){
-											var res = JSON.stringify(window.response)
-												res = JSON.parse(res)
-
-											res.body.query = query
-											res.body.body = body
-											
-											window.Callback(res)
-										},1500)
-									}else{
-										var _to = ""
-
-										if($body.attr("bingo") == "dialog"){
-											if(window.dialog){
-												_to = window.dialog.to
-												if(window.cookies.to){
-													_to = window.cookies.to
+												if(cc_address == cookies.address){
+													getTable("form",true)
 												}else{
-													_to = window.dialog.to
-												}
-
-												_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1									
-
-											}else if(Object.keys(window.com).length){
-												_to = window.com.address * 1
-											}else if(window.location.hash){
-												_to = window.location.hash.replace("#","0x") * 1
-											}
-										}
-
-										if(_to){
-											var _from = (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) * 1
-
-											var _address
-
-											if(_from > _to){
-												_address = ethers.hashMessage(_from.toString() + _to.toString())
-												_address = ethers.computeAddress(_address).toLowerCase()
-											}else{
-												_address = ethers.hashMessage(_to.toString() + _from.toString())
-												_address = ethers.computeAddress(_address).toLowerCase()
-											}
-
-											
-											if(OAuth3.localhost){
-												query.href = "http://" + OAuth3.localhost +"/"+ _address.replace("0x","#")
-											}else{
-												query.href = window.location.origin +"/"+ _address.replace("0x","#")
-											}
-											query.to = _address
-										}
-
-
-										OAuth3.xhr = OAuth3.fetch({
-											method : "POST",
-											query : query,
-											body : body,
-											url : url
-										}, window.Callback)
-									}
-								}
-
-								if($this.hasClass("emoji_asset")){
-									e.preventDefault()
-
-									var type = $this.attr("type")
-									var emoji = $this.attr("emoji")
-									var method = $this.attr("method")
-
-									var player_emoji = player.emoji + ""
-
-									Zoom()
-
-									var open = window.map.open[(player.x+":"+player.z)]
-
-									var body = {
-										emoji : window.typeof_emoji(emoji) ? emoji : window.emojis.self
-									}
-
-									var $talk = $("talks")
-									var $messages = $("messages")
-
-									console.log('method',method);
-
-									if(type == "player"){
-										var hash = $this.attr("hash")
-
-										if(player.hash != hash){
-											var $target = $('player#'+hash+" emoji")
-
-											if($target.length){
-												var camera = JSON.stringify({
-													hash : hash
-												})
-
-												$target.click()
-												window.camera.set(JSON.parse(camera))
-											}
-										}else{
-											var $target = $('player#'+player.hash+" emoji")
-
-											if($target.length){
-												$target.click()
-												window.camera.set({})
-											}
-										}
-
-										if($this.closest(".follows").length){
-											window.location.hash = hash.replace("0x","").toLowerCase()
-										}
-
-										return
-									}
-
-									if(type == "emoji" || type == "item"){
-										if(method){
-											if(type == "emoji"){
-												emoji = player_emoji
-											}else if(emoji == "💣"){
-												
-											}
-
-											if(method == "notify"){
-												$status.innerHTML = '<div class="loading">\
-													<strong>Loading...</strong>\
-												</div>'
-
-
-												if(document.querySelector("notify")){
-													document.querySelector("notify").remove()
-												}
-
-												$('notify input[type="checkbox"]').prop("checked",false)
-
-												try{
-													var host = window.location.host
-
-													if(OAuth3.localhost){
-														host = OAuth3.localhost
-													}
-
-													var url = "https://xim.city/";
-
-													if(OAuth3.localhost){
-														url = "http://localhost:3001/"
-													}
-
-													var href = window.com.href ? window.com.href : window.location.href
-
-													var referer = new URL(href)
-
-													var request = {
-														method : "POST",
-														url : url,
-														body : {
-															cc : "vapid"
-														},
-														query : {
-															host : referer.host,
-															href : window.location.href,
-															hash : cookies.hash,
-															token : cookies.token,
-															x : player.x ? player.x : "1.5",
-															y : player.y ? player.y : "0",
-															z : player.z ? player.z : "1.5"
-														}
-													}
-
-													var response = function(res){
-														var cookies = JSON.parse(res.body.cookies);
-
-														if(cookies.email){
-															$status.innerHTML = ''
-														}else{
-															$status.innerHTML = '<a href="/login/">Sign In</a>'
-														}
-
-														if(OAuth3.xhr){
-															OAuth3.xhr.abort()
-															delete OAuth3.xhr
-														}
-
-														var _href = "https://xim.city/"+cookies.vapid
-
-														if(!cookies.vapid){
-															$('.emoji_asset[method="notify"]').removeClass("on")
-														}
-
-														if(OAuth3.isMobile){
-															if(cookies.vapid){
-																window.open(_href+"?referer="+encodeURIComponent(href),'_top','noreferrer')
-															}else if(Object.keys(window.com).length){
-																$body.attr('bingo','dialog')
-																$aside.removeClass("on")
-															}
-														}else if(cookies.vapid){
-															if(Object.keys(window.com).length){
-																$body.attr('bingo','notify')
-																$aside.addClass("on")
-															}
-															
-
-															if(!document.querySelector("notify")){
-																$body.append('<notify><input type="checkbox" id="notify"><div class="tb"><div class="tc"></div></div></notify>')
-															}
-
-															document.querySelector("notify .tc").innerHTML = '<form name="xim.city" action="javascript:Subscribe()">\
-																<qr>\
-																	<a class="qr-code"></a>\
-																	<label for="notify">\
-																		<span class="ko">알림 동의</span>\
-																		<span class="en">notification agree</span>\
-																	</label>\
-																</qr>\
-																<input name="vapid" type="hidden" value="'+cookies.vapid+'">\
-																<div class="area">\
-																	<input disabled type="submit">\
-																</div>\
-															</form>'
-
-															var $qrcode = document.querySelector(".qr-code")
-
-															new QRCode($qrcode, {
-																text: _href,
-																width: 300,
-																height: 300,
-																colorDark : "#000000",
-																colorLight : "#ffffff",
-																correctLevel : QRCode.CorrectLevel.H
-															})
-														}
-													}
-
-													if(OAuth3.xhr){
-														OAuth3.xhr.abort()
-														delete OAuth3.xhr
-													}
-
-													OAuth3.xhr = OAuth3.fetch(request, response);
-												}catch(err){
-													console.log("Err",err);
+													getTable("flows")
 												}
 
 												return
+											}else if($this.hasClass("Flow")){
+												delete window.dialog
 
-											}else if(method == "chat"){
-												$aside.addClass("on")
-
-												if(!$messages.hasClass("on")){
-													$messages.addClass("on")
-
-													$talk.addClass("on")
+												if(cc_address == cookies.address){
+													getTable("flows",true)
 												}
 
-												$('form.message input[name="message"]').focus()
-
-												return
-
-											}else if(method != "open"){										
-
 												return
 											}
-										}
-									}
-
-									if($messages.hasClass("on")){
-										$messages.removeClass("on")
-
-										$talk.removeClass("on")
-									}
-
-									if(type == "reward"){
-										var balance = $this.attr("balance")
-
-										if(!isNaN(balance)){
-											balance = balance * 1
-
-											if(balance > 0){
-												emojiChanged("🫥")
-												
-												OAuth3.fetch({
-													method : "POST",
-													url : url,
-													body : {
-														cc : "reward"
-													},
-													query : {
-														href : window.location.href,
-														hash : cookies.hash,
-														token : cookies.token,
-														x : player.x ? player.x : "1.5",
-														y : player.y ? player.y : "0",
-														z : player.z ? player.z : "1.5"
-													}
-												}, window.Callback);
-											}
-										}
-									}else if(emoji == "💣"){
-										emojiChanged("🫥")
-										
-										var query = {
-											href : window.location.href,
-											hash : cookies.hash,
-											token : cookies.token,
-											x : player.x,
-											z : player.z
+										}catch(err){
+											// console.log("err",err);
 										}
 
-										body.cc = "bomb"
-										body.emoji = player_emoji
+										var id = cookies.hash+"["+player.x+","+player.z+"]"
 
 										var _assets = window.assets;
 
-										// {
-										// 	id : row.Id,
-										// 	hash : cc_address,
-										// 	name : hashtag,
-										// 	value : "",
-										// 	color: "",
-										// 	x : b.x,
-										// 	y : b.y,
-										// 	z : b.z
-										// }
+										var diff = false
 
-										var biome = window.map.biomes[player.x+":"+player.z]
+										if(body.cc == "chord"){
+											diff = true
+											
+											_assets.push({
+												id : id,
+												hash : player.hash,
+												name : "chord",
+												value : "",
+												color: "yellow",
+												x : player.x,
+												y : -0.04,
+												z : player.z
+											})
+										}
 
-										_assets.push({
-											id : "",
-											hash : randomHash(),
-											name : "bomb",
-											value : emoji,
-											color: player_emoji,
-											x : player.x,
-											y : biome.y,
-											z : player.z
-										})
+										if(body.cc == "flag"){
+											diff = true
 
-										// var assets_ = JSON.stringify(_assets)
+											if(window.assets[id]){
+												var len = window.assets.length
 
-										window.assets.set(_assets)
+												var index
+
+												for(var a = 0; a < len; a++){
+													if(window.assets[a].x == player.x && window.assets[a].z == player.z){
+														index = a
+													}
+												}
+
+												if(typeof index != "undefined"){
+													window.assets.splice(1, index)
+												}
+											}else{
+												_assets.push({
+													id : id,
+													hash : player.hash,
+													name : "flag",
+													value : "",
+													color: "orange",
+													x : player.x,
+													y : -0.08,
+													z : player.z
+												})
+											}
+										}
+
+										emojiChanged("🫥")
+
+										if(diff){
+											window.assets.set(_assets)
+										}
 
 										if(OAuth3.xhr){
 											OAuth3.xhr.abort()
 											delete OAuth3.xhr
 										}
 
-										OAuth3.xhr = OAuth3.fetch({
-											method : "POST",
-											query : query,
-											body : body,
-											url : url
-										}, window.Callback);
 
-										return
-									}else if(open){
-										if(method == "open"){
-											emojiChanged("🫥")
-										}
 
-										body.cc = "puzzle"
+										if(window.tutorial){
+											setTimeout(function(){
+												var res = JSON.stringify(window.response)
+													res = JSON.parse(res)
 
-										if(type == "emoji"){
-											body.emoji = emoji
-											
-											emojiChanged(emoji, null, true)
-											window.emojis.self = emoji
-										}
-
-										var query = {
-											href : window.location.href,
-											hash : cookies.hash,
-											token : cookies.token,
-											x : player.x,
-											z : player.z
-										}
-
-										if($body.attr("bingo") == "dialog"){
+												res.body.query = query
+												res.body.body = body
+												
+												window.Callback(res)
+											},1500)
+										}else{
 											var _to = ""
 
-											if(window.dialog){
-												_to = window.dialog.to
-												if(window.cookies.to){
-													_to = window.cookies.to
-												}else{
+											if($body.attr("bingo") == "dialog"){
+												if(window.dialog){
 													_to = window.dialog.to
+													if(window.cookies.to){
+														_to = window.cookies.to
+													}else{
+														_to = window.dialog.to
+													}
+
+													_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1									
+
+												}else if(window.location.hash){
+													_to = window.location.hash.replace("#","0x") * 1
 												}
-
-												_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1
-
-											}else if(Object.keys(window.com).length){
-												_to = window.com.address * 1
-											}else if(window.location.hash){
-												_to = window.location.hash.replace("#","0x") * 1
 											}
 
 											if(_to){
 												var _from = (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) * 1
-												
-												if(window.cookies.to == (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) && window.cookies.from){
-													_from = (window.cookies.from.indexOf("0x") == 0 ? window.cookies.from : "0x"+window.cookies.from) * 1
-												}
 
 												var _address
 
@@ -6089,47 +5499,378 @@ OAuth3.on("ready", function(e){
 													_address = ethers.computeAddress(_address).toLowerCase()
 												}
 
+												
 												if(OAuth3.localhost){
 													query.href = "http://" + OAuth3.localhost +"/"+ _address.replace("0x","#")
 												}else{
 													query.href = window.location.origin +"/"+ _address.replace("0x","#")
 												}
-
 												query.to = _address
+											}
+
+
+											OAuth3.xhr = OAuth3.fetch({
+												method : "POST",
+												query : query,
+												body : body,
+												url : url
+											}, window.Callback)
+										}
+									}
+
+									if($this.hasClass("emoji_asset")){
+										e.preventDefault()
+
+										var type = $this.attr("type")
+										var emoji = $this.attr("emoji")
+										var method = $this.attr("method")
+
+										var player_emoji = player.emoji + ""
+
+										Zoom()
+
+										var open = window.map.open[(player.x+":"+player.z)]
+
+										var body = {
+											emoji : window.typeof_emoji(emoji) ? emoji : window.emojis.self
+										}
+
+										var $talk = $("talks")
+										var $messages = $("messages")
+
+										console.log('method',method);
+
+										if(type == "player"){
+											var hash = $this.attr("hash")
+
+											if(player.hash != hash){
+												var $target = $('player#'+hash+" emoji")
+
+												if($target.length){
+													var camera = JSON.stringify({
+														hash : hash
+													})
+
+													$target.click()
+													window.camera.set(JSON.parse(camera))
+												}
+											}else{
+												var $target = $('player#'+player.hash+" emoji")
+
+												if($target.length){
+													$target.click()
+													window.camera.set({})
+												}
+											}
+
+											if($this.closest(".follows").length){
+												window.location.hash = hash.replace("0x","").toLowerCase()
+											}
+
+											return
+										}
+
+										if(type == "emoji" || type == "item"){
+											if(method){
+												if(type == "emoji"){
+													emoji = player_emoji
+												}else if(emoji == "💣"){
+													
+												}
+
+												if(method == "notify"){
+													$status.innerHTML = '<div class="loading">\
+														<strong>Loading...</strong>\
+													</div>'
+
+
+													if(document.querySelector("notify")){
+														document.querySelector("notify").remove()
+													}
+
+													$('notify input[type="checkbox"]').prop("checked",false)
+
+													try{
+														var host = window.location.host
+
+														if(OAuth3.localhost){
+															host = OAuth3.localhost
+														}
+
+														var url = "https://xim.city/";
+
+														if(OAuth3.localhost){
+															url = "http://localhost:3001/"
+														}
+
+														var href = window.location.href
+
+														var referer = new URL(href)
+
+														var request = {
+															method : "POST",
+															url : url,
+															body : {
+																cc : "vapid"
+															},
+															query : {
+																host : referer.host,
+																href : window.location.href,
+																hash : cookies.hash,
+																token : cookies.token,
+																x : player.x ? player.x : "1.5",
+																y : player.y ? player.y : "0",
+																z : player.z ? player.z : "1.5"
+															}
+														}
+
+														var response = function(res){
+															var cookies = JSON.parse(res.body.cookies);
+
+															if(cookies.email){
+																$status.innerHTML = ''
+															}else{
+																$status.innerHTML = '<a href="/login/">Sign In</a>'
+															}
+
+															if(OAuth3.xhr){
+																OAuth3.xhr.abort()
+																delete OAuth3.xhr
+															}
+
+															var _href = "https://xim.city/"+cookies.vapid
+
+															if(!cookies.vapid){
+																$('.emoji_asset[method="notify"]').removeClass("on")
+															}
+
+															if(OAuth3.isMobile){
+																if(cookies.vapid){
+																	window.open(_href+"?referer="+encodeURIComponent(href),'_top','noreferrer')
+																}
+															}else if(cookies.vapid){
+																if(!document.querySelector("notify")){
+																	$body.append('<notify><input type="checkbox" id="notify"><div class="tb"><div class="tc"></div></div></notify>')
+																}
+
+																document.querySelector("notify .tc").innerHTML = '<form name="xim.city" action="javascript:Subscribe()">\
+																	<qr>\
+																		<a class="qr-code"></a>\
+																		<label for="notify">\
+																			<span class="ko">알림 동의</span>\
+																			<span class="en">notification agree</span>\
+																		</label>\
+																	</qr>\
+																	<input name="vapid" type="hidden" value="'+cookies.vapid+'">\
+																	<div class="area">\
+																		<input disabled type="submit">\
+																	</div>\
+																</form>'
+
+																var $qrcode = document.querySelector(".qr-code")
+
+																new QRCode($qrcode, {
+																	text: _href,
+																	width: 300,
+																	height: 300,
+																	colorDark : "#000000",
+																	colorLight : "#ffffff",
+																	correctLevel : QRCode.CorrectLevel.H
+																})
+															}
+														}
+
+														if(OAuth3.xhr){
+															OAuth3.xhr.abort()
+															delete OAuth3.xhr
+														}
+
+														OAuth3.xhr = OAuth3.fetch(request, response);
+													}catch(err){
+														console.log("Err",err);
+													}
+
+													return
+
+												}else if(method == "chat"){
+													$aside.addClass("on")
+
+													if(!$messages.hasClass("on")){
+														$messages.addClass("on")
+
+														$talk.addClass("on")
+													}
+
+													$('form.message input[name="message"]').focus()
+
+													return
+
+												}else if(method != "open"){										
+
+													return
+												}
 											}
 										}
 
-										player = window.players.self()
+										if($messages.hasClass("on")){
+											$messages.removeClass("on")
 
-										$body.attr("bingo", Object.keys(window.com).length ? "dialog" : true)
-										$body.removeAttr("class")
-
-										if(OAuth3.xhr){
-											OAuth3.xhr.abort()
-											delete OAuth3.xhr
+											$talk.removeClass("on")
 										}
 
-										if(window.tutorial){
-											var res = JSON.stringify(window.response)
-												res = JSON.parse(res)
+										if(type == "reward"){
+											var balance = $this.attr("balance")
 
-											res.body.query = query
-											res.body.body = body
+											if(!isNaN(balance)){
+												balance = balance * 1
+
+												if(balance > 0){
+													emojiChanged("🫥")
+													
+													OAuth3.fetch({
+														method : "POST",
+														url : url,
+														body : {
+															cc : "reward"
+														},
+														query : {
+															href : window.location.href,
+															hash : cookies.hash,
+															token : cookies.token,
+															x : player.x ? player.x : "1.5",
+															y : player.y ? player.y : "0",
+															z : player.z ? player.z : "1.5"
+														}
+													}, window.Callback);
+												}
+											}
+										}else if(emoji == "💣"){
+											emojiChanged("🫥")
 											
-											window.Callback(res)
-										}else{
+											var query = {
+												href : window.location.href,
+												hash : cookies.hash,
+												token : cookies.token,
+												x : player.x,
+												z : player.z
+											}
+
+											body.cc = "bomb"
+											body.emoji = player_emoji
+
+											var _assets = window.assets;
+
+											// {
+											// 	id : row.Id,
+											// 	hash : cc_address,
+											// 	name : hashtag,
+											// 	value : "",
+											// 	color: "",
+											// 	x : b.x,
+											// 	y : b.y,
+											// 	z : b.z
+											// }
+
+											// var biome = window.map.biomes[player.x+":"+player.z]
+
+											// _assets.push({
+											// 	id : "",
+											// 	hash : randomHash(),
+											// 	name : "bomb",
+											// 	value : emoji,
+											// 	color: player_emoji,
+											// 	x : player.x,
+											// 	y : biome.y,
+											// 	z : player.z
+											// })
+
+											// var assets_ = JSON.stringify(_assets)
+
+											// window.assets.set(_assets)
+
+											if(OAuth3.xhr){
+												OAuth3.xhr.abort()
+												delete OAuth3.xhr
+											}
+
 											OAuth3.xhr = OAuth3.fetch({
 												method : "POST",
 												query : query,
 												body : body,
 												url : url
 											}, window.Callback);
-										}
-									}else{
-										if(method == "open"){
-											body.open = "true"
 
-											emojiChanged("🫥")
+											return
+										}else if(open){
+											if(method == "open"){
+												emojiChanged("🫥")
+											}
+
+											body.cc = "puzzle"
+
+											if(type == "emoji"){
+												body.emoji = emoji
+												
+												emojiChanged(emoji, true)
+												window.emojis.self = emoji
+											}
+
+											var query = {
+												href : window.location.href,
+												hash : cookies.hash,
+												token : cookies.token,
+												x : player.x,
+												z : player.z
+											}
+
+											if($body.attr("bingo") == "dialog"){
+												var _to = ""
+
+												if(window.dialog){
+													_to = window.dialog.to
+													if(window.cookies.to){
+														_to = window.cookies.to
+													}else{
+														_to = window.dialog.to
+													}
+
+													_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1
+
+												}else if(window.location.hash){
+													_to = window.location.hash.replace("#","0x") * 1
+												}
+
+												if(_to){
+													var _from = (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) * 1
+													
+													if(window.cookies.to == (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) && window.cookies.from){
+														_from = (window.cookies.from.indexOf("0x") == 0 ? window.cookies.from : "0x"+window.cookies.from) * 1
+													}
+
+													var _address
+
+													if(_from > _to){
+														_address = ethers.hashMessage(_from.toString() + _to.toString())
+														_address = ethers.computeAddress(_address).toLowerCase()
+													}else{
+														_address = ethers.hashMessage(_to.toString() + _from.toString())
+														_address = ethers.computeAddress(_address).toLowerCase()
+													}
+
+													if(OAuth3.localhost){
+														query.href = "http://" + OAuth3.localhost +"/"+ _address.replace("0x","#")
+													}else{
+														query.href = window.location.origin +"/"+ _address.replace("0x","#")
+													}
+
+													query.to = _address
+												}
+											}
+
+											player = window.players.self()
+
+											$body.attr("bingo", true)
+											$body.removeAttr("class")
 
 											if(OAuth3.xhr){
 												OAuth3.xhr.abort()
@@ -6147,55 +5888,85 @@ OAuth3.on("ready", function(e){
 											}else{
 												OAuth3.xhr = OAuth3.fetch({
 													method : "POST",
-													url : url,
+													query : query,
 													body : body,
-													query : {
-														href : window.location.href,
-														hash : cookies.hash,
-														token : cookies.token,
-														x : player.x ? player.x : "1.5",
-														y : player.y ? player.y : "0",
-														z : player.z ? player.z : "1.5"
-													}
+													url : url
 												}, window.Callback);
 											}
 										}else{
-											if(type == "emoji"){
+											if(method == "open"){
+												body.open = "true"
+
+												emojiChanged("🫥")
+
 												if(OAuth3.xhr){
 													OAuth3.xhr.abort()
 													delete OAuth3.xhr
 												}
 
-												window.emojis.self = emoji
-												
-												emojiChanged(emoji)
+												if(window.tutorial){
+													var res = JSON.stringify(window.response)
+														res = JSON.parse(res)
+
+													res.body.query = query
+													res.body.body = body
+													
+													window.Callback(res)
+												}else{
+													OAuth3.xhr = OAuth3.fetch({
+														method : "POST",
+														url : url,
+														body : body,
+														query : {
+															href : window.location.href,
+															hash : cookies.hash,
+															token : cookies.token,
+															x : player.x ? player.x : "1.5",
+															y : player.y ? player.y : "0",
+															z : player.z ? player.z : "1.5"
+														}
+													}, window.Callback);
+												}
+											}else{
+												if(type == "emoji"){
+													if(OAuth3.xhr){
+														OAuth3.xhr.abort()
+														delete OAuth3.xhr
+													}
+
+													window.emojis.self = emoji
+													
+													emojiChanged(emoji)
+												}
 											}
 										}
 									}
-								}
 
-								if($this.attr("id") == "capture"){
-									if($this.hasClass("open_rank")){
-										$this.removeClass("open_rank")
+									if($this.attr("id") == "capture"){
+										if($this.hasClass("open_rank")){
+											$this.removeClass("open_rank")
 
-										$go.removeAttr("href")
-										$go.removeAttr("way")
+											$go.removeAttr("href")
+											$go.removeAttr("way")
 
-										window.selector.set({hash : ""})
-										
-										window.assets.set(window.assets)
-									}else{
-										$this.addClass("open_rank")
+											window.selector.set({hash : ""})
+											
+											window.assets.set(window.assets)
+										}else{
+											$this.addClass("open_rank")
+										}
 									}
-								}
 
-								if($this.closest(".layer").length){
-									if($this.hasClass("close")){
-										$(".layer, .layer form.popup").removeClass("on")
+									if($this.closest(".layer").length){
+										if($this.hasClass("close")){
+											$(".layer, .layer form.popup").removeClass("on")
+										}
 									}
 								}
 							}
 						}
+					}catch(err){
+						console.log("Err",err);
 					}
 				}
 			})
@@ -6309,7 +6080,7 @@ OAuth3.on("ready", function(e){
 									}
 								}
 
-								window[player.hash].position.y = window.current.current.position.y = window.cursor.current.position.y = biome.y + 0.001
+								window[player.hash].position.y = window.current.current.position.y = window.cursor.current.position.y = biome.y + 0.01
 
 								window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = player.x								
 								window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = player.z
@@ -6551,8 +6322,6 @@ OAuth3.on("ready", function(e){
 							// query.href = window.location.origin +"/"+ (_to.indexOf("0x") == 0 ? _to : "0x"+_to).replace("0x","#")
 							_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1
 
-						}else if(Object.keys(window.com).length){
-							_to = window.com.address * 1
 						}
 
 						if(_to){
@@ -6806,39 +6575,22 @@ OAuth3.on("ready", function(e){
 
 					var default_img = '' //'<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">'
 
-					if(Object.keys(window.com).length){
-						if(window.com.logo){
-							$("#intro .title .emoji").html('<img src="'+window.com.logo+'" alt="">')
+					
+					if(host_address.indexOf(address) == -1){
+						$("#nav").prop("checked",false)
 
-							$("#intro .coptyright").html(window.com.head + window.com.body)
-						}else{
-							$("#intro .title .emoji").html("")
-							$("#intro .title .emoji").append(blockies.create({seed: address}))
+						$("#intro .title .emoji").html("")
+						$("#intro .title .emoji").append(blockies.create({seed: address}))
 
-							$("#intro .coptyright p").html('<span class="address">\
-								<address>\
-									<span>'+address+'</span>\
-									<span dir="rtl">'+address+'</span>\
-								</address>\
-							</span>')
-						}
+						$("#intro .coptyright p").html('<span class="address">\
+							<address>\
+								<span>'+address+'</span>\
+								<span dir="rtl">'+address+'</span>\
+							</address>\
+						</span>')
 					}else{
-						if(host_address.indexOf(address) == -1){
-							$("#nav").prop("checked",false)
-
-							$("#intro .title .emoji").html("")
-							$("#intro .title .emoji").append(blockies.create({seed: address}))
-
-							$("#intro .coptyright p").html('<span class="address">\
-								<address>\
-									<span>'+address+'</span>\
-									<span dir="rtl">'+address+'</span>\
-								</address>\
-							</span>')
-						}else{
-							$("#intro .title .emoji").html('<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">')
-							$("#intro .coptyright p").html('XIM.CITY')
-						}	
+						$("#intro .title .emoji").html('<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">')
+						$("#intro .coptyright p").html('XIM.CITY')
 					}
 
 					if(OAuth3.xhr){

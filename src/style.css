@@ -296,8 +296,8 @@ player[self="true"] .address address:after{content: "Me";  display: block; paddi
 
 
 
-player[alt="player"][type="image"] emoji{animation: edle1 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
-body[zoom="10"] player[alt="player"][type="image"] emoji{animation: edle2 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
+player[alt="player"] emoji{animation: edle1 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
+body[zoom="10"] player[alt="player"] emoji{animation: edle2 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
 
 player .address{text-align: center; text-shadow: 0 0 3px black;  opacity: 0; font-size: 0; white-space: nowrap; transition-duration: 0.5s}
 player .address address{display: block;}
@@ -311,6 +311,7 @@ player[team="#doge"] emoji:before{content: "doge"; color: #fff;}
 player[team="#pepe"] emoji:before{content: "pepe"; color: #4aad02}
 player[team="#doge"] .emoji:after{background-image: url(/src/images/doge.png)}
 player[team="#pepe"] .emoji:after{background-image: url(/src/images/pepe.png)}
+player[team="#position"]{pointer-events: none;}
 
 body[zoom="10"] talks{bottom: 13vh; left: -105px;}
 
@@ -568,7 +569,7 @@ a.back .emoji{font-size: 2em; color:#fff; cursor: pointer;}
 #root player items{display: none; position: relative;}
 #root player[type]+items{top: -30px; left:-55px;}
 #root player items .emoji_asset .emoji{font-size: 7.5em}
-
+#root player i{font-family: "Noto Color Emoji"; text-shadow: 0 0 5px black;}
 
 
 
@@ -742,7 +743,7 @@ emojis .tab_content .deck .emoji_asset.on[method] a{box-shadow: none;}
 emojis .tab_content .deck .emoji_asset label{display: block; width: 45px; height: 45px;}
 emojis .tab_content .deck .emoji_asset label canvas{display: block; width: 100%; height: 100%;}
 
-emojis .tab_content .deck .emoji_asset .cnt{position: absolute; right: 0.5em; bottom: 1.2em; color:#fff; text-shadow: 0 0 10px #000; -webkit-text-stroke: 0.3px #000;}
+emojis .tab_content .deck .emoji_asset .cnt{position: absolute; right: 0.5em; bottom: 1.2em; font-weight: 900; color:#fff; text-shadow: 0 0 10px #000; -webkit-text-stroke: 0.3px #000;}
 emojis .tab_content .deck .emoji_asset.lounge:before{content: "\40"; display: block; border-radius: 50%; width: 45px; height: 45px; font-size: 3.2em; font-family: "Font Awesome 6 Free"; font-weight: 100; -webkit-text-stroke: 2.5px #fff; color: #000; z-index: 1; background-color: #fff;}
 
 emojis .scroll::-webkit-scrollbar {height: 3px;}

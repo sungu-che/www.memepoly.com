@@ -12,6 +12,7 @@ import grassImg from './images/grass.jpg'
 import glassImg from './images/glass.png'
 import logImg from './images/log.jpg'
 import woodImg from './images/wood.png'
+import blackImg from './images/black.jpg'
 
 
 const textures = {
@@ -19,7 +20,8 @@ const textures = {
 	grass : new THREE.TextureLoader().load(grassImg),
 	glass : new THREE.TextureLoader().load(glassImg),
 	wood : new THREE.TextureLoader().load(woodImg),
-	log : new THREE.TextureLoader().load(logImg)
+	log : new THREE.TextureLoader().load(logImg),
+	black : new THREE.TextureLoader().load(blackImg)
 }
 
 textures.dirt.magFilter = THREE.NearestFilter
@@ -32,6 +34,8 @@ textures.wood.magFilter = THREE.NearestFilter
 textures.wood.minFilter = THREE.LinearMipMapLinearFilter
 textures.log.magFilter = THREE.NearestFilter
 textures.log.minFilter = THREE.LinearMipMapLinearFilter
+textures.black.magFilter = THREE.NearestFilter
+textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
 var direction = {
 	x : 0,
@@ -141,10 +145,6 @@ export const Experience = () => {
 					if(cookies.address){
 						fov = 0.5
 					}
-				}
-
-				if(Object.keys(window.com).length){
-					fov = 0.5
 				}
 
 				if(window.frameloop == "always"){
@@ -372,8 +372,6 @@ export const Experience = () => {
 		}else if(window.Biomes[props.name]){
 			var texture = 'glass'
 
-			var opacity = 0
-
 			var color = props.color
 
 			if(window.map.biomes[props.uid]){
@@ -394,29 +392,38 @@ export const Experience = () => {
 
 			}else{
 				texture = "glass"
+			}
 
-				opacity = 0.7
+			if(window.map.biomes[`${props.position.x}:${props.position.z}`]){
+				if(window.map.biomes[`${props.position.x}:${props.position.z}`].bomb){
+					texture = color = "black"
+
+					console.log('color',color)
+				}
 			}
 
 
-
 			if(emoji){
-
-				console.log('emoji',emoji);
 				var hex = emoji.codePointAt(0).toString(16)
 
 				var src = `/src/fonts/emoji/emoji_u${hex}.png`
+
+
 
 				return <>
 					<group position={props.position}>
 						<mesh position={[0, 0, 0.005]} onClick={onClick}>
 							<boxGeometry attach="geometry" args={[1, 1]} />
-							<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
+							<meshStandardMaterial attach="material" map={textures[texture]} color={color} />
 						</mesh>
 						<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
 							<planeGeometry attach="geometry" args={[1, 1]} />
 							<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, src)} transparent />
 						</mesh>
+
+						<Html className="clipped">
+							<div className="emoji color" x={props.position.x} z={props.position.z}></div>
+						</Html>
 					</group>
 				</>	
 			}else{
@@ -424,21 +431,19 @@ export const Experience = () => {
 					<group position={props.position}>
 						<mesh position={[0, 0, 0.005]} onClick={onClick}>
 							<boxGeometry attach="geometry" args={[1, 1]} />
-							<meshStandardMaterial attach="material" map={textures[texture]} color={color} opacity={1} transparent={true} />
+							<meshStandardMaterial attach="material" map={textures[texture]} color={color} />
 						</mesh>
+
+						<Html className="clipped">
+							<div className="emoji color" x={props.position.x} z={props.position.z}></div>
+						</Html>
 					</group>
 				</>	
 			}
 		}else{
 			return <>
 				<group position={props.position}>
-					<group>
-						<Html>
-							<div className="asset" href={href} src={src}>
-								<span className="emoji color">0</span>
-							</div>
-						</Html>
-					</group>
+					<group></group>
 				</group>
 			</>
 		}
