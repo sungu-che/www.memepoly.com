@@ -6,6 +6,42 @@ if(!OAuth3.isMobile){
 
 window.bingo = {}
 
+
+window.emojiUnicode = function(input) {
+	return emojiUnicode.raw(input).split(' ').map(val => parseInt(val).toString(16)).join('_')
+}
+
+window.emojiUnicode.raw = function (input) {
+	if (input.length === 1) {
+		return input.charCodeAt(0).toString();
+	}
+	else if (input.length > 1) {
+		const pairs = [];
+		for (var i = 0; i < input.length; i++) {
+			if (
+				// high surrogate
+				input.charCodeAt(i) >= 0xd800 && input.charCodeAt(i) <= 0xdbff
+			) {
+				if (
+					input.charCodeAt(i + 1) >= 0xdc00 && input.charCodeAt(i + 1) <= 0xdfff
+				) {
+					// low surrogate
+					pairs.push(
+						(input.charCodeAt(i) - 0xd800) * 0x400
+					  + (input.charCodeAt(i + 1) - 0xdc00) + 0x10000
+					);
+				}
+			} else if (input.charCodeAt(i) < 0xd800 || input.charCodeAt(i) > 0xdfff) {
+				// modifiers and joiners
+				pairs.push(input.charCodeAt(i))
+			}
+		}
+		return pairs.join(' ');
+	}
+
+	return '';
+};
+
 window.emojis.self = "😀"
 
 window.Subscribe = function(){
@@ -29,6 +65,7 @@ window.Subscribe = function(){
 		hash : window.cookies.hash,
 		token : window.cookies.token,
 		x : window.cursor.current.position.x,
+		y : window.cursor.current.position.y,
 		z : window.cursor.current.position.z
 	}
 
@@ -586,6 +623,7 @@ OAuth3.on("ready", function(e){
 				hash : cookies.hash,
 				token : cookies.token,
 				x : player.x,
+				y : player.y,
 				z : player.z
 			}
 
@@ -2005,15 +2043,11 @@ OAuth3.on("ready", function(e){
 						$go.removeAttr("href")
 					}
 
-					window.map.quest = {}
-					window.map.score = {}
-					window.map.open = {}
 					window.map.item = {}
 					window.map.thread = {}
 					window.map.follow = {}
 					window.map.report = {}
 					window.map.reward = {}
-					window.map.create = []
 
 					var seed = cc_address+""
 
@@ -2163,6 +2197,13 @@ OAuth3.on("ready", function(e){
 					}
 
 
+					var flags = resp.body.flags ? resp.body.flags : []
+
+					flags[player_hash] = 0
+					flags['#doge'] = 0
+					flags['#pepe'] = 0
+
+
 					var _balance = $balance.text()
 
 					$balance
@@ -2186,7 +2227,6 @@ OAuth3.on("ready", function(e){
 
 					var frameloop = false
 
-					var open = ""
 
 					var sticker = []
 
@@ -2228,6 +2268,15 @@ OAuth3.on("ready", function(e){
 						biomes.x = window.current.current.position.x
 						biomes.z = window.current.current.position.z
 					}
+
+					biomes.forEach(function(b, i){
+						if(
+							(biomes.x - size < b.x && biomes.x + size > b.x) &&
+							(biomes.z - size < b.z && biomes.z + size > b.z)
+						){
+							biomes[b.x+":"+b.z] = b
+						}
+					})
 					
 					if(rows.length){
 						if(!window.map.follow[self_player.hash]){
@@ -2268,9 +2317,12 @@ OAuth3.on("ready", function(e){
 							var x = position[0]
 							var z = position[1]
 
-							var biome = window.map.biomes[x+":"+z]
+							var biome = biomes[x+":"+z]
 
-							if(window.Biomes[hashtag]){
+							var isRender = biomes[x+":"+z]
+
+
+							if(window.Biomes[hashtag] && isRender){
 								if(row.Flag){
 									delete window.map.biomes[row.Id]
 									
@@ -2299,78 +2351,99 @@ OAuth3.on("ready", function(e){
 									follow : false	
 								}
 
-
 								var type = window.typeof_emoji(emoji)
 
-								if(cookies.address == row.From || cookies.hash == row.From){
-									self = true
 
-									player.self = true
+								if(row.Flag && isRender){
+									var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
 
-									if(cookies.address){
-										if(cookies.hash == row.From){
-											continue
-										}
-									}
-
-									if(self_player){
-										try{
-											if(window.current){
-												if(window.current.current.position){
-													self_player.x = window.current.current.position.x
-													self_player.y = window.current.current.position.y
-													self_player.z = window.current.current.position.z
-												}
-											}
-										}catch(err){
-
-										}
-											
-
-										player.x = self_player.x
-										player.y = self_player.y + 0.5
-										player.z = self_player.z
-										player.emoji = window.emojis.self
+									if($clipped.length && !window.bingo[row.Id]){
+										window.bingo[row.Id] = true
+										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
 									}
 								}else{
-									if(!type && window.map.biomes[row.Id]){
-										delete window.map.biomes[row.Id]
+									var _from = row.From
+
+									var _nonce = row.Cc.split(` ${hashtag}`)[1]
+										_nonce = _nonce.split("@")[0].trim()
+
+									if(_nonce.indexOf(cc_address) == -1){
+										_from = _nonce
 									}
 
-									player.x = x
-									player.y = (biome ? biome.y : 0) + 0.5
-									player.z = z
-									player.emoji = emoji
 
-									if(window.map.follow[self_player.hash]){
-										player.follow = window.map.follow[self_player.hash].indexOf(row.From) > -1 ? true : false
+									if(type && (cookies.address == _from || cookies.hash == _from)){
+										self = true
+
+										player.self = true
+
+										if(cookies.address){
+											if(cookies.hash == _from){
+												continue
+											}
+										}
+
+										if(self_player){
+											try{
+												if(window.current){
+													if(window.current.current.position){
+														self_player.x = window.current.current.position.x
+														self_player.y = window.current.current.position.y
+														self_player.z = window.current.current.position.z
+													}
+												}
+											}catch(err){
+
+											}
+
+											player.x = self_player.x
+											player.y = (biome ? biome.y : 0) + 0.5
+											player.z = self_player.z
+											player.emoji = window.emojis.self
+										}
+									}else{
+										if(!type && window.map.biomes[row.Id]){
+											delete window.map.biomes[row.Id]
+										}
+
+										player.x = x
+										player.y = (biome ? biome.y : 0) + 0.5
+										player.z = z
+										player.emoji = emoji
+
+										if(window.map.follow[self_player.hash] && self_player.hash != _from){
+											player.follow = window.map.follow[self_player.hash].indexOf(_from) > -1 ? true : false
+										}
 									}
-								}
 
-								if(!window.map.report[row.From]){
-									if(!rows[row.From]){
-										rows[row.From] = true
+									if(!window.map.report[_from] && (isRender || player.self)){
+										console.log('isRender',isRender, emoji);
+										if(!rows[_from]){
+											rows[_from] = true
 
-										_players.push({
-											team : hashtag,
-											follow : player.follow,
-											self : player.self,
-											hash : row.From,
+											_players.push({
+												team : hashtag,
+												follow : player.follow,
+												self : player.self,
+												hash : _from,
+												x : player.x,
+												y : player.y,
+												z : player.z,
+												emoji : player.emoji
+											})
+										}
+
+										if(_from == row.From){
+											if(!_players[row.From]){
+												_players.cnt += 1
+											}
+										}
+
+										_players[_from] = {
 											x : player.x,
-											y : player.y,
 											z : player.z,
 											emoji : player.emoji
-										})
-									}
-
-									if(!_players[row.From]){
-										_players.cnt += 1
-									}
-
-									_players[row.From] = {
-										x : player.x,
-										z : player.z,
-										emoji : player.emoji
+										}
 									}
 								}
 							}else if(row.Cc.indexOf("#thread") > -1){
@@ -2383,59 +2456,8 @@ OAuth3.on("ready", function(e){
 								if(row.To == player_hash){
 									_messages.push(row)
 								}
-							}else if(row.Cc.indexOf("#emojis") > -1){
-								if(row.Subject){
-									$('.emojis .emoji_asset[emoji="'+row.Subject+'"]').addClass("on")
-								}else{
-									$('.emojis .emoji_asset').removeClass("on")
-								}
-							}else if(row.Cc.indexOf("#link") > -1){
-								var position = row.Cc.split(" #link")[0]
 
-								var link = row.Cc.split("https://")[1]
-
-								var asset = JSON.parse("["+position+"]")
-
-								try{
-									var url = new URL("https://"+link)
-									link = url.href
-
-									var oembed = window.oembed(url)
-
-									_players.push({
-										team : "",
-										self : row.From,
-										hash : row.Id,
-										x : asset[0],
-										y : 0.5,
-										z : asset[1],
-										emoji : link
-									})
-
-									_players.cnt += 1
-
-
-									row.hash = row.Id
-									row.oembed = oembed
-									row.emoji = link
-
-								}catch(err){
-									console.log("err",err);
-								}
-							}else if(row.Cc.indexOf("#portal") > -1){
-								var canvas = blockies.create({seed: row.From.toLowerCase()})
-
-								_players.push({
-									team : "",
-									self : row.From,
-									hash : row.Id,
-									x : x,
-									y : 0.5,
-									z : z,
-									emoji : canvas.toDataURL()
-								})
-
-							}else if(row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb"){
+							}else if((row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb") && isRender){
 								bombs.push(row)
 
 								if(row.Flag){
@@ -2444,8 +2466,6 @@ OAuth3.on("ready", function(e){
 									}
 
 									if(row.Subject == "#bomb"){
-										console.log('폭발진입', row);
-
 										var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
 
 										if($clipped.length && !window.bingo[row.Id]){
@@ -2454,16 +2474,27 @@ OAuth3.on("ready", function(e){
 										}
 									}
 								}else{
-									_assets.push({
-										id : row.Id,
-										hash : row.From,
-										name : "bomb",
-										value : "💣",
-										color: "",
+									var _from = row.From
+
+									var _nonce = row.Cc.split(` ${hashtag}`)[1]
+										_nonce = _nonce.split("@")[0].trim()
+
+									if(_nonce.indexOf(cc_address) == -1){
+										_from = _nonce
+									}
+
+									var player = {
+										team : hashtag,
+										follow : false,
+										self : false,
+										hash : _from,
 										x : x,
-										y : biome.y ? biome.y : 0,
-										z : z
-									})
+										y : (biome ? biome.y : 0) + 0.5,
+										z : z,
+										emoji : "💣"
+									}
+
+									_players.push(player)
 								}
 
 							}else if(row.Cc.indexOf("#asset") > -1){
@@ -2497,26 +2528,11 @@ OAuth3.on("ready", function(e){
 							}	
 						}
 
-						var $life = $("#life")
-						var life = 5 - damage.length
-						var life_body = ''
 
-						if(life){
-							for(var i = 0; i < life; i++){
-								life_body += '<i class="on"></i>'
-							}
-						}
-
-						console.log('damage.length',damage.length);
-
-						console.log('life',life);
-
-						if(!life){
+						if(!damage.length){
 							$(".enter")
 							// 결과 페이지로 자동 이동되게
 						}
-
-						$life.html(life_body)
 
 						
 						var x = self_player.x
@@ -2998,6 +3014,22 @@ OAuth3.on("ready", function(e){
 						console.log("err",err);
 					}
 
+					if(flags.length){
+						flags.forEach(function(flag){
+							var hashtag = getHashtag(flag.Cc)
+
+							if(flag.From == player_hash){
+								flags.self =0
+							}
+
+							flags[hashtag]++
+						})
+					}
+
+
+					console.log('flags',flags);
+					
+
 					setTimeout(function(){
 						if(cookies.to){
 							if(!$body.attr("bingo")){
@@ -3022,101 +3054,37 @@ OAuth3.on("ready", function(e){
 
 										var tooltip_body = ""
 
+										var cnt = 0
+
+										if(flags[_player_hash]){
+											cnt = flags[_player_hash]
+										}
+
 										if(player_hash.indexOf(_player_hash) > -1){
-											var isPlayground = _player.emoji.indexOf("data:image") > -1
-
-											if(isPlayground){
-												if(_player.hash.toLowerCase().indexOf(cc_address) > -1){
-													tooltip_body = '<li>\
-														<a class="hashType Dialog '+(cookies.email ? 'verify' : '')+'">Dialog</a>\
-													</li>\
-													<li>\
-														<a class="hashType Flow '+(cookies.email ? 'verify' : '')+'">Flow</a>\
-													</li>\
-													<li>\
-														<a class="hashType Withdrawal '+(cookies.email ? 'verify' : '')+'">Withdrawal</a>\
-													</li>'
-												}else{
-													tooltip_body = '<li>\
-														<a class="hashType Portal">Portal</a>\
-													</li>\
-													<li></li>\
-													<li></li>'
-												}
-												
-											}else if(open){
-												if(open.From == player_hash){
-													$tooltip.addClass("open")
-												}
-
-												tooltip_body = '<li>\
-													<a class="hashType Portal">Portal</a>\
-												</li>\
-												<li>\
-													<a class="hashType Chord">Build</a>\
-												</li>\
-												<li>\
-													<a class="hashType Mine">Mine</a>\
-												</li>'
-											}else{
-												tooltip_body = '<li>\
-													<a class="hashType Flag">Flag</a>\
-												</li>\
-												<li>\
-													<a class="hashType Chord">Build</a>\
-												</li>\
-												<li>\
-													<a class="hashType Open">Open</a>\
-												</li>'
-											}	
-										}else{
-											if(ethers.isAddress(_player.emoji)){
-												if(_player.emoji == cc_address){
-													tooltip_body = '<li>\
-														<a class="hashType Dialog">Swap</a>\
-													</li>\
-													<li>\
-														<a class="hashType Follow">Follow</a>\
-													</li>\
-													<li>\
-														<a class="hashType Report">Send</a>\
-													</li>'
-												}else{
-													tooltip_body = '<li>\
-														<a class="hashType Portal">Portal</a>\
-													</li>\
-													<li>\
-														<a class="hashType "></a>\
-													</li>\
-													<li>\
-														<a class="hashType"></a>\
-													</li>'
-												}
-											}else{
-												tooltip_body = '<li>\
-													<a class="hashType Dialog">Swap</a>\
-												</li>\
-												<li>\
-													<a class="hashType Follow">Follow</a>\
-												</li>\
-												<li>\
-													<a class="hashType Report">Send</a>\
-												</li>'
-
-												if(window.tutorial){
-													if(window.tutorial.portal.indexOf(_player_hash) > -1){
-														tooltip_body = '<li>\
-															<a class="hashType Portal">Portal</a>\
-														</li>\
-														<li>\
-															<a class="hashType "></a>\
-														</li>\
-														<li>\
-															<a class="hashType"></a>\
-														</li>'
-													}
-												}
+											var className = {
+												team : "",
+												escape : "disabled"
 											}
+
+											tooltip_body = '<li>\
+												<a class="hashType Flag">Flag</a>\
+											</li>\
+											<li>\
+												<a class="hashType Crafting">Crafting</a>\
+											</li>\
+											<li>\
+												<a class="hashType Escape '+className.escape+'"><strong>Escape</strong><span>'+cnt+'</span></a>\
+											</li>'	
+										}else{
+											tooltip_body = '<li>\
+												<a class="hashType Dialog">Talk</a>\
+											</li>\
+											<li>\
+												<a class="hashType Follow">Follow</a>\
+											</li>\
+											<li>\
+												<a class="hashType Report">Report</a>\
+											</li>'
 										}
 
 										var before_body = $tooltip.html()
@@ -3996,6 +3964,8 @@ OAuth3.on("ready", function(e){
 							if(window.cookies){
 								if(window.cookies.nonce){
 									query.nonce = window.cookies.nonce
+
+									delete window.cookies.nonce
 								}
 							}
 
@@ -4826,7 +4796,7 @@ OAuth3.on("ready", function(e){
 
 					try{
 						if($this.hasClass("enter")){
-							if(typeof window.cookies.damage != "undefined"){
+							if(typeof window.cookies.damage == "undefined"){
 								if(cookies.pathname){
 									if(cookies.pathname == window.location.pathname){
 										$body.attr("mode", "third")
@@ -4841,7 +4811,7 @@ OAuth3.on("ready", function(e){
 
 						if(window.players){
 							if(window.players.length){
-								if(cookies.address || cookies.hash){
+								if(window.cookies.hash){
 									var player = window.players.self()
 
 									var $player = $('player[id="'+player.hash+'"][alt="player"]')
@@ -5241,6 +5211,7 @@ OAuth3.on("ready", function(e){
 												hash : cookies.hash,
 												token : cookies.token,
 												x : player.x,
+												y : player.y,
 												z : player.z
 											}
 
@@ -5266,12 +5237,18 @@ OAuth3.on("ready", function(e){
 												// cc_address = window.dialog.to.indexOf("0x") == 0 ? window.dialog.to : "0x"+window.dialog.to
 											}
 
-											if($this.hasClass("Send")){
-												$body.addClass("sendbox")
+											if($this.hasClass("Crafting")){
+												$aside.addClass("more")
+												$body
+													.addClass("Crafting")
+													.removeAttr('tooltip')
+
+												$('.emoji[type="sticker"]')
+													.addClass('on')
+													.addClass('more')
+
 												return
 											}else if($this.hasClass("Portal")){
-												var open = window.map.open[player.x+":"+player.z]
-
 												var alt = $$player.attr("alt")
 
 												if(alt == "playground"){
@@ -5312,21 +5289,7 @@ OAuth3.on("ready", function(e){
 														
 														return
 													}
-												}else if(open){
-													body.emoji = player.emoji
-													body.cc = "portal"
 												}
-
-											}else if($this.hasClass("Mine")){
-												body.emoji = player.emoji
-												body.cc = "puzzle"
-												body.puzzles = [{
-													id : "",
-													emoji : "💣",
-													hash : player.hash,
-													x : player.x,
-													z : player.z
-												}]
 
 											}else if($this.hasClass("Chord")){
 												body.cc = "chord"
@@ -5372,7 +5335,7 @@ OAuth3.on("ready", function(e){
 													to : player_hash
 												}
 
-												if(cc_address == cookies.address){
+												if(cc_address == window.cookies.address){
 													getTable("form",true)
 												}else{
 													getTable("flows")
@@ -5382,7 +5345,7 @@ OAuth3.on("ready", function(e){
 											}else if($this.hasClass("Flow")){
 												delete window.dialog
 
-												if(cc_address == cookies.address){
+												if(cc_address == window.cookies.address){
 													getTable("flows",true)
 												}
 
@@ -5397,21 +5360,6 @@ OAuth3.on("ready", function(e){
 										var _assets = window.assets;
 
 										var diff = false
-
-										if(body.cc == "chord"){
-											diff = true
-											
-											_assets.push({
-												id : id,
-												hash : player.hash,
-												name : "chord",
-												value : "",
-												color: "yellow",
-												x : player.x,
-												y : -0.04,
-												z : player.z
-											})
-										}
 
 										if(body.cc == "flag"){
 											diff = true
@@ -5529,7 +5477,6 @@ OAuth3.on("ready", function(e){
 
 										Zoom()
 
-										var open = window.map.open[(player.x+":"+player.z)]
 
 										var body = {
 											emoji : window.typeof_emoji(emoji) ? emoji : window.emojis.self
@@ -5752,6 +5699,7 @@ OAuth3.on("ready", function(e){
 												hash : cookies.hash,
 												token : cookies.token,
 												x : player.x,
+												y : player.y,
 												z : player.z
 											}
 
@@ -5801,98 +5749,7 @@ OAuth3.on("ready", function(e){
 											}, window.Callback);
 
 											return
-										}else if(open){
-											if(method == "open"){
-												emojiChanged("🫥")
-											}
 
-											body.cc = "puzzle"
-
-											if(type == "emoji"){
-												body.emoji = emoji
-												
-												emojiChanged(emoji, true)
-												window.emojis.self = emoji
-											}
-
-											var query = {
-												href : window.location.href,
-												hash : cookies.hash,
-												token : cookies.token,
-												x : player.x,
-												z : player.z
-											}
-
-											if($body.attr("bingo") == "dialog"){
-												var _to = ""
-
-												if(window.dialog){
-													_to = window.dialog.to
-													if(window.cookies.to){
-														_to = window.cookies.to
-													}else{
-														_to = window.dialog.to
-													}
-
-													_to = (_to.indexOf("0x") == 0 ? _to : "0x"+_to) * 1
-
-												}else if(window.location.hash){
-													_to = window.location.hash.replace("#","0x") * 1
-												}
-
-												if(_to){
-													var _from = (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) * 1
-													
-													if(window.cookies.to == (window.cookies.address ? window.cookies.address : "0x"+window.cookies.hash) && window.cookies.from){
-														_from = (window.cookies.from.indexOf("0x") == 0 ? window.cookies.from : "0x"+window.cookies.from) * 1
-													}
-
-													var _address
-
-													if(_from > _to){
-														_address = ethers.hashMessage(_from.toString() + _to.toString())
-														_address = ethers.computeAddress(_address).toLowerCase()
-													}else{
-														_address = ethers.hashMessage(_to.toString() + _from.toString())
-														_address = ethers.computeAddress(_address).toLowerCase()
-													}
-
-													if(OAuth3.localhost){
-														query.href = "http://" + OAuth3.localhost +"/"+ _address.replace("0x","#")
-													}else{
-														query.href = window.location.origin +"/"+ _address.replace("0x","#")
-													}
-
-													query.to = _address
-												}
-											}
-
-											player = window.players.self()
-
-											$body.attr("bingo", true)
-											$body.removeAttr("class")
-
-											if(OAuth3.xhr){
-												OAuth3.xhr.abort()
-												delete OAuth3.xhr
-											}
-
-											if(window.tutorial){
-												var res = JSON.stringify(window.response)
-													res = JSON.parse(res)
-
-												res.body.query = query
-												res.body.body = body
-												
-												window.Callback(res)
-											}else{
-												OAuth3.xhr = OAuth3.fetch({
-													method : "POST",
-													query : query,
-													body : body,
-													url : url
-												}, window.Callback);
-											}
 										}else{
 											if(method == "open"){
 												body.open = "true"
@@ -6215,6 +6072,7 @@ OAuth3.on("ready", function(e){
 					hash : cookies.hash,
 					token : cookies.token,
 					x : player.x,
+					y : player.y,
 					z : player.z
 				}
 

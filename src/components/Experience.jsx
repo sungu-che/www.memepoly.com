@@ -334,22 +334,6 @@ export const Experience = () => {
 			rotation_x = 0
 		}
 
-		try{
-			var uri = new URL(props.value);
-
-			type = "link"
-
-			if(uri.host.indexOf("youtube.com") > -1 || uri.host.indexOf("youtu.be") > -1){
-				type = "embed";
-			}else if(uri.host.indexOf("vimeo.com") > -1){
-
-			}else if(uri.host.indexOf("twitch.tv") > -1){
-
-			}
-		}catch(err){
-			
-		}
-
 		if(props.name == "bomb"){
 			var hex = props.value.codePointAt(0).toString(16)
 
@@ -402,13 +386,10 @@ export const Experience = () => {
 				}
 			}
 
-
 			if(emoji){
-				var hex = emoji.codePointAt(0).toString(16)
+				var hex = window.emojiUnicode(emoji)
 
 				var src = `/src/fonts/emoji/emoji_u${hex}.png`
-
-
 
 				return <>
 					<group position={props.position}>

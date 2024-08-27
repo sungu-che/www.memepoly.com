@@ -312,6 +312,57 @@ player[team="#pepe"] emoji:before{content: "pepe"; color: #4aad02}
 player[team="#doge"] .emoji:after{background-image: url(/src/images/doge.png)}
 player[team="#pepe"] .emoji:after{background-image: url(/src/images/pepe.png)}
 player[team="#position"]{pointer-events: none;}
+/*player[team="#position"] i{display: block; animation: item 3s linear infinite;}*/
+
+
+player[team="#position"] .emoji:after,
+player[team="#position"] emoji:before,
+player[team="#bomb"] .emoji:after,
+player[team="#bomb"] emoji:before{display: none;}
+player[team="#bomb"] emoji{animation: none;}
+
+player[team="#bomb"] i{position: relative; display: block; animation: bomb 0.3s linear infinite;}
+
+@keyframes bomb {
+	0% {
+		top: 0;
+		transform: scale(1.1);
+	}
+	25% {
+		top: 0.2em;
+		transform: scale(0.9, 1.4);
+	}
+	50% {
+		top: 0;
+		transform: scale(1.1);
+	}
+	75% {
+		top: 0.2em;
+		transform: scale(1.4, 0.9);
+	}
+	100% {
+		top: 0;
+		transform: scale(1.1);
+	}
+}
+@keyframes item {
+	0% {
+		transform: scale(1.1);
+	}
+	25% {
+		transform: scale(0.9, 1.3);
+	}
+	50% {
+		transform: scale(1.1);
+	}
+	75% {
+		transform: scale(1.3, 0.9);
+	}
+	100% {
+		transform: scale(1.1);
+	}
+}
+
 
 body[zoom="10"] talks{bottom: 13vh; left: -105px;}
 
@@ -752,7 +803,7 @@ emojis .scroll::-webkit-scrollbar-track {}
 
 
 
-player tooltip{display: none; position: absolute; overflow: hidden; width: 0; height: 0; left: -6.3em; top: -8em; white-space: nowrap;}
+player tooltip{position: absolute; overflow: hidden; width: 0; height: 0; left: -6.3em; top: -8em; white-space: nowrap;}
 player tooltip.on{width: auto; height: auto; overflow: visible;}
 player tooltip a{opacity: 0; transition-duration: 0.3s; z-index: -1; cursor: pointer;}
 player tooltip.on a{opacity: 1; z-index: 11;}
@@ -764,9 +815,21 @@ player[follow="true"] tooltip li a.Follow{text-transform: lowercase;}
 player[follow="true"] tooltip li a.Follow:before{content: "Un"; text-transform: capitalize;}
 
 player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decoration: none !important;}
+
+player[self="true"] tooltip li a.Flag{background-size: cover;}
+player[self="true"][team="#doge"] tooltip li a.Flag{background-image: url(/src/images/doge.png);}
+player[self="true"][team="#pepe"] tooltip li a.Flag{background-image: url(/src/images/pepe.png); box-shadow: 0 0 2px #4c9641;}
+
+player[self="true"] tooltip li a.Escape{line-height: 1.5;}
+player[self="true"] tooltip li a.Escape *{font-size: 1em; font-weight: 900; text-shadow: none;}
+player[self="true"] tooltip li a.Escape strong{display: block; margin-top: 13px;}
+player[self="true"] tooltip li a.Escape span:before{content: "Flag ";}
+player[self="true"] tooltip li a.Escape span:after{content: "/5";}
+
+player[self="true"] tooltip li a.Escape.disabled,
 player[self="true"] tooltip li a.Dialog,
 player[self="true"] tooltip li a.Flow,
-player[self="true"] tooltip li a.Withdrawal{border:1px solid; text-decoration: line-through; background-color: transparent;}
+player[self="true"] tooltip li a.Withdrawal{border:1px solid #000; text-decoration: line-through; background-color: transparent; color: #000; box-shadow: 0 0 0px 2px #000;}
 
 
 tooltip li:first-child a,
