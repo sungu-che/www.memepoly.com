@@ -2004,6 +2004,8 @@ OAuth3.on("ready", function(e){
 
 				var cookies = window.cookies = JSON.parse(resp.body.cookies)
 
+				var nonces = window.nonces = resp.body.nonces
+
 				var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
 					cc_address = ethers.computeAddress(cc_address).toLowerCase()
 
@@ -2068,13 +2070,13 @@ OAuth3.on("ready", function(e){
 						var x = 1.5
 						var z = 1.5
 
-						var xyz = cookies.xyz
-						if(xyz){
-							xyz = xyz.split(",")
+						var axis = cookies.axis
+						if(axis){
+							axis = axis.split(",")
 
-							x = xyz[0] * 1
-							// y = xyz[1]
-							z = xyz[2] * 1
+							x = axis[0] * 1
+							
+							z = axis[2] * 1
 						}
 
 						var b = window.map.biomes[`${x}:${z}`]
@@ -2101,11 +2103,10 @@ OAuth3.on("ready", function(e){
 						for(var r = 0; r < rows.length; r++){
 							var row = rows[r];
 
-							var hashtag = getHashtag(row.Cc)
-
-							var position = row.Cc.split(` ${hashtag}`)[0]
-
 							try{
+								var hashtag = getHashtag(row.Cc)
+
+								var position = row.Cc.split(` ${hashtag}`)[0]
 								position = JSON.parse(`[${position}]`)
 
 								var _x = position[0]
@@ -2154,6 +2155,7 @@ OAuth3.on("ready", function(e){
 									}
 								}
 							}catch(err){
+								console.log('err',err);
 							}
 						}
 					}
@@ -2200,8 +2202,9 @@ OAuth3.on("ready", function(e){
 					var flags = resp.body.flags ? resp.body.flags : []
 
 					flags[player_hash] = 0
-					flags['#doge'] = 0
-					flags['#pepe'] = 0
+					flags['#red'] = 0
+					flags['#blue'] = 0
+					flags['#black'] = 0
 
 
 					var _balance = $balance.text()
@@ -2249,13 +2252,13 @@ OAuth3.on("ready", function(e){
 					if(!window.players.length){
 						if(window.current){
 							if(window.current.current.position){
-								var xyz = cookies.xyz
+								var axis = cookies.axis
 
-								if(xyz){
-									xyz = xyz.split(",")
+								if(axis){
+									axis = axis.split(",")
 
-									biomes.x = xyz[0] * 1
-									biomes.z = xyz[2] * 1
+									biomes.x = axis[0] * 1
+									biomes.z = axis[2] * 1
 								}
 
 								window.current.current.position.x = self_player.x = biomes.x
@@ -3018,11 +3021,8 @@ OAuth3.on("ready", function(e){
 						flags.forEach(function(flag){
 							var hashtag = getHashtag(flag.Cc)
 
-							if(flag.From == player_hash){
-								flags.self =0
-							}
-
 							flags[hashtag]++
+							flags[row.From]++
 						})
 					}
 
@@ -3030,359 +3030,398 @@ OAuth3.on("ready", function(e){
 					console.log('flags',flags);
 					
 
-					setTimeout(function(){
-						if(cookies.to){
-							if(!$body.attr("bingo")){
-								getTable("flows")
+				
+					if(cookies.to){
+						if(!$body.attr("bingo")){
+							getTable("flows")
 
-								$body.attr("chat",true)
-							}
+							$body.attr("chat",true)
 						}
-						
-						try{
-							if(window.players.length){
-								for(var i = 0; i < window.players.length; i++){
-									var _player = window.players[i]
+					}
+					
+					try{
+						if(window.players.length){
+							for(var i = 0; i < window.players.length; i++){
+								var _player = window.players[i]
 
-									try{
-										var $player = $('player[id="'+_player.hash+'"]')
-										var $tooltip = $player.find("tooltip ul");
-											$tooltip.removeClass("open")
+								try{
+									var $player = $('player[id="'+_player.hash+'"]')
+									var $tooltip = $player.find("tooltip ul");
+										$tooltip.removeClass("open")
 
-										var _player_hash = _player.hash.indexOf("0x") == 0 ? _player.hash.replace("0x", "") : _player.hash
-											_player_hash = _player_hash.toLowerCase()
+									var _player_hash = _player.hash.indexOf("0x") == 0 ? _player.hash.replace("0x", "") : _player.hash
+										_player_hash = _player_hash.toLowerCase()
 
-										var tooltip_body = ""
+									var tooltip_body = ""
 
-										var cnt = 0
+									var cnt = 0
 
-										if(flags[_player_hash]){
-											cnt = flags[_player_hash]
-										}
-
-										if(player_hash.indexOf(_player_hash) > -1){
-											var className = {
-												team : "",
-												escape : "disabled"
-											}
-
-											tooltip_body = '<li>\
-												<a class="hashType Flag">Flag</a>\
-											</li>\
-											<li>\
-												<a class="hashType Crafting">Crafting</a>\
-											</li>\
-											<li>\
-												<a class="hashType Escape '+className.escape+'"><strong>Escape</strong><span>'+cnt+'</span></a>\
-											</li>'	
-										}else{
-											tooltip_body = '<li>\
-												<a class="hashType Dialog">Talk</a>\
-											</li>\
-											<li>\
-												<a class="hashType Follow">Follow</a>\
-											</li>\
-											<li>\
-												<a class="hashType Report">Report</a>\
-											</li>'
-										}
-
-										var before_body = $tooltip.html()
-											before_body = before_body.replace(/\t/gi,"").trim()
-
-										var after_body = tooltip_body.replace(/\t/gi,"").trim()
-
-										if(before_body != after_body){
-											$tooltip.html(tooltip_body)
-										}
-									}catch(err){
-
+									if(flags[_player_hash]){
+										cnt = flags[_player_hash]
 									}
+
+									if(player_hash.indexOf(_player_hash) > -1){
+										var className = {
+											team : "",
+											escape : "disabled"
+										}
+
+										if(cnt >= 5){
+											className.escape = ""
+										}
+
+										tooltip_body = '<li>\
+											<a class="hashType Flag">Flag</a>\
+										</li>\
+										<li>\
+											<a class="hashType Crafting">Crafting</a>\
+										</li>\
+										<li>\
+											<a class="hashType Escape '+className.escape+'"><strong>Escape</strong><span>'+cnt+'</span></a>\
+										</li>'	
+									}else{
+										tooltip_body = '<li>\
+											<a class="hashType Dialog">Talk</a>\
+										</li>\
+										<li>\
+											<a class="hashType Follow">Follow</a>\
+										</li>\
+										<li>\
+											<a class="hashType Report">Report</a>\
+										</li>'
+									}
+
+									var before_body = $tooltip.html()
+										before_body = before_body.replace(/\t/gi,"").trim()
+
+									var after_body = tooltip_body.replace(/\t/gi,"").trim()
+
+									if(before_body != after_body){
+										$tooltip.html(tooltip_body)
+									}
+								}catch(err){
+									console.log("err",err);
 								}
 							}
-						}catch(err){
+						}
+					}catch(err){
 
+					}
+
+					var plyrs = []
+
+					$('.emoji[type="threads"] cnt').text(_threads.length)
+
+					if(_threads.length){
+						var thread_body = ""
+
+						for(var t = 0; t < _threads.length; t++){
+							var row = _threads[t];
+
+							var _new = row.Id ? "new" : ""
+
+							var href = row.Flag.indexOf("0x") == 0 ? row.Flag.replace("0x", "#") : "#"+href
+
+							var _from = row.From
+
+							thread_body += '<li id="'+row.Id+'" from="'+row.From+'" to="'+row.To+'" idx="'+row.Flag+'" class="item thread '+_new+'">\
+								<a href="'+href+'" class="text">\
+									<span class="icon" data-from="'+_from+'"></span>\
+									<text>'+row.Subject+'</text>\
+								</a>\
+								<input type="hidden" name="date" value="'+row.Date+'">\
+							</li>'
 						}
 
-						var plyrs = []
+						$(".deck .threads").html('<ul>'+thread_body+'</ul>')
 
-						$('.emoji[type="threads"] cnt').text(_threads.length)
+						var $icons = $(".deck .threads .icon")
 
-						if(_threads.length){
-							var thread_body = ""
+						if($icons.length){
+							$icons.each(function(i, el){
+								var hash = el.dataset.from
 
-							for(var t = 0; t < _threads.length; t++){
-								var row = _threads[t];
+								var $icon = $icons.eq(i)
 
-								var _new = row.Id ? "new" : ""
+								try{
+									var canvas = blockies.create({seed: "0x"+hash})
+									$icon.css("background-image", "url("+canvas.toDataURL()+")")
+								}catch(err){
 
-								var href = row.Flag.indexOf("0x") == 0 ? row.Flag.replace("0x", "#") : "#"+href
-
-								var _from = row.From
-
-								thread_body += '<li id="'+row.Id+'" from="'+row.From+'" to="'+row.To+'" idx="'+row.Flag+'" class="item thread '+_new+'">\
-									<a href="'+href+'" class="text">\
-										<span class="icon" data-from="'+_from+'"></span>\
-										<text>'+row.Subject+'</text>\
-									</a>\
-									<input type="hidden" name="date" value="'+row.Date+'">\
-								</li>'
-							}
-
-							$(".deck .threads").html('<ul>'+thread_body+'</ul>')
-
-							var $icons = $(".deck .threads .icon")
-
-							if($icons.length){
-								$icons.each(function(i, el){
-									var hash = el.dataset.from
-
-									var $icon = $icons.eq(i)
-
-									try{
-										var canvas = blockies.create({seed: "0x"+hash})
-										$icon.css("background-image", "url("+canvas.toDataURL()+")")
-									}catch(err){
-
-									}
-								})
-							}
+								}
+							})
 						}
+					}
 
-						var $messages = $("messages")
+					var $messages = $("messages")
 
-						var $talk = $("talks."+player_hash)
+					var $talk = $("talks."+player_hash)
 
-						if($body.attr("bingo") == "dialog" && !window.dialog){
-							_messages = []
-						}
+					if($body.attr("bingo") == "dialog" && !window.dialog){
+						_messages = []
+					}
 
-						var $form = document.querySelector('form[name="oauth.network"]')
+					var $form = document.querySelector('form[name="oauth.network"]')
 
-						if(_messages.length){
-							var notify_body = ""
-							var message_body = ""
-							var onMessage = false
+					if(_messages.length){
+						var notify_body = ""
+						var message_body = ""
+						var onMessage = false
 
-							var talks_selector = ""
+						var talks_selector = ""
 
-							var flows = []
+						var flows = []
 
-							for(var m = 0; m < _messages.length; m++){
-								var row = _messages[m];
+						for(var m = 0; m < _messages.length; m++){
+							var row = _messages[m];
 
-								var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
+							var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
 
-								var duplication = !document.querySelector('messages ul li[id="'+row.Id+'"]')
+							var duplication = !document.querySelector('messages ul li[id="'+row.Id+'"]')
 
-								if(row.Cc.indexOf("#link") > -1){
-									onMessage = true
+							if(row.Cc.indexOf("#link") > -1){
+								onMessage = true
 
-									var position = row.Cc.split(" #link")[0]
+								var position = row.Cc.split(" #link")[0]
 
-									var link = row.Cc.split(cc_address+" ")[1]
+								var link = row.Cc.split(cc_address+" ")[1]
 
-									var asset = JSON.parse("["+position+"]")
+								var asset = JSON.parse("["+position+"]")
 
-									try{
-										var url = new URL(link)
+								try{
+									var url = new URL(link)
 
-										var oembed = window.oembed(url)
+									var oembed = window.oembed(url)
 
-										_players.push({
-											team : "",
-											self : row.From,
-											hash : row.Id,
-											x : asset[0],
-											y : 0.5,
-											z : asset[1],
-											emoji : link
-										})
+									_players.push({
+										team : "",
+										self : row.From,
+										hash : row.Id,
+										x : asset[0],
+										y : 0.5,
+										z : asset[1],
+										emoji : link
+									})
 
-										_players.cnt += 1
+									_players.cnt += 1
 
-										row.hash = row.Id
-										row.oembed = oembed
-										row.emoji = link
-										row.x = assets[0]
-										row.z = assets[1]
+									row.hash = row.Id
+									row.oembed = oembed
+									row.emoji = link
+									row.x = assets[0]
+									row.z = assets[1]
 
 
-										$(".item.playlist").remove()
+									$(".item.playlist").remove()
 
-										message_body += '<li id="'+row.Id+'" class="item playlist self">\
-											<div class="thumb"><img src="'+oembed.src+'"></div>\
-											<div class="text">\
-												<span class="icon" data-from="'+row.From+'"></span>\
-											</div>\
-										</li>'
-									}catch(err){
-										// console.log("err",err);
-									}
-
-								
-								}else if(isMessage && duplication){
-									var dialog
-
-									var Idx
-
-									var $items = document.createElement("items");
-
-									onMessage = true
-
-									var text = ""
-
-									try{
-										var _url = new URL(row.Subject)
-
-										text = '<a target="_blank" href="'+_url.href+'">\
-											<img src="'+_url.protocol+'//'+_url.host+'/favicon.ico"> Link\
-										</a>'
-									}catch(err){
-										text = '<span>'+row.Subject+'</span>'
-									}
-
-									var self = player_hash == row.From
-
-									var dialog_self = ""
-
-									if($form.querySelector('field[id="'+row.Flag+'"]')){
-
-									}
-
-									if(self){
-										dialog_self = "self"
-									}
-
-									var dialog_li = $('<li id="'+row.Id+'" idx="'+row.Flag+'" class="'+(self && row.Flag ? "_dialog" : "")+' item message '+dialog_self+'">\
+									message_body += '<li id="'+row.Id+'" class="item playlist self">\
+										<div class="thumb"><img src="'+oembed.src+'"></div>\
 										<div class="text">\
 											<span class="icon" data-from="'+row.From+'"></span>\
-											<text>'+text+'</text>\
 										</div>\
-										<input type="hidden" name="date" value="'+row.Date+'">\
-									</li>')
+									</li>'
+								}catch(err){
+									// console.log("err",err);
+								}
 
-									var flow_li = $('<li id="'+row.Id+'" class="_flow item message self"><input type="hidden" name="date" value="'+row.Date+'"></li>')
+							
+							}else if(isMessage && duplication){
+								var dialog
 
-									try{
-										if(window.dialog && row.Flag != null){
-											var flag = ""
+								var Idx
 
-											var flags = row.Flag.split(" ")
-											
-											for(var f = 0; f < flags.length; f++){
-												if(isNaN(flags[f])){
-													if(flag){
-														flag += " "
+								var $items = document.createElement("items");
+
+								onMessage = true
+
+								var text = ""
+
+								try{
+									var _url = new URL(row.Subject)
+
+									text = '<a target="_blank" href="'+_url.href+'">\
+										<img src="'+_url.protocol+'//'+_url.host+'/favicon.ico"> Link\
+									</a>'
+								}catch(err){
+									text = '<span>'+row.Subject+'</span>'
+								}
+
+								var self = player_hash == row.From
+
+								var dialog_self = ""
+
+								if($form.querySelector('field[id="'+row.Flag+'"]')){
+
+								}
+
+								if(self){
+									dialog_self = "self"
+								}
+
+								var dialog_li = $('<li id="'+row.Id+'" idx="'+row.Flag+'" class="'+(self && row.Flag ? "_dialog" : "")+' item message '+dialog_self+'">\
+									<div class="text">\
+										<span class="icon" data-from="'+row.From+'"></span>\
+										<text>'+text+'</text>\
+									</div>\
+									<input type="hidden" name="date" value="'+row.Date+'">\
+								</li>')
+
+								var flow_li = $('<li id="'+row.Id+'" class="_flow item message self"><input type="hidden" name="date" value="'+row.Date+'"></li>')
+
+								try{
+									if(window.dialog && row.Flag != null){
+										var flag = ""
+
+										var flags = row.Flag.split(" ")
+										
+										for(var f = 0; f < flags.length; f++){
+											if(isNaN(flags[f])){
+												if(flag){
+													flag += " "
+												}
+
+												flag += flags[f]
+											}
+										}
+
+										var table = window.dialog.flow
+
+										if(table && flag){
+											for(var prop in table) {
+												if(table.hasOwnProperty(prop)) {
+													var group = table[prop];
+													
+													if(group.Length){
+														for(var s = 1; s <= group.Length; s++){
+															var tr = group[s];
+
+															// team 콘텐츠
+															if(tr.Th.Length){
+																for(var h = 0; h <= tr.Th.Length; h++){
+																	var item = tr.Th[h];
+
+																	var th = tr.Th[""];
+
+																	var Id = ""
+
+																	try{
+																		if(th){
+																			if(!Idx && th.Id.indexOf(flag) > -1){
+																				Idx = th.Flag
+																			}
+
+																			Id = th.Id
+																		}
+
+																		if(item){
+																			if(!Idx && item.Id.indexOf(flag) > -1){
+																				Idx = item.Flag
+																			}
+
+																			Id = item.Id
+																		}
+																		
+																		if(Idx && Id.indexOf(flag) > -1){
+																			if(h){
+																				if(item){
+																					var index = item.Id.split(" ");
+
+																					var $item = document.createElement("item");
+																						$item.id = item.Idx;
+																						$item.setAttribute("type", item.To);
+																						$item.textContent = item.Subject ? item.Subject : "";
+
+																					if(item.data){
+																						$item.style["background-image"] = 'url('+item.data+')';
+																					}
+
+																					if(item.link){
+																						$item.setAttribute("link", item.link);
+																					}
+
+																					if(!item.Subject){
+																						if(item.To == "checkbox"){
+																							var id = randomHash()
+																							$item.setAttribute("type","date")
+																							$item.innerHTML = '<label class="dateresult" for="'+id+'"></label><input class="datepicker" id="'+id+'" type="date">'
+																						}else{
+																							$item.setAttribute("contenteditable", true);
+																						}
+																					}
+
+																					$items.appendChild($item);
+																				}
+																			}else{
+																				var $h0 = dialog_li[0].querySelector("text");
+																				// 	$h0.innerHTML = '<span>'+item.Subject+'</span>';
+
+																				if(th){
+																					if(th.data){
+																						$h0.style["background-image"] = 'url('+th.data+')'; // 수정필요
+																					}
+																					
+																					if(th.link){
+																						$h0.setAttribute("link", th.link);
+
+																						try{
+																							var th_url = new URL(th.link)
+
+																							var media = ""
+																							var oembed = window.oembed(th_url)
+
+																							if(oembed.provider){
+																								media = '<div class="media"><img src="'+oembed.src+'"></div>'
+																							}else{
+																								media = '<div class="media"><img src="https://'+oembed.host+'/favicon.ico"></div>'
+																							}
+
+																							var $text = dialog_li[0].querySelector(".text")
+
+																							$text.outerHTML = media+$text.outerHTML
+																						}catch(err){
+
+																						}
+																					}
+																				}
+																			}
+																		}
+																	}catch(err){
+																		console.log("err",err);
+																	}
+																}
+															}
+														}
 													}
-
-													flag += flags[f]
 												}
 											}
 
-											var table = window.dialog.flow
+											flows = []
 
-											if(table && flag){
-												for(var prop in table) {
-													if(table.hasOwnProperty(prop)) {
-														var group = table[prop];
-														
-														if(group.Length){
-															for(var s = 1; s <= group.Length; s++){
-																var tr = group[s];
+											window.dialog.index = 0
 
-																// team 콘텐츠
-																if(tr.Th.Length){
-																	for(var h = 0; h <= tr.Th.Length; h++){
-																		var item = tr.Th[h];
+											var Ref = ""
 
-																		var th = tr.Th[""];
+											// 답변 배열 생성
+											var table = window.dialog
 
-																		var Id = ""
+											for(var prop in table) {
+												if(table.hasOwnProperty(prop)) {
+													var group = table[prop];
+													
+													if(group.Length){
+														for(var s = 1; s <= group.Length; s++){
+															var tr = group[s];
 
-																		try{
-																			if(th){
-																				if(!Idx && th.Id.indexOf(flag) > -1){
-																					Idx = th.Flag
-																				}
+															// team 콘텐츠
+															if(tr.Th.Length){
+																for(var h = 0; h <= tr.Th.Length; h++){
+																	var item = tr.Th[h];
 
-																				Id = th.Id
+																	if(item){
+																		if(item.link){
+																			if(item.link.indexOf(flag) > -1){
+																				Ref = item.Flag
 																			}
-
-																			if(item){
-																				if(!Idx && item.Id.indexOf(flag) > -1){
-																					Idx = item.Flag
-																				}
-
-																				Id = item.Id
-																			}
-																			
-																			if(Idx && Id.indexOf(flag) > -1){
-																				if(h){
-																					if(item){
-																						var index = item.Id.split(" ");
-
-																						var $item = document.createElement("item");
-																							$item.id = item.Idx;
-																							$item.setAttribute("type", item.To);
-																							$item.textContent = item.Subject ? item.Subject : "";
-
-																						if(item.data){
-																							$item.style["background-image"] = 'url('+item.data+')';
-																						}
-
-																						if(item.link){
-																							$item.setAttribute("link", item.link);
-																						}
-
-																						if(!item.Subject){
-																							if(item.To == "checkbox"){
-																								var id = randomHash()
-																								$item.setAttribute("type","date")
-																								$item.innerHTML = '<label class="dateresult" for="'+id+'"></label><input class="datepicker" id="'+id+'" type="date">'
-																							}else{
-																								$item.setAttribute("contenteditable", true);
-																							}
-																						}
-
-																						$items.appendChild($item);
-																					}
-																				}else{
-																					var $h0 = dialog_li[0].querySelector("text");
-																					// 	$h0.innerHTML = '<span>'+item.Subject+'</span>';
-
-																					if(th){
-																						if(th.data){
-																							$h0.style["background-image"] = 'url('+th.data+')'; // 수정필요
-																						}
-																						
-																						if(th.link){
-																							$h0.setAttribute("link", th.link);
-
-																							try{
-																								var th_url = new URL(th.link)
-
-																								var media = ""
-																								var oembed = window.oembed(th_url)
-
-																								if(oembed.provider){
-																									media = '<div class="media"><img src="'+oembed.src+'"></div>'
-																								}else{
-																									media = '<div class="media"><img src="https://'+oembed.host+'/favicon.ico"></div>'
-																								}
-
-																								var $text = dialog_li[0].querySelector(".text")
-
-																								$text.outerHTML = media+$text.outerHTML
-																							}catch(err){
-
-																							}
-																						}
-																					}
-																				}
-																			}
-																		}catch(err){
-																			console.log("err",err);
 																		}
 																	}
 																}
@@ -3390,16 +3429,9 @@ OAuth3.on("ready", function(e){
 														}
 													}
 												}
+											}
 
-												flows = []
-
-												window.dialog.index = 0
-
-												var Ref = ""
-
-												// 답변 배열 생성
-												var table = window.dialog
-
+											if(Ref){
 												for(var prop in table) {
 													if(table.hasOwnProperty(prop)) {
 														var group = table[prop];
@@ -3414,296 +3446,267 @@ OAuth3.on("ready", function(e){
 																		var item = tr.Th[h];
 
 																		if(item){
-																			if(item.link){
-																				if(item.link.indexOf(flag) > -1){
-																					Ref = item.Flag
-																				}
-																			}
+																			if(item.Id.indexOf(Ref) > -1){
+																				flows.push(item)
+																			}	
 																		}
 																	}
 																}
-															}
-														}
-													}
-												}
-
-												if(Ref){
-													for(var prop in table) {
-														if(table.hasOwnProperty(prop)) {
-															var group = table[prop];
-															
-															if(group.Length){
-																for(var s = 1; s <= group.Length; s++){
-																	var tr = group[s];
-
-																	// team 콘텐츠
-																	if(tr.Th.Length){
-																		for(var h = 0; h <= tr.Th.Length; h++){
-																			var item = tr.Th[h];
-
-																			if(item){
-																				if(item.Id.indexOf(Ref) > -1){
-																					flows.push(item)
-																				}	
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-												}
-
-												window.flows = flows
-
-												if(flows.length){
-													for(var f = 0; f < flows.length; f++){
-														var flow = flows[f]
-
-														if(flow.link){
-															if(flow.link.indexOf(flag) > -1){
-																window.dialog.index = f
 															}
 														}
 													}
 												}
 											}
 
-											// if(!window.dialog.flow){
-											// 	// dialog_li = false
-											// }
+											window.flows = flows
+
+											if(flows.length){
+												for(var f = 0; f < flows.length; f++){
+													var flow = flows[f]
+
+													if(flow.link){
+														if(flow.link.indexOf(flag) > -1){
+															window.dialog.index = f
+														}
+													}
+												}
+											}
+										}
+
+										// if(!window.dialog.flow){
+										// 	// dialog_li = false
+										// }
+									}
+								}catch(err){
+									console.log("err",err);
+								}
+
+								var $talks = $("talks."+row.From+" ul")
+
+								if($talks.length && !window.dialog && !resp.body.query.date){
+									if(talks_selector){
+										talks_selector += ", "
+									}
+
+									talks_selector += "talks."+row.From
+
+									if(!document.querySelector('talks ul li[id="'+row.Id+'"]')){
+										$talks.append('<li class="item" id="'+row.Id+'">\
+											<div class="text">\
+												<span class="icon" data-from="'+row.From+'"></span>\
+												'+text+'\
+											</div>\
+										</li>')
+									}
+								}
+
+
+								if(dialog_li){
+									message_body += dialog_li[0].outerHTML
+
+									try{
+										if($items.innerHTML){
+											$items.id = dialog_li.attr("idx")
+											$items.setAttribute("link", row.Flag)
+											flow_li.append($items)
+
+											message_body += flow_li[0].outerHTML
 										}
 									}catch(err){
 										console.log("err",err);
 									}
-
-									var $talks = $("talks."+row.From+" ul")
-
-									if($talks.length && !window.dialog && !resp.body.query.date){
-										if(talks_selector){
-											talks_selector += ", "
-										}
-
-										talks_selector += "talks."+row.From
-
-										if(!document.querySelector('talks ul li[id="'+row.Id+'"]')){
-											$talks.append('<li class="item" id="'+row.Id+'">\
-												<div class="text">\
-													<span class="icon" data-from="'+row.From+'"></span>\
-													'+text+'\
-												</div>\
-											</li>')
-										}
-									}
-
-
-									if(dialog_li){
-										message_body += dialog_li[0].outerHTML
-
-										try{
-											if($items.innerHTML){
-												$items.id = dialog_li.attr("idx")
-												$items.setAttribute("link", row.Flag)
-												flow_li.append($items)
-
-												message_body += flow_li[0].outerHTML
-											}
-										}catch(err){
-											console.log("err",err);
-										}
-									}
-								
-								}else if(row.Cc.indexOf("#open") > -1 && duplication){
-									onMessage = true
-
-									var position = row.Cc.split(" #open")[0]
-
-									var emoji = row.Cc.split("@")[1]
-
-									var asset = JSON.parse("["+position+"]")
-
-									var _player = _players[row.From]
-
-									if(_player){
-										if(_player.x == asset[0] && _player.z == asset[1]){
-											message_body += '<li id="'+row.Id+'" class="item notify open '+(player_hash == row.From ? "self" : "")+'">\
-												<div class="text">\
-													<span class="icon" data-from="'+row.From+'"></span>\
-													<text><span class="xyz">['+Math.floor(_player.x)+','+Math.floor(_player.z)+'] Open</span></text>\
-												</div>\
-											</li>'
-										}
-									}
-								}else if(row.Cc.indexOf("#reward") > -1 && duplication){
-									// var position = row.Cc.split(" #reward")[0]
-
-									// var asset = JSON.parse("["+position+"]")
-
-									// notify_body += '<li id="'+row.Id+'" class="item notify open '+(player_hash == row.From ? "self" : "")+'">\
-									// 	<div class="text">\
-									// 		<span class="icon" data-from="'+row.From+'"></span>\
-									// 		<text><span class="xyz">['+Math.floor(asset[0])+','+Math.floor(asset[1])+'] Reward</span></text>\
-									// 	</div>\
-									// </li>'
 								}
-							}
+							
+							}else if(row.Cc.indexOf("#open") > -1 && duplication){
+								onMessage = true
 
-							var $messages_ul = $("messages ul")
+								var position = row.Cc.split(" #open")[0]
 
-							var scrollBottom = $messages_ul.html() ? false : true
+								var emoji = row.Cc.split("@")[1]
 
-							if(message_body){
-								if(resp.body.query.date){
-									$messages_ul.prepend(message_body)
-								}else{
-									$messages_ul.append(message_body)
+								var asset = JSON.parse("["+position+"]")
+
+								var _player = _players[row.From]
+
+								if(_player){
+									if(_player.x == asset[0] && _player.z == asset[1]){
+										message_body += '<li id="'+row.Id+'" class="item notify open '+(player_hash == row.From ? "self" : "")+'">\
+											<div class="text">\
+												<span class="icon" data-from="'+row.From+'"></span>\
+												<text><span class="axis">['+Math.floor(_player.x)+','+Math.floor(_player.z)+'] Open</span></text>\
+											</div>\
+										</li>'
+									}
 								}
+							}else if(row.Cc.indexOf("#reward") > -1 && duplication){
+								// var position = row.Cc.split(" #reward")[0]
+
+								// var asset = JSON.parse("["+position+"]")
+
+								// notify_body += '<li id="'+row.Id+'" class="item notify open '+(player_hash == row.From ? "self" : "")+'">\
+								// 	<div class="text">\
+								// 		<span class="icon" data-from="'+row.From+'"></span>\
+								// 		<text><span class="xyz">['+Math.floor(asset[0])+','+Math.floor(asset[1])+'] Reward</span></text>\
+								// 	</div>\
+								// </li>'
 							}
+						}
 
-							for(var m = 0; m < _messages.length; m++){
-								var row = _messages[m];
+						var $messages_ul = $("messages ul")
 
-								var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
+						var scrollBottom = $messages_ul.html() ? false : true
 
-								var duplication = $('messages ul>li[id="'+row.Id+'"]')
+						if(message_body){
+							if(resp.body.query.date){
+								$messages_ul.prepend(message_body)
+							}else{
+								$messages_ul.append(message_body)
+							}
+						}
 
-								try{
-									if(isMessage && duplication.length && row.Flag){
-										try{
-											var flag = ""
+						for(var m = 0; m < _messages.length; m++){
+							var row = _messages[m];
 
-											var flags = row.Flag.split(" ")
-											
-											for(var f = 0; f < flags.length; f++){
-												if(isNaN(flags[f])){
-													flag = flags[f]
-												}
+							var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
+
+							var duplication = $('messages ul>li[id="'+row.Id+'"]')
+
+							try{
+								if(isMessage && duplication.length && row.Flag){
+									try{
+										var flag = ""
+
+										var flags = row.Flag.split(" ")
+										
+										for(var f = 0; f < flags.length; f++){
+											if(isNaN(flags[f])){
+												flag = flags[f]
 											}
+										}
 
-											var _row = _messages[m-1];
+										var _row = _messages[m-1];
 
-											var _id = ""
+										var _id = ""
 
-											if(_row){
-												var el = $('messages li[id="'+_row.Id+'"]').find('item[id="'+flag+'"]')
+										if(_row){
+											var el = $('messages li[id="'+_row.Id+'"]').find('item[id="'+flag+'"]')
 
-												if(el.length){
-													duplication.html("")
+											if(el.length){
+												duplication.html("")
 
-													var seed = row.From.indexOf("0x") == 0 ? row.From : "0x"+row.From
-													var canvas = blockies.create({seed: seed})
+												var seed = row.From.indexOf("0x") == 0 ? row.From : "0x"+row.From
+												var canvas = blockies.create({seed: seed})
 
-													if(row.Flag.indexOf(" ") == -1){
-														var _date = new Date(row.Subject)
+												if(row.Flag.indexOf(" ") == -1){
+													var _date = new Date(row.Subject)
 
-														if(isNaN(_date)){
-															el.attr("checked","checked").css("background-image", "url("+canvas.toDataURL()+")")
-														}else{
-															var $item = $(document.createElement("item"))
-																$item.css("background","none").attr({
-																	"checked":"checked",
-																	"disabled" : "disabled"
-																}).text(row.Subject)
+													if(isNaN(_date)){
+														el.attr("checked","checked").css("background-image", "url("+canvas.toDataURL()+")")
+													}else{
+														var $item = $(document.createElement("item"))
+															$item.css("background","none").attr({
+																"checked":"checked",
+																"disabled" : "disabled"
+															}).text(row.Subject)
 
-															var $bg = $(document.createElement("span"))
-																$bg.css("background-image", "url("+canvas.toDataURL()+")")
-															
-															$item.append($bg)
+														var $bg = $(document.createElement("span"))
+															$bg.css("background-image", "url("+canvas.toDataURL()+")")
+														
+														$item.append($bg)
 
-															el.closest("items").html("").append($item)
-														}
+														el.closest("items").html("").append($item)
 													}
 												}
 											}
-										}catch(err){
-											console.log("err",err);
 										}
+									}catch(err){
+										console.log("err",err);
 									}
+								}
+							}catch(err){
+								console.log("Err",err);
+							}
+						}
+
+						var scrollHeight = document.documentElement.scrollHeight - (window.innerHeight / 10)
+
+						var currentScrollHeight = Math.ceil((window.innerHeight + window.scrollY) / 10) * 10
+
+						if (
+							(typeof window.Polling == "undefined") || 
+							(resp.body.body.cc == "message") || 
+							(scrollHeight - currentScrollHeight < 0 && window.scrollY > 0)) 
+						{
+							scrollBottom = true
+						}
+
+						if(scrollBottom){
+							var h = document.documentElement.scrollHeight
+
+							$("html,body").scrollTop(h)
+						}
+
+						if(notify_body){
+							$("notify ol").append(notify_body)
+						}
+
+						var $icons = $("messages li .icon")
+
+						if($icons.length){
+							$icons.each(function(i, el){
+								var hash = el.dataset.from
+
+								var $icon = $icons.eq(i)
+
+								try{
+									var canvas = blockies.create({seed: "0x"+hash})
+									$icon.css("background-image", "url("+canvas.toDataURL()+")")
 								}catch(err){
-									console.log("Err",err);
+
 								}
-							}
-
-							var scrollHeight = document.documentElement.scrollHeight - (window.innerHeight / 10)
-
-							var currentScrollHeight = Math.ceil((window.innerHeight + window.scrollY) / 10) * 10
-
-							if (
-								(typeof window.Polling == "undefined") || 
-								(resp.body.body.cc == "message") || 
-								(scrollHeight - currentScrollHeight < 0 && window.scrollY > 0)) 
-							{
-								scrollBottom = true
-							}
-
-							if(scrollBottom){
-								var h = document.documentElement.scrollHeight
-
-								$("html,body").scrollTop(h)
-							}
-
-							if(notify_body){
-								$("notify ol").append(notify_body)
-							}
-
-							var $icons = $("messages li .icon")
-
-							if($icons.length){
-								$icons.each(function(i, el){
-									var hash = el.dataset.from
-
-									var $icon = $icons.eq(i)
-
-									try{
-										var canvas = blockies.create({seed: "0x"+hash})
-										$icon.css("background-image", "url("+canvas.toDataURL()+")")
-									}catch(err){
-
-									}
-								})
-							}
-
-							var $icons = $("talks li .icon")
-
-							if($icons.length){
-								$icons.each(function(i, el){
-									var hash = el.dataset.from
-
-									var $icon = $icons.eq(i)
-
-									try{
-										var canvas = blockies.create({seed: "0x"+hash})
-										$icon.css("background-image", "url("+canvas.toDataURL()+")")
-									}catch(err){
-
-									}
-								})						
-							}
-
-							if(onMessage){
-								$messages.addClass("on")
-
-								$(talks_selector).addClass("on")
-							}
+							})
 						}
 
-						var $loading = $('messages ul li.loading, messages ul li[id=""], talks ul li[id=""]')
-						
-						if($loading.length){
-							$loading.remove()
-						}
+						var $icons = $("talks li .icon")
 
-						if(OAuth3.timeout){
-							delete OAuth3.timeout
-						}else{
-							OAuth3.timeout = setTimeout(function(){
-								if(!$aside.hasClass("on")){
-									$messages.removeClass("on")
-									$("talks").removeClass("on")
+						if($icons.length){
+							$icons.each(function(i, el){
+								var hash = el.dataset.from
+
+								var $icon = $icons.eq(i)
+
+								try{
+									var canvas = blockies.create({seed: "0x"+hash})
+									$icon.css("background-image", "url("+canvas.toDataURL()+")")
+								}catch(err){
+
 								}
-							},3000)
+							})						
 						}
-					}, 100)
+
+						if(onMessage){
+							$messages.addClass("on")
+
+							$(talks_selector).addClass("on")
+						}
+					}
+
+					var $loading = $('messages ul li.loading, messages ul li[id=""], talks ul li[id=""]')
+					
+					if($loading.length){
+						$loading.remove()
+					}
+
+					if(OAuth3.timeout){
+						delete OAuth3.timeout
+					}else{
+						OAuth3.timeout = setTimeout(function(){
+							if(!$aside.hasClass("on")){
+								$messages.removeClass("on")
+								$("talks").removeClass("on")
+							}
+						},3000)
+					}
 
 					if(cookies.email){
 						$status.innerHTML = ''
@@ -3827,17 +3830,17 @@ OAuth3.on("ready", function(e){
 			$('.inventory').attr("href", href+"/inventory")
 			$('.exchange').attr("href", href)
 
-			var x = 1.5
+			var x = -35.5
 			var y = 0.5
-			var z = 1.5
+			var z = -65.5
 
-			var xyz = cookies.xyz
-			if(xyz){
-				xyz = xyz.split(",")
+			var axis = cookies.axis
+			if(axis){
+				axis = axis.split(",")
 
-				x = xyz[0] * 1
-				y = xyz[1] * 1
-				z = xyz[2] * 1
+				x = axis[0] * 1
+				y = axis[1] * 1
+				z = axis[2] * 1
 			}
 
 			
@@ -3961,11 +3964,18 @@ OAuth3.on("ready", function(e){
 								z : self_player.z
 							}
 
-							if(window.cookies){
-								if(window.cookies.nonce){
-									query.nonce = window.cookies.nonce
+							if(window.nonces){
+								if(window.nonces.length){
+									body.nonces = []
 
-									delete window.cookies.nonce
+									for(var i = 0; i < window.nonces.length; i++){
+										var nonce = window.nonces
+
+										if(!OAuth3[nonce]){
+											OAuth3[nonce] = true
+											body.nonces.push(nonce)
+										}
+									}
 								}
 							}
 

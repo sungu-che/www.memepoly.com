@@ -138,7 +138,7 @@ export function Player({
 
 		if(props.emoji == "💣"){
 
-		}else if(window.typeof_emoji(props.emoji) || props.emoji == "🔥"){
+		}else if(window.typeof_emoji(props.emoji) || props.emoji == "🔥" || props.emoji == "🎃"){
 			console.log("image111111");
 			type = "image"
 			hex = window.emojiUnicode(props.emoji)

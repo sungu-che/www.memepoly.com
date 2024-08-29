@@ -3736,14 +3736,6 @@ window.items = [
         "subgroup": "sky & weather"
     },
     {
-        "codes": "1F383",
-        "char": "🎃",
-        "name": "jack-o-lantern",
-        "category": "Activities (event)",
-        "group": "Activities",
-        "subgroup": "event"
-    },
-    {
         "codes": "1F384",
         "char": "🎄",
         "name": "Christmas tree",
