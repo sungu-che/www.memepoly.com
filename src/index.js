@@ -6,7 +6,6 @@ if(!OAuth3.isMobile){
 
 window.bingo = {}
 
-
 window.emojiUnicode = function(input) {
 	return emojiUnicode.raw(input).split(' ').map(val => parseInt(val).toString(16)).join('_')
 }
@@ -2004,7 +2003,28 @@ OAuth3.on("ready", function(e){
 
 				var cookies = window.cookies = JSON.parse(resp.body.cookies)
 
-				var nonces = window.nonces = resp.body.nonces
+				OAuth3.nonces = []
+
+				if(resp.body.nonces.length){
+					var _nonces = resp.body.body.nonces
+
+						
+					for(var i = 0; i < resp.body.nonces.length; i++){
+						var nonce = resp.body.nonces[i]
+
+						var skip = true
+
+						if(_nonces){
+							if(_nonces.length){
+								if(_nonces.indexOf(nonce) > -1){
+									continue;
+								}
+							}
+						}
+
+						OAuth3.nonces.push(nonce)
+					}
+				}
 
 				var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
 					cc_address = ethers.computeAddress(cc_address).toLowerCase()
@@ -2324,6 +2344,23 @@ OAuth3.on("ready", function(e){
 
 							var isRender = biomes[x+":"+z]
 
+							try{
+								var _nonce = row.Cc.split(` ${hashtag}`)[1]
+									_nonce = _nonce.split("@")[0].trim()
+
+								if(_nonce.indexOf(cc_address) == -1 && ((!row.Flag && window.Biomes[hashtag]) || row.Flag && !window.Biomes[hashtag]) ){
+									var _index = OAuth3.nonces.indexOf(_nonce)
+
+									if(_index > -1){
+										OAuth3.nonces.splice(_index, 1)
+									}
+								}
+							}catch(err){
+
+							}
+
+								
+
 
 							if(window.Biomes[hashtag] && isRender){
 								if(row.Flag){
@@ -2345,6 +2382,10 @@ OAuth3.on("ready", function(e){
 										x : x,
 										y : biome.y,
 										z : y
+									}
+
+									if(window.map.nonces[row.Id]){
+										delete window.map.nonces[row.Id]
 									}
 
 									window.map.biomes[row.Id] = _asset
@@ -2672,7 +2713,7 @@ OAuth3.on("ready", function(e){
 												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
 											}
 
-											window.map.pending.push(_row)
+											window.map.nonces[_id] = _row
 										}
 									}
 								}
@@ -3964,18 +4005,17 @@ OAuth3.on("ready", function(e){
 								z : self_player.z
 							}
 
-							if(window.nonces){
-								if(window.nonces.length){
+							if(OAuth3.nonces){
+								if(OAuth3.nonces.length){
 									body.nonces = []
 
-									for(var i = 0; i < window.nonces.length; i++){
-										var nonce = window.nonces
+									for(var i = 0; i < OAuth3.nonces.length; i++){
+										var nonce = OAuth3.nonces[i]
 
-										if(!OAuth3[nonce]){
-											OAuth3[nonce] = true
-											body.nonces.push(nonce)
-										}
+										body.nonces.push(nonce)
 									}
+
+									body.nonces = JSON.stringify(body.nonces)
 								}
 							}
 
@@ -4029,10 +4069,20 @@ OAuth3.on("ready", function(e){
 								}
 							}
 
-							if(window.map.pending){
-								body.rows = window.map.pending
+							if(Object.keys(window.map.nonces).length){
+								var rows = []
 
-								window.map.pending = []
+								for(var row in window.map.nonces){
+									if(window.map.nonces.hasOwnProperty(row)) {
+										if(!window.map.nonces[row].nonce){
+											rows.push(window.map.nonces[row])
+										}
+									}
+								}
+
+								if(rows.length){
+									body.rows = rows
+								}
 							}
 
 							OAuth3.xhr = OAuth3.fetch({
@@ -4872,7 +4922,7 @@ OAuth3.on("ready", function(e){
 											}else{
 												delete window.response
 											}
-											window.Polling = setInterval(window.Poll)
+											window.Polling = setInterval(window.Poll, 300)
 										}else{
 											window.location.href = "/"
 										}
@@ -5386,7 +5436,7 @@ OAuth3.on("ready", function(e){
 												}
 
 												if(typeof index != "undefined"){
-													window.assets.splice(1, index)
+													window.assets.splice(index, 1)
 												}
 											}else{
 												_assets.push({
@@ -5716,18 +5766,7 @@ OAuth3.on("ready", function(e){
 											body.cc = "bomb"
 											body.emoji = player_emoji
 
-											var _assets = window.assets;
-
-											// {
-											// 	id : row.Id,
-											// 	hash : cc_address,
-											// 	name : hashtag,
-											// 	value : "",
-											// 	color: "",
-											// 	x : b.x,
-											// 	y : b.y,
-											// 	z : b.z
-											// }
+											// var _assets = window.assets;
 
 											// var biome = window.map.biomes[player.x+":"+player.z]
 
