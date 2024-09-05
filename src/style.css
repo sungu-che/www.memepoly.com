@@ -12,7 +12,7 @@
 
 /*body{background-color: #fff !important;}*/
 
-.map{position: absolute; overflow: hidden; right: 0; top: 0; width: 100px; height: 100px; opacity: 0; pointer-events: none; transition-duration: 0.5s;}
+.map{position: absolute; overflow: hidden; right: 0; top: 0; width: 100px; height: 100px; opacity: 0; transition-duration: 0.5s;}
 .map canvas{position: relative; width: 100%; height: 100%; transform: scale(2.5);}
 
 .map .config{display: none;}
@@ -225,7 +225,7 @@ clipped {
 #star i:before{content: "☆"}
 #star i.on:before{content: "★"}
 
-#capture{display: none;}
+/*#capture{display: none;}*/
 #capture.open_rank #rank{display: block;}
 #rank{position: absolute; display: none; left: 0; top: 140%; overflow: hidden; overflow-y: scroll; text-align: left; max-height: 170px;}
 #rank ol{width: 200px;}
@@ -295,6 +295,15 @@ player[self="true"] .address address:after{content: "Me";  display: block; paddi
 }
 
 
+
+
+/*body[team] #intro .title,
+body[team] #intro .notice,
+body[team] #intro .snb li+li{display: none;}
+body[team] #intro .snb li:last-child{display: block;}
+
+body[team] #intro .snb li:first-child a{font-size: 0}
+body[team] #intro .snb li:first-child a:before{content: "Resume"; font-size: 2.7rem; font-weight: 400;}*/
 
 player[alt="player"] emoji{animation: edle1 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
 body[zoom="10"] player[alt="player"] emoji{animation: edle2 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
@@ -618,6 +627,8 @@ a.back:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom:
 a.back .emoji{font-size: 2em; color:#fff; cursor: pointer;}
 
 
+body[swap] .back{position: absolute; left: 50%; top: 1em; margin-left: 244px; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji'; box-shadow: 0 0 4px #000; background: #000; cursor: pointer; pointer-events: initial; display: block; z-index: 111;}
+body[swap] .back span{text-decoration: none}
 
 #root player.on items{display: block;}
 #root player.on emoji{display: none;}
@@ -652,17 +663,27 @@ a.back .emoji{font-size: 2em; color:#fff; cursor: pointer;}
 emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 10; transition-delay: 0.5s;}
 emojis .scroll{overflow: hidden; overflow-x:scroll;}
 
-emojis .scroll .deck>div{display: none;}
+
+/*emojis .scroll .deck>div.items{position: absolute; opacity: 0}*/
+
 emojis .scroll .deck>div ul{display: inline;}
-emojis .scroll .deck .emoji_asset:last-child{margin-right: 2%}
+emojis .scroll .deck .emojis>.emoji_asset.items:after{display: none;}
+emojis .scroll .deck .emojis>.emoji_asset.items{display: inline; padding: 0; width: auto;}
+emojis .scroll .deck .emojis>.emoji_asset:last-child{margin-right: 2%}
 /*emojis .scroll .deck>div[method="chat"]{display: block; position: absolute; left: 1em; top: 1em; padding-left: 0;}*/
 
 /*.aside.more emojis .scroll .deck>div[method="chat"]{left: 0.5em;}*/
+
+emojis .emojis_filter.scroll{display: none;}
 
 emojis .deck{position: relative; margin: auto; max-width:600px; text-align: left; white-space: nowrap; pointer-events: none;}
 
 emojis .tab_content .deck{padding: 1em 1.5em 0 0.3em; min-height: 70px;  z-index: 1;}
 emojis .tab_content .deck .emoji_asset:empty{display: none;}
+
+emojis .tab_content .deck .emoji_asset.on .emoji{ filter: drop-shadow(0 0 6px #fde030);}
+
+emojis .tab_content .deck .emoji_asset[method="inventory"] a{font-size: 2.7em; font-family: 'Noto Color Emoji'}
 
 /*emojis .tab_content .deck .emoji_asset[type="reward"][balance="0"],*/
 /*emojis .tab_content .deck .emoji_asset[method="open"] .cnt{display: none;}*/
@@ -773,12 +794,43 @@ notify label span{display: none; margin-right: 5em; border-radius: 1em; height: 
 /*{}*/
 
 
+body.Crafting .emojis_filter .emoji.on span{font-size: 0;}
+body.Crafting .emojis_filter .emoji.on span:after{content: "Cancel"; font-size: 10px;}
+
+body.Crafting .aside.more .emojis_filter .emoji cnt,
+body.Crafting .aside.more .emojis_filter .emoji{display: none;}
+body.Crafting .aside.more .emojis_filter .emoji.on{display: inline-block;}
+body.Crafting player[self="true"] .emoji picture{opacity: 0.2;}
+
+/*body.Crafting player[self="true"] tooltip li a.Crafting{font-size: 0}*/
 
 /*body[app] messages,
 body[app] player talks,
 body[app] emojis .deck .emoji_asset[method="chat"],
 body[app] emojis .deck .emoji_asset[method="getUserMedia"],
 body[app] emojis .deck .emoji_asset[method="getDisplayMedia"]{display: none !important;}*/
+
+body[game="over"] .gameover{opacity: 1; pointer-events: initial;}
+.gameover{position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 11111; background-color: rgba(0,0,0,0.8); opacity: 0; pointer-events: none;}
+.gameover .tb{width: 100%; height: 100%;}
+.gameover .tc{vertical-align: middle;}
+
+.gameover .title{margin-bottom: 2em;}
+.gameover .title strong{font-size: 3em; color: #fff;}
+.gameover .desc a{display: inline-block; border-radius: 1em; padding: 1em 2em; font-weight: 900; font-size: 1.5em; text-decoration: underline; background-color: #fde030; color: #000;}
+
+#swap .tb{width: 100%; height: 100%;}
+#swap .tc{padding: 1em; vertical-align: middle;}
+
+#pool{margin: 1em auto; max-width: 600px;}
+#pool ul li{overflow: hidden; margin: 0 -0.5em}
+#pool ul li>div{float: left; position: relative; padding: 0.5em; width: 50%; box-sizing: border-box;}
+#pool ul li>div>div{position: relative; padding: 1em; min-height: 42px; border-radius: 1em; background-color: #000000d6;}
+
+#pool ul li .icon{position: absolute; left: 1em; top: 1em;}
+#pool ul li .icon .emoji{font-size: 2em;}
+#pool ul li .amount{position: absolute; right: 1em; bottom: 1em;}
+#pool ul li .amount span{font-size: 2em; color: #fff;}
 
 emojis .tab_content .deck .emoji_asset[hash]{top: -3px;}
 emojis .tab_content .deck .emoji_asset[method] a:empty:after{content: ""; position: absolute; left: 0; right: 0; top: -8px; bottom: 0; margin: auto; width: 45px; height: 45px; background-color: #fff; border: 2px solid #ffffff; border-radius: 50%; z-index: 1;}
@@ -788,7 +840,7 @@ emojis .tab_content .deck .emoji_asset[method="getDisplayMedia"].on a{background
 emojis .tab_content .deck .emoji_asset[method="notify"] a,
 emojis .tab_content .deck .emoji_asset[method="chat"] a,
 emojis .tab_content .deck .emoji_asset[method="getUserMedia"] a,
-emojis .tab_content .deck .emoji_asset[method="getDisplayMedia"] a{position: relative; top: -1px; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-weight: bold; color: #422b0d; font-size: 22px; font-family: 'Material Symbols Outlined'; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
+emojis .tab_content .deck .emoji_asset[method="getDisplayMedia"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-weight: bold; color: #422b0d; font-size: 22px; font-family: 'Material Symbols Outlined'; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
 emojis .tab_content .deck .emoji_asset[method="chat"] a{line-height: 46px;}
 
 /*emojis .tab_content .deck .emoji_asset[method="notify"]{display: none;}*/
@@ -806,10 +858,25 @@ emojis .scroll::-webkit-scrollbar-thumb {background-color: #fff;}
 emojis .scroll::-webkit-scrollbar-track {}
 
 
+emojis .tab_content .deck .emoji_asset[emoji="search"]{display: none;}
+emojis .tab_content .deck .emoji_asset[emoji="search"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-weight: bold; color: #422b0d; font-size: 22px; font-family: 'Material Symbols Outlined'; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
 
-player tooltip{position: absolute; overflow: hidden; width: 0; height: 0; left: -6.3em; top: -8em; white-space: nowrap;}
+
+body[swap] #swap{opacity: 1; z-index: 10; pointer-events: initial; transition-duration: 0.2s;}
+#swap{position: fixed; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; opacity: 0; background-color: #00000096;}
+
+body[swap] emojis .tab_content .deck .emoji_asset[type="emoji"]{opacity: 0.1; pointer-events: none;}
+body[swap] emojis .tab_content .deck .emoji_asset[emoji="search"]{display: inline-block; opacity: 1; pointer-events: initial;}
+body[swap] emojis .tab_content .deck .emoji_asset[emoji="sms"]{display: none;}
+
+body[swap] player emoji img{opacity: 0.5;}
+body[swap] player *{pointer-events: none;}
+
+player tooltip{position: absolute; overflow: hidden; width: 0; height: 0; left: -6.3em; top: -8em; white-space: nowrap; pointer-events: none;}
 player tooltip.on{width: auto; height: auto; overflow: visible;}
-player tooltip a{opacity: 0; transition-duration: 0.3s; z-index: -1; cursor: pointer;}
+player tooltip ul{}
+player tooltip a{opacity: 0; transition-duration: 0.3s; cursor: pointer;  pointer-events: initial;}
+player tooltip a:after{content: ""; position: absolute; left: 0; bottom: 0.45em; height: 100%; width: 100%; z-index: 1;}
 player tooltip.on a{opacity: 1; z-index: 11;}
 player tooltip li{display: inline-block;}
 player tooltip li:hover a{transform: scale(1.2);}
@@ -817,38 +884,38 @@ player tooltip li a{transform: scale(1.0); transition-duration: 0.2s;}
 player tooltip li a.Follow{color:#fff; background-color: #009aff;}
 player[follow="true"] tooltip li a.Follow{text-transform: lowercase;}
 player[follow="true"] tooltip li a.Follow:before{content: "Un"; text-transform: capitalize;}
+player tooltip li .cnt{position: absolute; color: #fff; left: 0; right: 0; margin: 0 0 0 0; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0 0 3px #000;}
+/*bottom: 12px;*/
+
+
 
 player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decoration: none !important;}
 
-player[self="true"] tooltip li a.Flag{background-size: cover;}
-player[self="true"][team="#red"] tooltip li a.Flag{background-color: red; box-shadow: 0 0 2px red;}
-player[self="true"][team="#blue"] tooltip li a.Flag{background-color: blue; box-shadow: 0 0 2px blue;}
-player[self="true"][team="#black"] tooltip li a.Flag{background-color: #000; box-shadow: 0 0 2px #000;}
+
+/*player[self="true"][team="#red"] tooltip li a.Flag{background-color: red; box-shadow: 0 0 2px red;}*/
+/*player[self="true"][team="#blue"] tooltip li a.Flag{background-color: blue; box-shadow: 0 0 2px blue;}*/
+/*player[self="true"][team="#black"] tooltip li a.Flag{background-color: #000; box-shadow: 0 0 2px #000;}*/
+
+#root player[self="true"][team="#black"] a.Flag img{filter: grayscale(100%);}
+#root player[self="true"][team="#blue"] a.Flag img{filter: invert(100%)}
+
+#root player tooltip li a.Flag:after{top:-10px; bottom: -10px; height: auto;}
+#root player tooltip li a.Flag:before{content: "Fire"; position: absolute; left: 0; right: 0; bottom: 6px; z-index: 1; color:#fff;}
+#root player tooltip li a.Flag{overflow: visible; top: 26px; display: inline-block; border:0; width: 49px; height: 47px; line-height: 0; border:none; background-size: cover; box-shadow: none;}
+#root player tooltip li a.Flag *{ pointer-events: none}
+#root player tooltip li a.Flag .cnt{top: 14px; font-size: 16px;}
+
+#root player tooltip li a.Flag img{width: 48px; filter: drop-shadow(0 1px 2px #000); transform: scale(1.5);}
+
+#root player tooltip li a.emoji.Balance{top: 20px; font-size: 3.1em}
+#root player tooltip li a.emoji.Balance .cnt{top: -22px; right: -2px; left: 3px; bottom: 19px; border-radius: 50%; line-height: 48px; background: #00000096;}
+#root player tooltip li a.emoji{overflow: visible; display: inline-block; top: -20px; border:0; width: 49px; height: 47px; line-height: 0; box-shadow: none; vertical-align: top; font-size: 3em;}
+
+#root player tooltip li a.Report{top: 20px;}
 
 
-player[self="true"] tooltip li a.Escape *{font-size: 1em; font-weight: 900; text-shadow: none; color: #fff;}
-player[self="true"] tooltip li a.Escape{line-height: 47px;}
-player[self="true"] tooltip li a.Escape span{display: none;}
-player[self="true"] tooltip li a.Escape strong{}
-player[self="true"] tooltip li a.Escape span:before{content: "Flag ";}
-player[self="true"] tooltip li a.Escape span:after{content: "/5";}
-
-player[self="true"] tooltip li a.Escape.disabled *{color: #000;}
-player[self="true"] tooltip li a.Escape.disabled span{display: block;}
-player[self="true"] tooltip li a.Escape.disabled strong{display: block; margin: 12px 0 1px;}
-
-
-
-player[self="true"] tooltip li a.Escape.disabled,
-player[self="true"] tooltip li a.Dialog,
-player[self="true"] tooltip li a.Flow,
-player[self="true"] tooltip li a.Withdrawal{border:1px solid #000; text-decoration: line-through; background-color: transparent; color: #000; box-shadow: 0 0 0px 2px #000;}
-
-
-tooltip li:first-child a,
-tooltip li:last-child a{top: 39px;}
 tooltip li+li{margin-left: 14px;}
-tooltip li a{position: relative; overflow: hidden; display: block; border-radius: 50%; width: 49px; height: 47px; line-height: 47px; text-align: center; font-size: 0.7em; font-weight: bold; color:#fff; box-shadow: 0 0 0px 2px #fff; text-shadow: 0 0 5px #000}
+tooltip li a{position: relative; display: block; border-radius: 50%; width: 49px; height: 47px; line-height: 47px; text-align: center; font-size: 0.7em; font-weight: bold; color:#fff; box-shadow: 0 0 0px 2px #fff; text-shadow: 0 0 5px #000}
 tooltip li a.Withdrawal{font-size:0.5em}
 tooltip li a:empty{opacity: 0;}
 tooltip li a.disabled{background-color: #ddd; color:#bbb; cursor: not-allowed;}
@@ -1135,11 +1202,16 @@ body.loading .zoom_toggle,
 body.loading #capture,
 body.loading a[href="/login/"]{display: none;}
 body.loading #root player,
-body.loading #intro .snb,
-body.loading #intro .notice,
+/*body.loading #intro .snb,*/
+/*body.loading #intro .notice,*/
 body.loading emojis{opacity: 0; transition-delay: 0; transition-duration: 0s;}
 body.loading .aside emojis{display: none;}
 body.loading #intro{opacity: 1;}
+
+body[team] .map,
+body[team] emojis,
+body[team] #root{opacity: 1;}
+body[team] #intro{opacity: 0; pointer-events: none;}
 
 /*body.paging #intro{opacity: 0; transition-duration: 0.5s; transition-delay: 0s;}*/
 
@@ -1150,19 +1222,17 @@ body.loading #intro{opacity: 1;}
 
 #intro .title{margin-bottom: 3em;}
 #intro .title p{font-size: 5em; font-weight: 900; color:#fff; text-shadow: 0 0 5px #ffffff}
-
-
-
 #intro .notice{margin: 0 auto 2em; padding: 0.7em 1em; max-width: 300px; text-align: left; background-color: #ffa50094; opacity: 1; transition-duration: 0.5s}
 #intro .notice p:first-child{font-size: 0.9em; font-weight: 900;}
 #intro .notice p{font-size: 0.6em; line-height: 1.5; color:#000;}
-#intro .snb{margin: 0 auto; max-width: 400px; text-align: center; opacity: 1; transition-duration: 0.5s;}
+/*#intro .snb{margin: 0 auto; max-width: 400px; text-align: center; opacity: 1; transition-duration: 0.5s;}
 #intro .snb li+li{margin-top: 1em}
 #intro .snb li:first-child{margin-bottom: 1.3em;}
 #intro .snb li:first-child a{font-size: 2.7em;}
 #intro .snb li a{display: block; padding: 0.5em; font-size: 2em; font-weight: 300; text-align: center; color: #fff; opacity: 0.7}
 #intro .snb li a:hover,
 #intro .snb li a.on{opacity: 1}
+#intro .snb li:last-child{display: none;}*/
 
 
 .layer{display: none; position: fixed; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(0,0,0,0); z-index: 999999999;}
@@ -1208,6 +1278,16 @@ body[tutorial="Move"][step="1"] #root player[alt="player"][self="true"] .address
 		opacity: 0;
 	}
 }
+
+#flag{position: fixed; left: 1em; right: 1em; top: 1em; text-align: center; width: 180px; margin: 0 auto; height: 40px; z-index: 1; background: #000000ad; border-radius: 0.5em;}
+#flag:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; width: 2px; height: 13px; background-color: #7c7c7c;}
+#flag>div{position: absolute; top: 0; bottom: 0; text-align: center; line-height: 36px; font-size: 2em; font-weight: 900;}
+#flag>div.on{text-decoration: underline;}
+/*#flag>div:before{content: ""; display: inline-block; border-radius: 50%;}*/
+#flag .red{left: 10%; right: 60%; color: red;}
+#flag .blue{right: 10%; left: 60%; color: blue;}
+#flag .red{}
+#flag .blue{}
 
 body[tutorial="MineSweeper"] player{pointer-events:initial;}
 
@@ -1434,10 +1514,12 @@ body[axis="y"] .bg{width: 100vw; height: 100vw;}
 }
 
 @media (min-width: 630px) {
-	a.back{position: absolute; left: 50%; margin-left: -300px;}
+/*	a.back{position: absolute; left: 50%; margin-left: -300px;}*/
+
 }
 
-@media (max-width: 629px) {
+@media (max-width: 630px) {
+	body[swap] .back{left: initial; right: 1em; margin-left: 0;}
 	/*.constelacao {
 		animation: rotate 300s infinite linear;
 	}*/

@@ -233,7 +233,7 @@ wallet form[name="account.oauth.network"],
 wallet .collection{display: none;}
 
 
-body[type="info"] wallet form[name="account.oauth.network"],
+body[type="Overview"] wallet form[name="account.oauth.network"],
 body[type="Inventory"] wallet .collection,
 body[type="Exchange"] .scroll-table{display: block;}
 

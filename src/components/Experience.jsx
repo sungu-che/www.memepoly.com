@@ -37,11 +37,6 @@ textures.log.minFilter = THREE.LinearMipMapLinearFilter
 textures.black.magFilter = THREE.NearestFilter
 textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
-var direction = {
-	x : 0,
-	z : 0
-}
-
 
 export const Experience = () => {
 	const [players, setPlayers] = useState([]);
@@ -69,6 +64,8 @@ export const Experience = () => {
 	grid.z = grid.size
 	grid.center = "#000"
 	grid.line = "#000"
+
+	grid.helper = 5
 
 	const current = useRef()
 	const cursor = useRef()
@@ -173,8 +170,6 @@ export const Experience = () => {
 
 		var cookies = window.cookies
 
-		var $body = $("body")
-
 		try{
 			if(e.point){
 				point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
@@ -185,6 +180,7 @@ export const Experience = () => {
 					var biome = window.map.biomes[point.x+":"+point.z]
 
 					point.y = biome.y
+
 
 					if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
 						if(cookies.hash && players.length){
@@ -328,6 +324,8 @@ export const Experience = () => {
 	
 		var emoji = "";
 
+		var opacity = 0.8
+
 		var rotation_x = -Math.PI / 2
 
 		if(props.name == "asset"){
@@ -395,7 +393,7 @@ export const Experience = () => {
 					<group position={props.position}>
 						<mesh position={[0, 0, 0.005]} onClick={onClick}>
 							<boxGeometry attach="geometry" args={[1, 1]} />
-							<meshStandardMaterial attach="material" map={textures[texture]} color={color} />
+							<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
 						</mesh>
 						<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
 							<planeGeometry attach="geometry" args={[1, 1]} />
@@ -412,7 +410,7 @@ export const Experience = () => {
 					<group position={props.position}>
 						<mesh position={[0, 0, 0.005]} onClick={onClick}>
 							<boxGeometry attach="geometry" args={[1, 1]} />
-							<meshStandardMaterial attach="material" map={textures[texture]} color={color} />
+							<meshStandardMaterial attach="material" map={textures[texture]} opacity={opacity} transparent color={color} />
 						</mesh>
 
 						<Html className="clipped">

@@ -25,7 +25,7 @@
 		</style>
 	</head>
 
-	<body tooltip="true" address="" style="position: relative; overflow: hidden; overflow-y:scroll; background-color: #000;">
+	<body address="" style="position: relative; overflow: hidden; overflow-y:scroll; background-color: #000;">
 		<div class="wrap third">
 			<div id="header">
 				<input id="nav" type="checkbox">
@@ -42,8 +42,8 @@
 				</div>
 
 				<div id="flag">
-					<div class="doge"></div>
-					<div class="pepe"></div>
+					<div class="red"></div>
+					<div class="blue"></div>
 				</div>
 			</div>
 
@@ -57,19 +57,6 @@
 							<p>Attention! This is a Beta version of "XIM.CITY"</p>
 							<p>This is a Beta version Does Not Represent the Final Quality of This Product.</p>
 							<p>Thank you for your understanding and support. Good luck</p>
-						</div>
-						<div class="snb">
-							<ul>
-								<li>
-									<a class="enter">Build It</a>
-								</li>
-								<li>
-									<a class="inventory">Inventory</a>
-								</li>
-								<li>
-									<a class="exchange">Exchange</a>
-								</li>
-							</ul>
 						</div>
 					</div>
 				</div>
@@ -87,6 +74,7 @@
 				<div class="react">
 					<div class="three">
 						<div id="root" class="fiber"></div>
+
 
 						<!-- <div class="zoom_toggle">
 							<a class="zoom map emoji">🗺️</a>
@@ -170,18 +158,6 @@
 							</fieldset>
 						</div>
 						
-
-						<div id="capture">
-							<div class="xyz">
-								<span class="x"></span>
-								<span class="z"></span>
-							</div>
-							<div class="icon rank_toggle"></div>
-							<div id="rank">
-								<ol></ol>
-							</div>
-						</div>
-
 						<div id="bingo"></div>
 
 						<div class="layer">
@@ -240,6 +216,34 @@
 							</form>
 						</div>
 
+						<div id="swap">
+							<div class="tb">
+								<div class="tc">
+									<div id="merge">
+										
+									</div>
+									<div id="pool">
+										<div class="list">
+											<ul></ul>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="gameover">
+							<div class="tb">
+								<div class="tc">
+									<div class="title">
+										<strong>Game Over</strong>
+									</div>
+									<div class="desc">
+										<a class="continue">Continue</a>
+									</div>	
+								</div>
+							</div>
+						</div>
+
 						<div class="aside" sort="emoji">
 							<div class="area">
 								<div class="status">
@@ -247,159 +251,6 @@
 										<strong>Loading...</strong>
 									</div>
 								</div>
-
-								<form name="oauth.network" method="POST" enctype="application/x-www-form-urlencoded">
-									<details>
-										<summary>Dialog Flow</summary>
-										
-										<flows></flows>
-										
-										<label for="cable">filter</label>
-										<input id="cable" type="checkbox">
-										<cable>
-											<div class="col type">
-												<legend>
-													<em>Type</em>
-												</legend>
-												<label for="query.from">
-													<input id="query.from" name="query.type" type="radio" value="from">
-													<span>questions</span>
-												</label>
-												<label for="query.to">
-													<input id="query.to" name="query.type" type="radio" value="to">
-													<span>answer</span>
-												</label>
-											</div>
-
-											<div class="col subject">
-												<legend>
-													<em>category</em>
-												</legend>
-												<label for="query.subject">
-													<input id="query.subject" name="query.subject" type="text" value="">
-												</label>
-											</div>
-
-											<div class="col date">
-												<legend>
-													<em>booking date</em>
-												</legend>
-												<label for="query.booking">
-													<input id="query.booking" name="query.booking" type="month">
-													<span>start date</span>
-												</label>
-											</div>
-
-											<div class="col date">
-												<legend>
-													<em>created date</em>
-												</legend>
-												<label for="query.started">
-													<input id="query.started" name="query.started" type="date">
-													<span>start date</span>
-												</label>
-												<label for="query.expired">
-													<input id="query.expired" name="query.expired" type="date">
-													<span>end date</span>
-												</label>
-											</div>
-										</cable>
-										
-										<table>
-											<colgroup>
-												<col class="col_flow">
-												<col class="col_email">
-												<col class="col_subject">
-												<col class="col_booking">
-												<col class="col_created">
-											</colgroup>
-											<thead>
-												<tr>
-													<th class="col_flow">
-														<label for="query.flow">
-															<input id="query.flow" name="query.flow" type="checkbox">
-															<span>state</span>
-														</label>
-													</th>
-													<th class="col_email">
-														<label>
-															<span>id</span>
-														</label>
-													</th>
-													<th class="col_subject">
-														<label class="subject">
-															<span>type</span>
-														</label>
-													</th>
-													<th class="col_booking">
-														<label for="order.by.booking">
-															<input id="order.by.booking" name="order.by" type="checkbox">
-															<span>booking date</span>
-														</label>
-													</th>
-													<th class="col_created">
-														<label for="order.by.created">
-															<input id="order.by.created" name="order.by" type="checkbox">
-															<span>created date</span>
-															<!-- 
-																checked 
-																	true  오름차순
-																	false 내림차순
-															-->
-														</label>
-													</th>
-												</tr>
-											</thead>
-											<tbody></tbody>
-										</table>
-									</details>
-									<fieldset>
-										<fields>
-											<field draggable="false">
-												<h0></h0>
-												<tooltip>
-													<tooltip-wrapper>
-														<btn type="undo"></btn>
-														<btn type="image"></btn>
-														<btn type="link">
-															<flows></flows>
-															<input type="url" placeholder="write link" tabindex="-1">
-														</btn>
-														<btn type="hide"></btn>
-													</tooltip-wrapper>
-												</tooltip>
-												<toolbar>
-													<input type="hidden" name="created">
-													<label for="oauth.network.guest">
-														<input id="oauth.network.guest" type="checkbox" name="guest">
-														<span>Guest</span>
-													</label>
-													<label for="oauth.network.count">
-														<input id="oauth.network.count" type="number" name="count" min="0" placeholder="참여 제한없음">
-														<span>Count</span>
-													</label>
-													<label for="oauth.network.started">
-														<input type="date" name="started" id="oauth.network.started">
-														<span>Started</span>
-													</label>
-													<label for="oauth.network.expired">
-														<input type="date" name="expired" id="oauth.network.expired">
-														<span>Expired</span>
-													</label>
-												</toolbar>
-												<items>
-													<item class="radio" type="radio"></item>
-													<item class="checkbox" type="checkbox"></item>
-												</items>
-											</field>
-										</fields>
-
-										<div class="submit">
-											<div class="field">
-												<input type="submit"></div>
-											</div>
-									</fieldset>
-								</form>
 
 								<messages>
 									<ul></ul>
@@ -417,7 +268,7 @@
 
 								<emojis>
 									<a class="back">
-										<span>Back</span>
+										<span>❌</span>
 									</a>
 									<div class="scroll tab_nav emojis_filter">
 										<div class="deck">
@@ -430,26 +281,21 @@
 												<cnt></cnt>
 											</a>
 											<a class="emoji color" type="follows">
-												<span>follow</span>
+												<span>watch</span>
 												<cnt></cnt>
 											</a>
 											<!-- <a class="emoji color" type="players">
 												<span>Player</span>
 												<cnt></cnt>
 											</a> -->
-											<!-- <a class="emoji color" type="threads">
-												<span>Talk</span>
-												<cnt></cnt>
-											</a> -->
 										</div>
 									</div>
 									<div class="scroll tab_content">
 										<div class="deck">
-											<div class="items"></div>
+											<!-- <div class="items"></div> -->
 											<div class="emojis"></div>
 											<div class="follows"></div>
-											<div class="players"></div>
-											<div class="threads"></div>
+											<!-- <div class="players"></div> -->
 										</div>
 									</div>
 								</emojis>
