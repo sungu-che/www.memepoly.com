@@ -226,11 +226,11 @@ export const Experience = () => {
 									} 
 
 									if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
-										if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
+										if(b.x - a.x && a.z - b.z){
+											return b.x - a.x || a.z - b.z
+										}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
 											console.log("진입3");
 											return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
-										}else if(b.x - a.x && a.z - b.z){
-											return b.x - a.x && a.z - b.z
 										}
 									}
 
@@ -276,63 +276,49 @@ export const Experience = () => {
 										if(typeof currentIdx != "undefined" && typeof nextIdx != "undefined"){
 												var diff = currentIdx - nextIdx
 
-												if(diff > 0){
-													if(fields.next.neighbors[currentIdx - 1]){
-														if(fields.next.neighbors[currentIdx - 1].ocean){
-															reverse = true
+												if(diff == 1){
+													if(fields.next.neighbors[nextIdx]){
+														if(fields.next.neighbors[nextIdx+1]){
+															if(fields.next.neighbors[nextIdx+1].ocean){
+																reverse = true
+															}
 														}
 													}
 
-													if(fields.next.neighbors[currentIdx - 1]){
-														if(fields.next.neighbors[currentIdx - 1].coast){
-															reverse = true
-														}
-													}
-
-													if(fields.next.neighbors[currentIdx + 1]){
-														if(fields.next.neighbors[currentIdx + 1].coast){
-															reverse = true
-														}
-													}
+													
 
 
-													if(fields.current.neighbors[nextIdx - 1]){
-														if(fields.current.neighbors[nextIdx - 1].ocean){
-															reverse = true
-														}
-													}
-
-													if(fields.current.neighbors[nextIdx - 1]){
-														if(fields.current.neighbors[nextIdx - 1].coast){
-															reverse = true
-														}
-													}
-
-													if(fields.current.neighbors[nextIdx + 1]){
-														if(fields.current.neighbors[nextIdx + 1].coast){
-															reverse = true
+													if(fields.current.neighbors[currentIdx]){
+														if(fields.current.neighbors[currentIdx+1]){
+															if(fields.current.neighbors[currentIdx+1].ocean){
+																reverse = true
+															}
 														}
 													}
 												}else{
-													var _idx = Math.sqrt(Math.pow(diff, 2)) - 1
+													if(diff > 0){
 
-													console.log('_idx',_idx);
-													if(fields.next.neighbors[_idx]){
-														if(fields.next.neighbors[_idx].coast){
-															reverse = true
-														}else 
-														if(fields.next.neighbors[_idx].ocean){
-															reverse = true
-														}
-													}
+													}else{
+														var _idx = Math.sqrt(Math.pow(diff, 2))
 
-													if(fields.current.neighbors[_idx]){
-														if(fields.current.neighbors[_idx].coast){
-															reverse = true
-														}else 
-														if(fields.current.neighbors[_idx].ocean){
-															reverse = true
+														console.log('_idx',_idx);
+														if(fields.next.neighbors[_idx]){
+															if(fields.next.neighbors[_idx].coast){
+																reverse = true
+															}else 
+															if(fields.next.neighbors[_idx].ocean){
+																reverse = true
+															}
 														}
+
+														if(fields.current.neighbors[_idx]){
+															// if(fields.current.neighbors[_idx].coast){
+															// 	reverse = true
+															// }else 
+															if(fields.current.neighbors[_idx].ocean){
+																reverse = true
+															}
+														}	
 													}
 												}
 											}
