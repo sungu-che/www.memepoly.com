@@ -113,7 +113,7 @@ window.Subscribe = function(){
 	});
 }
 
-function listToBiomes(list, elementsPerSubArray) {
+window.listToBiomes = function(list, elementsPerSubArray) {
 	var matrix = [], i, k;
 
 	for (i = 0, k = -1; i < list.length; i++) {
@@ -809,8 +809,6 @@ OAuth3.on("ready", function(e){
 					}
 				}
 
-				console.log('rows',rows);
-
 				if(rows.length){
 					for(var r = 0; r < rows.length; r++){
 						var row = rows[r];
@@ -950,7 +948,12 @@ OAuth3.on("ready", function(e){
 					biomes.z = window.current.current.position.z
 				}
 
+				var fields = []
+
 				biomes.forEach(function(b, i){
+					if(b.biome == "BEACH"){
+						fields.push(b)
+					}
 					if(
 						(biomes.x - size < b.x && biomes.x + size > b.x) &&
 						(biomes.z - size < b.z && biomes.z + size > b.z)
@@ -958,7 +961,21 @@ OAuth3.on("ready", function(e){
 						biomes[b.x+":"+b.z] = b
 					}
 				})
-				
+
+				// fields.sort(function (a, b) {
+				    
+				//     // Compare first value then second 
+				//     // return Math.sqrt(Math.pow(a.x, 2)) - Math.sqrt(Math.pow(b.x, 2)) == 1 || Math.sqrt(Math.pow(a.z, 2)) - Math.sqrt(Math.pow(b.z, 2)) == 1;
+
+				//     return b.x - a.x || a.z - b.z;
+				// });
+				// fields.forEach(function(b){
+				// 	console.log(b,b.x +":"+ b.z);
+				// })
+
+				// console.log(fields)
+
+			
 				if(rows.length){
 					if(player_hash.indexOf(cc_player.hash) > -1){
 						cc_player.self = true
@@ -1100,7 +1117,6 @@ OAuth3.on("ready", function(e){
 								}
 
 								if(!window.map.report[_from] && (isRender || player.self)){
-									console.log('isRender',isRender, emoji);
 									if(!rows[_from]){
 										rows[_from] = true
 
@@ -1348,7 +1364,6 @@ OAuth3.on("ready", function(e){
 
 					if(window.assets){
 						if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
-							console.log("window.assets 진입여부", _assets);
 							diff = true
 							window.assets.set(_assets)
 						}
@@ -1591,28 +1606,36 @@ OAuth3.on("ready", function(e){
 										cnt = flags[_player_hash]
 									}
 
-									var Head = ""
-
 									var hex = window.emojiUnicode("🔥")
 										
 									var src = `/src/fonts/emoji/animated/${hex}.webp`
 
-									if(player_hash.indexOf(_player_hash) > -1){
+									if(_player.emoji == "🔥"){
+										// tooltip_body = `<li>
+										// 	<a class="hashType"></a>
+										// </li>
+										// <li>
+										// 	<a class="hashType">🏗</a>
+										// </li>
+										// <li>
+										// 	<a class="hashType"></a>
+										// </li>`
+									}else if(player_hash.indexOf(_player_hash) > -1){
 										tooltip_body = `<li>
 											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
-											<a class="hashType Head emoji color">${Head}</a>
+											<a class="hashType Dice emoji color">🎲</a>
 										</li>
 										<li>
-											<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</a>
+											<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
 										</li>`
 									}else{
 										tooltip_body = `<li>
 											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
-											<a class="hashType Head emoji color">${Head}</a>
+											<a class="hashType Dice emoji color">🎲</a>
 										</li>
 										<li>
 											<a class="hashType Report">Report</a>\
@@ -1620,9 +1643,9 @@ OAuth3.on("ready", function(e){
 									}
 
 									var before_body = $tooltip.html()
-										before_body = before_body.replace(/\t/gi,"").trim()
+										before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 
-									var after_body = tooltip_body.replace(/\t/gi,"").trim()
+									var after_body = tooltip_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 
 									if(before_body != after_body){
 										$tooltip.html(tooltip_body)
@@ -2376,7 +2399,6 @@ OAuth3.on("ready", function(e){
 									}
 
 									if($this.closest("emoji").length){
-										console.log("!111");
 										var $emoji = $this.closest("emoji")
 
 										var focus = $emoji.attr("selector");
@@ -2593,7 +2615,15 @@ OAuth3.on("ready", function(e){
 												cc_address = window.location.hash.replace("#", "0x")
 											}
 
-											if($this.hasClass("Flag")){
+											if($this.hasClass("Dice")){
+												/*
+													flags 길이가 10개 이상일 때 동작
+													본인 flag에 건물 건설 불가
+												*/ 
+
+
+												return
+											}else if($this.hasClass("Flag")){
 												body.cc = "flag"
 
 											}else if($this.hasClass("Balance")){
@@ -2777,6 +2807,12 @@ OAuth3.on("ready", function(e){
 																		<span></span>
 																	</div>
 																</div>
+																<div class="lds-ring">
+																	<div></div>
+																	<div></div>
+																	<div></div>
+																	<div></div>
+																</div>
 															</div>
 															<div>
 																<div class="y" id="${balanceAddress}">
@@ -2787,6 +2823,12 @@ OAuth3.on("ready", function(e){
 																	<div class="amount">
 																		<span></span>
 																	</div>
+																</div>
+																<div class="lds-ring">
+																	<div></div>
+																	<div></div>
+																	<div></div>
+																	<div></div>
 																</div>
 															</div>
 														</li>`

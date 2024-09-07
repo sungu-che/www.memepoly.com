@@ -181,7 +181,6 @@ export const Experience = () => {
 
 					point.y = biome.y
 
-
 					if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
 						if(cookies.hash && players.length){
 							if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
@@ -194,6 +193,47 @@ export const Experience = () => {
 										}
 									}
 								}
+
+								var biomes = listToBiomes(window.map.biomes, 100)
+
+								var size = 2
+								var fields = []
+
+								var reverse = false
+
+								console.log("----------------")
+
+								var current_biome 
+
+								biomes.forEach(function(b, i){
+									if(
+										(point.x - size < b.x && point.x + size > b.x) &&
+										(point.z - size < b.z && point.z + size > b.z)
+									){
+										if(b.biome == "BEACH"){
+											fields.push(b)
+										}
+									}
+								})
+
+								fields.sort(function (a, b) {
+									if(a.x + a.z > b.x+b.z){
+										return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
+									}else{
+										return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(a.z, 2)) - Math.sqrt(Math.pow(b.z, 2))	
+									}
+								    
+								    // Compare first value then second 
+								    
+
+								    // return b.x - a.x || a.z - b.z;
+								});
+
+								fields.forEach(function(b,i){
+									console.log("#"+i, (b.x +":"+ b.z));
+								})
+									
+								console.log("----------------")
 
 								window[player.hash].position.y = point.y + 0.5
 								
@@ -208,6 +248,7 @@ export const Experience = () => {
 								// $player.removeClass("select_puzzle")
 
 								$("body")
+									.attr("biome", biome.biome)
 									.removeClass("loading")
 									.removeAttr("tooltip")
 								
