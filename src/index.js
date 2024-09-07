@@ -961,20 +961,6 @@ OAuth3.on("ready", function(e){
 						biomes[b.x+":"+b.z] = b
 					}
 				})
-
-				// fields.sort(function (a, b) {
-				    
-				//     // Compare first value then second 
-				//     // return Math.sqrt(Math.pow(a.x, 2)) - Math.sqrt(Math.pow(b.x, 2)) == 1 || Math.sqrt(Math.pow(a.z, 2)) - Math.sqrt(Math.pow(b.z, 2)) == 1;
-
-				//     return b.x - a.x || a.z - b.z;
-				// });
-				// fields.forEach(function(b){
-				// 	console.log(b,b.x +":"+ b.z);
-				// })
-
-				// console.log(fields)
-
 			
 				if(rows.length){
 					if(player_hash.indexOf(cc_player.hash) > -1){
@@ -1222,6 +1208,14 @@ OAuth3.on("ready", function(e){
 					if(self_player){
 						var x = self_player.x
 						var z = self_player.z
+
+						var biome = window.map.biomes[x+":"+z]
+
+						console.log('biome',biome);
+
+						if(biome){
+							$body.attr("biome", biome.biome)
+						}
 
 						biomes.forEach(function(b, i){
 							var _id = crc32(cc_address+i).toString(32).toUpperCase()
