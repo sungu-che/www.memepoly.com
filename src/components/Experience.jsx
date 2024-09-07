@@ -217,16 +217,16 @@ export const Experience = () => {
 								})
 
 								fields.sort(function (a, b) {
-									if(a.x + a.z > b.x+b.z){
-										return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
+									if(a.x + a.z >= b.x + b.z){
+										return b.x - a.x || a.z - b.z;
 									}else{
-										return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(a.z, 2)) - Math.sqrt(Math.pow(b.z, 2))	
+										return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
 									}
 								    
 								    // Compare first value then second 
 								    
 
-								    // return b.x - a.x || a.z - b.z;
+								    
 								});
 
 								fields.forEach(function(b,i){
