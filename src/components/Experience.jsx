@@ -225,22 +225,16 @@ export const Experience = () => {
 										fields.start = a
 									} 
 
-									if(b.x - a.x && a.z - b.z){
-										console.log("진입1",b.x - a.x && a.z - b.z);
-										return b.x - a.x && a.z - b.z;
-									}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
-										if(b.x - a.x || a.z - b.z){
-											console.log("진입2",b.x - a.x || a.z - b.z);
-											return b.x - a.x || a.z - b.z
-										}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
+									if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
+										if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
 											console.log("진입3");
 											return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
-										}else{
-											return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
+										}else if(b.x - a.x && a.z - b.z){
+											return b.x - a.x && a.z - b.z
 										}
-									}else{
-										return b.x - a.x || a.z - b.z;
 									}
+
+									return b.x - a.x || a.z - b.z;
 								});
 
 								if(fields.current){
@@ -253,20 +247,127 @@ export const Experience = () => {
 									fields.next = fields[fields.index+1]
 
 									if(fields.next){
-										if(Math.sqrt(Math.pow(fields.next.z, 2)) - Math.sqrt(Math.pow(fields.current.z, 2))){
-											reverse = true
-										}else if(Math.sqrt(Math.pow(fields.next.x, 2)) - Math.sqrt(Math.pow(fields.current.x, 2)) > 0){
-											console.log('Math.sqrt(Math.pow(fields.current.x, 2))',Math.sqrt(Math.pow(fields.current.x, 2)));
-											console.log('Math.sqrt(Math.pow(fields.next.x, 2))',Math.sqrt(Math.pow(fields.next.x, 2)));
-											reverse = true
-										}
+										console.log('fields.current',fields.current);
+										console.log('fields.next',fields.next);
+
+										var currentIdx, nextIdx
+
+										fields.next.neighbors.forEach(function(field, i){
+											if(field.index == fields.current.index){
+												currentIdx = i
+											}
+										})
+
+										fields.current.neighbors.forEach(function(field, i){
+											if(field.index == fields.next.index){
+												nextIdx = i
+											}
+										})
+
+										console.log('nextIdx',nextIdx);
+										console.log('currentIdx',currentIdx);
+
+										console.log('fields.next.index',fields.next.index);
+										console.log('fields.current.index',fields.current.index);	
+
+										console.log("currentIdx - nextIdx",currentIdx - nextIdx);
+
+
+										if(typeof currentIdx != "undefined" && typeof nextIdx != "undefined"){
+												var diff = currentIdx - nextIdx
+
+												if(diff > 0){
+													if(fields.next.neighbors[currentIdx - 1]){
+														if(fields.next.neighbors[currentIdx - 1].ocean){
+															reverse = true
+														}
+													}
+
+													if(fields.next.neighbors[currentIdx - 1]){
+														if(fields.next.neighbors[currentIdx - 1].coast){
+															reverse = true
+														}
+													}
+
+													if(fields.next.neighbors[currentIdx + 1]){
+														if(fields.next.neighbors[currentIdx + 1].coast){
+															reverse = true
+														}
+													}
+
+
+													if(fields.current.neighbors[nextIdx - 1]){
+														if(fields.current.neighbors[nextIdx - 1].ocean){
+															reverse = true
+														}
+													}
+
+													if(fields.current.neighbors[nextIdx - 1]){
+														if(fields.current.neighbors[nextIdx - 1].coast){
+															reverse = true
+														}
+													}
+
+													if(fields.current.neighbors[nextIdx + 1]){
+														if(fields.current.neighbors[nextIdx + 1].coast){
+															reverse = true
+														}
+													}
+												}else{
+													var _idx = Math.sqrt(Math.pow(diff, 2)) - 1
+
+													console.log('_idx',_idx);
+													if(fields.next.neighbors[_idx]){
+														if(fields.next.neighbors[_idx].coast){
+															reverse = true
+														}else 
+														if(fields.next.neighbors[_idx].ocean){
+															reverse = true
+														}
+													}
+
+													if(fields.current.neighbors[_idx]){
+														if(fields.current.neighbors[_idx].coast){
+															reverse = true
+														}else 
+														if(fields.current.neighbors[_idx].ocean){
+															reverse = true
+														}
+													}
+												}
+											}
+
+										// reverse = true
+										// if((Math.sqrt(Math.pow(fields.current.x, 2)) >= Math.sqrt(Math.pow(fields.next.x, 2)))){
+										// 	if((Math.sqrt(Math.pow(fields.next.z, 2)) != Math.sqrt(Math.pow(fields.current.z, 2)))){
+										// 		console.log('reverse1');
+										// 		reverse = true
+										// 	}
+										// 	// reverse = true
+										// }else if((Math.sqrt(Math.pow(fields.current.z, 2)) >= Math.sqrt(Math.pow(fields.next.z, 2)))){
+										// 	if((Math.sqrt(Math.pow(fields.current.x, 2)) != Math.sqrt(Math.pow(fields.next.x, 2)))){
+										// 		console.log('reverse2');
+												
+										// 	}
+										// 	// reverse = true
+										// }else{
+										// 	// reverse = true
+										// }
 									}
 
 										
 
 									if(fields.index == 0){
-										fields.splice(fields.index+2, 0, fields.current)
-										fields.splice(0, 1)
+										console.log('fields.length',fields.length);
+										// if(fields.length > 2){
+										// 	fields.splice(fields.index+2, 0, fields.current)
+										// 	fields.splice(0, 1)
+										// }else{
+											
+										// }
+
+										fields.splice(fields.index, 0, fields.current)
+											fields.splice(0, 1)
 										var last = fields.splice(fields.index - 1, 1)
 										fields.splice(0, 0, last[0])
 									}else if(fields.index == (fields.length - 1)){
