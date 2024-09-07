@@ -2791,8 +2791,8 @@ OAuth3.on("ready", function(e){
 															address = ethers.computeAddress(address).toLowerCase()
 
 														assets_body += `<li class="item loading" emoji="${emoji}">
-															<div>
-																<div class="x" id="${address}">
+															<div class="asset">
+																<div class="col x" id="${address}">
 																	<div class="icon">
 																		<div class="emoji color">${emoji}</div>
 																		<div class="name"></div>
@@ -2808,8 +2808,8 @@ OAuth3.on("ready", function(e){
 																	<div></div>
 																</div>
 															</div>
-															<div>
-																<div class="y" id="${balanceAddress}">
+															<div class="asset">
+																<div class="col y" id="${balanceAddress}">
 																	<div class="icon">
 																		<div class="emoji color">🪙</div>
 																		<div class="name"></div>

@@ -201,8 +201,6 @@ export const Experience = () => {
 
 								var reverse = false
 
-								console.log("----------------")
-
 								var current_biome 
 
 								biomes.forEach(function(b, i){
@@ -229,7 +227,6 @@ export const Experience = () => {
 										if(b.x - a.x && a.z - b.z){
 											return b.x - a.x || a.z - b.z
 										}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
-											console.log("진입3");
 											return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
 										}
 									}
@@ -247,9 +244,6 @@ export const Experience = () => {
 									fields.next = fields[fields.index+1]
 
 									if(fields.next){
-										console.log('fields.current',fields.current);
-										console.log('fields.next',fields.next);
-
 										var currentIdx, nextIdx
 
 										fields.next.neighbors.forEach(function(field, i){
@@ -264,87 +258,56 @@ export const Experience = () => {
 											}
 										})
 
-										console.log('nextIdx',nextIdx);
-										console.log('currentIdx',currentIdx);
-
-										console.log('fields.next.index',fields.next.index);
-										console.log('fields.current.index',fields.current.index);	
-
-										console.log("currentIdx - nextIdx",currentIdx - nextIdx);
-
-
 										if(typeof currentIdx != "undefined" && typeof nextIdx != "undefined"){
-												var diff = currentIdx - nextIdx
+											var diff = currentIdx - nextIdx
 
-												if(diff == 1){
-													if(fields.next.neighbors[nextIdx]){
-														if(fields.next.neighbors[nextIdx+1]){
-															if(fields.next.neighbors[nextIdx+1].ocean){
-																reverse = true
-															}
+											if(diff == 1){
+												if(fields.next.neighbors[nextIdx]){
+													if(fields.next.neighbors[nextIdx+1]){
+														if(fields.next.neighbors[nextIdx+1].ocean){
+															reverse = true
 														}
-													}
-
-													
-
-
-													if(fields.current.neighbors[currentIdx]){
-														if(fields.current.neighbors[currentIdx+1]){
-															if(fields.current.neighbors[currentIdx+1].ocean){
-																reverse = true
-															}
-														}
-													}
-												}else{
-													if(diff > 0){
-
-													}else{
-														var _idx = Math.sqrt(Math.pow(diff, 2))
-
-														console.log('_idx',_idx);
-														if(fields.next.neighbors[_idx]){
-															if(fields.next.neighbors[_idx].coast){
-																reverse = true
-															}else 
-															if(fields.next.neighbors[_idx].ocean){
-																reverse = true
-															}
-														}
-
-														if(fields.current.neighbors[_idx]){
-															// if(fields.current.neighbors[_idx].coast){
-															// 	reverse = true
-															// }else 
-															if(fields.current.neighbors[_idx].ocean){
-																reverse = true
-															}
-														}	
 													}
 												}
-											}
 
-										// reverse = true
-										// if((Math.sqrt(Math.pow(fields.current.x, 2)) >= Math.sqrt(Math.pow(fields.next.x, 2)))){
-										// 	if((Math.sqrt(Math.pow(fields.next.z, 2)) != Math.sqrt(Math.pow(fields.current.z, 2)))){
-										// 		console.log('reverse1');
-										// 		reverse = true
-										// 	}
-										// 	// reverse = true
-										// }else if((Math.sqrt(Math.pow(fields.current.z, 2)) >= Math.sqrt(Math.pow(fields.next.z, 2)))){
-										// 	if((Math.sqrt(Math.pow(fields.current.x, 2)) != Math.sqrt(Math.pow(fields.next.x, 2)))){
-										// 		console.log('reverse2');
-												
-										// 	}
-										// 	// reverse = true
-										// }else{
-										// 	// reverse = true
-										// }
+												if(fields.current.neighbors[currentIdx]){
+													if(fields.current.neighbors[currentIdx+1]){
+														if(fields.current.neighbors[currentIdx+1].ocean){
+															reverse = true
+														}
+													}
+												}
+											}else{
+												if(diff > 0){
+
+												}else{
+													var _idx = Math.sqrt(Math.pow(diff, 2))
+
+													if(fields.next.neighbors[_idx]){
+														if(fields.next.neighbors[_idx].coast){
+															reverse = true
+														}else 
+														if(fields.next.neighbors[_idx].ocean){
+															reverse = true
+														}
+													}
+
+													if(fields.current.neighbors[_idx]){
+														// if(fields.current.neighbors[_idx].coast){
+														// 	reverse = true
+														// }else 
+														if(fields.current.neighbors[_idx].ocean){
+															reverse = true
+														}
+													}	
+												}
+											}
+										}
 									}
 
 										
 
 									if(fields.index == 0){
-										console.log('fields.length',fields.length);
 										// if(fields.length > 2){
 										// 	fields.splice(fields.index+2, 0, fields.current)
 										// 	fields.splice(0, 1)
@@ -363,17 +326,16 @@ export const Experience = () => {
 								}
 
 								if(reverse){
-									console.log('reverse',reverse);
 									fields = fields.reverse()	
 								}
 
 									
 								fields.forEach(function(b,i){
-									console.log("#"+b.index, (b.x +":"+ b.z));
+									// console.log("#"+b.index, (b.x +":"+ b.z));
 								})
 
 									
-								console.log("----------------"+fields.index, fields.length)
+								// console.log("----------------"+fields.index, fields.length)
 
 								window[player.hash].position.y = point.y + 0.5
 								
@@ -505,12 +467,21 @@ export const Experience = () => {
 	
 		var emoji = "";
 
-		var opacity = 0.8
+		var opacity = 1
 
 		var rotation_x = -Math.PI / 2
 
 		if(props.name == "asset"){
 			rotation_x = 0
+		}
+
+
+		var biome = window.map.biomes[`${props.position.x}:${props.position.z}`]
+
+		if(biome){
+			if(biome.water){
+				opacity = 0.5
+			}
 		}
 
 		if(props.name == "bomb"){
@@ -557,11 +528,13 @@ export const Experience = () => {
 				texture = "glass"
 			}
 
-			if(window.map.biomes[`${props.position.x}:${props.position.z}`]){
-				if(window.map.biomes[`${props.position.x}:${props.position.z}`].bomb){
-					texture = color = "black"
+			if(props.name == "#BEACH"){
+				// color = "black"
+			}
 
-					console.log('color',color)
+			if(biome){
+				if(biome.bomb){
+					texture = color = "black"
 				}
 			}
 
