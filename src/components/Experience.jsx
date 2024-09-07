@@ -212,28 +212,81 @@ export const Experience = () => {
 									){
 										if(b.biome == "BEACH"){
 											fields.push(b)
+
+											if(point.x == b.x && point.z == b.z){
+												fields.current = b
+											}
 										}
 									}
 								})
 
 								fields.sort(function (a, b) {
-									if(a.x + a.z >= b.x + b.z){
-										return b.x - a.x || a.z - b.z;
-									}else{
-										return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
-									}
-								    
-								    // Compare first value then second 
-								    
+									if(!fields.start){
+										fields.start = a
+									} 
 
-								    
+									if(b.x - a.x && a.z - b.z){
+										console.log("진입1",b.x - a.x && a.z - b.z);
+										return b.x - a.x && a.z - b.z;
+									}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
+										if(b.x - a.x || a.z - b.z){
+											console.log("진입2",b.x - a.x || a.z - b.z);
+											return b.x - a.x || a.z - b.z
+										}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
+											console.log("진입3");
+											return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
+										}else{
+											return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
+										}
+									}else{
+										return b.x - a.x || a.z - b.z;
+									}
 								});
 
-								fields.forEach(function(b,i){
-									console.log("#"+i, (b.x +":"+ b.z));
-								})
+								if(fields.current){
+									fields.forEach(function(b,i){
+										if(fields.current.x == b.x && fields.current.z == b.z){
+											fields.index = i
+										}
+									})
+
+									fields.next = fields[fields.index+1]
+
+									if(fields.next){
+										if(Math.sqrt(Math.pow(fields.next.z, 2)) - Math.sqrt(Math.pow(fields.current.z, 2))){
+											reverse = true
+										}else if(Math.sqrt(Math.pow(fields.next.x, 2)) - Math.sqrt(Math.pow(fields.current.x, 2)) > 0){
+											console.log('Math.sqrt(Math.pow(fields.current.x, 2))',Math.sqrt(Math.pow(fields.current.x, 2)));
+											console.log('Math.sqrt(Math.pow(fields.next.x, 2))',Math.sqrt(Math.pow(fields.next.x, 2)));
+											reverse = true
+										}
+									}
+
+										
+
+									if(fields.index == 0){
+										fields.splice(fields.index+2, 0, fields.current)
+										fields.splice(0, 1)
+										var last = fields.splice(fields.index - 1, 1)
+										fields.splice(0, 0, last[0])
+									}else if(fields.index == (fields.length - 1)){
+										fields.splice(fields.index - 1, 0, fields.current)
+										fields.splice((fields.length - 1), 1)
+									}
+								}
+
+								if(reverse){
+									console.log('reverse',reverse);
+									fields = fields.reverse()	
+								}
+
 									
-								console.log("----------------")
+								fields.forEach(function(b,i){
+									console.log("#"+b.index, (b.x +":"+ b.z));
+								})
+
+									
+								console.log("----------------"+fields.index, fields.length)
 
 								window[player.hash].position.y = point.y + 0.5
 								
