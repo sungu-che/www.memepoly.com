@@ -1211,8 +1211,6 @@ OAuth3.on("ready", function(e){
 
 						var biome = window.map.biomes[x+":"+z]
 
-						console.log('biome',biome);
-
 						if(biome){
 							$body.attr("biome", biome.biome)
 						}
