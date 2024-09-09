@@ -171,275 +171,277 @@ export const Experience = () => {
 		var cookies = window.cookies
 
 		try{
-			if(e.point){
-				point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
-			}else if(e.target.tagName == "CANVAS"){
-				if(typeof point.x != "undefined" && typeof point.z != "undefined"){
-					var player = self()
+			if(cookies.axis && cookies.dice >= 0){
+				if(e.point){
+					point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
+				}else if(e.target.tagName == "CANVAS"){
+					if(typeof point.x != "undefined" && typeof point.z != "undefined"){
+						var player = self()
 
-					var biome = window.map.biomes[point.x+":"+point.z]
+						var biome = window.map.biomes[point.x+":"+point.z]
 
-					point.y = biome.y
+						point.y = biome.y
 
-					if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
-						if(cookies.hash && players.length){
-							if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
+						if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
+							if(cookies.hash && players.length){
+								if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
 
-							}else{
-								if(window.camera){
-									if(window.camera.hash){
-										if(window.camera.hash != player.hash){
-											setCamera({})
-										}
-									}
-								}
-
-								var biomes = listToBiomes(window.map.biomes, 100)
-
-								var size = 2
-								var fields = []
-
-								var reverse = false
-
-								var current_biome 
-
-								biomes.forEach(function(b, i){
-									if(
-										(point.x - size < b.x && point.x + size > b.x) &&
-										(point.z - size < b.z && point.z + size > b.z)
-									){
-										if(b.biome == "BEACH"){
-											fields.push(b)
-
-											if(point.x == b.x && point.z == b.z){
-												fields.current = b
+								}else{
+									if(window.camera){
+										if(window.camera.hash){
+											if(window.camera.hash != player.hash){
+												setCamera({})
 											}
 										}
 									}
-								})
 
-								fields.sort(function (a, b) {
-									if(!fields.start){
-										fields.start = a
-									} 
+									var biomes = listToBiomes(window.map.biomes, 100)
 
-									if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
-										if(b.x - a.x && a.z - b.z){
-											return b.x - a.x || a.z - b.z
-										}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
-											return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
-										}
-									}
+									var size = 2
+									var fields = []
 
-									return b.x - a.x || a.z - b.z;
-								});
+									var reverse = false
 
-								if(fields.current){
-									fields.forEach(function(b,i){
-										if(fields.current.x == b.x && fields.current.z == b.z){
-											fields.index = i
+									var current_biome 
+
+									biomes.forEach(function(b, i){
+										if(
+											(point.x - size < b.x && point.x + size > b.x) &&
+											(point.z - size < b.z && point.z + size > b.z)
+										){
+											if(b.biome == "BEACH"){
+												fields.push(b)
+
+												if(point.x == b.x && point.z == b.z){
+													fields.current = b
+												}
+											}
 										}
 									})
 
-									fields.next = fields[fields.index+1]
+									fields.sort(function (a, b) {
+										if(!fields.start){
+											fields.start = a
+										} 
 
-									if(fields.next){
-										var currentIdx, nextIdx
+										if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
+											if(b.x - a.x && a.z - b.z){
+												return b.x - a.x || a.z - b.z
+											}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
+												return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
+											}
+										}
 
-										fields.next.neighbors.forEach(function(field, i){
-											if(field.index == fields.current.index){
-												currentIdx = i
+										return b.x - a.x || a.z - b.z;
+									});
+
+									if(fields.current){
+										fields.forEach(function(b,i){
+											if(fields.current.x == b.x && fields.current.z == b.z){
+												fields.index = i
 											}
 										})
 
-										fields.current.neighbors.forEach(function(field, i){
-											if(field.index == fields.next.index){
-												nextIdx = i
-											}
-										})
+										fields.next = fields[fields.index+1]
 
-										if(typeof currentIdx != "undefined" && typeof nextIdx != "undefined"){
-											var diff = currentIdx - nextIdx
+										if(fields.next){
+											var currentIdx, nextIdx
 
-											if(diff == 1){
-												if(fields.next.neighbors[nextIdx]){
-													if(fields.next.neighbors[nextIdx+1]){
-														if(fields.next.neighbors[nextIdx+1].ocean){
-															reverse = true
+											fields.next.neighbors.forEach(function(field, i){
+												if(field.index == fields.current.index){
+													currentIdx = i
+												}
+											})
+
+											fields.current.neighbors.forEach(function(field, i){
+												if(field.index == fields.next.index){
+													nextIdx = i
+												}
+											})
+
+											if(typeof currentIdx != "undefined" && typeof nextIdx != "undefined"){
+												var diff = currentIdx - nextIdx
+
+												if(diff == 1){
+													if(fields.next.neighbors[nextIdx]){
+														if(fields.next.neighbors[nextIdx+1]){
+															if(fields.next.neighbors[nextIdx+1].ocean){
+																reverse = true
+															}
 														}
 													}
-												}
 
-												if(fields.current.neighbors[currentIdx]){
-													if(fields.current.neighbors[currentIdx+1]){
-														if(fields.current.neighbors[currentIdx+1].ocean){
-															reverse = true
+													if(fields.current.neighbors[currentIdx]){
+														if(fields.current.neighbors[currentIdx+1]){
+															if(fields.current.neighbors[currentIdx+1].ocean){
+																reverse = true
+															}
 														}
 													}
-												}
-											}else{
-												if(diff > 0){
-
 												}else{
-													var _idx = Math.sqrt(Math.pow(diff, 2))
+													if(diff > 0){
 
-													if(fields.next.neighbors[_idx]){
-														if(fields.next.neighbors[_idx].coast){
-															reverse = true
-														}else 
-														if(fields.next.neighbors[_idx].ocean){
-															reverse = true
+													}else{
+														var _idx = Math.sqrt(Math.pow(diff, 2))
+
+														if(fields.next.neighbors[_idx]){
+															if(fields.next.neighbors[_idx].coast){
+																reverse = true
+															}else 
+															if(fields.next.neighbors[_idx].ocean){
+																reverse = true
+															}
 														}
+
+														if(fields.current.neighbors[_idx]){
+															// if(fields.current.neighbors[_idx].coast){
+															// 	reverse = true
+															// }else 
+															if(fields.current.neighbors[_idx].ocean){
+																reverse = true
+															}
+														}	
 													}
-
-													if(fields.current.neighbors[_idx]){
-														// if(fields.current.neighbors[_idx].coast){
-														// 	reverse = true
-														// }else 
-														if(fields.current.neighbors[_idx].ocean){
-															reverse = true
-														}
-													}	
 												}
 											}
 										}
+
+											
+
+										if(fields.index == 0){
+											// if(fields.length > 2){
+											// 	fields.splice(fields.index+2, 0, fields.current)
+											// 	fields.splice(0, 1)
+											// }else{
+												
+											// }
+
+											fields.splice(fields.index, 0, fields.current)
+												fields.splice(0, 1)
+											var last = fields.splice(fields.index - 1, 1)
+											fields.splice(0, 0, last[0])
+										}else if(fields.index == (fields.length - 1)){
+											fields.splice(fields.index - 1, 0, fields.current)
+											fields.splice((fields.length - 1), 1)
+										}
+									}
+
+									if(reverse){
+										fields = fields.reverse()	
 									}
 
 										
+									fields.forEach(function(b,i){
+										// console.log("#"+b.index, (b.x +":"+ b.z));
+									})
 
-									if(fields.index == 0){
-										// if(fields.length > 2){
-										// 	fields.splice(fields.index+2, 0, fields.current)
-										// 	fields.splice(0, 1)
-										// }else{
-											
-										// }
+										
+									// console.log("----------------"+fields.index, fields.length)
 
-										fields.splice(fields.index, 0, fields.current)
-											fields.splice(0, 1)
-										var last = fields.splice(fields.index - 1, 1)
-										fields.splice(0, 0, last[0])
-									}else if(fields.index == (fields.length - 1)){
-										fields.splice(fields.index - 1, 0, fields.current)
-										fields.splice((fields.length - 1), 1)
-									}
-								}
-
-								if(reverse){
-									fields = fields.reverse()	
-								}
-
+									window[player.hash].position.y = point.y + 0.5
 									
-								fields.forEach(function(b,i){
-									// console.log("#"+b.index, (b.x +":"+ b.z));
-								})
+									current.current.position.y = point.y + 0.01
 
+									window[player.hash].position.x = current.current.position.x = point.x
+									window[player.hash].position.z = current.current.position.z = point.z
+
+									OAuth3.interval = setInterval(interval, 2000)
+
+									var $player = $('player[id="'+player.hash+'"]')
+									// $player.removeClass("select_puzzle")
+
+									$("body")
+										.attr("biome", biome.biome)
+										.removeClass("loading")
+										.removeAttr("tooltip")
 									
-								// console.log("----------------"+fields.index, fields.length)
+									$("emojis").removeClass("on");
+									$("tooltip").removeClass("on");
+									$("#capture>.icon").html('')
 
-								window[player.hash].position.y = point.y + 0.5
-								
-								current.current.position.y = point.y + 0.01
+									$(".map canvas").css({top : -((point.z * 1.5) + 70) , left : -((point.x * 1.5) + 15 )})
 
-								window[player.hash].position.x = current.current.position.x = point.x
-								window[player.hash].position.z = current.current.position.z = point.z
+									var url = "https://emption.red"
 
-								OAuth3.interval = setInterval(interval, 2000)
-
-								var $player = $('player[id="'+player.hash+'"]')
-								// $player.removeClass("select_puzzle")
-
-								$("body")
-									.attr("biome", biome.biome)
-									.removeClass("loading")
-									.removeAttr("tooltip")
-								
-								$("emojis").removeClass("on");
-								$("tooltip").removeClass("on");
-								$("#capture>.icon").html('')
-
-								$(".map canvas").css({top : -((point.z * 1.5) + 70) , left : -((point.x * 1.5) + 15 )})
-
-								var url = "https://emption.red"
-
-								if(OAuth3.localhost){
-									url = "http://localhost:3001"
-								}
-
-								var $go = $("#go")
-
-								var _url = new URL(window.location.href)
-
-								var cc_address = ethers.hashMessage(_url.href.replace(window.location.protocol+"//",""))
-									cc_address = ethers.computeAddress(cc_address).toLowerCase().replace("0x","")
-
-								if(window.location.hash){
-									cc_address = window.location.hash.replace("#","")
-								}
-
-								var edge = (grid.edge / 2) - 1
-
-								if(point.x < -edge || point.z < -edge || point.x > edge || point.z > edge){
-									var alpha = 0
-
-									if(point.x > edge || point.z < -edge){
-										alpha = 1
-									}else if(point.x < -edge || point.z > edge){
-										alpha = -1
+									if(OAuth3.localhost){
+										url = "http://localhost:3001"
 									}
 
-									var href = window.numStringToBytes32(
-										(BigInt(window.bytes32ToNumString(cc_address))+BigInt(alpha)).toString()
-									).replace("0x","#")
+									var $go = $("#go")
 
-									$go.attr("href",href)
-									$go.text(alpha > 0 ? "east" : "west")
-									$go.attr("way", (alpha > 0 ? "east" : "west"))
-								}else{
-									$go.removeAttr("href")
-									$go.removeAttr("way")
-								}
+									var _url = new URL(window.location.href)
+
+									var cc_address = ethers.hashMessage(_url.href.replace(window.location.protocol+"//",""))
+										cc_address = ethers.computeAddress(cc_address).toLowerCase().replace("0x","")
+
+									if(window.location.hash){
+										cc_address = window.location.hash.replace("#","")
+									}
+
+									var edge = (grid.edge / 2) - 1
+
+									if(point.x < -edge || point.z < -edge || point.x > edge || point.z > edge){
+										var alpha = 0
+
+										if(point.x > edge || point.z < -edge){
+											alpha = 1
+										}else if(point.x < -edge || point.z > edge){
+											alpha = -1
+										}
+
+										var href = window.numStringToBytes32(
+											(BigInt(window.bytes32ToNumString(cc_address))+BigInt(alpha)).toString()
+										).replace("0x","#")
+
+										$go.attr("href",href)
+										$go.text(alpha > 0 ? "east" : "west")
+										$go.attr("way", (alpha > 0 ? "east" : "west"))
+									}else{
+										$go.removeAttr("href")
+										$go.removeAttr("way")
+									}
 
 
-								if(window.tutorial){
-									if(window.tutorial.name){
-										if(window.tutorial.x == point.x && window.tutorial.z == point.z){
-											if(window.tutorial.name == "MineSweeper"){
-												if(window.tutorial.step == 1){
-													window.Tutorial(2, 2)
-												}else if(window.tutorial.step == 3){
-													window.Tutorial(2, 4)
-												}
-											}else if(window.tutorial.name == "Puzzle"){
-												if(window.tutorial.step == 0){
-													window.Tutorial(3, 1)
-												}
-											}else if(window.tutorial.name == "Sticker"){
-												if(window.tutorial.step == 2){
-													window.Tutorial(5)
-												}
-											}else if(window.tutorial.name == "Mine"){
-												if(window.tutorial.step == 1){
-													window.Tutorial(6)
-												}
-											}else if(window.tutorial.name == "Portal"){
-												if(window.tutorial.step == 1){
-													window.Tutorial(6,2)
+									if(window.tutorial){
+										if(window.tutorial.name){
+											if(window.tutorial.x == point.x && window.tutorial.z == point.z){
+												if(window.tutorial.name == "MineSweeper"){
+													if(window.tutorial.step == 1){
+														window.Tutorial(2, 2)
+													}else if(window.tutorial.step == 3){
+														window.Tutorial(2, 4)
+													}
+												}else if(window.tutorial.name == "Puzzle"){
+													if(window.tutorial.step == 0){
+														window.Tutorial(3, 1)
+													}
+												}else if(window.tutorial.name == "Sticker"){
+													if(window.tutorial.step == 2){
+														window.Tutorial(5)
+													}
+												}else if(window.tutorial.name == "Mine"){
+													if(window.tutorial.step == 1){
+														window.Tutorial(6)
+													}
+												}else if(window.tutorial.name == "Portal"){
+													if(window.tutorial.step == 1){
+														window.Tutorial(6,2)
+													}
 												}
 											}
+										}else{
+											window.Tutorial(1, 1)
 										}
 									}else{
-										window.Tutorial(1, 1)
+										window.Callback(window.response)
 									}
-								}else{
-									window.Callback(window.response)
 								}
 							}
+						}else{
+							cursor.current.position.x = point.x
+							cursor.current.position.y = point.y + 0.01
+							cursor.current.position.z = point.z
 						}
-					}else{
-						cursor.current.position.x = point.x
-						cursor.current.position.y = point.y + 0.01
-						cursor.current.position.z = point.z
 					}
 				}
 			}
@@ -453,6 +455,8 @@ export const Experience = () => {
 	}
 
 	const Asset = function(props){
+		var cookies = window.cookies
+
 		var url = new URL(window.location.href)
 
 		var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
@@ -488,8 +492,6 @@ export const Experience = () => {
 			var hex = props.value.codePointAt(0).toString(16)
 
 			var src = `/src/fonts/emoji/emoji_u${hex}.png`
-
-			// props.color 값에 따라 스타일 변화
 
 			return <>
 				<group position={props.position}>
