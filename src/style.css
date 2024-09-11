@@ -904,8 +904,8 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 #root player[self="true"][team="#blue"] a.Flag img{filter: invert(100%)}
 
 
-body[biome="BEACH"] #root player tooltip li a.Flag:before{content: "MEME"; position: absolute; left: 0.55em; right: 0; top: 2em; text-align: center; font-size: 1.32em; font-weight: 900; z-index: 10; color: #000; text-shadow: none;}
-body[biome="BEACH"] #root player tooltip li a.Flag:after{content: "🗨"; position: absolute; left: 0; right: 0; top: 0.58em; font-size: 4.7em; font-family: 'Noto Color Emoji'}
+body[biome="BEACH"] #root player tooltip li a.Flag:before{content: "MEME"; position: absolute; left: 0.55em; right: 0; top: 2.2em; text-align: center; font-size: 1.32em; font-weight: 900; z-index: 10; color: #000; text-shadow: none;}
+body[biome="BEACH"] #root player tooltip li a.Flag:after{content: "🗨"; position: absolute; left: 0; right: 0; top: 0.6em; font-size: 4.7em; font-family: 'Noto Color Emoji'}
 body[biome="BEACH"] #root player tooltip li a.Flag img{opacity: 0; pointer-events: none;}
 body[biome="BEACH"] #root player tooltip li a.Flag .cnt{display: none;}
 

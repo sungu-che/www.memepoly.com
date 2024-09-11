@@ -328,10 +328,7 @@ window.randomHash = function(){
 }
 
 window.players = []
-window.players.set = function(){
-
-}
-
+window.players.set = function(){}
 window.players.self = function(){
 	return  {
 		follow : false,
@@ -719,7 +716,26 @@ OAuth3.on("ready", function(e){
 			try{
 				var url = new URL(window.location.href)
 
+
+				var dice = window.cookies.dice
+
 				var cookies = window.cookies = JSON.parse(resp.body.cookies)
+
+				var _dice = cookies.dice
+
+				if(_dice != 0){
+					if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
+						_dice = _dice * 1
+
+						if(_dice > 0){
+							_dice = _dice * -1
+						}else{
+							_dice = _dice * 1
+						}
+
+						window.cookies.dice = cookies.dice = _dice
+					}
+				}
 
 				OAuth3.nonces = []
 
@@ -772,16 +788,487 @@ OAuth3.on("ready", function(e){
 					seed = window.location.hash.replace("#","0x")
 				}
 
+				cc_address = cc_address.replace("0x","")
+
 				var rows = JSON.stringify(resp.body.rows)
 					rows = JSON.parse(rows)
 
+				var beach = []
+
+				var biomes = listToBiomes(window.map.biomes, 100)
+
 				var self_player
+
+				var _players = []
+					_players.cnt = 0
+
+				var _assets = []
+
+				var _messages = []
+
+				var frameloop = false
+
+
+				var stickers = []
+
+				var bombs = []
+
+				var bingo_body = ""
+
+				var score_board = []
+
+				var pending = []
+
+				var damage = []
+
+				var size = 5
+
+				var isBiome = false
+
+
+				var canvas = blockies.create({seed: seed.toLowerCase()})
+
+				var self = false
+
+				var diff = false
+
+				var selector = window.selector
+
+				var player_hash = cookies.address ? cookies.address : cookies.hash
+
+				var $player = $('player[id="'+player_hash+'"][alt="player"]')
+
+				var cc_player = {
+					type : "player",
+					self : false,
+					hash : cc_address,
+					x : 0.5,
+					y : 0.5,
+					z : 0.5,
+					emoji : canvas.toDataURL()
+				}
 
 				if(window.players.length){
 					self_player = window.players.self()
+					
+
+					biomes.x = window.current.current.position.x
+					biomes.y = window.current.current.position.y
+					biomes.z = window.current.current.position.z
+
+					var _size = 2
+					var fields = []
+
+					var reverse = false
+
+					var current_biome 
+
+					biomes.forEach(function(b, i){
+						if(
+							(biomes.x - _size < b.x && biomes.x + _size > b.x) &&
+							(biomes.z - _size < b.z && biomes.z + _size > b.z)
+						){
+							if(b.biome == "BEACH"){
+								fields.push(b)
+
+								if(biomes.x == b.x && biomes.z == b.z){
+									fields.current = b
+								}
+							}
+						}
+					})
+
+					fields.sort(function (a, b) {
+						// if(b.x - Math.sqrt(Math.pow(a.x, 2)) && a.z - Math.sqrt(Math.pow(b.z, 2))){
+						// 	if(b.x - a.x && a.z - b.z){
+						// 		return b.x - a.x && a.z - b.z;
+						// 	}
+						// 	return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(a.z, 2)) - Math.sqrt(Math.pow(b.z, 2))
+						// }else{
+							
+						// }
+						return b.x - a.x || a.z - b.z;
+					});
+
+					if(fields.current){
+						fields.forEach(function(b,i){
+							if(fields.current.x == b.x && fields.current.z == b.z){
+								fields.index = i
+							}
+						})
+
+						fields.next = fields[fields.index+1]
+
+						if(!fields.next){
+							fields.next = fields[fields.index-1]
+						}
+
+						console.log('fields.current',fields.current);
+
+						if(fields.next){
+							var corners_coast_left = false
+							var corners_coast_right = false
+							var corners_coast = 0
+							var next_coast = 0
+
+							var current_ocean = 0
+							var next_ocean = 0
+
+							var currentIdx, nextIdx = 0
+
+							fields.next.neighbors.forEach(function(field, i){
+								if(field.ocean){
+									next_ocean++
+								}
+								
+								if(field.index == fields.current.index){
+									currentIdx = i
+								}
+							})
+
+
+
+							fields.next.corners.forEach(function(field, i){
+								if(field.coast){
+									next_coast++
+								}
+							})
+
+							fields.current.neighbors.forEach(function(field, i){
+								if(field.ocean){
+									current_ocean++
+								}
+								if(field.index == fields.next.index){
+									nextIdx = i
+								}
+							})
+
+							if(fields.current.corners[0].coast){
+								corners_coast_left = true
+							}
+
+							if(fields.current.corners[1].coast){
+								corners_coast_right = true
+							}
+
+							fields.current.corners.forEach(function(field, i){
+								if(field.coast){
+									corners_coast++
+								}
+							})
+
+							
+							console.log("nextIdx",nextIdx)
+							console.log("currentIdx",currentIdx)
+
+							if(typeof currentIdx != "undefined" || typeof nextIdx != "undefined"){
+								var diff = currentIdx - nextIdx
+
+								if(diff == 1){
+									console.log("진입222")
+									if(fields.next.neighbors[nextIdx]){
+										if(fields.next.neighbors[nextIdx+1]){
+											if(fields.next.neighbors[nextIdx+1].ocean){
+												reverse = true
+											}
+										}
+									}
+
+									if(fields.current.neighbors[currentIdx]){
+										if(fields.current.neighbors[currentIdx+1]){
+											if(fields.current.neighbors[currentIdx+1].ocean){
+												reverse = true
+											}
+										}
+									}
+								}else{
+									var _idx = Math.sqrt(Math.pow(diff, 2))
+
+									// console.log('_idx',_idx);
+
+									// if(isNaN(_idx)){
+									// 	reverse = true
+									// }
+
+									if(fields.next.neighbors[_idx]){
+										console.log('fields.next.neighbors[_idx]',fields.next.neighbors[_idx]);
+										console.log('fields.next.neighbors[_idx].coast',fields.next.neighbors[_idx].coast);
+										console.log('fields.next.neighbors[_idx].ocean',fields.next.neighbors[_idx].ocean);
+										if(fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean){
+											reverse = true
+										}else if(!fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean){
+											reverse = true
+										}else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+											reverse = true
+										// }else if((fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+											reverse = true
+											console.log("승인진입3");
+										}
+									}
+
+									if(fields.current.neighbors[_idx]){
+										console.log('fields.current.neighbors[_idx]',fields.current.neighbors[_idx]);
+										console.log('fields.current.neighbors[_idx].coast',fields.current.neighbors[_idx].coast);
+										console.log('fields.current.neighbors[_idx].ocean',fields.current.neighbors[_idx].ocean);
+										
+										if((fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean) || (fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean)){
+											reverse = true
+											console.log("승인진입1");
+										// }else if(fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+										// 	reverse = true
+										
+										// }else if(fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+										// 	console.log("취소진입",fields.current.x, corners_coast, next_coast, next_ocean, current_ocean);
+											
+												
+										// // }else if((fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+										// // 	reverse = true	
+										// // }else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+										// // 	reverse = false
+										// // 	// if(current_ocean <= 2 && next_ocean <= 2){
+										// // 	// 	reverse = true
+										// // 	// }
+										
+										}else{
+											if(next_ocean == current_ocean){
+												reverse = false
+											}else if((corners_coast < 2 && fields.length <= 3) || (corners_coast >= 2 && fields.length > 3)){
+												reverse = false
+											}
+
+											if(current_ocean >= 2 && next_ocean >= 2){
+												if((corners_coast >= fields.length || fields.current.x > 0) && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+													reverse = true
+												}else{
+													reverse = false
+												}
+											}else if(corners_coast < 2 && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+												console.log("진입");
+												reverse = false
+											}
+											if(!fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+												if(fields.current.z < 0){
+													reverse = false
+												}
+											}else if(fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+												if(corners_coast == current_ocean){
+													if(corners_coast_left && corners_coast_right){
+														reverse = false
+													}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
+														reverse = true
+													}
+												}else if(corners_coast > current_ocean){
+													if(corners_coast_left && corners_coast_right){
+														reverse = false
+														var last = fields.splice(fields.length - 1, 1)
+														fields.splice(fields.index + 1, 0, last[0])
+													}
+												}
+												
+											}else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+												if(corners_coast_left && corners_coast_right){
+													reverse = false
+												}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
+													reverse = true
+												}else{
+													reverse = false
+												}
+											}
+
+											console.log('corners_coast_right',corners_coast_right);
+											console.log('corners_coast_left',corners_coast_left);
+
+											if(corners_coast == current_ocean && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+												if(corners_coast_left && corners_coast_right){
+													reverse = false
+												}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
+													reverse = true
+												}else{
+													reverse = false
+												}
+											}
+
+
+											console.log("corners_coast, current_ocean",corners_coast, current_ocean)
+
+
+
+											// 이전 기록 조회해서 중복되면 리버스로 전환하기
+											console.log("취소진입11",corners_coast, next_coast, next_ocean, current_ocean);
+										}
+									}
+
+								}
+							}else{
+								reverse = true
+							}
+						}else{
+							reverse = true
+						}
+
+						// if(reverse){
+						// 	fields = fields.reverse()	
+						// 	reverse = false
+						// }
+
+						fields.forEach(function(b,i){
+							console.log("#"+i, (b.x +":"+ b.z));
+							if(biomes.x == b.x && biomes.z == b.z){
+								fields.index = i
+							}
+							
+						})
+
+						console.log('biomes.x',biomes.x);
+						console.log('biomes.z',biomes.z);
+
+						console.log('fields.index',fields.index);
+							
+
+						if(fields.index == 0){
+							console.log("진입666")
+							if((fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+								if(current_ocean >= 2){
+									reverse = true
+								}else{
+									reverse = false
+								}
+							}else if(reverse && fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+								reverse = false
+							}
+
+							if(corners_coast_left && corners_coast_right){
+								reverse = true
+							}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
+								reverse = true
+							}
+
+							fields.splice(fields.index, 0, fields.current)
+							fields.splice(0, 1)
+							var last = fields.splice(fields.index - 1, 1)
+							fields.unshift(last[0])
+						}else if(fields.index == (fields.length - 1)){
+							if(fields.next){
+								console.log("bbbbbbbbb");
+								if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){	
+									reverse = true
+								}
+
+								fields.splice(fields.index - 1, 0, fields.current)
+								fields.splice((fields.length - 1), 1)
+							}else{
+								fields.splice(fields.index - 2, 0, fields.current)
+								fields.splice((fields.length - 2), 1)
+							}
+
+							console.log("진입555")
+								
+						}else if(reverse){
+							console.log('fields.next',fields.next);
+							try{
+								if(corners_coast < next_coast && fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean){
+									var last = fields.splice(fields.index - 1, 1)
+									fields.splice(fields.index + 1, 0, last[0])
+								}
+							}catch(err){
+
+							}
+						}
+					}
+
+					if(reverse){
+						fields = fields.reverse()	
+					}
+
+					console.log('reverse',reverse);
+					fields.forEach(function(b,i){
+						if(biomes.x == b.x && biomes.z == b.z){
+							fields.index = i
+						}
+					})
+
+					console.log('fields.index',fields.index);
+					if(typeof fields.index != "undefined"){
+						var field = fields[fields.index+1]
+
+						console.log('field',field);
+
+						if(!field){
+							var field = fields[fields.index]
+
+							if(fields.index == 0){
+								console.log("---진입666")
+								if(current_ocean >= 2 && (fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+									reverse = true
+								}
+								fields.splice(fields.index, 0, fields.current)
+								fields.splice(0, 1)
+								var last = fields.splice(fields.index - 1, 1)
+								fields.splice(0, 0, last[0])
+							}else if(fields.index == (fields.length - 1)){
+								console.log("---진입555",fields.next)
+								
+								if(fields.next){
+									fields.splice(1, 1, fields.current)
+									fields.splice((fields.length + 1), 1)
+								}else{
+									fields.splice(fields.index - 1, 0, fields.current)
+									fields.splice((fields.length - 1), 1)
+								}
+									
+
+								// fields = fields.reverse()	
+
+								fields.forEach(function(b,i){
+									if(biomes.x == b.x && biomes.z == b.z){
+										fields.index = i
+									}
+									console.log("#"+b.index, (b.x +":"+ b.z));
+								})
+
+								field = fields[fields.index+1]
+							}
+						}
+						window.current.current.position.x = biomes.x = field.x
+						window.current.current.position.y = biomes.y = field.y + 0.01
+						window.current.current.position.z = biomes.z = field.z
+					}
 				}else{
 					var x = 1.5
 					var z = 1.5
+
+					var _biomes = []
+
+					biomes.forEach(function(b, i){
+						if(!b.water){
+							_biomes.push(b)
+						}
+					})
+
+					var _biome = _biomes[Math.floor(Math.random() * _biomes.length)]
+
+					console.log('_biome',_biome);
+
+
+					if(window.current){
+						if(window.current.current.position && self_player){
+							var axis = cookies.axis
+
+							if(axis){
+								axis = axis.split(",")
+
+								biomes.x = axis[0] * 1
+								biomes.y = axis[1] * 1
+								biomes.z = axis[2] * 1
+							}
+
+							window.current.current.position.x = self_player.x = biomes.x
+							window.current.current.position.y = self_player.y = biomes.y - 0.5
+							window.current.current.position.z = self_player.z = biomes.z
+
+							$(".map canvas").css({top : -((biomes.z * 1.5) + 70) , left : -((biomes.x * 1.5) + 15 )})
+						}
+					}
 
 					var axis = cookies.axis
 					if(axis){
@@ -790,10 +1277,25 @@ OAuth3.on("ready", function(e){
 						x = axis[0] * 1
 						
 						z = axis[2] * 1
+					}else{
+						x = _biome.x
+						z = _biome.z
+					}
+
+					console.log('x',x, typeof x);
+					console.log('z',z);
+
+					if(x == 1.5 && z == 1.5){
+						x = _biome.x
+						z = _biome.z
 					}
 
 					var b = window.map.biomes[`${x}:${z}`]
 					var y = b ? b.y : 0.5
+
+					biomes.x = x
+					biomes.y = y
+					biomes.z = z
 
 					if(cookies.team){
 						self_player = {
@@ -806,8 +1308,50 @@ OAuth3.on("ready", function(e){
 							y : y,
 							z : z
 						}
+
+						if(window.current){
+							if(window.current.current.position){
+								window.current.current.position.x = self_player.x
+								window.current.current.position.y = self_player.y + 0.01
+								window.current.current.position.z = self_player.z
+							}
+						}
 					}
 				}
+					
+
+				biomes.forEach(function(b, i){
+					var _id = crc32(cc_address+i).toString(32).toUpperCase()
+
+					var color = window.Biomes["#"+b.biome]
+
+					if(b.biome == "BEACH"){
+						beach.push(b)
+					}
+					if(
+						(biomes.x - size < b.x && biomes.x + size > b.x) &&
+						(biomes.z - size < b.z && biomes.z + size > b.z)
+					){
+						biomes[b.x+":"+b.z] = b
+
+						var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+
+						if(window.map.biomes[_id]){
+							isBiome = true
+						}
+
+						_assets.push({
+							id : _id,
+							hash : cc_address,
+							name : "#"+b.biome,
+							value : color,
+							color: color,
+							x : b.x,
+							y : b.y - 0.5,
+							z : b.z
+						})
+					}
+				})
 
 				if(rows.length){
 					for(var r = 0; r < rows.length; r++){
@@ -848,31 +1392,7 @@ OAuth3.on("ready", function(e){
 					$('.emoji_asset[method="notify"]').removeClass("on")
 				}
 
-				cc_address = cc_address.replace("0x","")
-
-				var canvas = blockies.create({seed: seed.toLowerCase()})
-
-				var self = false
-
-				var diff = false
-
-				var selector = window.selector
-
-				var player_hash = cookies.address ? cookies.address : cookies.hash
-
-				var $player = $('player[id="'+player_hash+'"][alt="player"]')
-
-				var cc_player = {
-					type : "player",
-					self : false,
-					hash : cc_address,
-					x : 0.5,
-					y : 0.5,
-					z : 0.5,
-					emoji : canvas.toDataURL()
-				}
-
-
+				
 				var flags = resp.body.flags ? resp.body.flags : []
 
 				flags[player_hash] = 0
@@ -893,84 +1413,8 @@ OAuth3.on("ready", function(e){
 					}
 				}
 
-				var _players = []
-					_players.cnt = 0
-
-				var _assets = []
-
-				var _messages = []
-
-
-				var frameloop = false
-
-
-				var stickers = []
-
-				var bombs = []
-
-				var bingo_body = ""
-
-				var score_board = []
-
-				var biomes = listToBiomes(window.map.biomes, 100)
-
-				var pending = []
-
-				var damage = []
-
-				var size = 5
-
-				var isBiome = false
-
-				if(!window.players.length){
-					if(window.current){
-						if(window.current.current.position && self_player){
-							var axis = cookies.axis
-
-							if(axis){
-								axis = axis.split(",")
-
-								biomes.x = axis[0] * 1
-								biomes.y = axis[1] * 1
-								biomes.z = axis[2] * 1
-							}
-
-							window.current.current.position.x = self_player.x = biomes.x
-							window.current.current.position.y = self_player.y = biomes.y - 0.5
-							window.current.current.position.z = self_player.z = biomes.z
-
-							$(".map canvas").css({top : -((biomes.z * 1.5) + 70) , left : -((biomes.x * 1.5) + 15 )})
-						}
-					}
-				}else{
-					biomes.x = window.current.current.position.x
-					biomes.y = window.current.current.position.y
-					biomes.z = window.current.current.position.z
-				}
-
-				var fields = []
-
-				biomes.forEach(function(b, i){
-					if(b.biome == "BEACH"){
-						fields.push(b)
-					}
-					if(
-						(biomes.x - size < b.x && biomes.x + size > b.x) &&
-						(biomes.z - size < b.z && biomes.z + size > b.z)
-					){
-						biomes[b.x+":"+b.z] = b
-					}
-				})
-			
+	
 				if(rows.length){
-					if(player_hash.indexOf(cc_player.hash) > -1){
-						cc_player.self = true
-					}
-
-					if(cc_player.hash == cc_address){
-						cc_player.hash = cc_address.toUpperCase()
-					}
-
 					for(var r = 0; r < rows.length; r++){
 						var row = rows[r];
 
@@ -1091,6 +1535,8 @@ OAuth3.on("ready", function(e){
 										player.z = self_player.z
 										player.emoji = window.emojis.self
 									}
+
+									console.log('player',player);
 								}else{
 									if(!type && window.map.biomes[row.Id]){
 										delete window.map.biomes[row.Id]
@@ -1204,107 +1650,79 @@ OAuth3.on("ready", function(e){
 							}
 						}	
 					}
+				}
 
-					if(self_player){
-						var x = self_player.x
-						var z = self_player.z
+				if(self_player){
+					var x = self_player.x
+					var z = self_player.z
 
-						var biome = window.map.biomes[x+":"+z]
+					var biome = window.map.biomes[x+":"+z]
 
-						if(biome){
-							$body.attr("biome", biome.biome)
-						}
+					if(biome){
+						$body.attr("biome", biome.biome)
+					}
 
-						biomes.forEach(function(b, i){
-							var _id = crc32(cc_address+i).toString(32).toUpperCase()
+					if(bombs.length){
+						for(var i = 0; i < bombs.length; i++){
+							var bomb = bombs[i]
 
-							var color = window.Biomes["#"+b.biome]
-							
-							if(
-								(biomes.x - size < b.x && biomes.x + size > b.x) &&
-								(biomes.z - size < b.z && biomes.z + size > b.z)
-							){
-								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-
-								if(window.map.biomes[_id]){
-									isBiome = true
-								}
-
-								_assets.push({
-									id : _id,
-									hash : cc_address,
-									name : "#"+b.biome,
-									value : color,
-									color: color,
-									x : b.x,
-									y : b.y - 0.5,
-									z : b.z
-								})
-							}
-						})
-
-						if(bombs.length){
-							for(var i = 0; i < bombs.length; i++){
-								var bomb = bombs[i]
-
-								if(bomb){
-									for(var _x = -2; _x < 3; _x++){
-										for(var _z = -2; _z < 3; _z++){
-											if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
-												if(bomb.Flag){
-													delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
-												}else{
-													window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
-												}
+							if(bomb){
+								for(var _x = -2; _x < 3; _x++){
+									for(var _z = -2; _z < 3; _z++){
+										if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
+											if(bomb.Flag){
+												delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
+											}else{
+												window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
 											}
-										}
-									}	
-								}
-							}
-						}
-
-						if(window.assets && !isBiome){
-							biomes.forEach(function(b, i){
-								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-
-								if(
-									(biomes.x - size < b.x && biomes.x + size > b.x) &&
-									(biomes.z - size < b.z && biomes.z + size > b.z) &&
-									!window.map.biomes[_id]
-								){
-									if(Math.random() < 0.1){
-										var _date = new Date(new Date() - timezoneOffset)
-											_date = _date.toISOString()
-												.replace(/T/, ' ')
-												.replace(/\..+/, '')
-
-										var color = window.Biomes["#"+b.biome]
-
-										var emoji = window.Biomes[color]
-
-										if(emoji){
-											window.map.biomes[_id] = {
-												id : _id,
-												hash : cc_address,
-												name : "#"+b.biome,
-												value : "",
-												color: "",
-												x : b.x,
-												y : b.y - 0.5,
-												z : b.z
-											}
-
-											var _row = {
-												Id : _id,
-												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
-											}
-
-											window.map.nonces[_id] = _row
 										}
 									}
-								}
-							})
+								}	
+							}
 						}
+					}
+
+					if(window.assets && !isBiome){
+						biomes.forEach(function(b, i){
+							var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+
+							if(
+								(biomes.x - size < b.x && biomes.x + size > b.x) &&
+								(biomes.z - size < b.z && biomes.z + size > b.z) &&
+								!window.map.biomes[_id]
+							){
+								if(Math.random() < 0.1){
+									var _date = new Date(new Date() - timezoneOffset)
+										_date = _date.toISOString()
+											.replace(/T/, ' ')
+											.replace(/\..+/, '')
+
+									var color = window.Biomes["#"+b.biome]
+
+									var emoji = window.Biomes[color]
+
+									if(emoji){
+										window.map.biomes[_id] = {
+											id : _id,
+											hash : cc_address,
+											name : "#"+b.biome,
+											value : "",
+											color: "",
+											x : b.x,
+											y : b.y - 0.5,
+											z : b.z
+										}
+
+										var _row = {
+											Id : _id,
+											Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
+										}
+
+										window.map.nonces[_id] = _row
+									}
+								}
+							}
+						})
 					}
 				}
 
@@ -2063,6 +2481,8 @@ OAuth3.on("ready", function(e){
 				try{
 					var self_player
 
+					var cookies = window.cookies
+
 					try{
 						if(window.players){
 							if(window.players.self){
@@ -2103,6 +2523,7 @@ OAuth3.on("ready", function(e){
 							}
 
 							var query = {
+								dice : cookies.dice ? cookies.dice : 0,
 								href : window.location.href,
 								hash : cookies.hash,
 								token : cookies.token,
@@ -2221,9 +2642,11 @@ OAuth3.on("ready", function(e){
 				click : async function(e){
 					var $this = $(e.target)
 
+					var cookies = window.cookies
+
 					try{
 						if($this.hasClass("continue")){
-							if(window.cookies.team){
+							if(cookies.team){
 								if(cookies.pathname){
 									if(cookies.pathname == window.location.pathname){
 										$body.attr("mode", "third")
@@ -2309,7 +2732,7 @@ OAuth3.on("ready", function(e){
 												console.log('_resp',_resp);
 												window.cookies = JSON.parse(_resp.body.cookies)
 
-												$body.attr("team",window.cookies.team ? cookies.team : "")
+												$body.attr("team",cookies.team ? cookies.team : "")
 
 												window.Callback(_resp)
 											})
@@ -2322,7 +2745,7 @@ OAuth3.on("ready", function(e){
 
 						if(window.players){
 							if(window.players.length){
-								if(window.cookies.hash){
+								if(cookies.hash){
 									var player = window.players.self()
 
 									var $player = $('player[id="'+player.hash+'"][alt="player"]')
@@ -2612,9 +3035,9 @@ OAuth3.on("ready", function(e){
 													flags 길이가 10개 이상일 때 동작
 													본인 flag에 건물 건설 불가
 												*/ 
+												query.dice = true
+												body.cc = "dice"
 
-
-												return
 											}else if($this.hasClass("Flag")){
 												body.cc = "flag"
 
@@ -3161,6 +3584,8 @@ OAuth3.on("ready", function(e){
 					y : 0
 				},
 				set : function(e){
+					var cookies = window.cookies
+
 					var $el = $(e.target)
 
 					var isJoystick = ($el.closest("emojis").length) == 0
@@ -3169,7 +3594,8 @@ OAuth3.on("ready", function(e){
 						isJoystick = false
 					}
 
-					if(isJoystick){
+
+					if(isJoystick && cookies.axis && cookies.dice == 0){
 						var position = {
 							x : 0,
 							z : 0
@@ -3702,21 +4128,21 @@ OAuth3.on("ready", function(e){
 
 						window.camera.set({})
 
-						window.players.set([{
-							follow : false,
-							self : true,
-							hash : cookies.address ? cookies.address : cookies.hash,
-							emoji : "😀",
-							x : 1.5,
-							y : 0.5,
-							z : 1.5
-						}])
+						// window.players.set([{
+						// 	follow : false,
+						// 	self : true,
+						// 	hash : cookies.address ? cookies.address : cookies.hash,
+						// 	emoji : "😀",
+						// 	x : 1.5,
+						// 	y : 0.5,
+						// 	z : 1.5
+						// }])
 
-						window.assets.set([])
-						window.setFrameloop("always")
+						// window.assets.set([])
+						// window.setFrameloop("always")
 
-						window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = 1.5
-						window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = 1.5
+						// window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = 1.5
+						// window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = 1.5
 
 						if(!window.tutorial){
 							delete window.response

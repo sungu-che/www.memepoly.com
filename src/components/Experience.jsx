@@ -171,276 +171,524 @@ export const Experience = () => {
 		var cookies = window.cookies
 
 		try{
-			if(cookies.axis && cookies.dice >= 0){
-				if(e.point){
-					point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
-				}else if(e.target.tagName == "CANVAS"){
-					if(typeof point.x != "undefined" && typeof point.z != "undefined"){
-						var player = self()
+			if(cookies){
+				// if(cookies.axis && cookies.dice == 0){
+				if(true){
+					if(e.point){
+						point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
+					}else if(e.target.tagName == "CANVAS"){
+						if(typeof point.x != "undefined" && typeof point.z != "undefined"){
+							var player = self()
 
-						var biome = window.map.biomes[point.x+":"+point.z]
+							var biome = window.map.biomes[point.x+":"+point.z]
 
-						point.y = biome.y
+							point.y = biome.y
 
-						if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
-							if(cookies.hash && players.length){
-								if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
+							if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
+								if(cookies.hash && players.length){
+									if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
 
-								}else{
-									if(window.camera){
-										if(window.camera.hash){
-											if(window.camera.hash != player.hash){
-												setCamera({})
-											}
-										}
-									}
-
-									var biomes = listToBiomes(window.map.biomes, 100)
-
-									var size = 2
-									var fields = []
-
-									var reverse = false
-
-									var current_biome 
-
-									biomes.forEach(function(b, i){
-										if(
-											(point.x - size < b.x && point.x + size > b.x) &&
-											(point.z - size < b.z && point.z + size > b.z)
-										){
-											if(b.biome == "BEACH"){
-												fields.push(b)
-
-												if(point.x == b.x && point.z == b.z){
-													fields.current = b
+									}else{
+										if(window.camera){
+											if(window.camera.hash){
+												if(window.camera.hash != player.hash){
+													setCamera({})
 												}
 											}
 										}
-									})
 
-									fields.sort(function (a, b) {
-										if(!fields.start){
-											fields.start = a
-										} 
+										var biomes = listToBiomes(window.map.biomes, 100)
 
-										if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
-											if(b.x - a.x && a.z - b.z){
-												return b.x - a.x || a.z - b.z
-											}else if(Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))){
-												return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) && Math.sqrt(Math.pow(b.z, 2)) - Math.sqrt(Math.pow(a.z, 2))
-											}
-										}
+										biomes.x = point.x
+										biomes.z = point.z
 
-										return b.x - a.x || a.z - b.z;
-									});
+										var size = 2
+										var fields = []
 
-									if(fields.current){
-										fields.forEach(function(b,i){
-											if(fields.current.x == b.x && fields.current.z == b.z){
-												fields.index = i
+										var reverse = false
+
+										var current_biome 
+
+										biomes.forEach(function(b, i){
+											if(
+												(point.x - size < b.x && point.x + size > b.x) &&
+												(point.z - size < b.z && point.z + size > b.z)
+											){
+												if(b.biome == "BEACH"){
+													fields.push(b)
+
+													if(point.x == b.x && point.z == b.z){
+														fields.current = b
+													}
+												}
 											}
 										})
+					fields.sort(function (a, b) {
+						// if(b.x - Math.sqrt(Math.pow(a.x, 2)) && a.z - Math.sqrt(Math.pow(b.z, 2))){
+						// 	if(b.x - a.x && a.z - b.z){
+						// 		return b.x - a.x && a.z - b.z;
+						// 	}
+						// 	return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(a.z, 2)) - Math.sqrt(Math.pow(b.z, 2))
+						// }else{
+							
+						// }
+						return b.x - a.x || a.z - b.z;
+					});
 
-										fields.next = fields[fields.index+1]
+					if(fields.current){
+						fields.forEach(function(b,i){
+							if(fields.current.x == b.x && fields.current.z == b.z){
+								fields.index = i
+							}
+						})
 
-										if(fields.next){
-											var currentIdx, nextIdx
+						fields.next = fields[fields.index+1]
 
-											fields.next.neighbors.forEach(function(field, i){
-												if(field.index == fields.current.index){
-													currentIdx = i
-												}
-											})
+						if(!fields.next){
+							fields.next = fields[fields.index-1]
+						}
 
-											fields.current.neighbors.forEach(function(field, i){
-												if(field.index == fields.next.index){
-													nextIdx = i
-												}
-											})
+						console.log('fields.current',fields.current);
 
-											if(typeof currentIdx != "undefined" && typeof nextIdx != "undefined"){
-												var diff = currentIdx - nextIdx
+							
 
-												if(diff == 1){
-													if(fields.next.neighbors[nextIdx]){
-														if(fields.next.neighbors[nextIdx+1]){
-															if(fields.next.neighbors[nextIdx+1].ocean){
-																reverse = true
-															}
-														}
-													}
+						if(fields.next){
+							var corners_coast_left = false
+							var corners_coast_right = false
+							var corners_coast = 0
+							var next_coast = 0
 
-													if(fields.current.neighbors[currentIdx]){
-														if(fields.current.neighbors[currentIdx+1]){
-															if(fields.current.neighbors[currentIdx+1].ocean){
-																reverse = true
-															}
-														}
-													}
-												}else{
-													if(diff > 0){
+							var current_ocean = 0
+							var next_ocean = 0
 
-													}else{
-														var _idx = Math.sqrt(Math.pow(diff, 2))
+							var currentIdx, nextIdx = 0
 
-														if(fields.next.neighbors[_idx]){
-															if(fields.next.neighbors[_idx].coast){
-																reverse = true
-															}else 
-															if(fields.next.neighbors[_idx].ocean){
-																reverse = true
-															}
-														}
-
-														if(fields.current.neighbors[_idx]){
-															// if(fields.current.neighbors[_idx].coast){
-															// 	reverse = true
-															// }else 
-															if(fields.current.neighbors[_idx].ocean){
-																reverse = true
-															}
-														}	
-													}
-												}
-											}
-										}
-
-											
-
-										if(fields.index == 0){
-											// if(fields.length > 2){
-											// 	fields.splice(fields.index+2, 0, fields.current)
-											// 	fields.splice(0, 1)
-											// }else{
-												
-											// }
-
-											fields.splice(fields.index, 0, fields.current)
-												fields.splice(0, 1)
-											var last = fields.splice(fields.index - 1, 1)
-											fields.splice(0, 0, last[0])
-										}else if(fields.index == (fields.length - 1)){
-											fields.splice(fields.index - 1, 0, fields.current)
-											fields.splice((fields.length - 1), 1)
-										}
-									}
-
-									if(reverse){
-										fields = fields.reverse()	
-									}
-
-										
-									fields.forEach(function(b,i){
-										// console.log("#"+b.index, (b.x +":"+ b.z));
-									})
-
-										
-									// console.log("----------------"+fields.index, fields.length)
-
-									window[player.hash].position.y = point.y + 0.5
-									
-									current.current.position.y = point.y + 0.01
-
-									window[player.hash].position.x = current.current.position.x = point.x
-									window[player.hash].position.z = current.current.position.z = point.z
-
-									OAuth3.interval = setInterval(interval, 2000)
-
-									var $player = $('player[id="'+player.hash+'"]')
-									// $player.removeClass("select_puzzle")
-
-									$("body")
-										.attr("biome", biome.biome)
-										.removeClass("loading")
-										.removeAttr("tooltip")
-									
-									$("emojis").removeClass("on");
-									$("tooltip").removeClass("on");
-									$("#capture>.icon").html('')
-
-									$(".map canvas").css({top : -((point.z * 1.5) + 70) , left : -((point.x * 1.5) + 15 )})
-
-									var url = "https://emption.red"
-
-									if(OAuth3.localhost){
-										url = "http://localhost:3001"
-									}
-
-									var $go = $("#go")
-
-									var _url = new URL(window.location.href)
-
-									var cc_address = ethers.hashMessage(_url.href.replace(window.location.protocol+"//",""))
-										cc_address = ethers.computeAddress(cc_address).toLowerCase().replace("0x","")
-
-									if(window.location.hash){
-										cc_address = window.location.hash.replace("#","")
-									}
-
-									var edge = (grid.edge / 2) - 1
-
-									if(point.x < -edge || point.z < -edge || point.x > edge || point.z > edge){
-										var alpha = 0
-
-										if(point.x > edge || point.z < -edge){
-											alpha = 1
-										}else if(point.x < -edge || point.z > edge){
-											alpha = -1
-										}
-
-										var href = window.numStringToBytes32(
-											(BigInt(window.bytes32ToNumString(cc_address))+BigInt(alpha)).toString()
-										).replace("0x","#")
-
-										$go.attr("href",href)
-										$go.text(alpha > 0 ? "east" : "west")
-										$go.attr("way", (alpha > 0 ? "east" : "west"))
-									}else{
-										$go.removeAttr("href")
-										$go.removeAttr("way")
-									}
-
-
-									if(window.tutorial){
-										if(window.tutorial.name){
-											if(window.tutorial.x == point.x && window.tutorial.z == point.z){
-												if(window.tutorial.name == "MineSweeper"){
-													if(window.tutorial.step == 1){
-														window.Tutorial(2, 2)
-													}else if(window.tutorial.step == 3){
-														window.Tutorial(2, 4)
-													}
-												}else if(window.tutorial.name == "Puzzle"){
-													if(window.tutorial.step == 0){
-														window.Tutorial(3, 1)
-													}
-												}else if(window.tutorial.name == "Sticker"){
-													if(window.tutorial.step == 2){
-														window.Tutorial(5)
-													}
-												}else if(window.tutorial.name == "Mine"){
-													if(window.tutorial.step == 1){
-														window.Tutorial(6)
-													}
-												}else if(window.tutorial.name == "Portal"){
-													if(window.tutorial.step == 1){
-														window.Tutorial(6,2)
-													}
-												}
-											}
-										}else{
-											window.Tutorial(1, 1)
-										}
-									}else{
-										window.Callback(window.response)
-									}
+							fields.next.neighbors.forEach(function(field, i){
+								if(field.ocean){
+									next_ocean++
 								}
+								
+								if(field.index == fields.current.index){
+									currentIdx = i
+								}
+							})
+
+
+
+							fields.next.corners.forEach(function(field, i){
+								if(field.coast){
+									next_coast++
+								}
+							})
+
+							fields.current.neighbors.forEach(function(field, i){
+								if(field.ocean){
+									current_ocean++
+								}
+								if(field.index == fields.next.index){
+									nextIdx = i
+								}
+							})
+
+							if(fields.current.corners[0].coast){
+								corners_coast_left = true
+							}
+
+							if(fields.current.corners[1].coast){
+								corners_coast_right = true
+							}
+
+							fields.current.corners.forEach(function(field, i){
+								if(field.coast){
+									corners_coast++
+								}
+							})
+
+							
+							console.log("nextIdx",nextIdx)
+							console.log("currentIdx",currentIdx)
+
+							if(typeof currentIdx != "undefined" || typeof nextIdx != "undefined"){
+								var diff = currentIdx - nextIdx
+
+								if(diff == 1){
+									console.log("진입222")
+									if(fields.next.neighbors[nextIdx]){
+										if(fields.next.neighbors[nextIdx+1]){
+											if(fields.next.neighbors[nextIdx+1].ocean){
+												reverse = true
+											}
+										}
+									}
+
+									if(fields.current.neighbors[currentIdx]){
+										if(fields.current.neighbors[currentIdx+1]){
+											if(fields.current.neighbors[currentIdx+1].ocean){
+												reverse = true
+											}
+										}
+									}
+								}else{
+									var _idx = Math.sqrt(Math.pow(diff, 2))
+
+									// console.log('_idx',_idx);
+
+									// if(isNaN(_idx)){
+									// 	reverse = true
+									// }
+
+									if(fields.next.neighbors[_idx]){
+										console.log('fields.next.neighbors[_idx]',fields.next.neighbors[_idx]);
+										console.log('fields.next.neighbors[_idx].coast',fields.next.neighbors[_idx].coast);
+										console.log('fields.next.neighbors[_idx].ocean',fields.next.neighbors[_idx].ocean);
+										if(fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean){
+											reverse = true
+										}else if(!fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean){
+											reverse = true
+										}else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+											reverse = true
+										// }else if((fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+											reverse = true
+											console.log("승인진입3");
+										}
+									}
+
+									if(fields.current.neighbors[_idx]){
+										console.log('fields.current.neighbors[_idx]',fields.current.neighbors[_idx]);
+										console.log('fields.current.neighbors[_idx].coast',fields.current.neighbors[_idx].coast);
+										console.log('fields.current.neighbors[_idx].ocean',fields.current.neighbors[_idx].ocean);
+										
+										if((fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean) || (fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean)){
+											reverse = true
+											console.log("승인진입1");
+										// }else if(fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+										// 	reverse = true
+										
+										// }else if(fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+										// 	console.log("취소진입",fields.current.x, corners_coast, next_coast, next_ocean, current_ocean);
+											
+												
+										// // }else if((fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+										// // 	reverse = true	
+										// // }else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+										// // 	reverse = false
+										// // 	// if(current_ocean <= 2 && next_ocean <= 2){
+										// // 	// 	reverse = true
+										// // 	// }
+										
+										}else{
+											if(next_ocean == current_ocean){
+												reverse = false
+											}else if((corners_coast < 2 && fields.length <= 3) || (corners_coast >= 2 && fields.length > 3)){
+												reverse = false
+											}
+
+											if(current_ocean >= 2 && next_ocean >= 2){
+												if((corners_coast >= fields.length || fields.current.x > 0) && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+													reverse = true
+												}else{
+													reverse = false
+												}
+											}else if(corners_coast < 2 && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+												console.log("진입");
+												reverse = false
+											}
+											if(!fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+												if(fields.current.z < 0){
+													reverse = false
+												}
+											}else if(fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+												if(corners_coast == current_ocean){
+													if(corners_coast_left && corners_coast_right){
+														reverse = false
+													}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
+														reverse = true
+													}
+												}else if(corners_coast > current_ocean){
+													if(corners_coast_left && corners_coast_right){
+														reverse = false
+														var last = fields.splice(fields.length - 1, 1)
+														fields.splice(fields.index + 1, 0, last[0])
+													}
+												}
+												
+											}else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+												if(corners_coast_left && corners_coast_right){
+													reverse = false
+												}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
+													reverse = true
+												}else{
+													reverse = false
+												}
+											}
+
+											console.log('corners_coast_right',corners_coast_right);
+											console.log('corners_coast_left',corners_coast_left);
+
+											if(corners_coast == current_ocean && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+												if(corners_coast_left && corners_coast_right){
+													reverse = false
+												}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
+													reverse = true
+												}else{
+													reverse = false
+												}
+											}
+
+
+											console.log("corners_coast, current_ocean",corners_coast, current_ocean)
+
+
+
+											// 이전 기록 조회해서 중복되면 리버스로 전환하기
+											console.log("취소진입11",corners_coast, next_coast, next_ocean, current_ocean);
+										}
+									}
+
+								}
+							}else{
+								reverse = true
 							}
 						}else{
-							cursor.current.position.x = point.x
-							cursor.current.position.y = point.y + 0.01
-							cursor.current.position.z = point.z
+							reverse = true
+						}
+
+						// if(reverse){
+						// 	fields = fields.reverse()	
+						// 	reverse = false
+						// }
+
+						fields.forEach(function(b,i){
+							console.log("#"+i, (b.x +":"+ b.z));
+							if(biomes.x == b.x && biomes.z == b.z){
+								fields.index = i
+							}
+							
+						})
+
+						console.log('biomes.x',biomes.x);
+						console.log('biomes.z',biomes.z);
+
+						console.log('fields.index',fields.index);
+							
+
+						if(fields.index == 0){
+							console.log("진입666")
+							if((fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+								if(current_ocean >= 2){
+									reverse = true
+								}else{
+									reverse = false
+								}
+								
+							}else if(reverse && fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+								reverse = false
+							}
+
+							if(corners_coast_left && corners_coast_right){
+								reverse = true
+							}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
+								reverse = true
+							}
+
+							fields.splice(fields.index, 0, fields.current)
+							fields.splice(0, 1)
+							var last = fields.splice(fields.index - 1, 1)
+							fields.unshift(last[0])
+						}else if(fields.index == (fields.length - 1)){
+							if(fields.next){
+								console.log("bbbbbbbbb");
+								if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){	
+									reverse = true
+								}
+
+								fields.splice(fields.index - 1, 0, fields.current)
+								fields.splice((fields.length - 1), 1)
+							}else{
+								fields.splice(fields.index - 2, 0, fields.current)
+								fields.splice((fields.length - 2), 1)
+							}
+
+							console.log("진입555")
+								
+						}else if(reverse){
+							console.log('fields.next',fields.next);
+							try{
+								if(corners_coast < next_coast && fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean){
+									var last = fields.splice(fields.index - 1, 1)
+									fields.splice(fields.index + 1, 0, last[0])
+								}
+							}catch(err){
+
+							}
+						}
+					}
+
+					if(reverse){
+						fields = fields.reverse()	
+					}
+
+					if(true){
+						var field = fields[fields.index+1]
+
+						console.log('field',field);
+
+						if(!field){
+							var field = fields[fields.index]
+
+							if(fields.index == 0){
+								console.log("---진입666")
+								if(current_ocean >= 2 && (fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+									reverse = true
+								}
+								fields.splice(fields.index, 0, fields.current)
+								fields.splice(0, 1)
+								var last = fields.splice(fields.index - 1, 1)
+								fields.splice(0, 0, last[0])
+							}else if(fields.index == (fields.length - 1)){
+								console.log("---진입555",fields.next)
+								
+								if(fields.next){
+									fields.splice(1, 1, fields.current)
+									fields.splice((fields.length + 1), 1)
+								}else{
+									fields.splice(fields.index - 1, 0, fields.current)
+									fields.splice((fields.length - 1), 1)
+								}
+									
+
+								// fields = fields.reverse()	
+
+								fields.forEach(function(b,i){
+									if(biomes.x == b.x && biomes.z == b.z){
+										fields.index = i
+									}
+									console.log("#"+b.index, (b.x +":"+ b.z));
+								})
+
+								field = fields[fields.index+1]
+							}
+						}
+					}
+
+					console.log('reverse',reverse);
+					fields.forEach(function(b,i){
+						if(biomes.x == b.x && biomes.z == b.z){
+							fields.index = i
+						}
+						console.log("#"+b.index, (b.x +":"+ b.z));
+					})
+
+
+
+
+											
+										// console.log("----------------"+fields.index, fields.length)
+
+										window[player.hash].position.y = point.y + 0.5
+										
+										current.current.position.y = point.y + 0.01
+
+										window[player.hash].position.x = current.current.position.x = point.x
+										window[player.hash].position.z = current.current.position.z = point.z
+
+										OAuth3.interval = setInterval(interval, 2000)
+
+										var $player = $('player[id="'+player.hash+'"]')
+										// $player.removeClass("select_puzzle")
+
+										$("body")
+											.attr("biome", biome.biome)
+											.removeClass("loading")
+											.removeAttr("tooltip")
+										
+										$("emojis").removeClass("on");
+										$("tooltip").removeClass("on");
+										$("#capture>.icon").html('')
+
+										$(".map canvas").css({top : -((point.z * 1.5) + 70) , left : -((point.x * 1.5) + 15 )})
+
+										var url = "https://emption.red"
+
+										if(OAuth3.localhost){
+											url = "http://localhost:3001"
+										}
+
+										var $go = $("#go")
+
+										var _url = new URL(window.location.href)
+
+										var cc_address = ethers.hashMessage(_url.href.replace(window.location.protocol+"//",""))
+											cc_address = ethers.computeAddress(cc_address).toLowerCase().replace("0x","")
+
+										if(window.location.hash){
+											cc_address = window.location.hash.replace("#","")
+										}
+
+										var edge = (grid.edge / 2) - 1
+
+										if(point.x < -edge || point.z < -edge || point.x > edge || point.z > edge){
+											var alpha = 0
+
+											if(point.x > edge || point.z < -edge){
+												alpha = 1
+											}else if(point.x < -edge || point.z > edge){
+												alpha = -1
+											}
+
+											var href = window.numStringToBytes32(
+												(BigInt(window.bytes32ToNumString(cc_address))+BigInt(alpha)).toString()
+											).replace("0x","#")
+
+											$go.attr("href",href)
+											$go.text(alpha > 0 ? "east" : "west")
+											$go.attr("way", (alpha > 0 ? "east" : "west"))
+										}else{
+											$go.removeAttr("href")
+											$go.removeAttr("way")
+										}
+
+
+										if(window.tutorial){
+											if(window.tutorial.name){
+												if(window.tutorial.x == point.x && window.tutorial.z == point.z){
+													if(window.tutorial.name == "MineSweeper"){
+														if(window.tutorial.step == 1){
+															window.Tutorial(2, 2)
+														}else if(window.tutorial.step == 3){
+															window.Tutorial(2, 4)
+														}
+													}else if(window.tutorial.name == "Puzzle"){
+														if(window.tutorial.step == 0){
+															window.Tutorial(3, 1)
+														}
+													}else if(window.tutorial.name == "Sticker"){
+														if(window.tutorial.step == 2){
+															window.Tutorial(5)
+														}
+													}else if(window.tutorial.name == "Mine"){
+														if(window.tutorial.step == 1){
+															window.Tutorial(6)
+														}
+													}else if(window.tutorial.name == "Portal"){
+														if(window.tutorial.step == 1){
+															window.Tutorial(6,2)
+														}
+													}
+												}
+											}else{
+												window.Tutorial(1, 1)
+											}
+										}else if(window.response){
+											window.Callback(window.response)
+										}
+									}
+								}
+							}else{
+								cursor.current.position.x = point.x
+								cursor.current.position.y = point.y + 0.01
+								cursor.current.position.z = point.z
+							}
 						}
 					}
 				}
