@@ -861,8 +861,6 @@ OAuth3.on("ready", function(e){
 
 					var reverse = false
 
-					var current_biome 
-
 					biomes.forEach(function(b, i){
 						if(
 							(biomes.x - _size < b.x && biomes.x + _size > b.x) &&
@@ -879,14 +877,6 @@ OAuth3.on("ready", function(e){
 					})
 
 					fields.sort(function (a, b) {
-						// if(b.x - Math.sqrt(Math.pow(a.x, 2)) && a.z - Math.sqrt(Math.pow(b.z, 2))){
-						// 	if(b.x - a.x && a.z - b.z){
-						// 		return b.x - a.x && a.z - b.z;
-						// 	}
-						// 	return Math.sqrt(Math.pow(b.x, 2)) - Math.sqrt(Math.pow(a.x, 2)) || Math.sqrt(Math.pow(a.z, 2)) - Math.sqrt(Math.pow(b.z, 2))
-						// }else{
-							
-						// }
 						return b.x - a.x || a.z - b.z;
 					});
 
@@ -902,8 +892,6 @@ OAuth3.on("ready", function(e){
 						if(!fields.next){
 							fields.next = fields[fields.index-1]
 						}
-
-						console.log('fields.current',fields.current);
 
 						if(fields.next){
 							var corners_coast_left = false
@@ -957,15 +945,10 @@ OAuth3.on("ready", function(e){
 								}
 							})
 
-							
-							console.log("nextIdx",nextIdx)
-							console.log("currentIdx",currentIdx)
-
 							if(typeof currentIdx != "undefined" || typeof nextIdx != "undefined"){
 								var diff = currentIdx - nextIdx
 
 								if(diff == 1){
-									console.log("진입222")
 									if(fields.next.neighbors[nextIdx]){
 										if(fields.next.neighbors[nextIdx+1]){
 											if(fields.next.neighbors[nextIdx+1].ocean){
@@ -984,51 +967,20 @@ OAuth3.on("ready", function(e){
 								}else{
 									var _idx = Math.sqrt(Math.pow(diff, 2))
 
-									// console.log('_idx',_idx);
-
-									// if(isNaN(_idx)){
-									// 	reverse = true
-									// }
-
 									if(fields.next.neighbors[_idx]){
-										console.log('fields.next.neighbors[_idx]',fields.next.neighbors[_idx]);
-										console.log('fields.next.neighbors[_idx].coast',fields.next.neighbors[_idx].coast);
-										console.log('fields.next.neighbors[_idx].ocean',fields.next.neighbors[_idx].ocean);
 										if(fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean){
 											reverse = true
 										}else if(!fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean){
 											reverse = true
 										}else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
 											reverse = true
-										// }else if((fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
-											reverse = true
-											console.log("승인진입3");
 										}
 									}
 
 									if(fields.current.neighbors[_idx]){
-										console.log('fields.current.neighbors[_idx]',fields.current.neighbors[_idx]);
-										console.log('fields.current.neighbors[_idx].coast',fields.current.neighbors[_idx].coast);
-										console.log('fields.current.neighbors[_idx].ocean',fields.current.neighbors[_idx].ocean);
-										
 										if((fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean) || (fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean)){
 											reverse = true
-											console.log("승인진입1");
-										// }else if(fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
-										// 	reverse = true
-										
-										// }else if(fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
-										// 	console.log("취소진입",fields.current.x, corners_coast, next_coast, next_ocean, current_ocean);
-											
-												
-										// // }else if((fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
-										// // 	reverse = true	
-										// // }else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
-										// // 	reverse = false
-										// // 	// if(current_ocean <= 2 && next_ocean <= 2){
-										// // 	// 	reverse = true
-										// // 	// }
-										
+
 										}else{
 											if(next_ocean == current_ocean){
 												reverse = false
@@ -1043,7 +995,6 @@ OAuth3.on("ready", function(e){
 													reverse = false
 												}
 											}else if(corners_coast < 2 && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
-												console.log("진입");
 												reverse = false
 											}
 											if(!fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
@@ -1075,9 +1026,6 @@ OAuth3.on("ready", function(e){
 												}
 											}
 
-											console.log('corners_coast_right',corners_coast_right);
-											console.log('corners_coast_left',corners_coast_left);
-
 											if(corners_coast == current_ocean && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
 												if(corners_coast_left && corners_coast_right){
 													reverse = false
@@ -1087,14 +1035,6 @@ OAuth3.on("ready", function(e){
 													reverse = false
 												}
 											}
-
-
-											console.log("corners_coast, current_ocean",corners_coast, current_ocean)
-
-
-
-											// 이전 기록 조회해서 중복되면 리버스로 전환하기
-											console.log("취소진입11",corners_coast, next_coast, next_ocean, current_ocean);
 										}
 									}
 
@@ -1106,11 +1046,6 @@ OAuth3.on("ready", function(e){
 							reverse = true
 						}
 
-						// if(reverse){
-						// 	fields = fields.reverse()	
-						// 	reverse = false
-						// }
-
 						fields.forEach(function(b,i){
 							console.log("#"+i, (b.x +":"+ b.z));
 							if(biomes.x == b.x && biomes.z == b.z){
@@ -1119,14 +1054,7 @@ OAuth3.on("ready", function(e){
 							
 						})
 
-						console.log('biomes.x',biomes.x);
-						console.log('biomes.z',biomes.z);
-
-						console.log('fields.index',fields.index);
-							
-
 						if(fields.index == 0){
-							console.log("진입666")
 							if((fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
 								if(current_ocean >= 2){
 									reverse = true
@@ -1149,7 +1077,6 @@ OAuth3.on("ready", function(e){
 							fields.unshift(last[0])
 						}else if(fields.index == (fields.length - 1)){
 							if(fields.next){
-								console.log("bbbbbbbbb");
 								if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){	
 									reverse = true
 								}
@@ -1161,10 +1088,7 @@ OAuth3.on("ready", function(e){
 								fields.splice((fields.length - 2), 1)
 							}
 
-							console.log("진입555")
-								
 						}else if(reverse){
-							console.log('fields.next',fields.next);
 							try{
 								if(corners_coast < next_coast && fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean){
 									var last = fields.splice(fields.index - 1, 1)
@@ -1180,24 +1104,19 @@ OAuth3.on("ready", function(e){
 						fields = fields.reverse()	
 					}
 
-					console.log('reverse',reverse);
 					fields.forEach(function(b,i){
 						if(biomes.x == b.x && biomes.z == b.z){
 							fields.index = i
 						}
 					})
 
-					console.log('fields.index',fields.index);
 					if(typeof fields.index != "undefined"){
 						var field = fields[fields.index+1]
-
-						console.log('field',field);
 
 						if(!field){
 							var field = fields[fields.index]
 
 							if(fields.index == 0){
-								console.log("---진입666")
 								if(current_ocean >= 2 && (fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
 									reverse = true
 								}
@@ -1206,8 +1125,6 @@ OAuth3.on("ready", function(e){
 								var last = fields.splice(fields.index - 1, 1)
 								fields.splice(0, 0, last[0])
 							}else if(fields.index == (fields.length - 1)){
-								console.log("---진입555",fields.next)
-								
 								if(fields.next){
 									fields.splice(1, 1, fields.current)
 									fields.splice((fields.length + 1), 1)
@@ -1215,9 +1132,6 @@ OAuth3.on("ready", function(e){
 									fields.splice(fields.index - 1, 0, fields.current)
 									fields.splice((fields.length - 1), 1)
 								}
-									
-
-								// fields = fields.reverse()	
 
 								fields.forEach(function(b,i){
 									if(biomes.x == b.x && biomes.z == b.z){
