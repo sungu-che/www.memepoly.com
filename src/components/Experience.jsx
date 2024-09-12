@@ -116,6 +116,7 @@ export const Experience = () => {
 
 	useFrame((e,delta) => {
 		var cookies = window.cookies
+		
 		if(cookies){
 			var position
 
@@ -467,6 +468,7 @@ export const Experience = () => {
 		window.players = players;
 		window.players.set = setPlayers;
 		window.players.self = self;
+		window.players.move = onClick
 
 		window.assets = assets
 		window.assets.set = setAssets
