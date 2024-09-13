@@ -376,7 +376,8 @@ $.fn.playSpin = function (options) {
 		}
 
 		startSeqs['mainSeq' + startNum]['totalSpinning'] = total;
-		return this.each(function () {
+		
+		this.each(function () {
 			options.endNum = endNums[thisSeq];
 			startSeqs['mainSeq' + startNum]['subSeq' + (++thisSeq)] = {};
 			startSeqs['mainSeq' + startNum]['subSeq' + thisSeq]['spinning'] = true;
@@ -385,7 +386,8 @@ $.fn.playSpin = function (options) {
 				mainSeq: startNum,
 				subSeq: thisSeq
 			};
-			(new slotMachine(this, options, track));
+
+			new slotMachine(this, options, track)
 		});
 	}
 };
@@ -404,13 +406,15 @@ $.fn.stopSpin = function () {
 var slotMachine = function (el, options, track) {
 	var slot = this;
 	slot.$el = $(el);
+	window.Roll.back = slot
 
 	slot.defaultOptions = {
 		easing: 'swing',        // String: easing type for final spin
 		time: 1000,             // Number: total time of spin animation
 		manualStop: false,      // Boolean: spin until user manually click to stop
 		useStopTime: false,     // Boolean: use stop time        
-		stopTime: 1000,         // Number: total time of stop aniation
+		stopTime: 0,         // Number: total time of stop aniation
+		loops : 6,
 		stopSeq: 'random',      // String: sequence of slot machine end animation, random, leftToRight, rightToLeft
 		endNum: 0,              // Number: animation end at which number/ sequence of list
 		onEnd : $.noop,         // Function: run on each element spin end, it is passed endNum
@@ -450,10 +454,31 @@ var slotMachine = function (el, options, track) {
 	slot.startSpin = function () {
 		slot.$el
 			.css('top', -slot.listHeight)
-			.animate({'top': '0px'}, slot.spinSpeed, 'linear');
+			.animate({'top': '0px'}, slot.spinSpeed, 'linear',function () {
+				slot.lowerSpeed();
+			});
 	};
 
+	slot.lowerSpeed = function () {
+		if (slot.loopCount < slot.options.loops ||
+			(slot.options.manualStop && startSeqs['mainSeq' + track.mainSeq]['subSeq' + track.subSeq]['spinning'])) {
+			slot.startSpin();
+		} else {
+			slot.endSpin();
+		}
+	};
+
+
 	slot.endSpin = function () {
+		if (slot.options.endNum == 0) {
+			slot.options.endNum = slot.randomRange(1, slot.liCount);
+		}
+
+		// Error handling if endNum is out of range
+		if (slot.options.endNum < 0 || slot.options.endNum > slot.liCount) {
+			slot.options.endNum = 1;
+		}
+
 		var finalPos = -((slot.liHeight * slot.options.endNum) - slot.liHeight);
 		var finalTime = ((slot.spinSpeed * 1.5) * (slot.liCount)) / slot.options.endNum;
 		if (slot.options.useStopTime) {
@@ -500,8 +525,6 @@ var slotMachine = function (el, options, track) {
 	};
 
 	this.init();
-
-	return slot
 };
 
 
@@ -1196,11 +1219,7 @@ OAuth3.on("ready", function(e){
 					if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
 						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2))) * -1
 					}else{
-						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))
-
-						// window.Roll.slot
-						// window.Roll.back.options.endNum = dice
-						// window.Roll.back.endSpin()
+						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))					
 					}
 				}
 
@@ -2068,7 +2087,7 @@ OAuth3.on("ready", function(e){
 
 					
 					try{
-						if(window.players.length){
+						setTimeout(function(){
 							for(var i = 0; i < window.players.length; i++){
 								var _player = window.players[i]
 
@@ -2107,7 +2126,22 @@ OAuth3.on("ready", function(e){
 											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
-											<a class="hashType Dice emoji color">🎲</a>
+											<a class="hashType Dice emoji color">
+												🎲
+												<div id="dice" class="slot-machine">
+													<div class="slotwrapper">
+														<ul>
+															<li>1</li>
+															<li>2</li>
+															<li>3</li>
+															<li>4</li>
+															<li>5</li>
+															<li>6</li>
+														</ul>
+														<div class="num">${Math.ceil(Math.sqrt(Math.pow(dice, 2)))}</div>
+													</div>
+												</div>
+											</a>
 										</li>
 										<li>
 											<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
@@ -2117,7 +2151,7 @@ OAuth3.on("ready", function(e){
 											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
-											<a class="hashType Dice emoji color">🎲</a>
+											<a class="hashType emoji color"></a>
 										</li>
 										<li>
 											<a class="hashType Report">Report</a>\
@@ -2130,15 +2164,19 @@ OAuth3.on("ready", function(e){
 									var after_body = tooltip_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 
 									if(before_body != after_body){
-										$tooltip.html(tooltip_body)
+										$tooltip.html(after_body)
 									}
 								}catch(err){
 									console.log("err",err);
 								}
 							}
-						}
-					}catch(err){
 
+							if(resp.body.body.cc == "dice"){
+								$('#dice ul').playSpin();
+							}
+						},300)
+					}catch(err){
+						console.log("Err",err);
 					}
 
 					var plyrs = []
@@ -2411,6 +2449,8 @@ OAuth3.on("ready", function(e){
 					window.cookies.dice = 0
 				}
 
+				console.log('OAuth3.xhr',OAuth3.xhr);
+
 				if(OAuth3.xhr){
 					OAuth3.xhr.abort()
 					delete OAuth3.xhr
@@ -2429,6 +2469,11 @@ OAuth3.on("ready", function(e){
 				}else if(dice > 0 && typeof window.Roll.ing == "undefined"){
 					clearInterval(window.Poll.ing)
 					delete window.Poll.ing
+
+					if(window.Roll.back){
+						window.Roll.back.options.endNum = dice
+						window.Roll.back.loopCount = 6
+					}
 
 					window.Roll.ing = setInterval(window.Roll, 500, biomes)
 				}
@@ -3125,12 +3170,9 @@ OAuth3.on("ready", function(e){
 												*/ 
 												query.dice = 10
 												body.cc = "dice"
+												$body.attr("dice",10)
 
-												console.log('window.Roll.back',window.Roll.back);
-
-												window.Roll.back = $('#dice ul').playSpin();
-
-												console.log('window.Roll.back',window.Roll.back);
+												$('#dice ul').playSpin();
 
 											}else if($this.hasClass("Flag")){
 												body.cc = "flag"
