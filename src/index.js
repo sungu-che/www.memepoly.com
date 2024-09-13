@@ -718,7 +718,7 @@ OAuth3.on("ready", function(e){
 					}else{
 						delete window.response
 					}
-					window.Poll.ing = setInterval(window.Poll)
+					window.Poll.ing = setInterval(window.Poll, 300)
 				}else{
 					clearInterval(window.Poll.ing)
 
@@ -2087,6 +2087,10 @@ OAuth3.on("ready", function(e){
 
 					
 					try{
+						if(resp.body.body.cc == "dice"){
+							throw true
+						}
+
 						setTimeout(function(){
 							for(var i = 0; i < window.players.length; i++){
 								var _player = window.players[i]
@@ -2170,13 +2174,9 @@ OAuth3.on("ready", function(e){
 									console.log("err",err);
 								}
 							}
-
-							if(resp.body.body.cc == "dice"){
-								$('#dice ul').playSpin();
-							}
 						},300)
 					}catch(err){
-						console.log("Err",err);
+						// console.log("Err",err);
 					}
 
 					var plyrs = []
@@ -2449,8 +2449,6 @@ OAuth3.on("ready", function(e){
 					window.cookies.dice = 0
 				}
 
-				console.log('OAuth3.xhr',OAuth3.xhr);
-
 				if(OAuth3.xhr){
 					OAuth3.xhr.abort()
 					delete OAuth3.xhr
@@ -2462,7 +2460,7 @@ OAuth3.on("ready", function(e){
 					if(cookies.hash){
 						clearInterval(window.Roll.ing)
 						delete window.Roll.ing
-						window.Poll.ing = setInterval(window.Poll)
+						window.Poll.ing = setInterval(window.Poll, 300)
 					}else{
 						window.location.href = OAuth3.host+"/logout"
 					}
@@ -2908,7 +2906,7 @@ OAuth3.on("ready", function(e){
 											}else{
 												delete window.response
 											}
-											window.Poll.ing = setInterval(window.Poll)
+											window.Poll.ing = setInterval(window.Poll, 300)
 										}else{
 											window.location.href = "/"
 										}
@@ -4248,7 +4246,7 @@ OAuth3.on("ready", function(e){
 					}
 
 					clearInterval(window.Poll.ing)
-					window.Poll.ing = setInterval(window.Poll)
+					window.Poll.ing = setInterval(window.Poll, 300)
 
 					$go.referer = true
 
