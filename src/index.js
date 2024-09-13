@@ -341,6 +341,170 @@ window.players.self = function(){
 	}
 }
 
+var startSeqs = {};
+var startNum = 0;
+
+// jQuery FN
+$.fn.playSpin = function (options) {
+	if (this.length) {
+		if ($(this).is(':animated')) return; // Return false if this element is animating
+		startSeqs['mainSeq' + (++startNum)] = {};
+		$(this).attr('data-playslot', startNum);
+
+		var total = this.length;
+		var thisSeq = 0;
+
+		// Initialize options
+		if (typeof options == 'undefined') {
+			options = new Object();
+		}
+
+		// Pre-define end nums
+		var endNums = [];
+		if (typeof options.endNum != 'undefined') {
+			if ($.isArray(options.endNum)) {
+				endNums = options.endNum;
+			} else {
+				endNums = [options.endNum];
+			}
+		}
+
+		for (var i = 0; i < this.length; i++) {
+			if (typeof endNums[i] == 'undefined') {
+				endNums.push(0);
+			}
+		}
+
+		startSeqs['mainSeq' + startNum]['totalSpinning'] = total;
+		return this.each(function () {
+			options.endNum = endNums[thisSeq];
+			startSeqs['mainSeq' + startNum]['subSeq' + (++thisSeq)] = {};
+			startSeqs['mainSeq' + startNum]['subSeq' + thisSeq]['spinning'] = true;
+			var track = {
+				total: total,
+				mainSeq: startNum,
+				subSeq: thisSeq
+			};
+			(new slotMachine(this, options, track));
+		});
+	}
+};
+
+$.fn.stopSpin = function () {
+	if (this.length) {
+		if (!$(this).is(':animated')) return; // Return false if this element is not animating
+		if ($(this)[0].hasAttribute('data-playslot')) {
+			$.each(startSeqs['mainSeq' + $(this).attr('data-playslot')], function(index, obj) {
+				obj['spinning'] = false;
+			});
+		}
+	}
+};
+
+var slotMachine = function (el, options, track) {
+	var slot = this;
+	slot.$el = $(el);
+
+	slot.defaultOptions = {
+		easing: 'swing',        // String: easing type for final spin
+		time: 1000,             // Number: total time of spin animation
+		manualStop: false,      // Boolean: spin until user manually click to stop
+		useStopTime: false,     // Boolean: use stop time        
+		stopTime: 1000,         // Number: total time of stop aniation
+		stopSeq: 'random',      // String: sequence of slot machine end animation, random, leftToRight, rightToLeft
+		endNum: 0,              // Number: animation end at which number/ sequence of list
+		onEnd : $.noop,         // Function: run on each element spin end, it is passed endNum
+		onFinish: $.noop,       // Function: run on all element spin end, it is passed endNum
+	};
+
+	slot.spinSpeed = 0;
+	slot.loopCount = 0;
+
+	slot.init = function () {
+		slot.options = $.extend({}, slot.defaultOptions, options);
+		slot.setup();
+		slot.startSpin();
+	};
+
+	slot.setup = function () {
+		var $li = slot.$el.find('li').first();
+		slot.liHeight = $li.innerHeight();
+		slot.liCount = slot.$el.children().length;
+		slot.listHeight = slot.liHeight * slot.liCount;
+		slot.spinSpeed = slot.options.time / slot.options.loops;
+
+		$li.clone().appendTo(slot.$el); // Clone to last row for smooth animation
+
+		// Configure stopSeq
+		if (slot.options.stopSeq == 'leftToRight') {
+			if (track.subSeq != 1) {
+				slot.options.manualStop = true;
+			}
+		} else if (slot.options.stopSeq == 'rightToLeft') {
+			if (track.total != track.subSeq) {
+				slot.options.manualStop = true;
+			}
+		}
+	};
+
+	slot.startSpin = function () {
+		slot.$el
+			.css('top', -slot.listHeight)
+			.animate({'top': '0px'}, slot.spinSpeed, 'linear');
+	};
+
+	slot.endSpin = function () {
+		var finalPos = -((slot.liHeight * slot.options.endNum) - slot.liHeight);
+		var finalTime = ((slot.spinSpeed * 1.5) * (slot.liCount)) / slot.options.endNum;
+		if (slot.options.useStopTime) {
+			finalTime = slot.options.stopTime;
+		}
+
+		slot.$el
+			.css('top', -slot.listHeight)
+			.animate({'top': finalPos}, parseInt(finalTime), slot.options.easing, function () {
+				slot.$el.find('li').last().remove(); // Remove the cloned row
+
+				slot.endAnimation(slot.options.endNum);
+				if ($.isFunction(slot.options.onEnd)) {
+					slot.options.onEnd(slot.options.endNum);
+				}
+
+				// onFinish is every element is finished animation
+				if (startSeqs['mainSeq' + track.mainSeq]['totalSpinning'] == 0) {
+					var totalNum = '';
+					$.each(startSeqs['mainSeq' + track.mainSeq], function(index, subSeqs) {
+						if (typeof subSeqs == 'object') {
+							totalNum += subSeqs['endNum'].toString();
+						}
+					});
+					if ($.isFunction(slot.options.onFinish)) {
+						slot.options.onFinish(totalNum);
+					}
+				}
+			});
+	}
+
+	slot.endAnimation = function(endNum) {
+		if (slot.options.stopSeq == 'leftToRight' && track.total != track.subSeq) {
+			startSeqs['mainSeq' + track.mainSeq]['subSeq' + (track.subSeq + 1)]['spinning'] = false;
+		} else if (slot.options.stopSeq == 'rightToLeft' && track.subSeq != 1) {
+			startSeqs['mainSeq' + track.mainSeq]['subSeq' + (track.subSeq - 1)]['spinning'] = false;
+		}
+		startSeqs['mainSeq' + track.mainSeq]['totalSpinning']--;
+		startSeqs['mainSeq' + track.mainSeq]['subSeq' + track.subSeq]['endNum'] = endNum;
+	}
+
+	slot.randomRange = function (low, high) {
+		return Math.floor(Math.random() * (1 + high - low)) + low;
+	};
+
+	this.init();
+
+	return slot
+};
+
+
 
 OAuth3.on("ready", function(e){
 	var random = function(min, max) {
@@ -531,9 +695,9 @@ OAuth3.on("ready", function(e){
 					}else{
 						delete window.response
 					}
-					window.Polling = setInterval(window.Poll)
+					window.Poll.ing = setInterval(window.Poll, 300)
 				}else{
-					clearInterval(window.Polling)
+					clearInterval(window.Poll.ing)
 
 					if(OAuth3.xhr){
 						OAuth3.xhr.abort()
@@ -1028,11 +1192,15 @@ OAuth3.on("ready", function(e){
 
 				var dice = cookies.dice
 
-				if(isNaN(dice)){
-					if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(dice, 2))){
+				if(!isNaN(dice)){
+					if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
 						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2))) * -1
 					}else{
 						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))
+
+						// window.Roll.slot
+						// window.Roll.back.options.endNum = dice
+						// window.Roll.back.endSpin()
 					}
 				}
 
@@ -1061,13 +1229,6 @@ OAuth3.on("ready", function(e){
 
 				var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
 					cc_address = ethers.computeAddress(cc_address).toLowerCase()
-
-				if(OAuth3.xhr){
-					OAuth3.xhr.abort()
-					delete OAuth3.xhr
-
-					window.response = resp
-				}
 
 				if($go.referer){
 					window.speed = 0.1
@@ -2134,7 +2295,7 @@ OAuth3.on("ready", function(e){
 						var currentScrollHeight = Math.ceil((window.innerHeight + window.scrollY) / 10) * 10
 
 						if (
-							(typeof window.Polling == "undefined") || 
+							(typeof window.Poll.ing == "undefined") || 
 							(resp.body.body.cc == "message") || 
 							(scrollHeight - currentScrollHeight < 0 && window.scrollY > 0)) 
 						{
@@ -2247,24 +2408,29 @@ OAuth3.on("ready", function(e){
 
 				if(typeof window.Chat == "undefined"){
 					window.Init(cookies)
+					window.cookies.dice = 0
 				}
 
-				if(typeof window.Polling == "undefined"){
-					// window.cookies.dice = 0
-					console.log('window.cookies.dice',window.cookies.dice);
+				if(OAuth3.xhr){
+					OAuth3.xhr.abort()
+					delete OAuth3.xhr
 
+					window.response = resp
+				}
+
+				if(typeof window.Poll.ing == "undefined"){
 					if(cookies.hash){
-						clearInterval(window.Rolling)
-						delete window.Rolling
-						window.Polling = setInterval(window.Poll)
+						clearInterval(window.Roll.ing)
+						delete window.Roll.ing
+						window.Poll.ing = setInterval(window.Poll, 300)
 					}else{
 						window.location.href = OAuth3.host+"/logout"
 					}
-				}else if(dice > 0 && typeof window.Rolling == "undefined"){
-					clearInterval(window.Polling)
-					delete window.Polling
+				}else if(dice > 0 && typeof window.Roll.ing == "undefined"){
+					clearInterval(window.Poll.ing)
+					delete window.Poll.ing
 
-					window.Rolling = setInterval(window.Roll, 500, biomes)
+					window.Roll.ing = setInterval(window.Roll, 500, biomes)
 				}
 			}catch(err){
 				console.log("err",err);
@@ -2447,7 +2613,7 @@ OAuth3.on("ready", function(e){
 							}
 
 							var query = {
-								dice : typeof window.Rolling == "undefined" ? cookies.dice : 0,
+								dice : cookies.dice,
 								href : window.location.href,
 								hash : cookies.hash,
 								token : cookies.token,
@@ -2605,7 +2771,6 @@ OAuth3.on("ready", function(e){
 									},
 									url : url
 								}, function(resp){
-									console.log('resp',resp);
 									OAuth3.nonces = []
 
 									if(resp.body.nonces.length){
@@ -2653,7 +2818,6 @@ OAuth3.on("ready", function(e){
 												body : body,
 												url : url
 											}, function(_resp){
-												console.log('_resp',_resp);
 												window.cookies = JSON.parse(_resp.body.cookies)
 
 												$body.attr("team",cookies.team ? cookies.team : "")
@@ -2699,7 +2863,7 @@ OAuth3.on("ready", function(e){
 											}else{
 												delete window.response
 											}
-											window.Polling = setInterval(window.Poll)
+											window.Poll.ing = setInterval(window.Poll, 300)
 										}else{
 											window.location.href = "/"
 										}
@@ -2712,7 +2876,7 @@ OAuth3.on("ready", function(e){
 											if(href.indexOf("/logout") > -1){
 												e.preventDefault()
 												
-												clearInterval(window.Polling)
+												clearInterval(window.Poll.ing)
 
 												if(OAuth3.xhr){
 													OAuth3.xhr.abort()
@@ -2962,6 +3126,12 @@ OAuth3.on("ready", function(e){
 												query.dice = 10
 												body.cc = "dice"
 
+												console.log('window.Roll.back',window.Roll.back);
+
+												window.Roll.back = $('#dice ul').playSpin();
+
+												console.log('window.Roll.back',window.Roll.back);
+
 											}else if($this.hasClass("Flag")){
 												body.cc = "flag"
 
@@ -2994,7 +3164,7 @@ OAuth3.on("ready", function(e){
 												return
 											}
 										}catch(err){
-											// console.log("err",err);
+											console.log("err",err);
 										}
 
 										var id = cookies.hash+"["+player.x+","+player.z+"]"
@@ -4035,8 +4205,8 @@ OAuth3.on("ready", function(e){
 						delete OAuth3.xhr
 					}
 
-					clearInterval(window.Polling)
-					window.Polling = setInterval(window.Poll)
+					clearInterval(window.Poll.ing)
+					window.Poll.ing = setInterval(window.Poll, 300)
 
 					$go.referer = true
 

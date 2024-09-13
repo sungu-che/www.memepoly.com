@@ -1306,6 +1306,14 @@ body[dice="0"] #flag{display: block;}
 #flag .red{}
 #flag .blue{}
 
+
+body[dice="0"] #dice{opacity: 0; pointer-events: none;}
+#dice {position: fixed; left: 0; right: 0; top: 0; z-index: 10;}
+.slot-machine {max-width: 400px; width: fit-content; margin: 0 auto; position: relative;}
+.slotwrapper {overflow: hidden; height: 50px; width: 100px; text-align: center;}
+.slotwrapper ul {padding: 0; margin: 0; list-style: none; position: relative; font-size: 2em; line-height: 200px; text-align: center;}
+.slotwrapper > ul > li {padding: 0.4em; font-size: 1em; color: #fff;}
+
 body[tutorial="MineSweeper"] player{pointer-events:initial;}
 
 
