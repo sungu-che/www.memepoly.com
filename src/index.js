@@ -1012,9 +1012,6 @@ OAuth3.on("ready", function(e){
 					}
 				}else{
 					window.Callback(window.response)
-
-					clearInterval(window.Rolling)
-					delete window.Rolling
 				}
 			}catch(err){
 				console.log("err",err);
@@ -1033,7 +1030,7 @@ OAuth3.on("ready", function(e){
 
 				if(isNaN(dice)){
 					if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(dice, 2))){
-						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)) * -1)
+						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2))) * -1
 					}else{
 						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))
 					}
@@ -1071,8 +1068,6 @@ OAuth3.on("ready", function(e){
 
 					window.response = resp
 				}
-
-				$body.attr("team",cookies.team ? cookies.team : "")
 
 				if($go.referer){
 					window.speed = 0.1
@@ -2244,7 +2239,10 @@ OAuth3.on("ready", function(e){
 					}
 				}
 
-				$body.removeAttr("bingo")
+				$body
+					.removeAttr("bingo")
+					.attr("dice",dice)
+					.attr("team",cookies.team ? cookies.team : "")
 			
 
 				if(typeof window.Chat == "undefined"){
@@ -2252,9 +2250,12 @@ OAuth3.on("ready", function(e){
 				}
 
 				if(typeof window.Polling == "undefined"){
-					window.cookies.dice = 0
+					// window.cookies.dice = 0
+					console.log('window.cookies.dice',window.cookies.dice);
 
 					if(cookies.hash){
+						clearInterval(window.Rolling)
+						delete window.Rolling
 						window.Polling = setInterval(window.Poll)
 					}else{
 						window.location.href = OAuth3.host+"/logout"

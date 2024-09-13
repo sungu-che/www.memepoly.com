@@ -1294,7 +1294,9 @@ body[tutorial="Move"][step="1"] #root player[alt="player"][self="true"] .address
 	}
 }
 
-#flag{position: fixed; left: 1em; right: 1em; top: 1em; text-align: center; width: 180px; margin: 0 auto; height: 40px; z-index: 1; background: #000000ad; border-radius: 0.5em;}
+body[dice="0"] #flag{display: block;}
+
+#flag{display: none; position: fixed; left: 1em; right: 1em; top: 1em; text-align: center; width: 180px; margin: 0 auto; height: 40px; z-index: 1; background: #000000ad; border-radius: 0.5em;}
 #flag:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; width: 2px; height: 13px; background-color: #7c7c7c;}
 #flag>div{position: absolute; top: 0; bottom: 0; text-align: center; line-height: 36px; font-size: 2em; font-weight: 900;}
 #flag>div.on{text-decoration: underline;}
