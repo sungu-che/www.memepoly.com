@@ -584,22 +584,6 @@ OAuth3.on("ready", function(e){
 	var host_address = ethers.hashMessage((url.host+"/"))
 		host_address = ethers.computeAddress(host_address).toLowerCase()
 
-	var $mode = $('input[name="mode"]:checked')
-	var mode = $mode.val()
-
-	var $root = $('#root.fiber')
-
-	$root
-		.removeAttr("nth")
-		.removeAttr("count")
-
-	$('#root.fiber>div>div').removeClass("flex")
-
-	var w = document.documentElement.scrollWidth
-	var h = document.documentElement.scrollHeight
-
-	$body.attr("axis", (w > h ? "x" : "y"))
-
 	if(window.flutter_inappwebview){
 		$body.attr("app", OAuth3.isMobile)
 	}
@@ -1285,7 +1269,6 @@ OAuth3.on("ready", function(e){
 
 				var frameloop = false
 
-
 				var stickers = []
 
 				var bombs = []
@@ -1823,43 +1806,6 @@ OAuth3.on("ready", function(e){
 							diff = true
 
 							window.players.set(_players)
-						}
-
-						var $mode = $('input[name="mode"]:checked')
-						var mode = $mode.val()
-
-						$root
-							.removeAttr("nth")
-							.removeAttr("count")
-
-						$('#root.fiber>div>div').removeClass("flex")
-
-						var w = document.documentElement.scrollWidth
-						var h = document.documentElement.scrollHeight
-
-						$body.attr("axis", (w > h ? "x" : "y"))
-
-						if(mode == "first"){
-							try{
-								var $players = $('player[alt="player"][self="true"], player[alt="player"][self=""]')
-								$players.parent().parent().addClass("flex")
-
-								var len = $players.length
-
-								var nth = ""
-
-								if(len % 2){
-									nth = "odd"
-								}else{
-									nth = "even"
-								}
-
-								$root
-									.attr("nth", nth)
-									.attr("count",$players.length)
-							}catch(err){
-								console.log("Err",err);
-							}
 						}
 					}
 
@@ -2655,8 +2601,10 @@ OAuth3.on("ready", function(e){
 								emoji : window.emojis.message ? window.emojis.message : self_player.emoji
 							}
 
+							var dice = cookies.dice * 1
+
 							var query = {
-								dice : cookies.dice,
+								dice : dice > 0 ? dice : 0,
 								href : window.location.href,
 								hash : cookies.hash,
 								token : cookies.token,
@@ -3162,13 +3110,10 @@ OAuth3.on("ready", function(e){
 											}
 
 											if($this.hasClass("Dice")){
-												/*
-													flags 길이가 10개 이상일 때 동작
-													본인 flag에 건물 건설 불가
-												*/ 
-												query.dice = 10
+												query.dice = 7
 												body.cc = "dice"
-												$body.attr("dice",10)
+
+												$body.attr(body.cc,query.dice)
 
 												$('#dice ul').playSpin();
 
