@@ -412,7 +412,7 @@ var slotMachine = function (el, options, track) {
 		easing: 'swing',        // String: easing type for final spin
 		time: 1000,             // Number: total time of spin animation
 		manualStop: false,      // Boolean: spin until user manually click to stop
-		useStopTime: false,     // Boolean: use stop time        
+		useStopTime: true,     // Boolean: use stop time        
 		stopTime: 0,         // Number: total time of stop aniation
 		loops : 6,
 		stopSeq: 'random',      // String: sequence of slot machine end animation, random, leftToRight, rightToLeft
@@ -487,7 +487,7 @@ var slotMachine = function (el, options, track) {
 
 		slot.$el
 			.css('top', -slot.listHeight)
-			.animate({'top': finalPos}, parseInt(finalTime), slot.options.easing, function () {
+			.animate({'top': finalPos}, 500, slot.options.easing, function () {
 				slot.$el.find('li').last().remove(); // Remove the cloned row
 
 				slot.endAnimation(slot.options.endNum);
@@ -1200,10 +1200,16 @@ OAuth3.on("ready", function(e){
 				var dice = cookies.dice
 
 				if(!isNaN(dice)){
-					if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
+					if(!_dice){
+						_dice = dice
+
+						if(Math.ceil(dice) > 0){
+							dice = Math.ceil(dice)
+						}
+					}else if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
 						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2))) * -1
 					}else{
-						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))					
+						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))
 					}
 				}
 
@@ -1507,6 +1513,7 @@ OAuth3.on("ready", function(e){
 
 						var x = position[0]
 						var z = position[1]
+						var _dice_ = position[2]
 
 						var biome = biomes[x+":"+z]
 
@@ -1646,7 +1653,8 @@ OAuth3.on("ready", function(e){
 									_players[_from] = {
 										x : player.x,
 										z : player.z,
-										emoji : player.emoji
+										emoji : player.emoji,
+										dice : _dice_
 									}
 								}
 							}
@@ -2101,7 +2109,7 @@ OAuth3.on("ready", function(e){
 											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
-											<a class="hashType emoji color"></a>
+											<a class="hashType Dice emoji color">${_players[_player_hash].dice ? "🎲" : ""}</a>
 										</li>
 										<li>
 											<a class="hashType Report">Report</a>\
@@ -2419,7 +2427,12 @@ OAuth3.on("ready", function(e){
 						window.Roll.back.loopCount = 6
 					}
 
-					window.Roll.ing = setInterval(window.Roll, 500, biomes)
+					setTimeout(function(){
+						$('#root player tooltip .slotwrapper ul').removeAttr("style")
+						$('#root player tooltip #dice .num').text(dice)
+
+						window.Roll.ing = setInterval(window.Roll, 500, biomes)
+					}, 500)
 				}
 			}catch(err){
 				console.log("err",err);
@@ -3110,7 +3123,8 @@ OAuth3.on("ready", function(e){
 											}
 
 											if($this.hasClass("Dice")){
-												query.dice = 7
+												window.cookies.dice = 0
+												query.dice = 10
 												body.cc = "dice"
 
 												$body.attr(body.cc,query.dice)

@@ -932,12 +932,13 @@ body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="💣"]{display
 #root player tooltip #dice{overflow: hidden; position: absolute; top: -1.5em; left: 0.1em; width: 94%; height: 94%;}
 #root player tooltip #dice .num{}
 #root player tooltip .slot-machine {position: relative; border: 3px solid #000; border-radius: 50%;}
-#root player tooltip .slotwrapper {overflow: hidden; width: 47px; height: 44px; text-align: center;}
-#root player tooltip .slotwrapper > ul {padding: 0; margin: 0; list-style: none; position: relative; font-size: 2em; line-height: 200px;}
-#root player tooltip .slotwrapper > ul > li {display: block; margin: -4px 0 0 -3px; padding: 0; line-height: 47px; font-size: 1em; font-weight: 900; color: #ffffff;}
+#root player tooltip .slotwrapper {position: absolute; left: -1px; top: -2px; overflow: hidden; width: 47px; height: 44px; text-align: center;}
+#root player tooltip .slotwrapper > ul[style]{opacity: 1}
+#root player tooltip .slotwrapper > ul {padding: 0; margin: 0; list-style: none; position: relative; font-size: 2em; line-height: 200px; opacity: 0}
+#root player tooltip .slotwrapper > ul > li {display: block; margin: 0; padding: 0; line-height: 44px; font-size: 1em; font-weight: 900; color: #ffffff;}
 #root player tooltip .slotwrapper > ul[style] > li{opacity: 1}
 #root player tooltip .slotwrapper > ul[style]+.num{opacity: 0;}
-#root player tooltip .slotwrapper .num{position: absolute; left: 0; right: 0; top: -8%; bottom: -2%; line-height: 47px; font-size: 2em; font-weight: 900; color: #ffffff; background-color: #00000033;}
+#root player tooltip .slotwrapper .num{position: absolute; left: -1px; right: 0; top: 0; line-height: 44px; font-size: 2em; font-weight: 900; color: #ffffff;}
 
 
 #root player tooltip li a.Report{top: 20px;}
