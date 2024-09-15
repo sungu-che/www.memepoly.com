@@ -392,6 +392,7 @@ export const Experience = () => {
 
 			if(props.name == "#BEACH"){
 				// color = "black"
+				// emoji = "❓"
 			}
 
 			if(biome){

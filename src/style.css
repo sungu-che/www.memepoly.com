@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap');
 
 *{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000; }
-/**::selection{background-color: inherit; color:inherit;}*/
+*::selection{background-color: inherit; color:inherit;}
 #root {position: fixed; left: 0; top: 0; right: 0; bottom: 0;}
 
 /*body{background-color: #fff !important;}*/
@@ -904,10 +904,10 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 #root player[self="true"][team="#blue"] a.Flag img{filter: invert(100%)}
 
 
-body[biome="BEACH"] #root player tooltip li a.Flag:before{content: "MEME"; position: absolute; left: 0.55em; right: 0; top: 2.2em; text-align: center; font-size: 1.32em; font-weight: 900; z-index: 10; color: #000; text-shadow: none;}
-body[biome="BEACH"] #root player tooltip li a.Flag:after{content: "🗨"; position: absolute; left: 0; right: 0; top: 0.6em; font-size: 4.7em; font-family: 'Noto Color Emoji'}
-body[biome="BEACH"] #root player tooltip li a.Flag img{opacity: 0; pointer-events: none;}
-body[biome="BEACH"] #root player tooltip li a.Flag .cnt{display: none;}
+/*body[biome="BEACH"] #root player tooltip li a.Flag:before{content: "MEME"; position: absolute; left: 0.55em; right: 0; top: 2.2em; text-align: center; font-size: 1.32em; font-weight: 900; z-index: 10; color: red; text-shadow: none;}*/
+/*body[biome="BEACH"] #root player tooltip li a.Flag:after{content: "🗨"; position: absolute; left: 0; right: 0; top: 0.6em; font-size: 4.7em; font-family: 'Noto Color Emoji'}*/
+/*body[biome="BEACH"] #root player tooltip li a.Flag img{opacity: 0; pointer-events: none;}*/
+/*body[biome="BEACH"] #root player tooltip li a.Flag .cnt{display: none;}*/
 
 
 #root player tooltip li a.Flag:after{top:-10px; bottom: -10px; height: auto;}
@@ -927,6 +927,10 @@ body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="💣"]{display
 #root player tooltip li a.emoji{overflow: visible; display: inline-block; top: -20px; border:0; width: 49px; height: 47px; line-height: 0; box-shadow: none; vertical-align: top; font-size: 3.1em;}
 
 
+body[dice="10"][biome="BEACH"] #root player tooltip li a.Flag:before,
+body[dice="0"][biome="BEACH"] #root player tooltip li a.Flag:before{text-decoration: line-through;}
+body[dice="10"] #root player tooltip li a.Flag,
+body[dice="0"] #root player tooltip li a.Flag{pointer-events: none;}
 /*body[dice="0"] #root player tooltip .slotwrapper > ul > li {opacity: 0; pointer-events: none;}*/
 
 #root player tooltip #dice{overflow: hidden; position: absolute; top: -1.5em; left: 0.1em; width: 94%; height: 94%;}

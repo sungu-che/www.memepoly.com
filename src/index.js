@@ -1168,7 +1168,6 @@ OAuth3.on("ready", function(e){
 										if(biomes.x == b.x && biomes.z == b.z){
 											fields.index = i
 										}
-										console.log("#"+b.index, (b.x +":"+ b.z));
 									})
 
 									field = fields[fields.index+1]
@@ -1196,22 +1195,6 @@ OAuth3.on("ready", function(e){
 				var _dice = window.cookies.dice
 
 				var cookies = window.cookies = JSON.parse(resp.body.cookies)
-
-				var dice = cookies.dice
-
-				if(!isNaN(dice)){
-					if(!_dice){
-						_dice = dice
-
-						if(Math.ceil(dice) > 0){
-							dice = Math.ceil(dice)
-						}
-					}else if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
-						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2))) * -1
-					}else{
-						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))
-					}
-				}
 
 				OAuth3.nonces = []
 
@@ -1513,7 +1496,7 @@ OAuth3.on("ready", function(e){
 
 						var x = position[0]
 						var z = position[1]
-						var _dice_ = position[2]
+						var dice = position[2]
 
 						var biome = biomes[x+":"+z]
 
@@ -1577,7 +1560,7 @@ OAuth3.on("ready", function(e){
 									window.bingo[row.Id] = true
 									bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
 								}
-							}else{
+							}else if(row.From){
 								var _from = row.From
 
 								var _nonce = row.Cc.split(` ${hashtag}`)[1]
@@ -1654,7 +1637,7 @@ OAuth3.on("ready", function(e){
 										x : player.x,
 										z : player.z,
 										emoji : player.emoji,
-										dice : _dice_
+										dice : dice
 									}
 								}
 							}
@@ -2105,11 +2088,17 @@ OAuth3.on("ready", function(e){
 											<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
 										</li>`
 									}else{
+										var isDice = false
+
+										if(_players[_player_hash]){
+											isDice = _players[_player_hash].dice
+										}
+
 										tooltip_body = `<li>
 											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
-											<a class="hashType Dice emoji color">${_players[_player_hash].dice ? "🎲" : ""}</a>
+											<a class="hashType Dice emoji color">${isDice ? "🎲" : ""}</a>
 										</li>
 										<li>
 											<a class="hashType Report">Report</a>\
@@ -2392,6 +2381,22 @@ OAuth3.on("ready", function(e){
 					}
 				}
 
+				var dice = cookies.dice
+
+				if(!isNaN(dice)){
+					if(!_dice){
+						_dice = dice
+
+						if(Math.ceil(dice) > 0){
+							dice = Math.ceil(dice)
+						}
+					}else if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
+						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2))) * -1
+					}else{
+						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))
+					}
+				}
+
 				$body
 					.removeAttr("bingo")
 					.attr("dice",dice)
@@ -2617,7 +2622,7 @@ OAuth3.on("ready", function(e){
 							var dice = cookies.dice * 1
 
 							var query = {
-								dice : dice > 0 ? dice : 0,
+								dice : dice != 0 ? dice : 0,
 								href : window.location.href,
 								hash : cookies.hash,
 								token : cookies.token,
@@ -3100,7 +3105,10 @@ OAuth3.on("ready", function(e){
 												emoji : window.emojis.self
 											}
 
+											var dice = cookies.dice * 1
+
 											var query = {
+												dice : dice != 0 ? dice : 0,
 												href : window.location.href,
 												hash : cookies.hash,
 												token : cookies.token,
@@ -3370,7 +3378,6 @@ OAuth3.on("ready", function(e){
 												var response = function(res){
 													var cookies = JSON.parse(res.body.cookies);
 
-													console.log("cookies",cookies);
 													assets.forEach(function(asset){
 														var $el = $(`[emoji="${asset.emoji}"]`)
 
