@@ -173,9 +173,20 @@ export const Experience = () => {
 
 		try{
 			if(cookies){
-				if(cookies.axis && cookies.dice == 0){
+				// if(cookies.axis && cookies.dice == 0){
+
+
+				if(cookies.axis){
 					if(e.point){
-						point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
+						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
+
+						var biome = window.map.biomes[_point.x+":"+_point.z]
+
+						if(biome.water){
+							return
+						}
+
+						point = _point
 					}else if(e.target.tagName == "CANVAS"){
 						if(typeof point.x != "undefined" && typeof point.z != "undefined"){
 							var player = self()
@@ -292,6 +303,11 @@ export const Experience = () => {
 												window.Tutorial(1, 1)
 											}
 										}else if(window.response){
+											if(cookies.dice != 0){
+												cookies.dice = 0
+												window.response.body.cookies = JSON.stringify(cookies)
+											}
+
 											window.Callback(window.response)
 										}
 									}
@@ -401,10 +417,33 @@ export const Experience = () => {
 				}
 			}
 
-			if(emoji){
-				var hex = window.emojiUnicode(emoji)
+			var field = window.fields[`${props.position.x}:${props.position.z}`]
 
-				var src = `/src/fonts/emoji/emoji_u${hex}.png`
+			if(emoji){
+				if(field){
+					if(field.item || field.meme){
+						return <>
+							<group position={props.position}>
+								<mesh position={[0, 0, 0.005]} onClick={onClick}>
+									<boxGeometry attach="geometry" args={[1, 1]} />
+									<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
+								</mesh>
+								<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
+									<planeGeometry attach="geometry" args={[1, 1]} />
+									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
+								</mesh>
+								<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.511, 0]}>
+									<planeGeometry attach="geometry" args={[0.5, 0.5]} />
+									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.meme)}.png`)} transparent />
+								</mesh>
+
+								<Html className="clipped">
+									<div className="emoji color" x={props.position.x} z={props.position.z}></div>
+								</Html>
+							</group>
+						</>	
+					}
+				}
 
 				return <>
 					<group position={props.position}>
@@ -414,7 +453,7 @@ export const Experience = () => {
 						</mesh>
 						<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
 							<planeGeometry attach="geometry" args={[1, 1]} />
-							<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, src)} transparent />
+							<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
 						</mesh>
 
 						<Html className="clipped">
@@ -423,6 +462,27 @@ export const Experience = () => {
 					</group>
 				</>	
 			}else{
+				if(field){
+					if(field.item || field.meme){
+						return <>
+							<group position={props.position}>
+								<mesh position={[0, 0, 0.005]} onClick={onClick}>
+									<boxGeometry attach="geometry" args={[1, 1]} />
+									<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
+								</mesh>
+								<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.511, 0]}>
+									<planeGeometry attach="geometry" args={[0.5, 0.5]} />
+									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.meme)}.png`)} transparent />
+								</mesh>
+
+								<Html className="clipped">
+									<div className="emoji color" x={props.position.x} z={props.position.z}></div>
+								</Html>
+							</group>
+						</>	
+					}
+				}
+
 				return <>
 					<group position={props.position}>
 						<mesh position={[0, 0, 0.005]} onClick={onClick}>
@@ -469,7 +529,6 @@ export const Experience = () => {
 		window.players = players;
 		window.players.set = setPlayers;
 		window.players.self = self;
-		window.players.move = onClick
 
 		window.assets = assets
 		window.assets.set = setAssets

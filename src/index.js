@@ -61,7 +61,7 @@ window.emojiUnicode.raw = function (input) {
 window.emojis.self = "😀"
 
 window.Subscribe = function(){
-	var $form = document.querySelector('form[name="xim.city"]');
+	var $form = document.querySelector('form[name="memepoly.com"]');
 
 	if(OAuth3.xhr){
 		OAuth3.xhr.abort()
@@ -85,7 +85,7 @@ window.Subscribe = function(){
 		z : window.cursor.current.position.z
 	}
 
-	var url = "https://xim.city";
+	var url = "https://memepoly.com";
 
 	if(OAuth3.localhost){
 		url = "http://localhost:3001"
@@ -113,6 +113,18 @@ window.Subscribe = function(){
 	});
 }
 
+if(window.fields){
+	window.fields.forEach(function(field, index){
+		if(index % 9 == 0){
+			field.meme = "❓"
+		}else if(index % 3 == 0){
+			field.item = "❔"
+		}
+
+		window.fields[`${field.x}:${field.z}`] = field
+	})
+}
+
 window.listToBiomes = function(list, elementsPerSubArray) {
 	var matrix = [], i, k;
 
@@ -134,7 +146,7 @@ window.listToBiomes = function(list, elementsPerSubArray) {
 		list.forEach(function(item, i){
 			if(item){
 				item.x = index + 0.5
-				item.y = item.elevation * 5
+				item.y = item.elevation * 1
 				item.z = (i - area) + 0.5
 
 				window.map.biomes[item.x+":"+item.z] = item
@@ -625,11 +637,7 @@ OAuth3.on("ready", function(e){
 
 	$body.addClass("loading")
 
-	var $go = $("#go")
-
-	if(window.location.hash){		
-		$go.removeAttr("href")
-		
+	if(window.location.hash){
 		$("#nav").prop("checked",false)
 
 		var address = window.location.hash.replace("#","0x")
@@ -684,7 +692,7 @@ OAuth3.on("ready", function(e){
 
 				var body = {}
 
-				var url = "https://xim.city/withdrawal"
+				var url = "https://memepoly.com/withdrawal"
 
 				if(OAuth3.localhost){
 					url = "http://localhost:3001"
@@ -831,7 +839,7 @@ OAuth3.on("ready", function(e){
 					emoji : emoji
 				}
 
-				var url = "https://xim.city"
+				var url = "https://memepoly.com"
 
 				if(OAuth3.localhost){
 					url = "http://localhost:3001"
@@ -882,6 +890,7 @@ OAuth3.on("ready", function(e){
 			}
 		}
 
+
 		window.Roll = function(biomes){
 			try{
 				var dice = Math.ceil(Math.sqrt(Math.pow(window.cookies.dice, 2)))
@@ -889,7 +898,7 @@ OAuth3.on("ready", function(e){
 				if(dice > 0){
 					if(typeof OAuth3.interval == "undefined"){
 						var _size = 2
-						var fields = []
+						var _fields = []
 
 						var reverse = false
 
@@ -899,33 +908,53 @@ OAuth3.on("ready", function(e){
 								(biomes.z - _size < b.z && biomes.z + _size > b.z)
 							){
 								if(b.biome == "BEACH"){
-									fields.push(b)
+									_fields.push(b)
 
 									if(biomes.x == b.x && biomes.z == b.z){
-										fields.current = b
+										_fields.current = b
 									}
 								}
 							}
 						})
 
-						fields.sort(function (a, b) {
+						// if(!window.Beachs){
+						// 	window.Beachs = []
+						// }
+						
+						// var add = false
+
+						// if(_fields.length){
+						// 	_fields.forEach(function(beach, index){
+						// 		if(!add && !window.Beachs["_"+beach.index] && beach.x == biomes.x && beach.z == biomes.z){
+						// 			if(!window.Beachs.length && index == 0){
+						// 				window.Beachs["_"+beach.index] = add = true
+						// 				window.Beachs.push(beach)
+						// 			}else if(window.Beachs.length > 0){
+						// 				window.Beachs["_"+beach.index] = add = true
+						// 				window.Beachs.push(beach)
+						// 			}
+						// 		}
+						// 	})
+						// }
+
+						_fields.sort(function (a, b) {
 							return b.x - a.x || a.z - b.z;
 						});
 
-						if(fields.current){
-							fields.forEach(function(b,i){
-								if(fields.current.x == b.x && fields.current.z == b.z){
-									fields.index = i
+						if(_fields.current){
+							_fields.forEach(function(b,i){
+								if(_fields.current.x == b.x && _fields.current.z == b.z){
+									_fields.index = i
 								}
 							})
 
-							fields.next = fields[fields.index+1]
+							_fields.next = _fields[_fields.index+1]
 
-							if(!fields.next){
-								fields.next = fields[fields.index-1]
+							if(!_fields.next){
+								_fields.next = _fields[_fields.index-1]
 							}
 
-							if(fields.next){
+							if(_fields.next){
 								var corners_coast_left = false
 								var corners_coast_right = false
 								var corners_coast = 0
@@ -936,42 +965,42 @@ OAuth3.on("ready", function(e){
 
 								var currentIdx, nextIdx = 0
 
-								fields.next.neighbors.forEach(function(field, i){
+								_fields.next.neighbors.forEach(function(field, i){
 									if(field.ocean){
 										next_ocean++
 									}
 									
-									if(field.index == fields.current.index){
+									if(field.index == _fields.current.index){
 										currentIdx = i
 									}
 								})
 
 
 
-								fields.next.corners.forEach(function(field, i){
+								_fields.next.corners.forEach(function(field, i){
 									if(field.coast){
 										next_coast++
 									}
 								})
 
-								fields.current.neighbors.forEach(function(field, i){
+								_fields.current.neighbors.forEach(function(field, i){
 									if(field.ocean){
 										current_ocean++
 									}
-									if(field.index == fields.next.index){
+									if(field.index == _fields.next.index){
 										nextIdx = i
 									}
 								})
 
-								if(fields.current.corners[0].coast){
+								if(_fields.current.corners[0].coast){
 									corners_coast_left = true
 								}
 
-								if(fields.current.corners[1].coast){
+								if(_fields.current.corners[1].coast){
 									corners_coast_right = true
 								}
 
-								fields.current.corners.forEach(function(field, i){
+								_fields.current.corners.forEach(function(field, i){
 									if(field.coast){
 										corners_coast++
 									}
@@ -981,17 +1010,17 @@ OAuth3.on("ready", function(e){
 									var diff = currentIdx - nextIdx
 
 									if(diff == 1){
-										if(fields.next.neighbors[nextIdx]){
-											if(fields.next.neighbors[nextIdx+1]){
-												if(fields.next.neighbors[nextIdx+1].ocean){
+										if(_fields.next.neighbors[nextIdx]){
+											if(_fields.next.neighbors[nextIdx+1]){
+												if(_fields.next.neighbors[nextIdx+1].ocean){
 													reverse = true
 												}
 											}
 										}
 
-										if(fields.current.neighbors[currentIdx]){
-											if(fields.current.neighbors[currentIdx+1]){
-												if(fields.current.neighbors[currentIdx+1].ocean){
+										if(_fields.current.neighbors[currentIdx]){
+											if(_fields.current.neighbors[currentIdx+1]){
+												if(_fields.current.neighbors[currentIdx+1].ocean){
 													reverse = true
 												}
 											}
@@ -999,41 +1028,41 @@ OAuth3.on("ready", function(e){
 									}else{
 										var _idx = Math.sqrt(Math.pow(diff, 2))
 
-										if(fields.next.neighbors[_idx]){
-											if(fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean){
+										if(_fields.next.neighbors[_idx]){
+											if(_fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean){
 												reverse = true
-											}else if(!fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean){
+											}else if(!_fields.next.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean){
 												reverse = true
-											}else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+											}else if(!_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){
 												reverse = true
 											}
 										}
 
-										if(fields.current.neighbors[_idx]){
-											if((fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean) || (fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean)){
+										if(_fields.current.neighbors[_idx]){
+											if((_fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && _fields.current.neighbors[_idx].ocean) || (_fields.next.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && _fields.current.neighbors[_idx].ocean)){
 												reverse = true
 
 											}else{
 												if(next_ocean == current_ocean){
 													reverse = false
-												}else if((corners_coast < 2 && fields.length <= 3) || (corners_coast >= 2 && fields.length > 3)){
+												}else if((corners_coast < 2 && _fields.length <= 3) || (corners_coast >= 2 && _fields.length > 3)){
 													reverse = false
 												}
 
 												if(current_ocean >= 2 && next_ocean >= 2){
-													if((corners_coast >= fields.length || fields.current.x > 0) && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+													if((corners_coast >= _fields.length || _fields.current.x > 0) && _fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && !_fields.current.neighbors[_idx].ocean){
 														reverse = true
 													}else{
 														reverse = false
 													}
-												}else if(corners_coast < 2 && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+												}else if(corners_coast < 2 && _fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && !_fields.current.neighbors[_idx].ocean){
 													reverse = false
 												}
-												if(!fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
-													if(fields.current.z < 0){
+												if(!_fields.next.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].coast && !_fields.current.neighbors[_idx].ocean){
+													if(_fields.current.z < 0){
 														reverse = false
 													}
-												}else if(fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+												}else if(_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){
 													if(corners_coast == current_ocean){
 														if(corners_coast_left && corners_coast_right){
 															reverse = false
@@ -1043,12 +1072,12 @@ OAuth3.on("ready", function(e){
 													}else if(corners_coast > current_ocean){
 														if(corners_coast_left && corners_coast_right){
 															reverse = false
-															var last = fields.splice(fields.length - 1, 1)
-															fields.splice(fields.index + 1, 0, last[0])
+															var last = _fields.splice(_fields.length - 1, 1)
+															_fields.splice(_fields.index + 1, 0, last[0])
 														}
 													}
 													
-												}else if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+												}else if(!_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){
 													if(corners_coast_left && corners_coast_right){
 														reverse = false
 													}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
@@ -1058,7 +1087,7 @@ OAuth3.on("ready", function(e){
 													}
 												}
 
-												if(corners_coast == current_ocean && fields.next.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && !fields.current.neighbors[_idx].ocean){
+												if(corners_coast == current_ocean && _fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && !_fields.current.neighbors[_idx].ocean){
 													if(corners_coast_left && corners_coast_right){
 														reverse = false
 													}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
@@ -1078,21 +1107,21 @@ OAuth3.on("ready", function(e){
 								reverse = true
 							}
 
-							fields.forEach(function(b,i){
+							_fields.forEach(function(b,i){
 								if(biomes.x == b.x && biomes.z == b.z){
-									fields.index = i
+									_fields.index = i
 								}
 								
 							})
 
-							if(fields.index == 0){
-								if((fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+							if(_fields.index == 0){
+								if((_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean)){
 									if(current_ocean >= 2){
 										reverse = true
 									}else{
 										reverse = false
 									}
-								}else if(reverse && fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){
+								}else if(reverse && _fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){
 									reverse = false
 								}
 
@@ -1102,28 +1131,28 @@ OAuth3.on("ready", function(e){
 									reverse = true
 								}
 
-								fields.splice(fields.index, 0, fields.current)
-								fields.splice(0, 1)
-								var last = fields.splice(fields.index - 1, 1)
-								fields.unshift(last[0])
-							}else if(fields.index == (fields.length - 1)){
-								if(fields.next){
-									if(!fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean){	
+								_fields.splice(_fields.index, 0, _fields.current)
+								_fields.splice(0, 1)
+								var last = _fields.splice(_fields.index - 1, 1)
+								_fields.unshift(last[0])
+							}else if(_fields.index == (_fields.length - 1)){
+								if(_fields.next){
+									if(!_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){	
 										reverse = true
 									}
 
-									fields.splice(fields.index - 1, 0, fields.current)
-									fields.splice((fields.length - 1), 1)
+									_fields.splice(_fields.index - 1, 0, _fields.current)
+									_fields.splice((_fields.length - 1), 1)
 								}else{
-									fields.splice(fields.index - 2, 0, fields.current)
-									fields.splice((fields.length - 2), 1)
+									_fields.splice(_fields.index - 2, 0, _fields.current)
+									_fields.splice((_fields.length - 2), 1)
 								}
 
 							}else if(reverse){
 								try{
-									if(corners_coast < next_coast && fields.next.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && fields.current.neighbors[_idx].coast && fields.current.neighbors[_idx].ocean){
-										var last = fields.splice(fields.index - 1, 1)
-										fields.splice(fields.index + 1, 0, last[0])
+									if(corners_coast < next_coast && _fields.next.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && _fields.current.neighbors[_idx].ocean){
+										var last = _fields.splice(_fields.index - 1, 1)
+										_fields.splice(_fields.index + 1, 0, last[0])
 									}
 								}catch(err){
 
@@ -1132,50 +1161,51 @@ OAuth3.on("ready", function(e){
 						}
 
 						if(reverse){
-							fields = fields.reverse()	
+							_fields = _fields.reverse()	
 						}
 
-						fields.forEach(function(b,i){
+						_fields.forEach(function(b,i){
 							if(biomes.x == b.x && biomes.z == b.z){
-								fields.index = i
+								_fields.index = i
 							}
 						})
 
-						if(typeof fields.index != "undefined"){
-							var field = fields[fields.index+1]
+						if(typeof _fields.index != "undefined"){
+							var field = _fields[_fields.index+1]
 
 							if(!field){
-								var field = fields[fields.index]
+								var field = _fields[_fields.index]
 
-								if(fields.index == 0){
-									if(current_ocean >= 2 && (fields.next.neighbors[_idx].coast && fields.current.neighbors[_idx].coast && !fields.next.neighbors[_idx].ocean && !fields.current.neighbors[_idx].ocean)){
+								if(_fields.index == 0){
+									if(current_ocean >= 2 && (_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean)){
 										reverse = true
 									}
-									fields.splice(fields.index, 0, fields.current)
-									fields.splice(0, 1)
-									var last = fields.splice(fields.index - 1, 1)
-									fields.splice(0, 0, last[0])
-								}else if(fields.index == (fields.length - 1)){
-									if(fields.next){
-										fields.splice(1, 1, fields.current)
-										fields.splice((fields.length + 1), 1)
+									_fields.splice(_fields.index, 0, _fields.current)
+									_fields.splice(0, 1)
+									var last = _fields.splice(_fields.index - 1, 1)
+									_fields.splice(0, 0, last[0])
+								}else if(_fields.index == (_fields.length - 1)){
+									if(_fields.next){
+										_fields.splice(1, 1, _fields.current)
+										_fields.splice((_fields.length + 1), 1)
 									}else{
-										fields.splice(fields.index - 1, 0, fields.current)
-										fields.splice((fields.length - 1), 1)
+										_fields.splice(_fields.index - 1, 0, _fields.current)
+										_fields.splice((_fields.length - 1), 1)
 									}
 
-									fields.forEach(function(b,i){
+									_fields.forEach(function(b,i){
 										if(biomes.x == b.x && biomes.z == b.z){
-											fields.index = i
+											_fields.index = i
 										}
 									})
 
-									field = fields[fields.index+1]
+									field = _fields[_fields.index+1]
 								}
 							}
-							window.current.current.position.x = biomes.x = field.x
-							window.current.current.position.y = biomes.y = field.y + 0.01
-							window.current.current.position.z = biomes.z = field.z
+							
+							window.current.current.position.x = window.cursor.current.position.x = biomes.x = field.x
+							window.current.current.position.y = window.cursor.current.position.y = biomes.y = field.y + 0.01
+							window.current.current.position.z = window.cursor.current.position.z = biomes.z = field.z
 						}
 
 						window.cookies.dice = dice - 1
@@ -1200,7 +1230,6 @@ OAuth3.on("ready", function(e){
 
 				if(resp.body.nonces.length){
 					var _nonces = resp.body.body.nonces
-
 						
 					for(var i = 0; i < resp.body.nonces.length; i++){
 						var nonce = resp.body.nonces[i]
@@ -1222,11 +1251,6 @@ OAuth3.on("ready", function(e){
 				var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
 					cc_address = ethers.computeAddress(cc_address).toLowerCase()
 
-				if($go.referer){
-					window.speed = 0.1
-					delete $go.referer
-					$go.removeAttr("href")
-				}
 
 				window.map.report = {}
 
@@ -1242,8 +1266,6 @@ OAuth3.on("ready", function(e){
 
 				var rows = JSON.stringify(resp.body.rows)
 					rows = JSON.parse(rows)
-
-				var beach = []
 
 				var biomes = listToBiomes(window.map.biomes, 100)
 
@@ -1389,9 +1411,6 @@ OAuth3.on("ready", function(e){
 
 					var color = window.Biomes["#"+b.biome]
 
-					if(b.biome == "BEACH"){
-						beach.push(b)
-					}
 					if(
 						(biomes.x - size < b.x && biomes.x + size > b.x) &&
 						(biomes.z - size < b.z && biomes.z + size > b.z)
@@ -1411,7 +1430,7 @@ OAuth3.on("ready", function(e){
 							value : color,
 							color: color,
 							x : b.x,
-							y : b.y - 0.5,
+							y : b.y - (b.water ? 0.8 : 0.5),
 							z : b.z
 						})
 					}
@@ -1724,6 +1743,10 @@ OAuth3.on("ready", function(e){
 
 					if(biome){
 						$body.attr("biome", biome.biome)
+
+						var field = window.fields[`${x}:${z}`]
+
+						$body.attr("field", field ? (field.item || field.meme) : "")
 					}
 
 					if(bombs.length){
@@ -2381,7 +2404,7 @@ OAuth3.on("ready", function(e){
 					}
 				}
 
-				var dice = cookies.dice
+				// var dice = 1
 
 				if(!isNaN(dice)){
 					if(!_dice){
@@ -2525,7 +2548,7 @@ OAuth3.on("ready", function(e){
 				z : z
 			}
 
-			var url = "https://xim.city";
+			var url = "https://memepoly.com";
 
 			if(OAuth3.localhost){
 				url = "http://localhost:3001"
@@ -2598,7 +2621,7 @@ OAuth3.on("ready", function(e){
 
 					if(typeof self_player != "undefined"){
 						if(cookies.hash && !OAuth3.xhr){
-							var url = "https://xim.city"
+							var url = "https://memepoly.com"
 
 							if(OAuth3.localhost){
 								url = "http://localhost:3001"
@@ -2666,12 +2689,17 @@ OAuth3.on("ready", function(e){
 								}
 							}
 
-							OAuth3.xhr = OAuth3.fetch({
-								method : "POST",
-								url : url,
-								body : body,
-								query : query
-							}, window.Callback);
+							// if(window.response){
+							// 	window.Callback(window.response)	
+							// }else{
+								OAuth3.xhr = OAuth3.fetch({
+									method : "POST",
+									url : url,
+									body : body,
+									query : query
+								}, window.Callback);
+							// }
+							
 						}
 					}else if(window.response){
 						window.setFrameloop("always")
@@ -2761,7 +2789,7 @@ OAuth3.on("ready", function(e){
 									delete OAuth3.xhr
 								}
 
-								var url = "https://xim.city/";
+								var url = "https://memepoly.com/";
 
 								if(OAuth3.localhost){
 									url = "http://localhost:3001/"
@@ -2843,11 +2871,32 @@ OAuth3.on("ready", function(e){
 						if(window.players){
 							if(window.players.length){
 								if(cookies.hash){
-									var player = window.players.self()
+									var player
+
+									try{
+										player = window.players.self()
+									}catch(err){
+										var axis = cookies.axis
+
+										if(axis){
+											axis = axis.split(",")
+
+											player = {
+												team : cookies.team ? cookies.team : "",
+												follow : false,
+												self : true,
+												hash : cookies.address ? cookies.address : cookies.hash,
+												emoji : "😀",
+												x : axis[0] * 1,
+												y : axis[1] * 1,
+												z : axis[2] * 1
+											}
+										}
+									}
 
 									var $player = $('player[id="'+player.hash+'"][alt="player"]')
 
-									var url = "https://xim.city";
+									var url = "https://memepoly.com";
 
 									if(OAuth3.localhost){
 										url = "http://localhost:3001"
@@ -3064,7 +3113,7 @@ OAuth3.on("ready", function(e){
 											host = OAuth3.localhost
 										}
 
-										var url = "https://xim.city/";
+										var url = "https://memepoly.com/";
 
 										if(OAuth3.localhost){
 											url = "http://localhost:3001/"
@@ -3289,7 +3338,7 @@ OAuth3.on("ready", function(e){
 											if($assets.length){
 												$body.attr("swap", true)
 
-												var url = "https://xim.city/"
+												var url = "https://memepoly.com/"
 
 												if(OAuth3.localhost){
 													url = "http://localhost:3001/"
@@ -3429,7 +3478,7 @@ OAuth3.on("ready", function(e){
 															host = OAuth3.localhost
 														}
 
-														var url = "https://xim.city/";
+														var url = "https://memepoly.com/";
 
 														if(OAuth3.localhost){
 															url = "http://localhost:3001/"
@@ -3470,7 +3519,7 @@ OAuth3.on("ready", function(e){
 																delete OAuth3.xhr
 															}
 
-															var _href = "https://xim.city/"+cookies.vapid
+															var _href = "https://memepoly.com/"+cookies.vapid
 
 															if(!cookies.vapid){
 																$('.emoji_asset[method="notify"]').removeClass("on")
@@ -3485,7 +3534,7 @@ OAuth3.on("ready", function(e){
 																	$body.append('<notify><input type="checkbox" id="notify"><div class="tb"><div class="tc"></div></div></notify>')
 																}
 
-																document.querySelector("notify .tc").innerHTML = `<form name="xim.city" action="javascript:Subscribe()">
+																document.querySelector("notify .tc").innerHTML = `<form name="memepoly.com" action="javascript:Subscribe()">
 																	<qr>
 																		<a class="qr-code"></a>
 																		<label for="notify">
@@ -3747,22 +3796,21 @@ OAuth3.on("ready", function(e){
 
 							window.setFrameloop("always")
 
-							
-
 							var players = window.players
 
 							var player = window.players.self()
 								player.x = window.current.current.position.x + position.x
-								
 								player.z = window.current.current.position.z + position.z
 
 							var biome = window.map.biomes[player.x+":"+player.z]
 
+							if(biome.water){
+								return
+							}
+
 							// player.y = biome.y
 
 							var edge = (window.grid.edge / 2) + 1
-
-							var $go = $("#go")
 							
 							if(player.x < edge && player.x > -edge && player.z < edge && player.z > -edge){
 								if(window.camera){
@@ -3777,36 +3825,6 @@ OAuth3.on("ready", function(e){
 
 								window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = player.x								
 								window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = player.z
-							}
-
-							var _edge = ( window.grid.edge / 2 ) - 1
-
-							if(player.x < -_edge || player.z < -_edge || player.x > _edge || player.z > _edge){
-								var alpha = 0
-
-								if(player.x > _edge || player.z < -_edge){
-									alpha = 1
-								}else if(player.x < -_edge || player.z > _edge){
-									alpha = -1
-								}
-
-								var cc_address = ethers.hashMessage(window.location.href.replace(window.location.protocol+"//",""))
-									cc_address = ethers.computeAddress(cc_address).toLowerCase()
-
-								if(window.location.hash){
-									cc_address = window.location.hash.replace("#","")
-								}
-
-								var href = window.numStringToBytes32(
-									(BigInt(window.bytes32ToNumString(cc_address))+BigInt(alpha)).toString()
-								).replace("0x","#")
-
-								$go.attr("href",href)
-								$go.text(alpha > 0 ? "east" : "west")
-								$go.attr("way", (alpha > 0 ? "east" : "west"))
-							}else{
-								$go.removeAttr("href")
-								$go.removeAttr("way")
 							}
 
 							window.Callback(window.response)
@@ -4009,7 +4027,7 @@ OAuth3.on("ready", function(e){
 						window.emojis.self = body.emoji
 					}
 
-					var url = "https://xim.city";
+					var url = "https://memepoly.com";
 
 					if(OAuth3.localhost){
 						url = "http://localhost:3001"
@@ -4203,7 +4221,7 @@ OAuth3.on("ready", function(e){
 						</span>`)
 					}else{
 						$("#intro .title .emoji").html('<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">')
-						$("#intro .coptyright p").html('XIM.CITY')
+						$("#intro .coptyright p").html('memepoly.com')
 					}
 
 					if(OAuth3.xhr){
@@ -4213,9 +4231,6 @@ OAuth3.on("ready", function(e){
 
 					clearInterval(window.Poll.ing)
 					window.Poll.ing = setInterval(window.Poll, 300)
-
-					$go.referer = true
-
 
 					$status.innerHTML = `<div class="loading">
 						<strong>Loading...</strong>

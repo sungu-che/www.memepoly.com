@@ -904,12 +904,6 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 #root player[self="true"][team="#blue"] a.Flag img{filter: invert(100%)}
 
 
-/*body[biome="BEACH"] #root player tooltip li a.Flag:before{content: "MEME"; position: absolute; left: 0.55em; right: 0; top: 2.2em; text-align: center; font-size: 1.32em; font-weight: 900; z-index: 10; color: red; text-shadow: none;}*/
-/*body[biome="BEACH"] #root player tooltip li a.Flag:after{content: "🗨"; position: absolute; left: 0; right: 0; top: 0.6em; font-size: 4.7em; font-family: 'Noto Color Emoji'}*/
-/*body[biome="BEACH"] #root player tooltip li a.Flag img{opacity: 0; pointer-events: none;}*/
-/*body[biome="BEACH"] #root player tooltip li a.Flag .cnt{display: none;}*/
-
-
 #root player tooltip li a.Flag:after{top:-10px; bottom: -10px; height: auto;}
 #root player tooltip li a.Flag:before{content: "Fire"; position: absolute; left: 0; right: 0; bottom: 6px; z-index: 1; color:#fff;}
 #root player tooltip li a.Flag{overflow: visible; top: 26px; display: inline-block; border:0; width: 49px; height: 47px; line-height: 0; border:none; background-size: cover; box-shadow: none;}
@@ -920,7 +914,10 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 
 #root player[self="true"] tooltip li a.Dice{opacity: 0; pointer-events: none;}
 body[biome="BEACH"] #root player[self="true"] tooltip li a.Dice{opacity: 1; pointer-events: initial;}
-body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="💣"]{display: none;}
+body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="😎"]{display: none;}
+
+body[field="item"] #root player tooltip li a.Flag,
+body[field="meme"] #root player tooltip li a.Flag{pointer-events: none; opacity: 0.8; text-decoration: line-through;}
 
 #root player tooltip li a.emoji.Balance{top: 20px;}
 #root player tooltip li a.emoji.Balance .cnt{top: -22px; right: -2px; left: 3px; bottom: 19px; border-radius: 50%; line-height: 48px; background: #00000096;}
@@ -982,16 +979,10 @@ table{border-spacing:0px;border-collapse:collapse;}
 #root player[type="video"] emoji[type="image"] [data-plyr-provider]:empty+picture img{border: 0;}
 
 #root .emoji .address,
-#root .emoji picture *{position: relative; display: block; width: 18vh; height: auto; transition-duration: 0.2s; filter: drop-shadow(0 1px 2px #000);}
+#root .emoji picture *{position: relative; display: block; width: 18vh; height: auto; transition-duration: 0.2s; filter: drop-shadow(0 1px 2px #000); opacity: 0.85}
 #root .emoji picture source{display: none;}
 /*{pointer-events: none}*/
 
-#root player[type][alt="playground"] emoji{left: -7.5vh}
-#root player[type][alt="playground"] .emoji picture img{padding: 5px; width: 14vh; border:3px solid #fff; border-radius: 50%; box-sizing: border-box; opacity: 0.5; background-color: #fff;}
-#root player[type][alt="playground"] .address{width: 14vh;}
-/*#root player[type][alt="playground"] .hashType.Dialog{text-decoration:line-through;}*/
-
-#root player[type][alt="playground"] tooltip{left: -6.8em;}
 
 
 
