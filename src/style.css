@@ -694,6 +694,8 @@ emojis .tab_content .deck .emoji_asset>a{position: relative; /*overflow: hidden;
 emojis .tab_content .deck .emoji_asset>a.emoji{top: -3px;}
 emojis .tab_content .deck .emoji_asset:hover>a{transform: scale(1.2);}
 
+body[emoji="😎"] emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{filter: invert(100%) grayscale(1);}
+
 /*{filter: grayscale(1);}*/
 emojis .tab_content .deck .emoji_asset[method="recommand"] a{text-shadow: 0 0 0 #ffffff; animation: recommand 2s cubic-bezier(0.5, 0, 0.5, 1) infinite;}
 
@@ -916,6 +918,8 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 body[biome="BEACH"] #root player[self="true"] tooltip li a.Dice{opacity: 1; pointer-events: initial;}
 body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="😎"]{display: none;}
 
+body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="💣"]{display: none;}
+
 body[field="item"] #root player tooltip li a.Flag,
 body[field="meme"] #root player tooltip li a.Flag{pointer-events: none; opacity: 0.8; text-decoration: line-through;}
 
@@ -930,7 +934,7 @@ body[dice="10"] #root player tooltip li a.Flag,
 body[dice="0"] #root player tooltip li a.Flag{pointer-events: none;}
 /*body[dice="0"] #root player tooltip .slotwrapper > ul > li {opacity: 0; pointer-events: none;}*/
 
-#root player tooltip #dice{overflow: hidden; position: absolute; top: -1.5em; left: 0.1em; width: 94%; height: 94%;}
+#root player tooltip #dice{overflow: hidden; position: absolute; top: -1.5em; left: 0.05em; width: 94%; height: 94%;}
 #root player tooltip #dice .num{}
 #root player tooltip .slot-machine {position: relative; border: 3px solid #000; border-radius: 50%;}
 #root player tooltip .slotwrapper {position: absolute; left: -1px; top: -2px; overflow: hidden; width: 47px; height: 44px; text-align: center;}

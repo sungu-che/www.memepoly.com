@@ -839,6 +839,21 @@ OAuth3.on("ready", function(e){
 					emoji : emoji
 				}
 
+				if(OAuth3.nonces){
+					if(OAuth3.nonces.length){
+						body.nonces = []
+
+						for(var i = 0; i < OAuth3.nonces.length; i++){
+							var nonce = OAuth3.nonces[i]
+
+							body.nonces.push(nonce)
+						}
+
+						body.nonces = JSON.stringify(body.nonces)
+					}
+				}
+				
+
 				var url = "https://memepoly.com"
 
 				if(OAuth3.localhost){
@@ -848,6 +863,7 @@ OAuth3.on("ready", function(e){
 				var type = window.typeof_emoji(emoji)
 
 				if(type == "emoji"){
+					$body.attr("emoji",emoji)
 					if(!local){
 						OAuth3.fetch({
 							method : "POST",
@@ -893,7 +909,7 @@ OAuth3.on("ready", function(e){
 
 		window.Roll = function(biomes){
 			try{
-				var dice = Math.ceil(Math.sqrt(Math.pow(window.cookies.dice, 2)))
+				var dice = window.cookies.dice  * 1
 
 				if(dice > 0){
 					if(typeof OAuth3.interval == "undefined"){
@@ -1222,7 +1238,7 @@ OAuth3.on("ready", function(e){
 			try{
 				var url = new URL(window.location.href)
 
-				var _dice = window.cookies.dice
+				var _dice = window.cookies.dice * 1
 
 				var cookies = window.cookies = JSON.parse(resp.body.cookies)
 
@@ -1268,6 +1284,10 @@ OAuth3.on("ready", function(e){
 					rows = JSON.parse(rows)
 
 				var biomes = listToBiomes(window.map.biomes, 100)
+
+				var isDice = Math.sqrt(Math.pow(cookies.dice, 2)) > 0 && cookies.dice != -10
+
+				console.log('cookies.dice',cookies.dice);
 
 				var self_player
 
@@ -1404,7 +1424,95 @@ OAuth3.on("ready", function(e){
 						}
 					}
 				}
-					
+				
+				var progress = []
+
+				if(rows.length){
+					for(var r = 0; r < rows.length; r++){
+						var row = rows[r];
+
+						try{
+							var hashtag = getHashtag(row.Cc)
+
+							var position = row.Cc.split(` ${hashtag}`)[0]
+								position = JSON.parse(`[${position}]`)
+
+							row.x = position[0]
+							row.z = position[1]
+							row.dice = position[2]
+
+							var _nonce = row.Cc.split(` ${hashtag}`)[1]
+								_nonce = _nonce.split("@")[0].trim()
+
+							var biome 
+
+							if(window.Biomes[hashtag]){
+								biome = window.map.biomes[row.x+":"+row.z]
+							}
+
+							if(row.Cc.indexOf("#dice") > -1 && isDice){
+								console.log("dice row",row);
+								progress[`${row.x}:${row.z}`] = row
+
+								progress.push(row)
+
+								progress.nonce = _nonce
+
+								if(OAuth3.nonces.indexOf(_nonce) == -1){
+									OAuth3.nonces.push(_nonce)
+								}
+
+								console.log('OAuth3.nonces.indexOf(_nonce)',OAuth3.nonces.indexOf(_nonce));
+
+								console.log('OAuth3.nonces',OAuth3.nonces);
+							}
+
+							if(row.Cc.indexOf("#report") > -1){
+								if(!window.map.report[row.To]){
+									window.map.report[row.To] = []
+								}
+
+								window.map.report[row.To].push(row)
+
+							}
+						}catch(err){
+							console.log('err',err);
+						}
+					}
+				}
+
+				console.log('progress',progress)
+
+				if(isDice){
+					if(progress.length){
+						progress.start = progress[progress.length - 1]
+
+						var div = fields[`${progress.start.x}:${progress.start.z}`]
+
+						var _fields = fields.splice(div.index, fields.length)
+
+						fields = _fields.concat(fields)
+
+						var start
+
+						fields.forEach(function(field, index){
+							field.index = index
+							fields[`${field.x}:${field.z}`] = field
+
+							if(progress.start.x == field.x && progress.start.z == field.z){
+								start = true
+							}
+
+							if(!progress.ing && start){
+								progress[`${field.x}:${field.z}`] = field
+
+								if(field.x == biomes.x && field.z == biomes.z){
+									progress.ing = field
+								}
+							}
+						})
+					}
+				}
 
 				biomes.forEach(function(b, i){
 					var _id = crc32(cc_address+i).toString(32).toUpperCase()
@@ -1423,6 +1531,10 @@ OAuth3.on("ready", function(e){
 							isBiome = true
 						}
 
+						if(progress[`${b.x}:${b.z}`] && fields[`${biomes.x}:${biomes.z}`]){
+							color = cookies.team.replace("#","")
+						}
+
 						_assets.push({
 							id : _id,
 							hash : cc_address,
@@ -1436,38 +1548,6 @@ OAuth3.on("ready", function(e){
 					}
 				})
 
-				if(rows.length){
-					for(var r = 0; r < rows.length; r++){
-						var row = rows[r];
-
-						try{
-							var hashtag = getHashtag(row.Cc)
-
-							var position = row.Cc.split(` ${hashtag}`)[0]
-							position = JSON.parse(`[${position}]`)
-
-							var _x = position[0]
-							var _z = position[1]
-
-							var biome 
-
-							if(window.Biomes[hashtag]){
-								biome = window.map.biomes[_x+":"+_z]
-							}
-
-							if(row.Cc.indexOf("#report") > -1){
-								if(!window.map.report[row.To]){
-									window.map.report[row.To] = []
-								}
-
-								window.map.report[row.To].push(row)
-
-							}
-						}catch(err){
-							// console.log('err',err);
-						}
-					}
-				}
 
 				if(cookies.subscription){
 					$('.emoji_asset[method="notify"]').addClass("on")
@@ -1515,7 +1595,7 @@ OAuth3.on("ready", function(e){
 
 						var x = position[0]
 						var z = position[1]
-						var dice = position[2]
+						var dice = position[2] * 1
 
 						var biome = biomes[x+":"+z]
 
@@ -1525,7 +1605,7 @@ OAuth3.on("ready", function(e){
 							var _nonce = row.Cc.split(` ${hashtag}`)[1]
 								_nonce = _nonce.split("@")[0].trim()
 
-							if(_nonce.indexOf(cc_address) == -1 && ((!row.Flag && window.Biomes[hashtag]) || row.Flag && !window.Biomes[hashtag]) ){
+							if(progress.nonce != _nonce && _nonce.indexOf(cc_address) == -1 && ((!row.Flag && window.Biomes[hashtag]) || row.Flag && !window.Biomes[hashtag]) ){
 								var _index = OAuth3.nonces.indexOf(_nonce)
 
 								if(_index > -1){
@@ -1537,7 +1617,7 @@ OAuth3.on("ready", function(e){
 						}
 
 						if(window.Biomes[hashtag] && isRender){
-							if(row.Flag){
+							if(row.Flag && hashtag != "#dice"){
 								delete window.map.biomes[row.Id]
 								
 								var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
@@ -1569,7 +1649,7 @@ OAuth3.on("ready", function(e){
 								follow : false	
 							}
 
-							var type = window.typeof_emoji(emoji)
+							var typeof_emoji = window.typeof_emoji(emoji)
 
 
 							if(row.Flag && isRender){
@@ -1590,7 +1670,7 @@ OAuth3.on("ready", function(e){
 								}
 
 
-								if(type && (cookies.address == _from || cookies.hash == _from)){
+								if(typeof_emoji && (cookies.address == _from || cookies.hash == _from)){
 									self = true
 
 									player.self = true
@@ -1620,7 +1700,7 @@ OAuth3.on("ready", function(e){
 										player.emoji = window.emojis.self
 									}
 								}else{
-									if(!type && window.map.biomes[row.Id]){
+									if(!typeof_emoji && window.map.biomes[row.Id]){
 										delete window.map.biomes[row.Id]
 									}
 
@@ -1639,6 +1719,7 @@ OAuth3.on("ready", function(e){
 											follow : player.follow,
 											self : player.self,
 											hash : _from,
+											dice : dice,
 											x : player.x,
 											y : player.y,
 											z : player.z,
@@ -1694,6 +1775,7 @@ OAuth3.on("ready", function(e){
 									follow : false,
 									self : false,
 									hash : _from,
+									dice : 0,
 									x : x,
 									y : (biome ? biome.y : 0) + 0.5,
 									z : z,
@@ -1728,6 +1810,10 @@ OAuth3.on("ready", function(e){
 
 								row.index = stickers[emoji].length
 
+								if(dice == 0){
+									row.color = true
+								}
+
 								stickers.push(row)
 								stickers[emoji].push(row)
 							}
@@ -1747,6 +1833,12 @@ OAuth3.on("ready", function(e){
 						var field = window.fields[`${x}:${z}`]
 
 						$body.attr("field", field ? (field.item || field.meme) : "")
+
+						var type = window.typeof_emoji(self_player.emoji)
+
+						if(type == "emoji"){
+							$body.attr("emoji",self_player.emoji)
+						}
 					}
 
 					if(bombs.length){
@@ -1961,7 +2053,7 @@ OAuth3.on("ready", function(e){
 								if(row.new){
 									afterSticker.push(row)
 								}
-								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" type="item"><a class="emoji color">${emoji}</a><span class="cnt">${cnt}</span></div>`	
+								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
 							}
 						}
 					}
@@ -2111,17 +2203,17 @@ OAuth3.on("ready", function(e){
 											<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
 										</li>`
 									}else{
-										var isDice = false
+										var typeDice = false
 
 										if(_players[_player_hash]){
-											isDice = _players[_player_hash].dice
+											typeDice = _players[_player_hash].dice
 										}
 
 										tooltip_body = `<li>
 											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
-											<a class="hashType Dice emoji color">${isDice ? "🎲" : ""}</a>
+											<a class="hashType Dice emoji color">${typeDice ? "🎲" : ""}</a>
 										</li>
 										<li>
 											<a class="hashType Report">Report</a>\
@@ -2129,7 +2221,9 @@ OAuth3.on("ready", function(e){
 									}
 
 									var before_body = $tooltip.html()
+									if(before_body){
 										before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+									}
 
 									var after_body = tooltip_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 
@@ -2406,7 +2500,7 @@ OAuth3.on("ready", function(e){
 
 				// var dice = 1
 
-				if(!isNaN(dice)){
+				if(!isNaN(_dice)){
 					if(!_dice){
 						_dice = dice
 
@@ -2424,6 +2518,7 @@ OAuth3.on("ready", function(e){
 					.removeAttr("bingo")
 					.attr("dice",dice)
 					.attr("team",cookies.team ? cookies.team : "")
+					.attr("balance",cookies.balance)
 			
 
 				if(typeof window.Chat == "undefined"){
@@ -3106,46 +3201,6 @@ OAuth3.on("ready", function(e){
 										$("tooltip").removeClass("on")
 									}
 
-									if($this.hasClass("disconnect")){
-										var host = window.location.host
-
-										if(OAuth3.localhost){
-											host = OAuth3.localhost
-										}
-
-										var url = "https://memepoly.com/";
-
-										if(OAuth3.localhost){
-											url = "http://localhost:3001/"
-										}
-
-										var body = {
-											emoji : window.emojis.self,
-											cc : "bomb"
-										}
-
-										var query = {
-											href : window.location.href,
-											hash : cookies.hash,
-											token : cookies.token,
-											x : player.x,
-											y : player.y,
-											z : player.z
-										}
-
-										if(OAuth3.xhr){
-											OAuth3.xhr.abort()
-											delete OAuth3.xhr
-										}
-
-										OAuth3.xhr = OAuth3.fetch({
-											method : "POST",
-											query : query,
-											body : body,
-											url : url
-										}, window.Callback)
-									}
-
 									if($this.hasClass("hashType")){
 										e.preventDefault()
 
@@ -3165,6 +3220,21 @@ OAuth3.on("ready", function(e){
 												y : player.y,
 												z : player.z
 											}
+
+											if(OAuth3.nonces){
+												if(OAuth3.nonces.length){
+													body.nonces = []
+
+													for(var i = 0; i < OAuth3.nonces.length; i++){
+														var nonce = OAuth3.nonces[i]
+
+														body.nonces.push(nonce)
+													}
+
+													body.nonces = JSON.stringify(body.nonces)
+												}
+											}
+											
 
 											var $player = $('player[id="'+player.hash+'"][alt="player"]')
 
@@ -3933,6 +4003,21 @@ OAuth3.on("ready", function(e){
 					subject : message,
 					emoji : player.emoji
 				}
+
+				if(OAuth3.nonces){
+					if(OAuth3.nonces.length){
+						body.nonces = []
+
+						for(var i = 0; i < OAuth3.nonces.length; i++){
+							var nonce = OAuth3.nonces[i]
+
+							body.nonces.push(nonce)
+						}
+
+						body.nonces = JSON.stringify(body.nonces)
+					}
+				}
+				
 
 				var flows = []
 

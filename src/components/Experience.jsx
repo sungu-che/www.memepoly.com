@@ -304,7 +304,7 @@ export const Experience = () => {
 											}
 										}else if(window.response){
 											if(cookies.dice != 0){
-												cookies.dice = 0
+												cookies.dice = -10
 												window.response.body.cookies = JSON.stringify(cookies)
 											}
 
@@ -407,8 +407,12 @@ export const Experience = () => {
 			}
 
 			if(props.name == "#BEACH"){
-				// color = "black"
+				if(props.color){
+					color = props.color
+					// opacity = 0.5
+				}
 				// emoji = "❓"
+				// window.fields
 			}
 
 			if(biome){

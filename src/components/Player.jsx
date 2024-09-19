@@ -150,7 +150,7 @@ export function Player({
 		<group ref={group} {...props} position={position}>
 			<group>
 				<Html>
-					<player id={props_hash} team={props.team} type={type} self={self} follow={follow} verify={verify} alt={alt} x={position.x} y={position.y} z={position.z}>
+					<player id={props_hash} team={props.team} dice={props.dice} type={type} self={self} follow={follow} verify={verify} alt={alt} x={position.x} y={position.y} z={position.z}>
 						<emoji type={type} selector={props_hash}>
 							<div className="emoji color">
 								<div data-plyr-provider={provider} data-plyr-embed-id={embed}></div>
