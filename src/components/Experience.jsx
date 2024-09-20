@@ -173,9 +173,6 @@ export const Experience = () => {
 
 		try{
 			if(cookies){
-				// if(cookies.axis && cookies.dice == 0){
-
-
 				if(cookies.axis){
 					if(e.point){
 						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
@@ -407,9 +404,10 @@ export const Experience = () => {
 			}
 
 			if(props.name == "#BEACH"){
-				if(props.color){
+				if(props.color == "black"){
 					color = props.color
-					// opacity = 0.5
+
+					opacity = 0.5
 				}
 				// emoji = "❓"
 				// window.fields
@@ -425,7 +423,7 @@ export const Experience = () => {
 
 			if(emoji){
 				if(field){
-					if(field.item || field.meme){
+					if(field.item || field.drop){
 						return <>
 							<group position={props.position}>
 								<mesh position={[0, 0, 0.005]} onClick={onClick}>
@@ -436,9 +434,9 @@ export const Experience = () => {
 									<planeGeometry attach="geometry" args={[1, 1]} />
 									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
 								</mesh>
-								<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.511, 0]}>
+								<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
 									<planeGeometry attach="geometry" args={[0.5, 0.5]} />
-									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.meme)}.png`)} transparent />
+									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.drop)}.png`)} transparent />
 								</mesh>
 
 								<Html className="clipped">
@@ -467,7 +465,7 @@ export const Experience = () => {
 				</>	
 			}else{
 				if(field){
-					if(field.item || field.meme){
+					if(field.item || field.drop){
 						return <>
 							<group position={props.position}>
 								<mesh position={[0, 0, 0.005]} onClick={onClick}>
@@ -476,7 +474,7 @@ export const Experience = () => {
 								</mesh>
 								<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.511, 0]}>
 									<planeGeometry attach="geometry" args={[0.5, 0.5]} />
-									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.meme)}.png`)} transparent />
+									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.drop)}.png`)} transparent />
 								</mesh>
 
 								<Html className="clipped">
@@ -491,7 +489,7 @@ export const Experience = () => {
 					<group position={props.position}>
 						<mesh position={[0, 0, 0.005]} onClick={onClick}>
 							<boxGeometry attach="geometry" args={[1, 1]} />
-							<meshStandardMaterial attach="material" map={textures[texture]} opacity={opacity} transparent color={color} />
+							<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
 						</mesh>
 
 						<Html className="clipped">

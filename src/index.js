@@ -116,7 +116,7 @@ window.Subscribe = function(){
 if(window.fields){
 	window.fields.forEach(function(field, index){
 		if(index % 9 == 0){
-			field.meme = "❓"
+			field.drop = "❓"
 		}else if(index % 3 == 0){
 			field.item = "❔"
 		}
@@ -1287,8 +1287,6 @@ OAuth3.on("ready", function(e){
 
 				var isDice = Math.sqrt(Math.pow(cookies.dice, 2)) > 0 && cookies.dice != -10
 
-				console.log('cookies.dice',cookies.dice);
-
 				var self_player
 
 				var _players = []
@@ -1310,9 +1308,7 @@ OAuth3.on("ready", function(e){
 
 				var pending = []
 
-				var damage = []
-
-				var size = 5
+				var size = 3
 
 				var isBiome = false
 
@@ -1451,7 +1447,6 @@ OAuth3.on("ready", function(e){
 							}
 
 							if(row.Cc.indexOf("#dice") > -1 && isDice){
-								console.log("dice row",row);
 								progress[`${row.x}:${row.z}`] = row
 
 								progress.push(row)
@@ -1461,10 +1456,6 @@ OAuth3.on("ready", function(e){
 								if(OAuth3.nonces.indexOf(_nonce) == -1){
 									OAuth3.nonces.push(_nonce)
 								}
-
-								console.log('OAuth3.nonces.indexOf(_nonce)',OAuth3.nonces.indexOf(_nonce));
-
-								console.log('OAuth3.nonces',OAuth3.nonces);
 							}
 
 							if(row.Cc.indexOf("#report") > -1){
@@ -1476,54 +1467,54 @@ OAuth3.on("ready", function(e){
 
 							}
 						}catch(err){
-							console.log('err',err);
+							// console.log('err',err);
 						}
 					}
 				}
 
-				console.log('progress',progress)
-
 				if(isDice){
 					if(progress.length){
+						progress = progress.reverse()
+
 						progress.start = progress[progress.length - 1]
 
 						var div = fields[`${progress.start.x}:${progress.start.z}`]
 
-						var _fields = fields.splice(div.index, fields.length)
+						if(div){
+							var fields_ = fields.slice()
 
-						fields = _fields.concat(fields)
+							var _fields = fields_.splice(div.index, fields.length)
 
-						var start
+							fields_ = _fields.concat(fields_)
 
-						fields.forEach(function(field, index){
-							field.index = index
-							fields[`${field.x}:${field.z}`] = field
+							var start
 
-							if(progress.start.x == field.x && progress.start.z == field.z){
-								start = true
-							}
+							fields_.forEach(function(field, index){
+								field.index = index
+								fields[`${field.x}:${field.z}`] = field
 
-							if(!progress.ing && start){
-								progress[`${field.x}:${field.z}`] = field
-
-								if(field.x == biomes.x && field.z == biomes.z){
-									progress.ing = field
+								if(progress.start.x == field.x && progress.start.z == field.z){
+									start = true
 								}
-							}
-						})
+
+								if(!progress.ing && start){
+									progress[`${field.x}:${field.z}`] = field
+
+									if(field.x == biomes.x && field.z == biomes.z){
+										progress.ing = field
+									}
+								}
+							})
+						}
 					}
 				}
 
 				biomes.forEach(function(b, i){
-					var _id = crc32(cc_address+i).toString(32).toUpperCase()
-
-					var color = window.Biomes["#"+b.biome]
-
 					if(
 						(biomes.x - size < b.x && biomes.x + size > b.x) &&
 						(biomes.z - size < b.z && biomes.z + size > b.z)
 					){
-						biomes[b.x+":"+b.z] = b
+						var color = window.Biomes["#"+b.biome]
 
 						var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
 
@@ -1532,8 +1523,10 @@ OAuth3.on("ready", function(e){
 						}
 
 						if(progress[`${b.x}:${b.z}`] && fields[`${biomes.x}:${biomes.z}`]){
-							color = cookies.team.replace("#","")
+							color = "black"
 						}
+
+						biomes[b.x+":"+b.z] = b
 
 						_assets.push({
 							id : _id,
@@ -1557,6 +1550,7 @@ OAuth3.on("ready", function(e){
 
 				
 				var flags = resp.body.flags ? resp.body.flags : []
+				flags.temp = 0
 
 				flags[player_hash] = 0
 				flags['#red'] = 0
@@ -1614,6 +1608,11 @@ OAuth3.on("ready", function(e){
 							}
 						}catch(err){
 
+						}
+
+						var meme = {
+							poly : "",
+							play : ""
 						}
 
 						if(window.Biomes[hashtag] && isRender){
@@ -1744,12 +1743,16 @@ OAuth3.on("ready", function(e){
 						}else if(row.Cc.indexOf("#message") > -1){
 							_messages.push(row)
 
+
 						}else if((row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb") && isRender){
 							bombs.push(row)
 
 							if(row.Flag){
 								if(row.To == player_hash){
-									damage.push(row)
+									if(row.Flag == "youtube" || row.Flag == "tiktok"){
+										meme.poly = row.Flag
+										meme.play = hashtag
+									}
 								}
 
 								if(row.Subject == "#bomb"){
@@ -1832,7 +1835,7 @@ OAuth3.on("ready", function(e){
 
 						var field = window.fields[`${x}:${z}`]
 
-						$body.attr("field", field ? (field.item || field.meme) : "")
+						$body.attr("field", field ? (field.item || field.drop) : "")
 
 						var type = window.typeof_emoji(self_player.emoji)
 
@@ -2053,7 +2056,7 @@ OAuth3.on("ready", function(e){
 								if(row.new){
 									afterSticker.push(row)
 								}
-								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
+								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" type="item"><a class="emoji ${row.color ? "color" : "color"}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
 							}
 						}
 					}
@@ -2123,336 +2126,354 @@ OAuth3.on("ready", function(e){
 					console.log("err",err);
 				}
 
-				if(cookies.team){
-					if(flags.length){
-						flags.forEach(function(flag){
-							var hashtag = getHashtag(flag.Cc)
+			
+				// console.log('flags',flags);
+				flags.forEach(function(flag){
+					var hashtag = getHashtag(flag.Cc)
 
+					try{
+						var position = row.Cc.split(` ${hashtag}`)[0]
+							position = JSON.parse(`[${position}]`)
+
+						flag.x = position[0]
+						flag.z = position[1]
+						flag.dice = position[2]
+
+						if(flag.dice == 0){
 							flags[hashtag]++
 							flags[flag.From]++
-						})
+						}else{
+							flags.temp++
+						}
+					}catch(err){
+						console.log("flag",flag);
+					}	
+				})
+			
+				if(cookies.team){
+					var _team = cookies.team.replace("#","")
+
+					$("#flag .red .cnt").text(flags["#red"] ? flags["#red"] : 0)
+					$("#flag .blue .cnt").text(flags["#blue"] ? flags["#blue"] : 0)
+					$("#flag ."+_team+" .temp").text(flags.temp ? flags.temp : "")
+					$("#flag ."+_team).addClass("on")
+				}
+
+				
+				try{
+					if(resp.body.body.cc == "dice"){
+						throw true
 					}
 
-					$("#flag .red").text(flags["#red"] ? flags["#red"] : 0)
-					$("#flag .blue").text(flags["#blue"] ? flags["#blue"] : 0)
-					$("#flag ."+cookies.team.replace("#","")).addClass("on")
+					setTimeout(function(){
+						for(var i = 0; i < window.players.length; i++){
+							var _player = window.players[i]
 
-					
-					try{
-						if(resp.body.body.cc == "dice"){
-							throw true
-						}
+							try{
+								var $player = $('player[id="'+_player.hash+'"]')
+								var $tooltip = $player.find("tooltip ul");
+									$tooltip.removeClass("open")
 
-						setTimeout(function(){
-							for(var i = 0; i < window.players.length; i++){
-								var _player = window.players[i]
+								var _player_hash = _player.hash.indexOf("0x") == 0 ? _player.hash.replace("0x", "") : _player.hash
+									_player_hash = _player_hash.toLowerCase()
 
-								try{
-									var $player = $('player[id="'+_player.hash+'"]')
-									var $tooltip = $player.find("tooltip ul");
-										$tooltip.removeClass("open")
+								var tooltip_body = ""
 
-									var _player_hash = _player.hash.indexOf("0x") == 0 ? _player.hash.replace("0x", "") : _player.hash
-										_player_hash = _player_hash.toLowerCase()
+								var cnt = 0
 
-									var tooltip_body = ""
+								if(flags[_player_hash]){
+									cnt = flags[_player_hash]
+								}
 
-									var cnt = 0
+								var hex = window.emojiUnicode("🔥")
+									
+								var src = `/src/fonts/emoji/animated/${hex}.webp`
 
-									if(flags[_player_hash]){
-										cnt = flags[_player_hash]
-									}
-
-									var hex = window.emojiUnicode("🔥")
-										
-									var src = `/src/fonts/emoji/animated/${hex}.webp`
-
-									if(_player.emoji == "🔥"){
-										// tooltip_body = `<li>
-										// 	<a class="hashType"></a>
-										// </li>
-										// <li>
-										// 	<a class="hashType">🏗</a>
-										// </li>
-										// <li>
-										// 	<a class="hashType"></a>
-										// </li>`
-									}else if(player_hash.indexOf(_player_hash) > -1){
-										tooltip_body = `<li>
-											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
-										</li>
-										<li>
-											<a class="hashType Dice emoji color">
-												🎲
-												<div id="dice" class="slot-machine">
-													<div class="slotwrapper">
-														<ul>
-															<li>1</li>
-															<li>2</li>
-															<li>3</li>
-															<li>4</li>
-															<li>5</li>
-															<li>6</li>
-														</ul>
-														<div class="num">${Math.ceil(Math.sqrt(Math.pow(dice, 2)))}</div>
-													</div>
+								if(_player.emoji == "🔥"){
+									// tooltip_body = `<li>
+									// 	<a class="hashType"></a>
+									// </li>
+									// <li>
+									// 	<a class="hashType">🏗</a>
+									// </li>
+									// <li>
+									// 	<a class="hashType"></a>
+									// </li>`
+								}else if(player_hash.indexOf(_player_hash) > -1){
+									tooltip_body = `<li>
+										<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
+									</li>
+									<li>
+										<a class="hashType Dice emoji color">
+											🎲
+											<div id="dice" class="slot-machine">
+												<div class="slotwrapper">
+													<ul>
+														<li>1</li>
+														<li>2</li>
+														<li>3</li>
+														<li>4</li>
+														<li>5</li>
+														<li>6</li>
+													</ul>
+													<div class="num">${Math.ceil(Math.sqrt(Math.pow(dice, 2)))}</div>
 												</div>
-											</a>
-										</li>
-										<li>
-											<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
-										</li>`
-									}else{
-										var typeDice = false
+											</div>
+										</a>
+									</li>
+									<li>
+										<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
+									</li>`
+								}else{
+									var typeDice = false
 
-										if(_players[_player_hash]){
-											typeDice = _players[_player_hash].dice
+									if(_players[_player_hash]){
+										typeDice = _players[_player_hash].dice
+									}
+
+									tooltip_body = `<li>
+										<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
+									</li>
+									<li>
+										<a class="hashType Dice emoji color">${typeDice ? "🎲" : ""}</a>
+									</li>
+									<li>
+										<a class="hashType Report">Report</a>\
+									</li>`
+								}
+
+								var before_body = $tooltip.html()
+								if(before_body){
+									before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+								}
+
+								var after_body = tooltip_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+
+								if(before_body != after_body){
+									$tooltip.html(after_body)
+								}
+							}catch(err){
+								console.log("err",err);
+							}
+						}
+					},300)
+				}catch(err){
+					// console.log("Err",err);
+				}
+
+				var plyrs = []
+
+				var $talk = $("talks."+player_hash)
+
+				var $form = document.querySelector('form[name="oauth.network"]')
+
+				if(_messages.length){
+					var notify_body = ""
+					var message_body = ""
+					var onMessage = false
+
+					var talks_selector = ""
+
+					var flows = []
+
+					for(var m = 0; m < _messages.length; m++){
+						var row = _messages[m];
+
+						var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
+
+						var duplication = !document.querySelector('messages ul li[id="'+row.Id+'"]')
+
+						if(isMessage && duplication){
+							var Idx
+
+							var $items = document.createElement("items");
+
+							onMessage = true
+
+							var text = `<span>${row.Subject}</span>`
+
+							var self = player_hash == row.From
+
+							var $talks = $("talks."+row.From+" ul")
+
+							if($talks.length && !resp.body.query.date){
+								if(talks_selector){
+									talks_selector += ", "
+								}
+
+								talks_selector += "talks."+row.From
+
+								if(!document.querySelector(`talks ul li[id="${row.Id}"]`)){
+									$talks.append(`<li class="item" id="${row.Id}">
+										<div class="text">
+											<span class="icon" data-from="${row.From}"></span>
+											${text}
+										</div>
+									</li>`)
+								}
+							}
+
+							message_body += `<li id="${row.Id}" class="self item message">
+								<div class="text">
+									<span class="icon" data-from="${row.From}"></span>
+									<text>${text}</text>
+								</div>
+							</li>`
+
+						}else if(row.Cc.indexOf("#reward") > -1 && duplication){
+							// var position = row.Cc.split(" #reward")[0]
+
+							// var asset = JSON.parse("["+position+"]")
+
+							// notify_body += '<li id="'+row.Id+'" class="item notify open '+(player_hash == row.From ? "self" : "")+'">\
+							// 	<div class="text">\
+							// 		<span class="icon" data-from="'+row.From+'"></span>\
+							// 		<text><span class="xyz">['+Math.floor(asset[0])+','+Math.floor(asset[1])+'] Reward</span></text>\
+							// 	</div>\
+							// </li>'
+						}
+					}
+
+					var $messages_ul = $("messages ul")
+
+					var scrollBottom = $messages_ul.html() ? false : true
+
+					if(message_body){
+						if(resp.body.query.date){
+							$messages_ul.prepend(message_body)
+						}else{
+							$messages_ul.append(message_body)
+						}
+					}
+
+					for(var m = 0; m < _messages.length; m++){
+						var row = _messages[m];
+
+						var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
+
+						var duplication = $('messages ul>li[id="'+row.Id+'"]')
+
+						try{
+							if(isMessage && duplication.length && row.Flag){
+								try{
+									var flag = ""
+
+									var flags = row.Flag.split(" ")
+									
+									for(var f = 0; f < flags.length; f++){
+										if(isNaN(flags[f])){
+											flag = flags[f]
 										}
-
-										tooltip_body = `<li>
-											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
-										</li>
-										<li>
-											<a class="hashType Dice emoji color">${typeDice ? "🎲" : ""}</a>
-										</li>
-										<li>
-											<a class="hashType Report">Report</a>\
-										</li>`
 									}
 
-									var before_body = $tooltip.html()
-									if(before_body){
-										before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-									}
+									var _row = _messages[m-1];
 
-									var after_body = tooltip_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+									var _id = ""
 
-									if(before_body != after_body){
-										$tooltip.html(after_body)
+									if(_row){
+										var el = $('messages li[id="'+_row.Id+'"]').find('item[id="'+flag+'"]')
+
+										if(el.length){
+											duplication.html("")
+
+											var seed = row.From.indexOf("0x") == 0 ? row.From : "0x"+row.From
+											var canvas = blockies.create({seed: seed})
+
+											if(row.Flag.indexOf(" ") == -1){
+												var _date = new Date(row.Subject)
+
+												if(isNaN(_date)){
+													el.attr("checked","checked").css("background-image", "url("+canvas.toDataURL()+")")
+												}else{
+													var $item = $(document.createElement("item"))
+														$item.css("background","none").attr({
+															"checked":"checked",
+															"disabled" : "disabled"
+														}).text(row.Subject)
+
+													var $bg = $(document.createElement("span"))
+														$bg.css("background-image", "url("+canvas.toDataURL()+")")
+													
+													$item.append($bg)
+
+													el.closest("items").html("").append($item)
+												}
+											}
+										}
 									}
 								}catch(err){
 									console.log("err",err);
 								}
 							}
-						},300)
-					}catch(err){
-						// console.log("Err",err);
+						}catch(err){
+							console.log("Err",err);
+						}
 					}
 
-					var plyrs = []
+					var scrollHeight = document.documentElement.scrollHeight - (window.innerHeight / 10)
 
-					var $talk = $("talks."+player_hash)
+					var currentScrollHeight = Math.ceil((window.innerHeight + window.scrollY) / 10) * 10
 
-					var $form = document.querySelector('form[name="oauth.network"]')
+					if (
+						(typeof window.Poll.ing == "undefined") || 
+						(resp.body.body.cc == "message") || 
+						(scrollHeight - currentScrollHeight < 0 && window.scrollY > 0)) 
+					{
+						scrollBottom = true
+					}
 
-					if(_messages.length){
-						var notify_body = ""
-						var message_body = ""
-						var onMessage = false
+					if(scrollBottom){
+						var h = document.documentElement.scrollHeight
 
-						var talks_selector = ""
+						$("html,body").scrollTop(h)
+					}
 
-						var flows = []
+					if(notify_body){
+						$("notify ol").append(notify_body)
+					}
 
-						for(var m = 0; m < _messages.length; m++){
-							var row = _messages[m];
+					var $icons = $("messages li .icon")
 
-							var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
+					if($icons.length){
+						$icons.each(function(i, el){
+							var hash = el.dataset.from
 
-							var duplication = !document.querySelector('messages ul li[id="'+row.Id+'"]')
-
-							if(isMessage && duplication){
-								var Idx
-
-								var $items = document.createElement("items");
-
-								onMessage = true
-
-								var text = `<span>${row.Subject}</span>`
-
-								var self = player_hash == row.From
-
-								var $talks = $("talks."+row.From+" ul")
-
-								if($talks.length && !resp.body.query.date){
-									if(talks_selector){
-										talks_selector += ", "
-									}
-
-									talks_selector += "talks."+row.From
-
-									if(!document.querySelector(`talks ul li[id="${row.Id}"]`)){
-										$talks.append(`<li class="item" id="${row.Id}">
-											<div class="text">
-												<span class="icon" data-from="${row.From}"></span>
-												${text}
-											</div>
-										</li>`)
-									}
-								}
-
-								message_body += `<li id="${row.Id}" class="self item message">
-									<div class="text">
-										<span class="icon" data-from="${row.From}"></span>
-										<text>${text}</text>
-									</div>
-								</li>`
-
-							}else if(row.Cc.indexOf("#reward") > -1 && duplication){
-								// var position = row.Cc.split(" #reward")[0]
-
-								// var asset = JSON.parse("["+position+"]")
-
-								// notify_body += '<li id="'+row.Id+'" class="item notify open '+(player_hash == row.From ? "self" : "")+'">\
-								// 	<div class="text">\
-								// 		<span class="icon" data-from="'+row.From+'"></span>\
-								// 		<text><span class="xyz">['+Math.floor(asset[0])+','+Math.floor(asset[1])+'] Reward</span></text>\
-								// 	</div>\
-								// </li>'
-							}
-						}
-
-						var $messages_ul = $("messages ul")
-
-						var scrollBottom = $messages_ul.html() ? false : true
-
-						if(message_body){
-							if(resp.body.query.date){
-								$messages_ul.prepend(message_body)
-							}else{
-								$messages_ul.append(message_body)
-							}
-						}
-
-						for(var m = 0; m < _messages.length; m++){
-							var row = _messages[m];
-
-							var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
-
-							var duplication = $('messages ul>li[id="'+row.Id+'"]')
+							var $icon = $icons.eq(i)
 
 							try{
-								if(isMessage && duplication.length && row.Flag){
-									try{
-										var flag = ""
-
-										var flags = row.Flag.split(" ")
-										
-										for(var f = 0; f < flags.length; f++){
-											if(isNaN(flags[f])){
-												flag = flags[f]
-											}
-										}
-
-										var _row = _messages[m-1];
-
-										var _id = ""
-
-										if(_row){
-											var el = $('messages li[id="'+_row.Id+'"]').find('item[id="'+flag+'"]')
-
-											if(el.length){
-												duplication.html("")
-
-												var seed = row.From.indexOf("0x") == 0 ? row.From : "0x"+row.From
-												var canvas = blockies.create({seed: seed})
-
-												if(row.Flag.indexOf(" ") == -1){
-													var _date = new Date(row.Subject)
-
-													if(isNaN(_date)){
-														el.attr("checked","checked").css("background-image", "url("+canvas.toDataURL()+")")
-													}else{
-														var $item = $(document.createElement("item"))
-															$item.css("background","none").attr({
-																"checked":"checked",
-																"disabled" : "disabled"
-															}).text(row.Subject)
-
-														var $bg = $(document.createElement("span"))
-															$bg.css("background-image", "url("+canvas.toDataURL()+")")
-														
-														$item.append($bg)
-
-														el.closest("items").html("").append($item)
-													}
-												}
-											}
-										}
-									}catch(err){
-										console.log("err",err);
-									}
-								}
+								var canvas = blockies.create({seed: "0x"+hash})
+								$icon.css("background-image", "url("+canvas.toDataURL()+")")
 							}catch(err){
-								console.log("Err",err);
+
 							}
-						}
+						})
+					}
 
-						var scrollHeight = document.documentElement.scrollHeight - (window.innerHeight / 10)
+					var $icons = $("talks li .icon")
 
-						var currentScrollHeight = Math.ceil((window.innerHeight + window.scrollY) / 10) * 10
+					if($icons.length){
+						$icons.each(function(i, el){
+							var hash = el.dataset.from
 
-						if (
-							(typeof window.Poll.ing == "undefined") || 
-							(resp.body.body.cc == "message") || 
-							(scrollHeight - currentScrollHeight < 0 && window.scrollY > 0)) 
-						{
-							scrollBottom = true
-						}
+							var $icon = $icons.eq(i)
 
-						if(scrollBottom){
-							var h = document.documentElement.scrollHeight
+							try{
+								var canvas = blockies.create({seed: "0x"+hash})
+								$icon.css("background-image", "url("+canvas.toDataURL()+")")
+							}catch(err){
 
-							$("html,body").scrollTop(h)
-						}
+							}
+						})						
+					}
 
-						if(notify_body){
-							$("notify ol").append(notify_body)
-						}
+					if(onMessage){
+						$messages.addClass("on")
 
-						var $icons = $("messages li .icon")
-
-						if($icons.length){
-							$icons.each(function(i, el){
-								var hash = el.dataset.from
-
-								var $icon = $icons.eq(i)
-
-								try{
-									var canvas = blockies.create({seed: "0x"+hash})
-									$icon.css("background-image", "url("+canvas.toDataURL()+")")
-								}catch(err){
-
-								}
-							})
-						}
-
-						var $icons = $("talks li .icon")
-
-						if($icons.length){
-							$icons.each(function(i, el){
-								var hash = el.dataset.from
-
-								var $icon = $icons.eq(i)
-
-								try{
-									var canvas = blockies.create({seed: "0x"+hash})
-									$icon.css("background-image", "url("+canvas.toDataURL()+")")
-								}catch(err){
-
-								}
-							})						
-						}
-
-						if(onMessage){
-							$messages.addClass("on")
-
-							$(talks_selector).addClass("on")
-						}
+						$(talks_selector).addClass("on")
 					}
 				}
 
-				if(cookies.damage || damage.length){
+				if(cookies.damage){
 					$body.attr('game',"over")
 				}else{
 					$body.removeAttr('game')
@@ -2890,7 +2911,6 @@ OAuth3.on("ready", function(e){
 									url = "http://localhost:3001/"
 								}
 
-
 								OAuth3.xhr = OAuth3.fetch({
 									method : "POST",
 									query : {
@@ -2960,6 +2980,8 @@ OAuth3.on("ready", function(e){
 
 									}
 								})
+
+								return
 							}
 						}
 
