@@ -14,7 +14,7 @@
 /*body{background-color: #fff !important;}*/
 
 .map{position: absolute; overflow: hidden; right: 0; top: 0; width: 100px; height: 100px; opacity: 0; transition-duration: 0.5s;}
-.map canvas{position: relative; width: 100%; height: 100%;}
+.map canvas{position: relative; width: 100%; height: 100%; transform: scale(2);}
 .map .xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; font-weight: 900; color: #fff; z-index: 1; text-shadow: 0 0 2px black;}
 
 .map .config{display: none;}
