@@ -1336,7 +1336,21 @@ OAuth3.on("ready", function(e){
 				}
 
 				if(window.players.length){
-					self_player = window.players.self()
+					try{
+						self_player = window.players.self()
+					}catch(err){
+						self_player = {
+							team : cookies.team ? cookies.team : "",
+							follow : false,
+							self : true,
+							hash : cookies.address ? cookies.address : cookies.hash,
+							emoji : "😀",
+							x : x,
+							y : y,
+							z : z
+						}
+					}
+						
 					
 					biomes.x = window.current.current.position.x
 					biomes.y = window.current.current.position.y
@@ -1802,9 +1816,7 @@ OAuth3.on("ready", function(e){
 										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
 									}
 								}
-							}
-
-							if(row.To == player_hash){
+							}else if(row.To == player_hash){
 								if(!stickers[emoji]){
 									stickers[emoji] = []
 								}
@@ -2132,7 +2144,7 @@ OAuth3.on("ready", function(e){
 					var hashtag = getHashtag(flag.Cc)
 
 					try{
-						var position = row.Cc.split(` ${hashtag}`)[0]
+						var position = flag.Cc.split(` ${hashtag}`)[0]
 							position = JSON.parse(`[${position}]`)
 
 						flag.x = position[0]
@@ -2204,8 +2216,8 @@ OAuth3.on("ready", function(e){
 										<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 									</li>
 									<li>
-										<a class="hashType Dice emoji color">
-											🎲
+										<a class="hashType Meta emoji color">
+											<i></i>
 											<div id="dice" class="slot-machine">
 												<div class="slotwrapper">
 													<ul>
@@ -2235,7 +2247,7 @@ OAuth3.on("ready", function(e){
 										<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 									</li>
 									<li>
-										<a class="hashType Dice emoji color">${typeDice ? "🎲" : ""}</a>
+										<a class="hashType Meta emoji color">${typeDice ? `<i></i>` : ""}</a>
 									</li>
 									<li>
 										<a class="hashType Report">Report</a>\
@@ -3256,6 +3268,10 @@ OAuth3.on("ready", function(e){
 													body.nonces = JSON.stringify(body.nonces)
 												}
 											}
+
+											var b = window.map.biomes[player.x+":"+player.z]
+
+											console.log("b",b)
 											
 
 											var $player = $('player[id="'+player.hash+'"][alt="player"]')
@@ -3271,10 +3287,18 @@ OAuth3.on("ready", function(e){
 												cc_address = window.location.hash.replace("#", "0x")
 											}
 
-											if($this.hasClass("Dice")){
+											if($this.hasClass("Meta")){
 												window.cookies.dice = 0
-												query.dice = 10
-												body.cc = "dice"
+												
+												body.cc = "bomb"
+
+												if(window.Biomes[`#${b.biome}`]){
+													if(b.biome == "BEACH"){
+														query.dice = 10
+														body.cc = "dice"
+													}
+												}
+											
 
 												$body.attr(body.cc,query.dice)
 

@@ -226,7 +226,9 @@ export const Experience = () => {
 										$("tooltip").removeClass("on");
 										$("#capture>.icon").html('')
 
-										$(".map canvas").css({top : -((point.z * 1.5) + 70) , left : -((point.x * 1.5) + 15 )})
+										// maker
+										$(".map canvas").css({top : - ((point.z * 1) + 50) , left : - ((point.x * 1) + 5) })
+										$(".map .xyz").text(`${point.x} : ${point.z}`)
 
 										var url = "https://emption.red"
 
