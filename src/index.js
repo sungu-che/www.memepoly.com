@@ -846,7 +846,9 @@ OAuth3.on("ready", function(e){
 						for(var i = 0; i < OAuth3.nonces.length; i++){
 							var nonce = OAuth3.nonces[i]
 
-							body.nonces.push(nonce)
+							if(nonce){
+								body.nonces.push(nonce)
+							}
 						}
 
 						body.nonces = JSON.stringify(body.nonces)
@@ -1289,6 +1291,8 @@ OAuth3.on("ready", function(e){
 
 				var self_player
 
+				var flag_players = []
+
 				var _players = []
 					_players.cnt = 0
 
@@ -1384,8 +1388,6 @@ OAuth3.on("ready", function(e){
 							window.current.current.position.x = self_player.x = biomes.x
 							window.current.current.position.y = self_player.y = biomes.y - 0.5
 							window.current.current.position.z = self_player.z = biomes.z
-
-							$(".map canvas").css({top : -((biomes.z * 1.5) + 70) , left : -((biomes.x * 1.5) + 15 )})
 						}
 					}
 
@@ -1434,6 +1436,9 @@ OAuth3.on("ready", function(e){
 						}
 					}
 				}
+
+				$(".voronoi .map").css({top : - ((biomes.z * 2) + 100) , left : - ((biomes.x * 2) + 0) })
+				$(".xyz").text(`${biomes.x} : ${biomes.z}`)
 				
 				var progress = []
 
@@ -1723,11 +1728,42 @@ OAuth3.on("ready", function(e){
 									player.emoji = emoji
 								}
 
-								if(!window.map.report[_from] && (isRender || player.self)){
-									if(!rows[_from]){
-										rows[_from] = true
+								if(!row.Flag){
+									if(!window.map.report[_from] && (isRender || player.self)){
+										if(!rows[_from]){
+											rows[_from] = true
 
-										_players.push({
+											console.log("row",row);
+
+											_players.push({
+												team : hashtag,
+												follow : player.follow,
+												self : player.self,
+												hash : _from,
+												dice : dice,
+												x : player.x,
+												y : player.y,
+												z : player.z,
+												emoji : player.emoji
+											})
+										}
+
+										if(_from == row.From){
+											if(!_players[row.From]){
+												_players.cnt += 1
+											}
+										}
+
+										_players[_from] = {
+											x : player.x,
+											z : player.z,
+											emoji : player.emoji,
+											dice : dice
+										}
+									}
+
+									if(typeof_emoji){
+										flag_players.push({
 											team : hashtag,
 											follow : player.follow,
 											self : player.self,
@@ -1738,19 +1774,6 @@ OAuth3.on("ready", function(e){
 											z : player.z,
 											emoji : player.emoji
 										})
-									}
-
-									if(_from == row.From){
-										if(!_players[row.From]){
-											_players.cnt += 1
-										}
-									}
-
-									_players[_from] = {
-										x : player.x,
-										z : player.z,
-										emoji : player.emoji,
-										dice : dice
 									}
 								}
 							}
@@ -1777,6 +1800,8 @@ OAuth3.on("ready", function(e){
 										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
 									}
 								}
+
+								delete window.map.biomes[`${x}:${z}`].bomb
 							}else{
 								var _from = row.From
 
@@ -1920,6 +1945,8 @@ OAuth3.on("ready", function(e){
 					}
 				}
 
+				console.log('_players',_players);
+
 				try{
 					var diff = false
 					if(window.players){
@@ -2001,7 +2028,7 @@ OAuth3.on("ready", function(e){
 								theta = (angle * Math.PI) / 180,
 								g = -9.8;
 
-							var self = $(this);
+							var $self = $(this);
 
 							var t = 0,
 								z, r, nx, ny,
@@ -2026,12 +2053,12 @@ OAuth3.on("ready", function(e){
 								nx = (ux * t);		
 								ny = (uy * t) + (0.5 * (g) * Math.pow(t, 2));
 								
-								self.css({'bottom' : (ny)+'px', 'left' : (nx)+'px'});
+								$self.css({'bottom' : (ny)+'px', 'left' : (nx)+'px'});
 								
 								t = t + 0.5;
 								
 								if(t > totalt) {
-									self.closest('[style*="transform-origin"]').remove()
+									$self.closest('[style*="transform-origin"]').remove()
 									clearInterval(z);
 								}
 							},50);
@@ -2138,8 +2165,7 @@ OAuth3.on("ready", function(e){
 					console.log("err",err);
 				}
 
-			
-				// console.log('flags',flags);
+				var after_body = ""
 				flags.forEach(function(flag){
 					var hashtag = getHashtag(flag.Cc)
 
@@ -2147,9 +2173,29 @@ OAuth3.on("ready", function(e){
 						var position = flag.Cc.split(` ${hashtag}`)[0]
 							position = JSON.parse(`[${position}]`)
 
-						flag.x = position[0]
-						flag.z = position[1]
-						flag.dice = position[2]
+						var color = hashtag.replace("#","")
+
+						var emoji = flag.Cc.split("@")[1]
+
+						flag.x = position[0] * 1
+						flag.z = position[1] * 1
+						flag.dice = position[2] * 1
+
+						flag_players.forEach(function(player, i){
+							var typeof_emoji = window.typeof_emoji(player.emoji)
+
+							if(
+								((flag.x - size < player.x && flag.x + size > player.x) &&
+								(flag.z - size < player.z && flag.z + size > player.z) &&
+								!player.self && typeof_emoji) || (!player.self && player.team == self_player.team)
+							){
+								var _color = player.team.replace("#","")
+
+								after_body += `<div style="top:${((player.z * 2))}px;left:${((player.x * 2))}px;" class="flag ${_color}"><div class="tb"><div class="tc"><i class="${_color} emoji color">${player.emoji}</i></div></div></div>`
+							}
+						})
+
+						after_body += `<div style="top:${((flag.z * 2))}px;left:${((flag.x * 2))}px;" class="flag ${color}"><div class="tb"><div class="tc"><i class="${color} emoji color">${emoji}</i></div></div></div>`
 
 						if(flag.dice == 0){
 							flags[hashtag]++
@@ -2161,6 +2207,19 @@ OAuth3.on("ready", function(e){
 						console.log("flag",flag);
 					}	
 				})
+
+				var $flags = $('#map flags')
+				var before_body = $flags.html()
+				if(before_body){
+					before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+				}
+
+				after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+
+				if(before_body != after_body){
+					$flags.html(after_body)
+				}
+
 			
 				if(cookies.team){
 					var _team = cookies.team.replace("#","")
@@ -2303,8 +2362,6 @@ OAuth3.on("ready", function(e){
 							onMessage = true
 
 							var text = `<span>${row.Subject}</span>`
-
-							var self = player_hash == row.From
 
 							var $talks = $("talks."+row.From+" ul")
 
@@ -2789,7 +2846,9 @@ OAuth3.on("ready", function(e){
 									for(var i = 0; i < OAuth3.nonces.length; i++){
 										var nonce = OAuth3.nonces[i]
 
-										body.nonces.push(nonce)
+										if(nonce){
+											body.nonces.push(nonce)	
+										}
 									}
 
 									body.nonces = JSON.stringify(body.nonces)
@@ -2966,7 +3025,9 @@ OAuth3.on("ready", function(e){
 												for(var i = 0; i < OAuth3.nonces.length; i++){
 													var nonce = OAuth3.nonces[i]
 
-													body.nonces.push(nonce)
+													if(nonce){
+														body.nonces.push(nonce)
+													}
 												}
 
 												body.nonces = JSON.stringify(body.nonces)
@@ -2995,6 +3056,16 @@ OAuth3.on("ready", function(e){
 
 								return
 							}
+						}
+
+						if($this.hasClass("voronoi")){
+							if($this.hasClass("zoom")){
+								$this.removeClass("zoom")
+							}else{
+								$this.addClass("zoom")
+							}
+
+							return
 						}
 
 						if(window.players){
@@ -3262,7 +3333,9 @@ OAuth3.on("ready", function(e){
 													for(var i = 0; i < OAuth3.nonces.length; i++){
 														var nonce = OAuth3.nonces[i]
 
-														body.nonces.push(nonce)
+														if(nonce){
+															body.nonces.push(nonce)
+														}
 													}
 
 													body.nonces = JSON.stringify(body.nonces)
@@ -3270,9 +3343,6 @@ OAuth3.on("ready", function(e){
 											}
 
 											var b = window.map.biomes[player.x+":"+player.z]
-
-											console.log("b",b)
-											
 
 											var $player = $('player[id="'+player.hash+'"][alt="player"]')
 
@@ -4057,7 +4127,9 @@ OAuth3.on("ready", function(e){
 						for(var i = 0; i < OAuth3.nonces.length; i++){
 							var nonce = OAuth3.nonces[i]
 
-							body.nonces.push(nonce)
+							if(nonce){
+								body.nonces.push(nonce)
+							}
 						}
 
 						body.nonces = JSON.stringify(body.nonces)

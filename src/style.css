@@ -13,19 +13,35 @@
 
 /*body{background-color: #fff !important;}*/
 
-.map{position: absolute; overflow: hidden; right: 0; top: 0; width: 100px; height: 100px; opacity: 0; transition-duration: 0.5s;}
-.map canvas{position: relative; width: 100%; height: 100%; transform: scale(2);}
-.map .xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; font-weight: 900; color: #fff; z-index: 1; text-shadow: 0 0 2px black;}
+.voronoi{transform: scale(0.5); transform-origin: top right; position: absolute; right: 0; top: 0; width: 200px; height: 200px; overflow: hidden;}
+.voronoi:after{content: ""; position: absolute; left: 0; top: 0; bottom: 0; right: 0; z-index: 10; cursor: pointer;}
+.voronoi.zoom{transform: scale(1); z-index: 11;}
+.voronoi.zoom #map{transform: scale(1);}
 
-.map .config{display: none;}
-.map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji'; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 1;}
+.xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; font-weight: 900; color: #fff; z-index: 12; text-shadow: 0 0 2px black;}
+
+#map{position: absolute; overflow: hidden; right: 0; top: 0; width: 200px; height: 200px; transform: scale(2);}
+
+#map .map{position: absolute; overflow: hidden; right: 0; top: 0; width: 200px; height: 200px;}
+#map canvas{position: relative; width: 100%; height: 100%;}
+
+
+#map .config{display: none;}
+#map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji'; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 2;}
+#map flags{position: absolute; left: 0; top: 0; width: 100%; height: 100%;}
+#map flags .flag{position: absolute;margin-top: 100px; width: 200px; height: 200px; z-index: 1;}
+#map flags .flag.red{}
+#map flags .flag.blue{filter: invert(100%)}
+#map flags .flag .tb{width: 100%; height: 100%;}
+#map flags .flag .tc{text-align: center; vertical-align: middle;}
+/*#map flags .flag i{position: relative; left: -20px; top: -20px;}*/
 
 /*.scoreboard{position: fixed; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(0,0,0,0.8); z-index: 9;}*/
 
 
 #root{opacity: 0; transition-duration: 0.5s;}
 body[mode] .aside emojis{opacity: 1}
-body[mode] .map,
+body[mode] #map,
 body[mode] #life,
 body[mode] #root{opacity: 1; pointer-events: initial;}
 body[mode] #intro{opacity: 0; pointer-events: none;}
@@ -1322,11 +1338,11 @@ body[tutorial="Move"][step="1"] #root player[alt="player"][self="true"] .address
 
 /*body[dice="0"] #flag{display: block;}*/
 
-#flag{position: fixed; left: 1em; right: 1em; top: 1em; text-align: center; width: 180px; margin: 0 auto; height: 40px; z-index: 10; background: #000000ad; border-radius: 0.5em;}
+#flag{position: fixed; left: 1em; right: 1em; top: 0.5em; text-align: center; width: 140px; margin: 0 auto; height: 40px; z-index: 10; background: #000000ad; border-radius: 0.5em;}
 #flag:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; width: 2px; height: 13px; background-color: #7c7c7c;}
 #flag>div{position: absolute; top: 0; bottom: 0; text-align: center;}
-#flag .cnt{font-size: 2em; font-weight: 900; line-height: 36px;}
-#flag .temp{font-size: 2em; font-weight: 700; line-height: 36px; color: #fff;}
+#flag .cnt{font-size: 1.6em; font-weight: 900; line-height: 36px;}
+#flag .temp{font-size: 1.6em; font-weight: 700; line-height: 36px; color: #fff;}
 #flag .temp:not(:empty):before{content: "+";}
 #flag>div.on{text-decoration: underline;}
 /*#flag>div:before{content: ""; display: inline-block; border-radius: 50%;}*/

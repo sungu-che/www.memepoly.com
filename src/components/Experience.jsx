@@ -227,8 +227,8 @@ export const Experience = () => {
 										$("#capture>.icon").html('')
 
 										// maker
-										$(".map canvas").css({top : - ((point.z * 2) + 100) , left : - ((point.x * 2) + 0) })
-										$(".map .xyz").text(`${point.x} : ${point.z}`)
+										$(".map").css({top : - ((point.z * 2) + 100) , left : - ((point.x * 2) + 0) })
+										$(".xyz").text(`${point.x} : ${point.z}`)
 
 										var url = "https://emption.red"
 
