@@ -655,30 +655,6 @@ OAuth3.on("ready", function(e){
 		}
 	}
 
-
-	function Zoom(){
-		var $zoom = $(".zoom_toggle a.zoom")
-
-		if($zoom.hasClass("color")){
-			$zoom.removeClass("color")
-
-			var _far = window.far
-			
-			_far.x = 4.5
-			_far.y = 4.5
-			_far.z = 4.5
-
-			window.speed = 0.1
-
-			window.far.set(_far)
-			
-
-			$body.removeAttr("zoom")
-			$body.removeAttr("class")
-		}
-	}
-
-
 	window.Withdrawal = function(){
 		var player = window.players.self()
 
@@ -1323,8 +1299,6 @@ OAuth3.on("ready", function(e){
 
 				var diff = false
 
-				var selector = window.selector
-
 				var player_hash = cookies.address ? cookies.address : cookies.hash
 
 				var $player = $('player[id="'+player_hash+'"][alt="player"]')
@@ -1435,6 +1409,8 @@ OAuth3.on("ready", function(e){
 							}
 						}
 					}
+
+					document.querySelector('.map .canvas').src = document.querySelector('.map canvas').toDataURL()
 				}
 
 				$(".voronoi .map").css({top : - ((biomes.z * 2) + 100) , left : - ((biomes.x * 2) + 0) })
@@ -1670,12 +1646,14 @@ OAuth3.on("ready", function(e){
 							var typeof_emoji = window.typeof_emoji(emoji)
 
 
-							if(row.Flag && isRender){
-								var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
+							if(row.Flag){
+								if(isRender){
+									var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
 
-								if($clipped.length && !window.bingo[row.Id]){
-									window.bingo[row.Id] = true
-									bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+									if($clipped.length && !window.bingo[row.Id]){
+										window.bingo[row.Id] = true
+										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+									}
 								}
 							}else if(row.From){
 								var _from = row.From
@@ -1732,8 +1710,6 @@ OAuth3.on("ready", function(e){
 									if(!window.map.report[_from] && (isRender || player.self)){
 										if(!rows[_from]){
 											rows[_from] = true
-
-											console.log("row",row);
 
 											_players.push({
 												team : hashtag,
@@ -1945,8 +1921,6 @@ OAuth3.on("ready", function(e){
 					}
 				}
 
-				console.log('_players',_players);
-
 				try{
 					var diff = false
 					if(window.players){
@@ -2095,7 +2069,7 @@ OAuth3.on("ready", function(e){
 								if(row.new){
 									afterSticker.push(row)
 								}
-								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" type="item"><a class="emoji ${row.color ? "color" : "color"}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
+								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
 							}
 						}
 					}
@@ -3181,8 +3155,6 @@ OAuth3.on("ready", function(e){
 												$('tooltip').removeClass("on")
 												$tooltip.addClass("on")
 												$body.attr("tooltip", true)
-
-												Zoom()
 											}
 										}
 									}
@@ -3195,64 +3167,6 @@ OAuth3.on("ready", function(e){
 
 										$(".layer").addClass("on")
 										$($form).addClass("on")
-									}
-
-									if($this.hasClass("zoom")){
-										e.preventDefault()
-
-										var _far = window.far
-
-										if($this.hasClass("up")){
-											_far.x += 1
-											_far.y += 1
-											_far.z += 1
-										}
-
-										if($this.hasClass("down")){
-											_far.x -= 1
-											_far.y -= 1
-											_far.z -= 1									
-										}
-
-										if($this.hasClass("map")){
-											$("tooltip").removeClass("on")
-
-											if(_far.x == 10){
-												_far.x = 4.5
-												_far.y = 4.5
-												_far.z = 4.5
-
-												window.speed = 0.1
-												$this.removeClass("color")
-											}else{
-												_far.x = 10
-												_far.y = 10
-												_far.z = 10
-
-												window.speed = 0.2
-												$this.addClass("color")
-											}
-										}
-
-
-										if(_far.x <= 10){
-											$body.attr("zoom", _far.x)
-
-											if(_far.x == 10){
-												
-											}else{
-												
-											}
-
-											window.far.set(_far)
-										}
-
-										if($body.hasClass("select_emoji")){
-											var $player = $('player[id="'+player.hash+'"][alt="player"]')
-
-											$player.removeAttr("class")
-											$body.removeAttr("class")
-										}
 									}
 
 									if($this.hasClass("back")){
@@ -3471,8 +3385,6 @@ OAuth3.on("ready", function(e){
 										var method = $this.attr("method")
 
 										var player_emoji = player.emoji + ""
-
-										Zoom()
 
 										var body = {
 											emoji : window.typeof_emoji(emoji) ? emoji : window.emojis.self
@@ -4251,11 +4163,6 @@ OAuth3.on("ready", function(e){
 
 				$form.message.value = "";
 			}
-			window.emojis.unshift({
-				method : "search",
-				icon : "search",
-				type : "emoji"
-			})
 
 			window.emojis.unshift({
 				method : "chat",

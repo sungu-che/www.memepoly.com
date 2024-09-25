@@ -1,7 +1,6 @@
-import { PerspectiveCamera, useAnimations, useGLTF, Sphere, Html } from "@react-three/drei";
-import { useStore, useFrame, useGraph } from "@react-three/fiber";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { SkeletonUtils } from "three-stdlib";
+import { Html } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import React, { useMemo, useRef } from "react";
 
 window.speed = 0.1
 

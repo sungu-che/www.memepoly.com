@@ -16,24 +16,24 @@ import blackImg from './images/black.jpg'
 
 
 const textures = {
-	dirt : new THREE.TextureLoader().load(dirtImg),
+	// dirt : new THREE.TextureLoader().load(dirtImg),
 	grass : new THREE.TextureLoader().load(grassImg),
 	glass : new THREE.TextureLoader().load(glassImg),
-	wood : new THREE.TextureLoader().load(woodImg),
-	log : new THREE.TextureLoader().load(logImg),
+	// wood : new THREE.TextureLoader().load(woodImg),
+	// log : new THREE.TextureLoader().load(logImg),
 	black : new THREE.TextureLoader().load(blackImg)
 }
 
-textures.dirt.magFilter = THREE.NearestFilter
-textures.dirt.minFilter = THREE.LinearMipMapLinearFilter
+// textures.dirt.magFilter = THREE.NearestFilter
+// textures.dirt.minFilter = THREE.LinearMipMapLinearFilter
 textures.grass.magFilter = THREE.NearestFilter
 textures.grass.minFilter = THREE.LinearMipMapLinearFilter
 textures.glass.magFilter = THREE.NearestFilter
 textures.glass.minFilter = THREE.LinearMipMapLinearFilter
-textures.wood.magFilter = THREE.NearestFilter
-textures.wood.minFilter = THREE.LinearMipMapLinearFilter
-textures.log.magFilter = THREE.NearestFilter
-textures.log.minFilter = THREE.LinearMipMapLinearFilter
+// textures.wood.magFilter = THREE.NearestFilter
+// textures.wood.minFilter = THREE.LinearMipMapLinearFilter
+// textures.log.magFilter = THREE.NearestFilter
+// textures.log.minFilter = THREE.LinearMipMapLinearFilter
 textures.black.magFilter = THREE.NearestFilter
 textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
@@ -45,27 +45,11 @@ export const Experience = () => {
 
 	const [camera, setCamera] = useState({});
 
-	const [grid, setGrid] = useState([]);
-
-	const [selector, setSelector] = useState({});
-
-	const [far, setFar] = useState({
+	const far = {
 		x : 4.5,
-		y : 4.5,
+		y : 5.5,
 		z : 4.5
-	});
-
-	grid.size = 1000000000000000000
-	grid.edge = 1000000000000000000 - 1
-
-	grid.area = 100
-
-	grid.x = grid.size
-	grid.z = grid.size
-	grid.center = "#000"
-	grid.line = "#000"
-
-	grid.helper = 5
+	}
 
 	const current = useRef()
 	const cursor = useRef()
@@ -137,7 +121,7 @@ export const Experience = () => {
 			}
 
 			if(position){
-				var fov = 0.5
+				var fov = 1
 
 				if(window.flutter_inappwebview){
 					if(cookies.address){
@@ -247,7 +231,7 @@ export const Experience = () => {
 											cc_address = window.location.hash.replace("#","")
 										}
 
-										var edge = (grid.edge / 2) - 1
+										var edge = (1000000000000000000 / 2) - 1
 
 										if(point.x < -edge || point.z < -edge || point.x > edge || point.z > edge){
 											var alpha = 0
@@ -389,21 +373,21 @@ export const Experience = () => {
 				emoji = window.Biomes[color]
 			}
 
-			if(props.name == "#ROAD1" || 
-				props.name == "#ROAD2" ||
-				props.name == "#ROAD3" || 
-				props.name == "#BRIDGE"){
-				texture = "wood"
-			}else if(props.name == "#SUBTROPICAL_DESERT" ||
-				props.name == "#TAIGA" ||
-				props.name == "#LAVA" ||
-				props.name == "#TEMPERATE_DESERT"
-				){
-				texture = "dirt"
+			// if(props.name == "#ROAD1" || 
+			// 	props.name == "#ROAD2" ||
+			// 	props.name == "#ROAD3" || 
+			// 	props.name == "#BRIDGE"){
+			// 	texture = "wood"
+			// }else if(props.name == "#SUBTROPICAL_DESERT" ||
+			// 	props.name == "#TAIGA" ||
+			// 	props.name == "#LAVA" ||
+			// 	props.name == "#TEMPERATE_DESERT"
+			// 	){
+			// 	texture = "glass"
 
-			}else{
-				texture = "glass"
-			}
+			// }else{
+			// 	texture = "glass"
+			// }
 
 			if(props.name == "#BEACH"){
 				if(props.color == "black"){
@@ -540,16 +524,8 @@ export const Experience = () => {
 		window.camera = camera;
 		window.camera.set = setCamera;
 
-		window.selector = selector;
-		window.selector.set = setSelector;
-
-		window.far = far;
-		window.far.set = setFar;
-
 		window.cursor = cursor;
 		window.current = current;
-
-		window.grid = grid
 
 		window.gl = gl
 

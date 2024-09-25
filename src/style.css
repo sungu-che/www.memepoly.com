@@ -7,23 +7,26 @@
 @import url('//fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap');
 
+#gtx-trans{display: none;}
 *{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000; }
 *::selection{background-color: inherit; color:inherit;}
 #root {position: fixed; left: 0; top: 0; right: 0; bottom: 0;}
 
 /*body{background-color: #fff !important;}*/
 
-.voronoi{transform: scale(0.5); transform-origin: top right; position: absolute; right: 0; top: 0; width: 200px; height: 200px; overflow: hidden;}
+.voronoi{overflow: hidden; position: absolute; right: 0; top: 0; width: 200px; height: 200px; transform: scale(0.5); transform-origin: top right;}
 .voronoi:after{content: ""; position: absolute; left: 0; top: 0; bottom: 0; right: 0; z-index: 10; cursor: pointer;}
-.voronoi.zoom{transform: scale(1); z-index: 11;}
+.voronoi.zoom{transform: scale(1); z-index: 1;}
 .voronoi.zoom #map{transform: scale(1);}
 
-.xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; font-weight: 900; color: #fff; z-index: 12; text-shadow: 0 0 2px black;}
+.xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; font-weight: 900; color: #fff; z-index: 2; text-shadow: 0 0 2px black;}
 
 #map{position: absolute; overflow: hidden; right: 0; top: 0; width: 200px; height: 200px; transform: scale(2);}
 
 #map .map{position: absolute; overflow: hidden; right: 0; top: 0; width: 200px; height: 200px;}
-#map canvas{position: relative; width: 100%; height: 100%;}
+#map .map img,
+#map .map canvas{position: relative; display: block; width: 100%; height: 100%;}
+#map .map canvas{display: none;}
 
 
 #map .config{display: none;}
@@ -689,6 +692,7 @@ emojis .scroll{overflow: hidden; overflow-x:scroll;}
 emojis .scroll .deck>div ul{display: inline;}
 emojis .scroll .deck .emojis>.emoji_asset.items:after{display: none;}
 emojis .scroll .deck .emojis>.emoji_asset.items{display: inline; padding: 0; width: auto;}
+emojis .scroll .deck .emojis>.emoji_asset.items .emoji{color: #fff;}
 emojis .scroll .deck .emojis>.emoji_asset:last-child{margin-right: 2%}
 /*emojis .scroll .deck>div[method="chat"]{display: block; position: absolute; left: 1em; top: 1em; padding-left: 0;}*/
 
@@ -851,7 +855,7 @@ body[game="over"] .gameover{opacity: 1; pointer-events: initial;}
 #pool .item.loading .icon{display: none;}
 #pool .item.loading .asset .lds-ring{width: 40px; height: 40px;}
 #pool .item.loading .asset .lds-ring div{margin: 4px; border-color: #fff transparent transparent transparent; width: 32px; height: 32px;}
-#pool .col{position: relative; padding: 1em; min-height: 42px; border-radius: 1em; background-color: #000000d6;}
+#pool .col{position: relative; padding: 1em; min-height: 22px; border-radius: 1em; background-color: #000000d6;}
 
 #pool .icon{position: absolute; left: 1em; top: 1em;}
 #pool .icon .emoji{font-size: 2em;}
@@ -885,15 +889,13 @@ emojis .scroll::-webkit-scrollbar-thumb {background-color: #fff;}
 emojis .scroll::-webkit-scrollbar-track {}
 
 
-emojis .tab_content .deck .emoji_asset[emoji="search"]{display: none;}
-emojis .tab_content .deck .emoji_asset[emoji="search"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-weight: bold; color: #422b0d; font-size: 22px; font-family: 'Material Symbols Outlined'; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
 
 
-body[swap] #swap{opacity: 1; z-index: 10; pointer-events: initial; transition-duration: 0.2s;}
+body[swap] #swap{opacity: 1; z-index: 2; pointer-events: initial; transition-duration: 0.2s;}
 #swap{position: fixed; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; opacity: 0; background-color: #00000096;}
 
-body[swap] emojis .tab_content .deck .emoji_asset[type="emoji"]{opacity: 0.1; pointer-events: none;}
-body[swap] emojis .tab_content .deck .emoji_asset[emoji="search"]{display: inline-block; opacity: 1; pointer-events: initial;}
+body[swap] emojis .tab_content .deck .emoji_asset[type="emoji"]{display: none;}
+
 body[swap] emojis .tab_content .deck .emoji_asset[emoji="sms"]{display: none;}
 
 body[swap] player emoji img{opacity: 0.5;}
@@ -1010,8 +1012,9 @@ table{border-spacing:0px;border-collapse:collapse;}
 
 #root player[type="video"] emoji[type="image"] [data-plyr-provider]:empty+picture img{border: 0;}
 
+body #root .emoji .address{display: none;}
 #root .emoji .address,
-#root .emoji picture *{position: relative; display: block; width: 18vh; height: auto; transition-duration: 0.2s; filter: drop-shadow(0 1px 2px #000); opacity: 0.85}
+#root .emoji picture *{position: relative; display: block; width: 18vh; height: auto; transition-duration: 0.2s; filter: drop-shadow(0 1px 2px #000); opacity: 0.9}
 #root .emoji picture source{display: none;}
 /*{pointer-events: none}*/
 
@@ -1338,7 +1341,7 @@ body[tutorial="Move"][step="1"] #root player[alt="player"][self="true"] .address
 
 /*body[dice="0"] #flag{display: block;}*/
 
-#flag{position: fixed; left: 1em; right: 1em; top: 0.5em; text-align: center; width: 140px; margin: 0 auto; height: 40px; z-index: 10; background: #000000ad; border-radius: 0.5em;}
+#flag{position: fixed; left: 1em; right: 1em; top: 0.5em; text-align: center; width: 140px; margin: 0 auto; height: 40px; z-index: 1;}
 #flag:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; width: 2px; height: 13px; background-color: #7c7c7c;}
 #flag>div{position: absolute; top: 0; bottom: 0; text-align: center;}
 #flag .cnt{font-size: 1.6em; font-weight: 900; line-height: 36px;}

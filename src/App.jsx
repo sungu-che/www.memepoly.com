@@ -1,18 +1,12 @@
 import { Canvas } from "@react-three/fiber";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
 
 import { Experience } from "./components/Experience";
 
-import { useState, Suspense } from "react";
+import { useState } from "react";
 
 
 function App() {
 	const [frameloop, setFrameloop] = useState("never");
-
-	const [effect, setEffect] = useState(true);
-
-	window.effect = effect
-	window.setEffect = setEffect
 
 	window.frameloop = frameloop
 	window.setFrameloop = setFrameloop
@@ -20,11 +14,6 @@ function App() {
 	return (
 		<>
 			<Canvas frameloop={frameloop} camera={{ position: [6, 6, 6], fov: 40 }} performance={{ current: 1, min: 1, max: 1, debounce: 200}} gl={{ antialias: false, alpha: false }}>
-				<Suspense>
-					<EffectComposer>
-						<Bloom luminanceThreshold mipmapBlur luminanceSmoothing intensity />
-					</EffectComposer>
-				</Suspense>
 				<Experience />
 			</Canvas>
 		</>
