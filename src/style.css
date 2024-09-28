@@ -39,8 +39,6 @@
 #map flags .flag .tc{text-align: center; vertical-align: middle;}
 /*#map flags .flag i{position: relative; left: -20px; top: -20px;}*/
 
-/*.scoreboard{position: fixed; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(0,0,0,0.8); z-index: 9;}*/
-
 
 #root{opacity: 0; transition-duration: 0.5s;}
 body[mode] .aside emojis{opacity: 1}
@@ -650,7 +648,7 @@ a.back:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom:
 a.back .emoji{font-size: 2em; color:#fff; cursor: pointer;}
 
 
-body[swap] .back{position: absolute; left: 50%; top: 1em; margin-left: 244px; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji'; box-shadow: 0 0 4px #000; background: #000; cursor: pointer; pointer-events: initial; display: block; z-index: 111;}
+body[swap] .back{position: absolute; left: 50%; top: 1em; margin-left: 244px; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji'; box-shadow: 0 0 4px #000; background: #000000ee; cursor: pointer; pointer-events: initial; display: block; z-index: 111;}
 body[swap] .back span{text-decoration: none}
 
 #root player.on items{display: block;}
@@ -846,21 +844,61 @@ body[game="over"] .gameover{opacity: 1; pointer-events: initial;}
 .gameover .title strong{font-size: 3em; font-family: "Pixelify Sans", sans-serif; color: #fff;}
 .gameover .desc a{display: inline-block; border-radius: 1em; padding: 1em 3em; font-weight: 900; font-size: 1.5em; font-family: "Pixelify Sans", sans-serif; text-decoration: underline; cursor: pointer; background-color: #fde030; color: #000;}
 
+
+
+form[name="swap"] .submit{position: absolute; left: 0; right: 0; bottom: 0;}
+form[name="swap"] .submit input[value=""]{display: none;}
+form[name="swap"] .submit input{display: block; width: 100%; border-bottom: 4px solid #fde030; border-radius: 1rem; height: 50px; font-size: 1.4em; font-weight: 900; font-style: italic; cursor: pointer; background-color: #fde030; box-sizing: border-box; box-shadow: 0 0 4px #000;}
+
+#swap.loading + .aside emojis{display: none; pointer-events: none;}
+#swap.loading *{pointer-events: none;}
+
 #swap .tb{width: 100%; height: 100%;}
-#swap .tc{padding: 1em; vertical-align: middle;}
+#swap .tc{padding: 3em 1em 6em; vertical-align: middle;}
 
-#pool{margin: 1em auto; max-width: 600px;}
-#pool li{overflow: hidden; margin: 0 -0.5em 1em; border-radius: 1em; background: #000000aa;}
-#pool .asset{float: left; position: relative; padding: 0.5em; width: 50%; box-sizing: border-box;}
-#pool .item.loading .icon{display: none;}
-#pool .item.loading .asset .lds-ring{width: 40px; height: 40px;}
-#pool .item.loading .asset .lds-ring div{margin: 4px; border-color: #fff transparent transparent transparent; width: 32px; height: 32px;}
-#pool .col{position: relative; padding: 1em; min-height: 22px; border-radius: 1em; background-color: #000000d6;}
+#pool{position: relative; margin: 1em auto; padding-bottom: 60px; max-width: 600px;}
+#pool ul{}
+#pool li{overflow: hidden; position: relative; margin: 0 -0.5em 1em; padding: 0 0.25em; border-radius: 1em;}
 
-#pool .icon{position: absolute; left: 1em; top: 1em;}
-#pool .icon .emoji{font-size: 2em;}
-#pool .amount{position: absolute; right: 1em; bottom: 1em;}
-#pool .amount span{font-size: 2em; color: #fff;}
+#pool .asset{float: left; position: relative; padding: 0.5em 0.25em; width: 50%; box-sizing: border-box;}
+#pool .asset .col:before{content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 3;}
+
+#pool .col{overflow: hidden; position: relative; padding: 1em; min-height: 22px; border-radius: 1em; background-color: #ffffffd6; box-shadow: 0 0 4px #000;}
+#pool .col:hover{background-color: #cdcdcd}
+#pool .col:after{position: absolute; right: 1em; bottom: 1rem;}
+#pool .col.buy:after{content: "Buy";}
+#pool .col.sell:after{content: "Sell";}
+
+#pool .icon{position: absolute; left: 0.6em; top: 1em;}
+#pool .icon .emoji{position: relative; top: -7px; font-size: 2em; font-weight: bold; text-shadow: 0 0 2px #000;}
+
+/*#pool .item[type="buy"] .col.sell .icon .emoji,
+#pool .item[type="sell"] .col.buy .icon .emoji{font-family: 'Noto Emoji'; text-shadow: none;}*/
+
+#pool .item[type="buy"] .asset .buy:after,
+#pool .item[type="buy"] .asset .buy .amount{text-decoration: underline;}
+/*#pool .item[type="buy"] .asset .buy{background-color: #f2bc1a;}*/
+
+#pool .item[type="buy"] .asset .buy .amount:before{content: "+ 1("; font-size: 1.5em; font-weight: 900;}
+#pool .item[type="buy"] .asset .buy .amount:after{content: ")"; font-size: 1.5em; font-weight: 900;}
+
+#pool .item[type="buy"] .asset .sell .amount:before{content: "- "; font-size: 1.5em; font-weight: 900;}
+
+#pool .item[type="sell"] .asset .sell:after,
+#pool .item[type="sell"] .asset .sell .amount{text-decoration: underline;}
+/*#pool .item[type="sell"] .asset .sell{background-color: #f2bc1a;}*/
+
+#pool .item[type="sell"] .asset .sell .amount:before{content: "+ "; font-size: 1.5em; font-weight: 900;}
+/*#pool .item[type="sell"] .asset .buy{opacity: 0.5;}*/
+#pool .item[type="sell"] .asset .buy .amount:before{content: "- "; font-size: 1.5em; font-weight: 900;}
+
+
+#pool .item[type="sell"] .asset .buy .amount:before{content: "- 1 ("; font-size: 1.5em; font-weight: 900;}
+#pool .item[type="sell"] .asset .buy .amount:after{content: ")"; font-size: 1.5em; font-weight: 900;}
+
+#pool .asset .amount{position: absolute; right: 3.3rem; bottom: 1rem;}
+
+#pool .amount span{font-size: 1.5em; font-weight: 900; color: #000;}
 
 /*emojis .tab_content .deck .emoji_asset[emoji="💣"]{display: none;}*/
 emojis .tab_content .deck .emoji_asset[hash]{top: -3px;}
@@ -891,12 +929,16 @@ emojis .scroll::-webkit-scrollbar-track {}
 
 
 
-body[swap] #swap{opacity: 1; z-index: 2; pointer-events: initial; transition-duration: 0.2s;}
+body[swap] #swap{overflow: hidden; overflow-y: scroll; opacity: 1; z-index: 2; pointer-events: initial; transition-duration: 0.2s;}
+body[swap] #swap::-webkit-scrollbar {height: 3px;}
+body[swap] #swap::-webkit-scrollbar-thumb {background-color: #fff;}
+body[swap] #swap::-webkit-scrollbar-track {}
 #swap{position: fixed; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; opacity: 0; background-color: #00000096;}
 
 body[swap] emojis .tab_content .deck .emoji_asset[type="emoji"]{display: none;}
 
 body[swap] emojis .tab_content .deck .emoji_asset[emoji="sms"]{display: none;}
+body[swap] emojis .tab_content .deck .emoji_asset.items{margin-right: 26em;}
 
 body[swap] player emoji img{opacity: 0.5;}
 body[swap] player *{pointer-events: none;}
@@ -1347,7 +1389,7 @@ body[tutorial="Move"][step="1"] #root player[alt="player"][self="true"] .address
 #flag .cnt{font-size: 1.6em; font-weight: 900; line-height: 36px;}
 #flag .temp{font-size: 1.6em; font-weight: 700; line-height: 36px; color: #fff;}
 #flag .temp:not(:empty):before{content: "+";}
-#flag>div.on{text-decoration: underline;}
+#flag>div.on .cnt{text-decoration: underline;}
 /*#flag>div:before{content: ""; display: inline-block; border-radius: 50%;}*/
 #flag .red{left: 10%; right: 60%;}
 #flag .red .cnt{color: red;}

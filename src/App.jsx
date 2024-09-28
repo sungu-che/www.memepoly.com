@@ -13,7 +13,7 @@ function App() {
 
 	return (
 		<>
-			<Canvas frameloop={frameloop} camera={{ position: [6, 6, 6], fov: 40 }} performance={{ current: 1, min: 1, max: 1, debounce: 200}} gl={{ antialias: false, alpha: false }}>
+			<Canvas frameloop={frameloop} camera={{ position: [6, 6, 6], fov: 40 }} gl={{ antialias: false, alpha: true }}>
 				<Experience />
 			</Canvas>
 		</>

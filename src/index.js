@@ -137,7 +137,7 @@ window.listToBiomes = function(list, elementsPerSubArray) {
 		matrix[k].push(list[i]);
 	}
 
-	var area = (window.grid ? window.grid.area : 100)
+	var area = 100
 	var index = - (area / 2)
 
 	var biomes = []
@@ -591,6 +591,9 @@ OAuth3.on("ready", function(e){
 
 	var $messages = $("messages")
 
+	var $swap = $("#swap")
+	var $pool = $("#pool ul")
+
 	var url = new URL(window.location.href)
 
 	var host_address = ethers.hashMessage((url.host+"/"))
@@ -778,6 +781,70 @@ OAuth3.on("ready", function(e){
 		$body.attr("step", step)
 
 		window.Callback(window.response)
+	}
+
+	window.Swap = function(){
+		var player = window.players.self()
+
+		if(player){
+			var cookies = window.cookies
+
+			if(OAuth3.xhr){
+				OAuth3.xhr.abort()
+				delete OAuth3.xhr
+			}
+
+			var url = "https://memepoly.com"
+
+			if(OAuth3.localhost){
+				url = "http://localhost:3001"
+			}
+
+			var body = {
+				emoji : player.emoji
+			}
+
+			var dice = cookies.dice * 1
+
+			var assets = []
+
+			var $assets = $('.emoji_asset.on')
+
+			$assets.each(function(index, el){
+				var asset = {
+					emoji : $(el).attr("emoji"),
+					count : $(el).attr("cnt")
+				}
+
+				if(typeof_item(asset.emoji)){
+					asset.address = ethers.hashMessage(asset.emoji)
+					asset.address = ethers.computeAddress(asset.address).toLowerCase()
+
+					assets.push(asset.address)
+				}
+			})
+
+			var query = {
+				dice : dice != 0 ? dice : 0,
+				href : window.location.href,
+				hash : cookies.hash,
+				token : cookies.token,
+				x : player.x,
+				y : player.y,
+				z : player.z
+			}
+
+			if(assets.length){
+				query.assets = assets
+			}
+
+			OAuth3.xhr = OAuth3.fetch({
+				method : "POST",
+				url : url,
+				body : body,
+				query : query
+			}, window.Callback);
+		}
 	}
 
 	function emojiChanged(emoji, local){
@@ -1412,6 +1479,88 @@ OAuth3.on("ready", function(e){
 
 					document.querySelector('.map .canvas').src = document.querySelector('.map canvas').toDataURL()
 				}
+
+				var $assets = $('.emoji_asset.on')
+
+				var uri = new URL(url.href)
+
+				var balanceAddress = ethers.computeAddress(ethers.hashMessage(uri.host)).toLowerCase()
+			
+				var assets = []
+
+				$swap.removeClass("loading")
+
+				if($assets.length){
+					var after_body = ""
+
+					$assets.each(function(index, el){
+						var asset = {
+							emoji : $(el).attr("emoji"),
+							count : $(el).attr("cnt")
+						}
+
+						if(typeof_item(asset.emoji)){
+							asset.address = ethers.hashMessage(asset.emoji)
+							asset.address = ethers.computeAddress(asset.address).toLowerCase()
+
+							var amm = cookies[asset.address]
+							asset.balance = amm.y - amm.x
+
+							var type = ""
+
+							var $asset = $(`#${asset.address}`)
+
+							if($asset.length){
+								type = $asset.attr("type")
+							}
+
+							after_body += `<li class="item" type="${type}" cnt="${asset.count}" emoji="${asset.emoji}" id="${asset.address}">
+								<div class="asset">
+									<div class="col x buy">
+										<div class="icon">
+											<div class="emoji color">${asset.emoji}</div>
+										</div>
+										<div class="amount">
+											<span>${asset.count}</span>
+										</div>
+									</div>
+								</div>
+								<div class="asset">
+									<div class="col y sell transaction">
+										<div class="icon">
+											<div class="emoji color">🪙</div>
+										</div>
+										<div class="amount">
+											<span>${asset.balance}</span>
+										</div>
+									</div>
+								</div>
+							</li>`
+
+							assets.push(asset)	
+						}
+					})
+
+					var $before = $($pool.html())
+						$before.find(".item").removeAttr("type")
+
+					var before_body = $before.html()
+
+					if(before_body){
+						before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+					}
+
+					after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+
+					if(before_body != after_body){
+						$pool.html(after_body)
+					}
+				}else{
+					$pool.html("")
+					$("#swap .submit input").val("")
+				}
+
+					
 
 				$(".voronoi .map").css({top : - ((biomes.z * 2) + 100) , left : - ((biomes.x * 2) + 0) })
 				$(".xyz").text(`${biomes.x} : ${biomes.z}`)
@@ -2069,7 +2218,7 @@ OAuth3.on("ready", function(e){
 								if(row.new){
 									afterSticker.push(row)
 								}
-								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
+								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" cnt="${cnt}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
 							}
 						}
 					}
@@ -2786,22 +2935,29 @@ OAuth3.on("ready", function(e){
 								url = "http://localhost:3001"
 							}
 
-							try{
-								var _url = new URL(document.URL)
-
-								if(_url.username && _url.password){
-									cookies.hash = _url.username
-									cookies.token = _url.password
-								}
-							}catch(err){
-
-							}
-
 							var body = {
 								emoji : window.emojis.message ? window.emojis.message : self_player.emoji
 							}
 
 							var dice = cookies.dice * 1
+
+							var assets = []
+
+							var $assets = $('.emoji_asset.on')
+
+							$assets.each(function(index, el){
+								var asset = {
+									emoji : $(el).attr("emoji"),
+									count : $(el).attr("cnt")
+								}
+
+								if(typeof_item(asset.emoji)){
+									asset.address = ethers.hashMessage(asset.emoji)
+									asset.address = ethers.computeAddress(asset.address).toLowerCase()
+
+									assets.push(asset.address)
+								}
+							})
 
 							var query = {
 								dice : dice != 0 ? dice : 0,
@@ -2811,6 +2967,10 @@ OAuth3.on("ready", function(e){
 								x : self_player.x,
 								y : self_player.y,
 								z : self_player.z
+							}
+
+							if(assets.length){
+								query.assets = assets
 							}
 
 							if(OAuth3.nonces){
@@ -3042,6 +3202,76 @@ OAuth3.on("ready", function(e){
 							return
 						}
 
+						if($this.hasClass("buy") || $this.hasClass("sell")){
+							var $item =  $this.closest(".item")
+							var type = $item.attr("type") ? $item.attr("type") : ""
+							
+							var total = 0
+
+							if($this.hasClass("buy")){
+								if(type == "buy"){
+									type = ""
+								}else{
+									type = "buy"
+								}								
+							}
+
+							if($this.hasClass("sell")){
+								if(type == "sell"){
+									type = ""
+								}else{
+									type = "sell"
+								}
+							}
+
+							$body.attr("swap", type)
+							$item.attr("type", type)
+
+							var $assets = $('#pool li')
+
+							if($assets.length){
+								var after_body = ""
+
+								$assets.each(function(index, el){
+									var $el = $(el)
+									
+									var asset = {
+										emoji : $el.attr("emoji"),
+										count : $el.attr("cnt"),
+										type : $el.attr("type")
+									}
+
+									console.log('asset',asset);
+
+									asset.address = ethers.hashMessage(asset.emoji)
+									asset.address = ethers.computeAddress(asset.address).toLowerCase()
+
+
+									var amm = cookies[asset.address]
+
+									console.log('amm',amm);
+
+									if(amm){
+										asset.balance = amm.y - amm.x
+
+										if(asset.type == "sell"){
+											total += asset.balance
+										}else if(asset.type == "buy"){
+											total -= asset.balance
+										}
+									}
+								})
+							}
+
+							var _total = Math.sqrt(Math.pow(total, 2))
+
+							$("#swap .submit input").val(cookies.balance + ( total >= 0 ? ` + ${_total}` : ` - ${_total}` ) + ` = ${cookies.balance + total}` )
+
+							
+							
+							return
+						}
+
 						if(window.players){
 							if(window.players.length){
 								if(cookies.hash){
@@ -3187,8 +3417,10 @@ OAuth3.on("ready", function(e){
 											}
 
 											emojiChanged(window.emojis.self)
-										}else if($body.attr("swap")){
+										}else if(typeof $body.attr("swap") != "undefined"){
 											$body.removeAttr("swap")
+											$pool.html("")
+											$("#swap .submit input").val("")
 											$('.emoji_asset').removeClass("on")
 											
 										}
@@ -3424,7 +3656,7 @@ OAuth3.on("ready", function(e){
 											return
 										}
 
-										var isSwap = $body.attr("swap")
+										
 
 										if(type == "item"){
 											$('tooltip').removeClass("on")
@@ -3434,116 +3666,23 @@ OAuth3.on("ready", function(e){
 											var $assets = $('.emoji_asset.on')
 
 											if($assets.length){
-												$body.attr("swap", true)
+												$body.attr("swap","")
 
-												var url = "https://memepoly.com/"
+												$swap.addClass("loading")
 
-												if(OAuth3.localhost){
-													url = "http://localhost:3001/"
-												}
-
-												var href = window.location.href
-
-												var uri = new URL(href)
-
-												var balanceAddress = ethers.computeAddress(ethers.hashMessage(uri.host)).toLowerCase()
-											
-												var assets = []
-
-												var assets_body = ""
-
-												$assets.each(function(index, el){
-													var _emoji = $(el).attr("emoji")
-
-													if(typeof_item(_emoji)){
-														var address = ethers.hashMessage(emoji)
-															address = ethers.computeAddress(address).toLowerCase()
-
-														assets_body += `<li class="item loading" emoji="${emoji}">
-															<div class="asset">
-																<div class="col x" id="${address}">
-																	<div class="icon">
-																		<div class="emoji color">${emoji}</div>
-																		<div class="name"></div>
-																	</div>
-																	<div class="amount">
-																		<span></span>
-																	</div>
-																</div>
-																<div class="lds-ring">
-																	<div></div>
-																	<div></div>
-																	<div></div>
-																	<div></div>
-																</div>
-															</div>
-															<div class="asset">
-																<div class="col y" id="${balanceAddress}">
-																	<div class="icon">
-																		<div class="emoji color">🪙</div>
-																		<div class="name"></div>
-																	</div>
-																	<div class="amount">
-																		<span></span>
-																	</div>
-																</div>
-																<div class="lds-ring">
-																	<div></div>
-																	<div></div>
-																	<div></div>
-																	<div></div>
-																</div>
-															</div>
-														</li>`
-
-														assets.push({
-															address : address,
-															emoji : emoji
-														})	
-													}
-												})
-
-												$("#pool ul").html(assets_body)
-
-												var request = {
-													method : "POST",
-													url : url,
-													query : {
-														host : uri.host,
-														href : href,
-														hash : cookies.hash,
-														token : cookies.token,
-														x : player.x ? player.x : "1.5",
-														y : player.y ? player.y : "0",
-														z : player.z ? player.z : "1.5"
-													},
-													body : {
-														assets : assets
-													}
-												}
-
-												var response = function(res){
-													var cookies = JSON.parse(res.body.cookies);
-
-													assets.forEach(function(asset){
-														var $el = $(`[emoji="${asset.emoji}"]`)
-
-														var name = window.typeof_item(asset.emoji)
-
-														var amm = cookies[asset.address]
-
-														$el.find(`.x .icon .name`).text(name)
-														$el.find(`.x .amount span`).text(amm.x)
-
-														$el.find(`.y .icon .name`).text("XIM")
-														$el.find(`.y .amount span`).text(amm.y)
-
-													})
-												}
-
-												OAuth3.fetch(request, response)
+												$status.innerHTML = `<div class="loading">
+													<strong>Loading...</strong>
+												</div>`
 											}else{
 												$body.removeAttr("swap")
+												$pool.html("")
+												$("#swap .submit input").val("")
+												$status.innerHTML = ""
+											}
+
+											if(OAuth3.xhr){
+												OAuth3.xhr.abort()
+												delete OAuth3.xhr
 											}
 											
 											return
@@ -3908,7 +4047,7 @@ OAuth3.on("ready", function(e){
 
 							// player.y = biome.y
 
-							var edge = (window.grid.edge / 2) + 1
+							var edge = (1000000000000000000 / 2) + 1
 							
 							if(player.x < edge && player.x > -edge && player.z < edge && player.z > -edge){
 								if(window.camera){
