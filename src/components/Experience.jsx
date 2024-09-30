@@ -347,7 +347,13 @@ export const Experience = () => {
 			}
 		}
 
-		if(props.name == "bomb"){
+		if(props.name == "#OCEAN"){
+			return <>
+				<group position={props.position}>
+					<group></group>
+				</group>
+			</>
+		}else if(props.name == "bomb"){
 			var hex = props.value.codePointAt(0).toString(16)
 
 			var src = `/src/fonts/emoji/emoji_u${hex}.png`

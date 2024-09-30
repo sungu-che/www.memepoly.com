@@ -1519,6 +1519,7 @@ OAuth3.on("ready", function(e){
 							asset.address = ethers.computeAddress(asset.address).toLowerCase()
 
 							var amm = cookies[asset.address]
+							
 							asset.balance = amm.x - amm.y
 
 							var type = ""
