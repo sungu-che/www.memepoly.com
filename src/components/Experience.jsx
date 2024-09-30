@@ -373,34 +373,17 @@ export const Experience = () => {
 				emoji = window.Biomes[color]
 			}
 
-			// if(props.name == "#ROAD1" || 
-			// 	props.name == "#ROAD2" ||
-			// 	props.name == "#ROAD3" || 
-			// 	props.name == "#BRIDGE"){
-			// 	texture = "wood"
-			// }else if(props.name == "#SUBTROPICAL_DESERT" ||
-			// 	props.name == "#TAIGA" ||
-			// 	props.name == "#LAVA" ||
-			// 	props.name == "#TEMPERATE_DESERT"
-			// 	){
-			// 	texture = "glass"
-
-			// }else{
-			// 	texture = "glass"
-			// }
-
 			if(props.name == "#BEACH"){
 				if(props.color == "black"){
 					color = props.color
 
+
 					opacity = 0.5
 				}
-				// emoji = "❓"
-				// window.fields
 			}
 
 			if(biome){
-				if(biome.bomb){
+				if(biome.bomb && !biome.water){
 					texture = color = "black"
 				}
 			}

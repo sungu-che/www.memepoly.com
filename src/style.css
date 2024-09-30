@@ -865,7 +865,7 @@ form[name="swap"] .submit input{display: block; width: 100%; border-bottom: 4px 
 
 #pool .col{overflow: hidden; position: relative; padding: 1em; min-height: 22px; border-radius: 1em; background-color: #ffffffd6; box-shadow: 0 0 4px #000;}
 #pool .col:hover{background-color: #cdcdcd}
-#pool .col:after{position: absolute; right: 1em; bottom: 1rem;}
+#pool .col:after{position: absolute; right: 1em; bottom: 1.2rem;}
 #pool .col.buy:after{content: "Buy";}
 #pool .col.sell:after{content: "Sell";}
 
@@ -879,8 +879,8 @@ form[name="swap"] .submit input{display: block; width: 100%; border-bottom: 4px 
 #pool .item[type="buy"] .asset .buy .amount{text-decoration: underline;}
 /*#pool .item[type="buy"] .asset .buy{background-color: #f2bc1a;}*/
 
-#pool .item[type="buy"] .asset .buy .amount:before{content: "+ 1("; font-size: 1.5em; font-weight: 900;}
-#pool .item[type="buy"] .asset .buy .amount:after{content: ")"; font-size: 1.5em; font-weight: 900;}
+#pool .item[type="buy"] .asset .buy .amount:before{content: ""; font-size: 1.5em; font-weight: 900;}
+#pool .item[type="buy"] .asset .buy .amount:after{content: " + 1"; font-size: 1.5em; font-weight: 900;}
 
 #pool .item[type="buy"] .asset .sell .amount:before{content: "- "; font-size: 1.5em; font-weight: 900;}
 
@@ -893,10 +893,10 @@ form[name="swap"] .submit input{display: block; width: 100%; border-bottom: 4px 
 #pool .item[type="sell"] .asset .buy .amount:before{content: "- "; font-size: 1.5em; font-weight: 900;}
 
 
-#pool .item[type="sell"] .asset .buy .amount:before{content: "- 1 ("; font-size: 1.5em; font-weight: 900;}
-#pool .item[type="sell"] .asset .buy .amount:after{content: ")"; font-size: 1.5em; font-weight: 900;}
+#pool .item[type="sell"] .asset .buy .amount:before{content: ""; font-size: 1.5em; font-weight: 900;}
+#pool .item[type="sell"] .asset .buy .amount:after{content: " - 1"; font-size: 1.5em; font-weight: 900;}
 
-#pool .asset .amount{position: absolute; right: 3.3rem; bottom: 1rem;}
+#pool .asset .amount{position: absolute; right: 3.3rem; bottom: 1.2rem;}
 
 #pool .amount span{font-size: 1.5em; font-weight: 900; color: #000;}
 

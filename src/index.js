@@ -801,30 +801,14 @@ OAuth3.on("ready", function(e){
 			}
 
 			var body = {
-				emoji : player.emoji
+				emoji : player.emoji,
+				assets : []
 			}
 
 			var dice = cookies.dice * 1
 
-			var assets = []
-
-			var $assets = $('.emoji_asset.on')
-
-			$assets.each(function(index, el){
-				var asset = {
-					emoji : $(el).attr("emoji"),
-					count : $(el).attr("cnt")
-				}
-
-				if(typeof_item(asset.emoji)){
-					asset.address = ethers.hashMessage(asset.emoji)
-					asset.address = ethers.computeAddress(asset.address).toLowerCase()
-
-					assets.push(asset.address)
-				}
-			})
-
 			var query = {
+				assets : [],
 				dice : dice != 0 ? dice : 0,
 				href : window.location.href,
 				hash : cookies.hash,
@@ -834,9 +818,36 @@ OAuth3.on("ready", function(e){
 				z : player.z
 			}
 
-			if(assets.length){
-				query.assets = assets
-			}
+			var $assets = $('#pool li')
+
+			$assets.each(function(index, el){
+				var $el = $(el)
+
+				var asset = {
+					emoji : $el.attr("emoji"),
+					count : $el.attr("cnt"),
+					type : $el.attr("type")
+				}
+
+				if(typeof_item(asset.emoji)){
+					asset.address = ethers.hashMessage(asset.emoji)
+					asset.address = ethers.computeAddress(asset.address).toLowerCase()
+
+					if(asset.type == "sell"){
+						asset.address = asset.address.toUpperCase()
+					}
+
+					query.assets.push(asset.address.toLowerCase())
+					body.assets.push(asset.address)
+				}
+			})
+
+			$swap.addClass("loading")
+
+			$status.innerHTML = `<div class="loading">
+				<strong>Loading...</strong>
+			</div>`
+
 
 			OAuth3.xhr = OAuth3.fetch({
 				method : "POST",
@@ -1480,6 +1491,7 @@ OAuth3.on("ready", function(e){
 					document.querySelector('.map .canvas').src = document.querySelector('.map canvas').toDataURL()
 				}
 
+				// var $assets = $('#pool li')
 				var $assets = $('.emoji_asset.on')
 
 				var uri = new URL(url.href)
@@ -1494,9 +1506,12 @@ OAuth3.on("ready", function(e){
 					var after_body = ""
 
 					$assets.each(function(index, el){
+						var $el = $(el)
+									
 						var asset = {
-							emoji : $(el).attr("emoji"),
-							count : $(el).attr("cnt")
+							emoji : $el.attr("emoji"),
+							count : $el.attr("cnt"),
+							type : $el.attr("type")
 						}
 
 						if(typeof_item(asset.emoji)){
@@ -1504,7 +1519,7 @@ OAuth3.on("ready", function(e){
 							asset.address = ethers.computeAddress(asset.address).toLowerCase()
 
 							var amm = cookies[asset.address]
-							asset.balance = amm.y - amm.x
+							asset.balance = amm.x - amm.y
 
 							var type = ""
 
@@ -3241,18 +3256,14 @@ OAuth3.on("ready", function(e){
 										type : $el.attr("type")
 									}
 
-									console.log('asset',asset);
-
 									asset.address = ethers.hashMessage(asset.emoji)
 									asset.address = ethers.computeAddress(asset.address).toLowerCase()
 
 
 									var amm = cookies[asset.address]
 
-									console.log('amm',amm);
-
 									if(amm){
-										asset.balance = amm.y - amm.x
+										asset.balance = amm.x - amm.y
 
 										if(asset.type == "sell"){
 											total += asset.balance
