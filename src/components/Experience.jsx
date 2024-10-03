@@ -527,13 +527,10 @@ export const Experience = () => {
 		}
 	})
 
-	var fog = ["#000", 8, 13]
-
 	return (
 		<>
 			<Suspense>
 				<Environment files="warehouse.hdr" />
-				<fog attach="fog" args={fog} />
 			</Suspense>
 
 			<mesh ref={cursor} rotation-x={-Math.PI / 2} position={[1.5, -0.001, 1.5]}>

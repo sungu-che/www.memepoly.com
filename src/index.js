@@ -1366,7 +1366,7 @@ OAuth3.on("ready", function(e){
 
 				var pending = []
 
-				var size = 3
+				var size = 4
 
 				var isBiome = false
 
@@ -1927,6 +1927,7 @@ OAuth3.on("ready", function(e){
 
 							if(row.Flag){
 								if(row.To == player_hash){
+									console.log('row.Flag',row.Flag);
 									if(row.Flag == "youtube" || row.Flag == "tiktok"){
 										meme.poly = row.Flag
 										meme.play = hashtag
@@ -2338,7 +2339,14 @@ OAuth3.on("ready", function(e){
 
 						if(flag.dice == 0){
 							flags[hashtag]++
-							flags[flag.From]++
+
+							if(flag.From.indexOf(self_player.hash) > -1){
+								if(flag.Cc.indexOf(self_player.team) > -1){
+									flags[flag.From]++
+								}
+							}else{
+								flags[flag.From]++
+							}
 						}else{
 							flags.temp++
 						}
