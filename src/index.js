@@ -594,6 +594,8 @@ OAuth3.on("ready", function(e){
 	var $swap = $("#swap")
 	var $pool = $("#pool ul")
 
+	var $meme = $("#meme")
+
 	var url = new URL(window.location.href)
 
 	var host_address = ethers.hashMessage((url.host+"/"))
@@ -1377,6 +1379,11 @@ OAuth3.on("ready", function(e){
 
 				var diff = false
 
+				var meme = {
+					poly : "",
+					play : ""
+				}
+
 				var player_hash = cookies.address ? cookies.address : cookies.hash
 
 				var $player = $('player[id="'+player_hash+'"][alt="player"]')
@@ -1770,11 +1777,6 @@ OAuth3.on("ready", function(e){
 
 						}
 
-						var meme = {
-							poly : "",
-							play : ""
-						}
-
 						if(window.Biomes[hashtag] && isRender){
 							if(row.Flag && hashtag != "#dice"){
 								delete window.map.biomes[row.Id]
@@ -1929,8 +1931,8 @@ OAuth3.on("ready", function(e){
 								if(row.To == player_hash){
 									console.log('row.Flag',row.Flag);
 									if(row.Flag == "youtube" || row.Flag == "tiktok"){
-										meme.poly = row.Flag
-										meme.play = hashtag
+										meme.flag = row.Flag
+										meme.poly = hashtag
 									}
 								}
 
@@ -2365,6 +2367,21 @@ OAuth3.on("ready", function(e){
 
 				if(before_body != after_body){
 					$flags.html(after_body)
+				}
+
+				if(meme.poly && meme.flag){
+					// youtube & tiktok type meme.flag 
+
+					// video embed id meme.poly
+					window.setFrameloop("never")
+
+					var src = `https://${meme.flag}:${meme.poly}@music.popup.link`;
+
+					if(OAuth3.localhost){
+						src = `http://${meme.flag}:${meme.poly}@localhost:3002`
+					}
+
+					$meme.html(`<iframe class="poly" src="${src}/"></iframe>`)
 				}
 
 			
