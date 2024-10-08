@@ -605,6 +605,14 @@ OAuth3.on("ready", function(e){
 	$meme.html(`<iframe name="music.popup.link" src="${$meme.src}/"></iframe>`)
 
 	$meme.poly = document.querySelector('iframe[name="music.popup.link"]')
+	$meme.poly.onload = function(){
+		if($meme.poly.ready){
+			$meme.poly.ready()
+		}else{
+			$meme.poly.ready = true
+		}
+
+	}
 
 
 
@@ -2381,20 +2389,26 @@ OAuth3.on("ready", function(e){
 				}
 
 				if(meme.poly && meme.provider){
-					meme.hash = cookies.hash
-
 					if(!$meme[meme.id]){
-						$meme.addClass("poly")
+						var ready = function(){
+							$meme.addClass("poly")
 
-						$meme[meme.id] = true
-						$meme.poly.contentWindow.postMessage( JSON.stringify(meme), $meme.src );
+							$meme[meme.id] = true
+							$meme.poly.contentWindow.postMessage( JSON.stringify(meme), $meme.src );
 
-						window.onmessage = function(resp){
-							if($meme.src.indexOf(resp.origin) > -1){
-								window.onmessage = null
-								$meme.removeClass("poly")
+							window.onmessage = function(resp){
+								if($meme.src.indexOf(resp.origin) > -1){
+									window.onmessage = null
+									$meme.removeClass("poly")
+								}
+								
 							}
-							
+						}
+
+						if(!$meme.poly.ready){
+							$meme.poly.ready = ready
+						}else{
+							ready()
 						}
 					}
 				}
