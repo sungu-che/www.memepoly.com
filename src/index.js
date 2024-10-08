@@ -596,6 +596,18 @@ OAuth3.on("ready", function(e){
 
 	var $meme = $("#meme")
 
+	$meme.src = `https://music.popup.link`;
+
+	if(OAuth3.localhost){
+		$meme.src = `http://localhost:3002`
+	}
+	
+	$meme.html(`<iframe name="music.popup.link" src="${$meme.src}/"></iframe>`)
+
+	$meme.poly = document.querySelector('iframe[name="music.popup.link"]')
+
+
+
 	var url = new URL(window.location.href)
 
 	var host_address = ethers.hashMessage((url.host+"/"))
@@ -737,7 +749,7 @@ OAuth3.on("ready", function(e){
 
 			if(body.subject){
 				$(".layer, .layer form.popup").removeClass("on")
-				emojiChanged("🫥")
+				emojiChanged("🫥", true)
 
 				OAuth3.fetch({
 					method : "POST",
@@ -868,6 +880,7 @@ OAuth3.on("ready", function(e){
 			var len = players.length
 
 			var query = {
+				dice : window.cookies.dice ? window.cookies.dice : 0,
 				href : window.location.href,
 				hash : cookies.hash,
 				token : cookies.token,
@@ -923,7 +936,7 @@ OAuth3.on("ready", function(e){
 				if(type == "emoji"){
 					$body.attr("emoji",emoji)
 					if(!local){
-						OAuth3.fetch({
+						OAuth3.xhr = OAuth3.fetch({
 							method : "POST",
 							query : query,
 							body : body,
@@ -1641,37 +1654,16 @@ OAuth3.on("ready", function(e){
 
 				if(isDice){
 					if(progress.length){
-						progress = progress.reverse()
-
+						progress.before = progress[1]
 						progress.start = progress[progress.length - 1]
+						progress.end = progress[0]
 
-						var div = fields[`${progress.start.x}:${progress.start.z}`]
-
-						if(div){
-							var fields_ = fields.slice()
-
-							var _fields = fields_.splice(div.index, fields.length)
-
-							fields_ = _fields.concat(fields_)
-
-							var start
-
-							fields_.forEach(function(field, index){
-								field.index = index
-								fields[`${field.x}:${field.z}`] = field
-
-								if(progress.start.x == field.x && progress.start.z == field.z){
-									start = true
-								}
-
-								if(!progress.ing && start){
-									progress[`${field.x}:${field.z}`] = field
-
-									if(field.x == biomes.x && field.z == biomes.z){
-										progress.ing = field
-									}
-								}
-							})
+						if(progress.before){
+							if(progress.before.index > progress.end.index){
+								fields.forEach(function(field, index){
+									delete window.fields[`${field.x}:${field.z}`]
+								})
+							}
 						}
 					}
 				}
@@ -1927,12 +1919,26 @@ OAuth3.on("ready", function(e){
 						}else if((row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb") && isRender){
 							bombs.push(row)
 
-							if(row.Flag){
+							console.log("bomb",row);
+
+							if(ethers.isAddress(row.Flag)){
 								if(row.To == player_hash){
-									console.log('row.Flag',row.Flag);
-									if(row.Flag == "youtube" || row.Flag == "tiktok"){
-										meme.flag = row.Flag
-										meme.poly = hashtag
+									var provider = ""
+
+									if(hashtag != "#bomb"){
+										if(isNaN(hashtag)){
+											provider = "youtube"
+										}else{
+											provider = "tiktok"
+										}
+									}
+
+									console.log('provider',provider);
+
+									if(provider){
+										meme.id = row.Id
+										meme.provider = provider
+										meme.poly = hashtag.replace("#","")
 									}
 								}
 
@@ -1947,6 +1953,7 @@ OAuth3.on("ready", function(e){
 
 								delete window.map.biomes[`${x}:${z}`].bomb
 							}else{
+								console.log("폭탄");
 								var _from = row.From
 
 								var _nonce = row.Cc.split(` ${hashtag}`)[1]
@@ -2016,7 +2023,11 @@ OAuth3.on("ready", function(e){
 
 						var field = window.fields[`${x}:${z}`]
 
-						$body.attr("field", field ? (field.item || field.drop) : "")
+						if(field){
+							$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
+						}else{
+							$body.attr("field", "")
+						}
 
 						var type = window.typeof_emoji(self_player.emoji)
 
@@ -2369,19 +2380,23 @@ OAuth3.on("ready", function(e){
 					$flags.html(after_body)
 				}
 
-				if(meme.poly && meme.flag){
-					// youtube & tiktok type meme.flag 
+				if(meme.poly && meme.provider){
+					meme.hash = cookies.hash
 
-					// video embed id meme.poly
-					window.setFrameloop("never")
+					if(!$meme[meme.id]){
+						$meme.addClass("poly")
 
-					var src = `https://${meme.flag}:${meme.poly}@music.popup.link`;
+						$meme[meme.id] = true
+						$meme.poly.contentWindow.postMessage( JSON.stringify(meme), $meme.src );
 
-					if(OAuth3.localhost){
-						src = `http://${meme.flag}:${meme.poly}@localhost:3002`
+						window.onmessage = function(resp){
+							if($meme.src.indexOf(resp.origin) > -1){
+								window.onmessage = null
+								$meme.removeClass("poly")
+							}
+							
+						}
 					}
-
-					$meme.html(`<iframe class="poly" src="${src}/"></iframe>`)
 				}
 
 			
@@ -2925,7 +2940,7 @@ OAuth3.on("ready", function(e){
 
 					if(body.to && body.emoji){
 						$(".layer, .layer form.popup").removeClass("on")
-						emojiChanged("🫥")
+						emojiChanged("🫥", true)
 
 						var query = {
 							href : window.location.href,
@@ -3613,7 +3628,7 @@ OAuth3.on("ready", function(e){
 											})
 										}
 
-										emojiChanged("🫥")
+										emojiChanged("🫥", true)
 
 										if(diff){
 											window.assets.set(_assets)
@@ -3874,7 +3889,7 @@ OAuth3.on("ready", function(e){
 										}
 
 										if(emoji == "💣"){
-											emojiChanged("🫥")
+											emojiChanged("🫥", true)
 											
 											var query = {
 												href : window.location.href,
@@ -3922,50 +3937,15 @@ OAuth3.on("ready", function(e){
 											return
 
 										}else{
-											if(method == "open"){
-												body.open = "true"
-
-												emojiChanged("🫥")
-
+											if(type == "emoji"){
 												if(OAuth3.xhr){
 													OAuth3.xhr.abort()
 													delete OAuth3.xhr
 												}
 
-												if(window.tutorial){
-													var res = JSON.stringify(window.response)
-														res = JSON.parse(res)
-
-													res.body.query = query
-													res.body.body = body
-													
-													window.Callback(res)
-												}else{
-													OAuth3.xhr = OAuth3.fetch({
-														method : "POST",
-														url : url,
-														body : body,
-														query : {
-															href : window.location.href,
-															hash : cookies.hash,
-															token : cookies.token,
-															x : player.x ? player.x : "1.5",
-															y : player.y ? player.y : "0",
-															z : player.z ? player.z : "1.5"
-														}
-													}, window.Callback);
-												}
-											}else{
-												if(type == "emoji"){
-													if(OAuth3.xhr){
-														OAuth3.xhr.abort()
-														delete OAuth3.xhr
-													}
-
-													window.emojis.self = emoji
-													
-													emojiChanged(emoji)
-												}
+												window.emojis.self = emoji
+												
+												emojiChanged(emoji)
 											}
 										}
 									}
