@@ -1,4 +1,14 @@
-var timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000
+var time = {
+	balance : 3000,
+	zone : new Date().getTimezoneOffset()
+}
+var offset = 540
+
+if(offset + 60 <= time.zone || offset - 60 >= time.zone || OAuth3.localhost){
+	time.balance = 0
+}
+
+time.offset = time.zone * 60 * 1000
 
 if(!OAuth3.isMobile){
 	document.querySelector(".react .three").className = "three pc";
@@ -570,7 +580,7 @@ OAuth3.on("ready", function(e){
 			lang = "en";
 		}
 	}else{
-		if(timezoneOffset == -32400000){
+		if(time.offset == -32400000){
 			lang = "ko";
 		}else{
 			lang = "en";
@@ -711,7 +721,7 @@ OAuth3.on("ready", function(e){
 					}else{
 						delete window.response
 					}
-					window.Poll.ing = setInterval(window.Poll, 1000)
+					window.Poll.ing = setInterval(window.Poll, time.balance)
 				}else{
 					clearInterval(window.Poll.ing)
 
@@ -2074,7 +2084,7 @@ OAuth3.on("ready", function(e){
 								!window.map.biomes[_id]
 							){
 								if(Math.random() < 0.1){
-									var _date = new Date(new Date() - timezoneOffset)
+									var _date = new Date(new Date() - time.offset)
 										_date = _date.toISOString()
 											.replace(/T/, ' ')
 											.replace(/\..+/, '')
@@ -2820,7 +2830,7 @@ OAuth3.on("ready", function(e){
 					if(cookies.hash){
 						clearInterval(window.Roll.ing)
 						delete window.Roll.ing
-						window.Poll.ing = setInterval(window.Poll, 1000)
+						window.Poll.ing = setInterval(window.Poll, time.balance)
 					}else{
 						window.location.href = OAuth3.host+"/logout"
 					}
@@ -3080,17 +3090,12 @@ OAuth3.on("ready", function(e){
 								}
 							}
 
-							// if(window.response){
-							// 	window.Callback(window.response)	
-							// }else{
-								OAuth3.xhr = OAuth3.fetch({
-									method : "POST",
-									url : url,
-									body : body,
-									query : query
-								}, window.Callback);
-							// }
-							
+							OAuth3.xhr = OAuth3.fetch({
+								method : "POST",
+								url : url,
+								body : body,
+								query : query
+							}, window.Callback);
 						}
 					}else if(window.response){
 						window.setFrameloop("always")
@@ -3186,77 +3191,84 @@ OAuth3.on("ready", function(e){
 									url = "http://localhost:3001/"
 								}
 
-								OAuth3.xhr = OAuth3.fetch({
-									method : "POST",
-									query : {
-										href : window.location.href,
-										hash : cookies.hash,
-										token : cookies.token
-									},
-									body : {
-										cc : "start"
-									},
-									url : url
-								}, function(resp){
-									OAuth3.nonces = []
+								if(time.out){
+									clearTimeout(time.out)
+									delete time.out
+								}
 
-									if(resp.body.nonces.length){
-										var _nonces = resp.body.body.nonces
+								time.out = setTimeout(function(){
+									OAuth3.xhr = OAuth3.fetch({
+										method : "POST",
+										query : {
+											href : window.location.href,
+											hash : cookies.hash,
+											token : cookies.token
+										},
+										body : {
+											cc : "start"
+										},
+										url : url
+									}, function(resp){
+										OAuth3.nonces = []
 
-											
-										for(var i = 0; i < resp.body.nonces.length; i++){
-											var nonce = resp.body.nonces[i]
+										if(resp.body.nonces.length){
+											var _nonces = resp.body.body.nonces
 
-											var skip = true
+												
+											for(var i = 0; i < resp.body.nonces.length; i++){
+												var nonce = resp.body.nonces[i]
 
-											if(_nonces){
-												if(_nonces.length){
-													if(_nonces.indexOf(nonce) > -1){
-														continue;
-													}
-												}
-											}
+												var skip = true
 
-											OAuth3.nonces.push(nonce)
-										}
-
-										if(OAuth3.nonces){
-											var body = {}
-
-											if(OAuth3.nonces.length){
-												body.nonces = []
-
-												for(var i = 0; i < OAuth3.nonces.length; i++){
-													var nonce = OAuth3.nonces[i]
-
-													if(nonce){
-														body.nonces.push(nonce)
+												if(_nonces){
+													if(_nonces.length){
+														if(_nonces.indexOf(nonce) > -1){
+															continue;
+														}
 													}
 												}
 
-												body.nonces = JSON.stringify(body.nonces)
+												OAuth3.nonces.push(nonce)
 											}
 
-											OAuth3.xhr = OAuth3.fetch({
-												method : "POST",
-												query : {
-													href : window.location.href,
-													hash : cookies.hash,
-													token : cookies.token
-												},
-												body : body,
-												url : url
-											}, function(_resp){
-												window.cookies = JSON.parse(_resp.body.cookies)
+											if(OAuth3.nonces){
+												var body = {}
 
-												$body.attr("team",cookies.team ? cookies.team : "")
+												if(OAuth3.nonces.length){
+													body.nonces = []
 
-												window.Callback(_resp)
-											})
+													for(var i = 0; i < OAuth3.nonces.length; i++){
+														var nonce = OAuth3.nonces[i]
+
+														if(nonce){
+															body.nonces.push(nonce)
+														}
+													}
+
+													body.nonces = JSON.stringify(body.nonces)
+												}
+
+												OAuth3.xhr = OAuth3.fetch({
+													method : "POST",
+													query : {
+														href : window.location.href,
+														hash : cookies.hash,
+														token : cookies.token
+													},
+													body : body,
+													url : url
+												}, function(_resp){
+													window.cookies = JSON.parse(_resp.body.cookies)
+
+													$body.attr("team",cookies.team ? cookies.team : "")
+
+													window.Callback(_resp)
+												})
+											}
+
 										}
-
-									}
-								})
+									})
+								}, time.balance)
 
 								return
 							}
@@ -3391,7 +3403,7 @@ OAuth3.on("ready", function(e){
 											}else{
 												delete window.response
 											}
-											window.Poll.ing = setInterval(window.Poll, 1000)
+											window.Poll.ing = setInterval(window.Poll, time.balance)
 										}else{
 											window.location.href = "/"
 										}
@@ -3648,31 +3660,36 @@ OAuth3.on("ready", function(e){
 											window.assets.set(_assets)
 										}
 
-										if(OAuth3.xhr){
-											OAuth3.xhr.abort()
-											delete OAuth3.xhr
+										if(time.out){
+											clearTimeout(time.out)
+											delete time.out
 										}
 
+										time.out = setTimeout(function(){
+											if(OAuth3.xhr){
+												OAuth3.xhr.abort()
+												delete OAuth3.xhr
+											}
+											if(window.tutorial){
+												setTimeout(function(){
+													var res = JSON.stringify(window.response)
+														res = JSON.parse(res)
 
-
-										if(window.tutorial){
-											setTimeout(function(){
-												var res = JSON.stringify(window.response)
-													res = JSON.parse(res)
-
-												res.body.query = query
-												res.body.body = body
-												
-												window.Callback(res)
-											},1500)
-										}else{
-											OAuth3.xhr = OAuth3.fetch({
-												method : "POST",
-												query : query,
-												body : body,
-												url : url
-											}, window.Callback)
-										}
+													res.body.query = query
+													res.body.body = body
+													
+													window.Callback(res)
+												},1500)
+											}else{
+												OAuth3.xhr = OAuth3.fetch({
+													method : "POST",
+													query : query,
+													body : body,
+													url : url
+												}, window.Callback)
+											}
+										}, time.balance)
+										
 									}
 
 									if($this.hasClass("emoji_asset")){
@@ -3917,36 +3934,24 @@ OAuth3.on("ready", function(e){
 											body.cc = "bomb"
 											body.emoji = player_emoji
 
-											// var _assets = window.assets;
-
-											// var biome = window.map.biomes[player.x+":"+player.z]
-
-											// _assets.push({
-											// 	id : "",
-											// 	hash : randomHash(),
-											// 	name : "bomb",
-											// 	value : emoji,
-											// 	color: player_emoji,
-											// 	x : player.x,
-											// 	y : biome.y,
-											// 	z : player.z
-											// })
-
-											// var assets_ = JSON.stringify(_assets)
-
-											// window.assets.set(_assets)
-
-											if(OAuth3.xhr){
-												OAuth3.xhr.abort()
-												delete OAuth3.xhr
+											if(time.out){
+												clearTimeout(time.out)
+												delete time.out
 											}
 
-											OAuth3.xhr = OAuth3.fetch({
-												method : "POST",
-												query : query,
-												body : body,
-												url : url
-											}, window.Callback);
+											time.out = setTimeout(function(){
+												if(OAuth3.xhr){
+													OAuth3.xhr.abort()
+													delete OAuth3.xhr
+												}
+
+												OAuth3.xhr = OAuth3.fetch({
+													method : "POST",
+													query : query,
+													body : body,
+													url : url
+												}, window.Callback);
+											}, time.balance)
 
 											return
 
@@ -4510,7 +4515,7 @@ OAuth3.on("ready", function(e){
 					}
 
 					clearInterval(window.Poll.ing)
-					window.Poll.ing = setInterval(window.Poll, 1000)
+					window.Poll.ing = setInterval(window.Poll, time.balance)
 
 					$status.innerHTML = `<div class="loading">
 						<strong>Loading...</strong>
