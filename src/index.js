@@ -711,7 +711,7 @@ OAuth3.on("ready", function(e){
 					}else{
 						delete window.response
 					}
-					window.Poll.ing = setInterval(window.Poll, 300)
+					window.Poll.ing = setInterval(window.Poll, 1000)
 				}else{
 					clearInterval(window.Poll.ing)
 
@@ -2820,7 +2820,7 @@ OAuth3.on("ready", function(e){
 					if(cookies.hash){
 						clearInterval(window.Roll.ing)
 						delete window.Roll.ing
-						window.Poll.ing = setInterval(window.Poll, 300)
+						window.Poll.ing = setInterval(window.Poll, 1000)
 					}else{
 						window.location.href = OAuth3.host+"/logout"
 					}
@@ -3391,7 +3391,7 @@ OAuth3.on("ready", function(e){
 											}else{
 												delete window.response
 											}
-											window.Poll.ing = setInterval(window.Poll, 300)
+											window.Poll.ing = setInterval(window.Poll, 1000)
 										}else{
 											window.location.href = "/"
 										}
@@ -4510,7 +4510,7 @@ OAuth3.on("ready", function(e){
 					}
 
 					clearInterval(window.Poll.ing)
-					window.Poll.ing = setInterval(window.Poll, 300)
+					window.Poll.ing = setInterval(window.Poll, 1000)
 
 					$status.innerHTML = `<div class="loading">
 						<strong>Loading...</strong>
