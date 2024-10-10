@@ -981,8 +981,6 @@ OAuth3.on("ready", function(e){
 							body.z = plant.z
 						}
 
-						console.log('plant',plant);
-
 						OAuth3.xhr = OAuth3.fetch({
 							method : "POST",
 							query : query,
@@ -1359,6 +1357,8 @@ OAuth3.on("ready", function(e){
 				var _dice = window.cookies.dice * 1
 
 				var cookies = window.cookies = JSON.parse(resp.body.cookies)
+
+				var dice = cookies.dice * 1
 
 				OAuth3.nonces = []
 
@@ -1791,13 +1791,13 @@ OAuth3.on("ready", function(e){
 
 						var emoji = row.Cc.split("@")[1]
 
-						var x = position[0]
-						var z = position[1]
-						var dice = position[2] * 1
+						row.x = position[0]
+						row.z = position[1]
+						row.dice = position[2] * 1
 
-						var biome = biomes[x+":"+z]
+						var biome = biomes[row.x+":"+row.z]
 
-						var isRender = biomes[x+":"+z]
+						var isRender = biomes[row.x+":"+row.z]
 
 						try{
 							var _nonce = row.Cc.split(` ${hashtag}`)[1]
@@ -1818,7 +1818,7 @@ OAuth3.on("ready", function(e){
 							if(row.Flag && hashtag != "#dice"){
 								delete window.map.biomes[row.Id]
 								
-								var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
+								var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
 
 								if($clipped.length && !window.bingo[row.Id]){
 									window.bingo[row.Id] = true
@@ -1831,9 +1831,9 @@ OAuth3.on("ready", function(e){
 									name : hashtag,
 									value : "",
 									color: "",
-									x : x,
+									x : row.x,
 									y : biome.y,
-									z : y
+									z : row.y
 								}
 
 								if(window.map.nonces[row.Id]){
@@ -1852,7 +1852,7 @@ OAuth3.on("ready", function(e){
 
 							if(row.Flag){
 								if(isRender){
-									var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
+									var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
 
 									if($clipped.length && !window.bingo[row.Id]){
 										window.bingo[row.Id] = true
@@ -1904,9 +1904,9 @@ OAuth3.on("ready", function(e){
 										delete window.map.biomes[row.Id]
 									}
 
-									player.x = x
+									player.x = row.x
 									player.y = (biome ? biome.y : 0) + 0.5
-									player.z = z
+									player.z = row.z
 									player.emoji = emoji
 								}
 
@@ -1920,7 +1920,7 @@ OAuth3.on("ready", function(e){
 												follow : player.follow,
 												self : player.self,
 												hash : _from,
-												dice : dice,
+												dice : row.dice,
 												x : player.x,
 												y : player.y,
 												z : player.z,
@@ -1938,7 +1938,7 @@ OAuth3.on("ready", function(e){
 											x : player.x,
 											z : player.z,
 											emoji : player.emoji,
-											dice : dice
+											dice : row.dice
 										}
 									}
 
@@ -1948,7 +1948,7 @@ OAuth3.on("ready", function(e){
 											follow : player.follow,
 											self : player.self,
 											hash : _from,
-											dice : dice,
+											dice : row.dice,
 											x : player.x,
 											y : player.y,
 											z : player.z,
@@ -1961,14 +1961,13 @@ OAuth3.on("ready", function(e){
 							_messages.push(row)
 
 
-						}else if((row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb") && isRender){
-							bombs.push(row)
-
-							console.log("bomb",row);
-
-							if(row.From.indexOf(player_hash) > -1){
+						}else if(row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb"){
+							if(row.From.indexOf(player_hash) > -1 && !row.Flag){
 								plant = false
 							}
+
+							
+							bombs.push(row)	
 
 							if(ethers.isAddress(row.Flag)){
 								if(row.To == player_hash){
@@ -1990,7 +1989,7 @@ OAuth3.on("ready", function(e){
 								}
 
 								if(row.Subject == "#bomb"){
-									var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
+									var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
 
 									if($clipped.length && !window.bingo[row.Id]){
 										window.bingo[row.Id] = true
@@ -1998,9 +1997,8 @@ OAuth3.on("ready", function(e){
 									}
 								}
 
-								delete window.map.biomes[`${x}:${z}`].bomb
-							}else{
-								console.log("폭탄");
+								delete window.map.biomes[`${row.x}:${row.z}`].bomb
+							}else if(!row.Flag && isRender){
 								var _from = row.From
 
 								var _nonce = row.Cc.split(` ${hashtag}`)[1]
@@ -2016,15 +2014,14 @@ OAuth3.on("ready", function(e){
 									self : false,
 									hash : _from,
 									dice : 0,
-									x : x,
+									x : row.x,
 									y : (biome ? biome.y : 0) + 0.5,
-									z : z,
+									z : row.z,
 									emoji : "💣"
 								}
 
 								_players.push(player)
 							}
-
 						}else if(row.Cc.indexOf("#asset") > -1){
 							var emoji = row.Cc.split("@")[1]
 
@@ -2032,7 +2029,7 @@ OAuth3.on("ready", function(e){
 								if(window[row.Flag]){
 									window[row.Flag].emoji = ""
 
-									var $clipped = $('.clipped .emoji[x="'+x+'"][z="'+z+'"]')
+									var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
 
 									if($clipped.length && !window.bingo[row.Id]){
 										window.bingo[row.Id] = true
@@ -2048,7 +2045,7 @@ OAuth3.on("ready", function(e){
 
 								row.index = stickers[emoji].length
 
-								if(dice == 0){
+								if(row.dice == 0){
 									row.color = true
 								}
 
@@ -2152,7 +2149,6 @@ OAuth3.on("ready", function(e){
 				}
 
 				try{
-					var diff = false
 					if(window.players){
 						if(JSON.stringify(window.players) != JSON.stringify(_players)){
 							diff = true
@@ -2852,22 +2848,25 @@ OAuth3.on("ready", function(e){
 					window.cookies.dice = 0
 				}
 
-				if(OAuth3.xhr){
-					OAuth3.xhr.abort()
-					delete OAuth3.xhr
-
-					window.response = resp
-				}
+					
 
 				if(typeof window.Poll.ing == "undefined"){
 					if(cookies.hash){
 						clearInterval(window.Roll.ing)
 						delete window.Roll.ing
+
+						if(OAuth3.xhr){
+							OAuth3.xhr.abort()
+							delete OAuth3.xhr
+						}
+
 						window.Poll.ing = setInterval(window.Poll, time.balance)
 					}else{
 						window.location.href = OAuth3.host+"/logout"
 					}
 				}else if(dice > 0 && typeof window.Roll.ing == "undefined"){
+					window.response = resp
+
 					clearInterval(window.Poll.ing)
 					delete window.Poll.ing
 
@@ -2882,6 +2881,14 @@ OAuth3.on("ready", function(e){
 
 						window.Roll.ing = setInterval(window.Roll, 500, biomes)
 					}, 500)
+				}else{
+					if(OAuth3.xhr){
+						console.log("진입")
+						OAuth3.xhr.abort()
+						delete OAuth3.xhr
+
+						window.response = resp
+					}
 				}
 			}catch(err){
 				console.log("err",err);
@@ -3106,8 +3113,6 @@ OAuth3.on("ready", function(e){
 								query.date = window.Poll.date+""
 								delete window.Poll.date
 							}
-
-							console.log('plant',plant);
 
 							if(plant){
 								body.cc = "bomb"
@@ -3634,6 +3639,10 @@ OAuth3.on("ready", function(e){
 														body.cc = "dice"
 													}else{
 														isBomb = true
+
+														if(plant){
+															return
+														}
 													}
 												}
 											
@@ -3964,6 +3973,10 @@ OAuth3.on("ready", function(e){
 										}
 
 										if(emoji == "💣"){
+											if(plant){
+												return
+											}
+
 											emojiChanged("🫥", true, true)
 											
 											var query = {

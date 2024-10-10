@@ -21,7 +21,7 @@
 .voronoi.zoom #map{transform: scale(1) rotate(45deg);}
 .voronoi.zoom .map{}
 
-.xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; color: #fff; z-index: 2; text-shadow: 0 0 2px black;}
+.xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; color: #fff; z-index: 5; text-shadow: 0 0 2px black;}
 
 #map{position: absolute; overflow: hidden; right: 0; top: 0; width: 200px; height: 200px; transform: scale(2) rotate(45deg);}
 
