@@ -14,14 +14,14 @@
 
 /*body{background-color: #fff !important;}*/
 
-.voronoi{overflow: hidden; border-radius: 50%; position: absolute; right: 0.5em; top: 0.5em; width: 200px; height: 200px; transform: scale(0.5); transform-origin: top right; background-color: #262626; z-index: 4;}
+.voronoi{overflow: hidden; border-radius: 50%; position: absolute; right: 0.5em; top: 0.5em; width: 200px; height: 200px; transform: scale(0.5); transform-origin: top right; background-color: #262626;}
 .voronoi:after{content: ""; position: absolute; left: 0; top: 0; bottom: 0; right: 0; border-radius: 50%; z-index: 10; cursor: pointer; box-shadow: inset 0 0 0.1px 0.1px #000;}
 
 .voronoi.zoom{transform: scale(1); z-index: 1;}
 .voronoi.zoom #map{transform: scale(1) rotate(45deg);}
 .voronoi.zoom .map{}
 
-.xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; color: #fff; z-index: 5; text-shadow: 0 0 2px black;}
+.xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; color: #fff; z-index: 2; text-shadow: 0 0 2px black;}
 
 #map{position: absolute; overflow: hidden; right: 0; top: 0; width: 200px; height: 200px; transform: scale(2) rotate(45deg);}
 
@@ -989,8 +989,7 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 
 #root player tooltip li a.Flag img{width: 48px; filter: drop-shadow(0 1px 2px #000); transform: scale(1.5);}
 
-#root player[self="true"] tooltip li a.Meta{}
-body[biome="BEACH"] #root player[self="true"] tooltip li a.Meta{}
+
 body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="😎"]{display: none;}
 
 body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="💣"]{display: none;}
@@ -1012,14 +1011,12 @@ body[dice="0"][biome="BEACH"] #root player tooltip li a.Flag{pointer-events: non
 #root player tooltip #dice .num{}
 #root player tooltip .slot-machine{display: none;}
 
+#root player tooltip li a.emoji.Meta{opacity: 0; pointer-events: none;}
 #root player tooltip li a.emoji.Meta i{display: block; font-size: 1em; position: relative; top: -21px;}
-
-
 #root player tooltip li a.emoji.Meta i:after{content: "💣"; font-size: 1.33em; position: relative; left: -5px; top: -14px;}
+#root player[self="true"] tooltip li a.emoji.Meta{opacity: 1; pointer-events: initial;}
 
 body[biome="BEACH"] #root player tooltip li a.emoji.Meta i:after{content: "🎲";  font-size: 1em; left: 0; top: 0;}
-
-
 body[biome="BEACH"] #root player tooltip .slot-machine {display: block; position: relative; border: 3px solid #000; border-radius: 50%;}
 body[biome="BEACH"] #root player tooltip .slotwrapper {position: absolute; left: -1px; top: -2px; overflow: hidden; width: 47px; height: 44px; text-align: center;}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul[style]{opacity: 1}
@@ -1400,7 +1397,7 @@ body[tutorial="Move"][step="1"] #root player[alt="player"][self="true"] .address
 
 /*body[dice="0"] #flag{display: block;}*/
 
-#flag{position: fixed; left: 1em; right: 1em; top: 0.5em; text-align: center; width: 140px; margin: 0 auto; height: 40px; z-index: 1;}
+#flag{position: fixed; left: 1em; right: 1em; top: 0.5em; text-align: center; width: 140px; margin: 0 auto; height: 40px; z-index: 2;}
 #flag:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; width: 2px; height: 13px; background-color: #7c7c7c;}
 #flag>div{position: absolute; top: 0; bottom: 0; text-align: center;}
 #flag .cnt{font-size: 1.6em; font-weight: 900; line-height: 36px;}

@@ -62,23 +62,15 @@ export const Experience = () => {
 		var player_hash = cookies.address ? cookies.address : cookies.hash
 		var player = window[player_hash]
 
-		var position
-
-		try{
-			position = current.current.position
-		}catch(err){
-			position = player.position
-		}
-
 		return {
 			emoji : player.emoji,
 			hash : player.hash,
 			follow : player.follow,
 			self : player.self,
 			team : player.team,
-			x : position.x,
+			x : player.position.x,
 			y : player.position.y,
-			z : position.z
+			z : player.position.z
 		}
 	}
 
@@ -538,7 +530,7 @@ export const Experience = () => {
 				<meshStandardMaterial attach="material" color={cursor.color} />
 			</mesh>
 
-			<mesh ref={current} rotation-x={-Math.PI / 2} position={[1.5, 0, 1.5]}>
+			<mesh ref={current} rotation-x={-Math.PI / 2} position={[0.5, 0, 0.5]}>
 				<planeGeometry attach="geometry" args={[0.9, 0.9]} />
 				<meshStandardMaterial attach="material" color={current.color} />
 			</mesh>

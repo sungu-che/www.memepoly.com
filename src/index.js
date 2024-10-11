@@ -18,6 +18,30 @@ if(!OAuth3.isMobile){
 window.bingo = {}
 window.sticker = {}
 
+if(window.fields){
+	window.fields.forEach(function(field, index){
+		if(index % 9 == 0){
+			field.drop = "❓"
+		}else if(index % 3 == 0){
+			field.item = "❔"
+		}
+
+		window.fields[`${field.x}:${field.z}`] = field
+	})
+}
+
+function Respawn(){
+	var r = fields[Math.round(Math.random() * fields.length)]
+
+	var b = window.map.biomes[`${r.x}:${r.z}`]
+
+	return {
+		x : r.x,
+		y : b.y,
+		z : r.z
+	}
+}
+
 function nFormatter(num, digits) {
 	const lookup = [
 		{ value: 1, symbol: "" },
@@ -122,18 +146,6 @@ window.Subscribe = function(){
 			$submit.value = "close"
 		}
 	});
-}
-
-if(window.fields){
-	window.fields.forEach(function(field, index){
-		if(index % 9 == 0){
-			field.drop = "❓"
-		}else if(index % 3 == 0){
-			field.item = "❔"
-		}
-
-		window.fields[`${field.x}:${field.z}`] = field
-	})
 }
 
 window.listToBiomes = function(list, elementsPerSubArray) {
@@ -358,9 +370,9 @@ window.players.self = function(){
 		self : true,
 		hash : window.cookies.address ? window.cookies.address : window.cookies.hash,
 		emoji : "😀",
-		x : 1.5,
-		y : 0.5,
-		z : 1.5
+		x : window.current.current.position.x,
+		y : window.current.current.position.y,
+		z : window.current.current.position.z
 	}
 }
 
@@ -730,6 +742,8 @@ OAuth3.on("ready", function(e){
 						OAuth3.xhr.abort()
 						delete OAuth3.xhr
 					}
+
+					var respawn = Respawn()
 					
 					OAuth3.fetch({
 						method : "GET",
@@ -740,9 +754,9 @@ OAuth3.on("ready", function(e){
 							href : window.location.href,
 							hash : hash,
 							token : token,
-							x : player.x ? player.x : "1.5",
-							y : player.y ? player.y : "0",
-							z : player.z ? player.z : "1.5"
+							x : player.x ? player.x : respawn.x,
+							y : player.y ? player.y : respawn.y,
+							z : player.z ? player.z : respawn.z
 						}
 					}, function(res){
 						window.location.href = OAuth3.host+"/logout"
@@ -1351,571 +1365,529 @@ OAuth3.on("ready", function(e){
 		}
 
 		window.Callback = async function(resp){
-			try{
-				var url = new URL(window.location.href)
+			var url = new URL(window.location.href)
 
-				var _dice = window.cookies.dice * 1
+			var _dice = window.cookies.dice * 1
 
-				var cookies = window.cookies = JSON.parse(resp.body.cookies)
+			var cookies = window.cookies = JSON.parse(resp.body.cookies)
 
-				var dice = cookies.dice * 1
+			var dice = cookies.dice * 1
 
-				OAuth3.nonces = []
+			if(cookies.axis){
+				try{
+					OAuth3.nonces = []
 
-				if(resp.body.nonces.length){
-					var _nonces = resp.body.body.nonces
-						
-					for(var i = 0; i < resp.body.nonces.length; i++){
-						var nonce = resp.body.nonces[i]
+					if(resp.body.nonces.length){
+						var _nonces = resp.body.body.nonces
+							
+						for(var i = 0; i < resp.body.nonces.length; i++){
+							var nonce = resp.body.nonces[i]
 
-						var skip = true
+							var skip = true
 
-						if(_nonces){
-							if(_nonces.length){
-								if(_nonces.indexOf(nonce) > -1){
-									continue;
+							if(_nonces){
+								if(_nonces.length){
+									if(_nonces.indexOf(nonce) > -1){
+										continue;
+									}
 								}
 							}
+
+							OAuth3.nonces.push(nonce)
 						}
-
-						OAuth3.nonces.push(nonce)
 					}
-				}
 
-				var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
-					cc_address = ethers.computeAddress(cc_address).toLowerCase()
+					var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
+						cc_address = ethers.computeAddress(cc_address).toLowerCase()
 
 
-				window.map.report = {}
+					window.map.report = {}
 
-				var seed = cc_address+""
+					var seed = cc_address+""
 
-				if(window.location.hash){
-					cc_address = window.location.hash.replace("#","")
+					if(window.location.hash){
+						cc_address = window.location.hash.replace("#","")
 
-					seed = window.location.hash.replace("#","0x")
-				}
+						seed = window.location.hash.replace("#","0x")
+					}
 
-				cc_address = cc_address.replace("0x","")
+					cc_address = cc_address.replace("0x","")
 
-				var rows = JSON.stringify(resp.body.rows)
-					rows = JSON.parse(rows)
+					var rows = JSON.stringify(resp.body.rows)
+						rows = JSON.parse(rows)
 
-				var biomes = listToBiomes(window.map.biomes, 100)
+					var biomes = listToBiomes(window.map.biomes, 100)
 
-				var isDice = Math.sqrt(Math.pow(cookies.dice, 2)) > 0 && cookies.dice != -10
+					var isDice = Math.sqrt(Math.pow(cookies.dice, 2)) > 0 && cookies.dice != -10
 
-				var self_player
+					var self_player
 
-				var flag_players = []
-
-				var _players = []
-					_players.cnt = 0
-
-				var _assets = []
-
-				var _messages = []
-
-				var frameloop = false
-
-				var stickers = []
-
-				var bombs = []
-
-				var bingo_body = ""
-
-				var score_board = []
-
-				var size = 4
-
-				var isBiome = false
-
-				var canvas = blockies.create({seed: seed.toLowerCase()})
-
-				var self = false
-
-				var diff = false
-
-				var meme = {
-					poly : "",
-					play : ""
-				}
-
-				var player_hash = cookies.address ? cookies.address : cookies.hash
-
-				var $player = $('player[id="'+player_hash+'"][alt="player"]')
-
-				var cc_player = {
-					type : "player",
-					self : false,
-					hash : cc_address,
-					x : 0.5,
-					y : 0.5,
-					z : 0.5,
-					emoji : canvas.toDataURL()
-				}
-
-				if(window.players.length){
 					try{
 						self_player = window.players.self()
 					}catch(err){
-						self_player = {
-							team : cookies.team ? cookies.team : "",
-							follow : false,
-							self : true,
-							hash : cookies.address ? cookies.address : cookies.hash,
-							emoji : "😀",
-							x : x,
-							y : y,
-							z : z
-						}
+						window.response = resp
 					}
-						
-					
-					biomes.x = window.current.current.position.x
-					biomes.y = window.current.current.position.y
-					biomes.z = window.current.current.position.z
-				}else{
-					var x = 1.5
-					var z = 1.5
 
-					var _biomes = []
+					var flag_players = []
 
-					biomes.forEach(function(b, i){
-						if(!b.water){
-							_biomes.push(b)
-						}
-					})
+					var _players = []
+						_players.cnt = 0
 
-					var _biome = _biomes[Math.floor(Math.random() * _biomes.length)]
+					var _assets = []
+
+					var _messages = []
+
+					var frameloop = false
+
+					var stickers = []
+
+					var bombs = []
+
+					var bingo_body = ""
+
+					var score_board = []
+
+					var size = 4
+
+					var isBiome = false
+
+					var canvas = blockies.create({seed: seed.toLowerCase()})
+
+					var self = false
+
+					var diff = false
+
+					var meme = {
+						poly : "",
+						play : ""
+					}
+
+					var player_hash = cookies.address ? cookies.address : cookies.hash
+
+					var $player = $('player[id="'+player_hash+'"][alt="player"]')
+
+					var cc_player = {
+						type : "player",
+						self : false,
+						hash : cc_address,
+						x : 0.5,
+						y : 0.5,
+						z : 0.5,
+						emoji : canvas.toDataURL()
+					}
+
+					var _axis = cookies.axis
+						_axis = _axis.split(",")
+	
+					var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
+
+					var axis = {
+						x : _axis[0] * 1,
+						y : b.y,
+						z : _axis[2] * 1
+					}
+				
+					var b = window.map.biomes[`${axis.x}:${axis.z}`]
 
 					if(window.current){
-						if(window.current.current.position && self_player){
-							var axis = cookies.axis
-
-							if(axis){
-								axis = axis.split(",")
-
-								biomes.x = axis[0] * 1
-								biomes.y = axis[1] * 1
-								biomes.z = axis[2] * 1
-							}
-
-							window.current.current.position.x = self_player.x = biomes.x
-							window.current.current.position.y = self_player.y = biomes.y - 0.5
-							window.current.current.position.z = self_player.z = biomes.z
+						if(window.current.current.position.x == 0.5 && window.current.current.position.z == 0.5){
+							biomes.x = window.current.current.position.x = window.cursor.current.position.x = axis.x
+							biomes.z = window.current.current.position.z = window.cursor.current.position.z = axis.z
+						}else{
+							biomes.x = axis.x = window.current.current.position.x = window.cursor.current.position.x
+							biomes.z = axis.z = window.current.current.position.z = window.cursor.current.position.z 
 						}
-					}
-
-					var axis = cookies.axis
-					if(axis){
-						axis = axis.split(",")
-
-						x = axis[0] * 1
-						
-						z = axis[2] * 1
 					}else{
-						x = _biome.x
-						z = _biome.z
+						biomes.x = axis.x
+						biomes.z = axis.z
 					}
 
-					if(x == 1.5 && z == 1.5){
-						x = _biome.x
-						z = _biome.z
-					}
+					// var $assets = $('#pool li')
+					var $assets = $('.emoji_asset.on')
 
-					var b = window.map.biomes[`${x}:${z}`]
-					var y = b ? b.y : 0.5
+					var uri = new URL(url.href)
 
-					biomes.x = x
-					biomes.y = y
-					biomes.z = z
+					var balanceAddress = ethers.computeAddress(ethers.hashMessage(uri.host)).toLowerCase()
+				
+					var assets = []
 
-					if(cookies.team){
-						self_player = {
-							team : cookies.team ? cookies.team : "",
-							follow : false,
-							self : true,
-							hash : cookies.address ? cookies.address : cookies.hash,
-							emoji : "😀",
-							x : x,
-							y : y,
-							z : z
+					$swap.removeClass("loading")
+
+					if($assets.length){
+						var after_body = ""
+
+						$assets.each(function(index, el){
+							var $el = $(el)
+										
+							var asset = {
+								emoji : $el.attr("emoji"),
+								count : $el.attr("cnt"),
+								type : $el.attr("type")
+							}
+
+							if(typeof_item(asset.emoji)){
+								asset.address = ethers.hashMessage(asset.emoji)
+								asset.address = ethers.computeAddress(asset.address).toLowerCase()
+
+								var amm = cookies[asset.address]
+								
+								asset.balance = amm.x - amm.y
+
+								var type = ""
+
+								var $asset = $(`#${asset.address}`)
+
+								if($asset.length){
+									type = $asset.attr("type")
+								}
+
+								after_body += `<li class="item" type="${type}" cnt="${asset.count}" emoji="${asset.emoji}" id="${asset.address}">
+									<div class="asset">
+										<div class="col x buy">
+											<div class="icon">
+												<div class="emoji color">${asset.emoji}</div>
+											</div>
+											<div class="amount">
+												<span>${asset.count}</span>
+											</div>
+										</div>
+									</div>
+									<div class="asset">
+										<div class="col y sell transaction">
+											<div class="icon">
+												<div class="emoji color">🪙</div>
+											</div>
+											<div class="amount">
+												<span>${asset.balance}</span>
+											</div>
+										</div>
+									</div>
+								</li>`
+
+								assets.push(asset)	
+							}
+						})
+
+						var $before = $($pool.html())
+							$before.find(".item").removeAttr("type")
+
+						var before_body = $before.html()
+
+						if(before_body){
+							before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 						}
 
-						if(window.current){
-							if(window.current.current.position){
-								window.current.current.position.x = self_player.x
-								window.current.current.position.y = self_player.y + 0.01
-								window.current.current.position.z = self_player.z
+						after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+
+						if(before_body != after_body){
+							$pool.html(after_body)
+						}
+					}else{
+						$pool.html("")
+						$("#swap .submit input").val("")
+					}
+
+					$(".voronoi .map").css({top : - ((biomes.z * 2) + 100) , left : - ((biomes.x * 2) + 0) })
+					$(".xyz").text(`${biomes.x} : ${biomes.z}`)
+					
+					var progress = []
+
+					if(rows.length){
+						for(var r = 0; r < rows.length; r++){
+							var row = rows[r];
+
+							try{
+								var hashtag = getHashtag(row.Cc)
+
+								var position = row.Cc.split(` ${hashtag}`)[0]
+									position = JSON.parse(`[${position}]`)
+
+								row.x = position[0]
+								row.z = position[1]
+								row.dice = position[2]
+
+								var _nonce = row.Cc.split(` ${hashtag}`)[1]
+									_nonce = _nonce.split("@")[0].trim()
+
+								var biome 
+
+								if(window.Biomes[hashtag]){
+									biome = window.map.biomes[row.x+":"+row.z]
+								}
+
+								if(row.Cc.indexOf("#dice") > -1 && isDice){
+									progress[`${row.x}:${row.z}`] = row
+
+									progress.push(row)
+
+									progress.nonce = _nonce
+
+									if(OAuth3.nonces.indexOf(_nonce) == -1){
+										OAuth3.nonces.push(_nonce)
+									}
+								}
+
+								if(row.Cc.indexOf("#report") > -1){
+									if(!window.map.report[row.To]){
+										window.map.report[row.To] = []
+									}
+
+									window.map.report[row.To].push(row)
+
+								}
+							}catch(err){
+								// console.log('err',err);
 							}
 						}
 					}
 
-					document.querySelector('.map .canvas').src = document.querySelector('.map canvas').toDataURL()
-				}
+					if(isDice){
+						if(progress.length){
+							progress.before = progress[1]
+							progress.start = progress[progress.length - 1]
+							progress.end = progress[0]
 
-				// var $assets = $('#pool li')
-				var $assets = $('.emoji_asset.on')
-
-				var uri = new URL(url.href)
-
-				var balanceAddress = ethers.computeAddress(ethers.hashMessage(uri.host)).toLowerCase()
-			
-				var assets = []
-
-				$swap.removeClass("loading")
-
-				if($assets.length){
-					var after_body = ""
-
-					$assets.each(function(index, el){
-						var $el = $(el)
-									
-						var asset = {
-							emoji : $el.attr("emoji"),
-							count : $el.attr("cnt"),
-							type : $el.attr("type")
+							if(progress.before){
+								if(progress.before.index > progress.end.index){
+									fields.forEach(function(field, index){
+										delete window.fields[`${field.x}:${field.z}`]
+									})
+								}
+							}
 						}
+					}
 
-						if(typeof_item(asset.emoji)){
-							asset.address = ethers.hashMessage(asset.emoji)
-							asset.address = ethers.computeAddress(asset.address).toLowerCase()
+					biomes.forEach(function(b, i){
+						if(
+							(biomes.x - size < b.x && biomes.x + size > b.x) &&
+							(biomes.z - size < b.z && biomes.z + size > b.z)
+						){
+							var color = window.Biomes["#"+b.biome]
 
-							var amm = cookies[asset.address]
-							
-							asset.balance = amm.x - amm.y
+							var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
 
-							var type = ""
-
-							var $asset = $(`#${asset.address}`)
-
-							if($asset.length){
-								type = $asset.attr("type")
+							if(window.map.biomes[_id]){
+								isBiome = true
 							}
 
-							after_body += `<li class="item" type="${type}" cnt="${asset.count}" emoji="${asset.emoji}" id="${asset.address}">
-								<div class="asset">
-									<div class="col x buy">
-										<div class="icon">
-											<div class="emoji color">${asset.emoji}</div>
-										</div>
-										<div class="amount">
-											<span>${asset.count}</span>
-										</div>
-									</div>
-								</div>
-								<div class="asset">
-									<div class="col y sell transaction">
-										<div class="icon">
-											<div class="emoji color">🪙</div>
-										</div>
-										<div class="amount">
-											<span>${asset.balance}</span>
-										</div>
-									</div>
-								</div>
-							</li>`
+							if(progress[`${b.x}:${b.z}`] && fields[`${biomes.x}:${biomes.z}`]){
+								color = "black"
+							}
 
-							assets.push(asset)	
+							biomes[b.x+":"+b.z] = b
+
+							_assets.push({
+								id : _id,
+								hash : cc_address,
+								name : "#"+b.biome,
+								value : color,
+								color: color,
+								x : b.x,
+								y : b.y - (b.water ? 0.8 : 0.5),
+								z : b.z
+							})
 						}
 					})
 
-					var $before = $($pool.html())
-						$before.find(".item").removeAttr("type")
 
-					var before_body = $before.html()
-
-					if(before_body){
-						before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+					if(cookies.subscription){
+						$('.emoji_asset[method="notify"]').addClass("on")
+					}else{
+						$('.emoji_asset[method="notify"]').removeClass("on")
 					}
-
-					after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-
-					if(before_body != after_body){
-						$pool.html(after_body)
-					}
-				}else{
-					$pool.html("")
-					$("#swap .submit input").val("")
-				}
 
 					
+					var flags = resp.body.flags ? resp.body.flags : []
+					flags.temp = 0
 
-				$(".voronoi .map").css({top : - ((biomes.z * 2) + 100) , left : - ((biomes.x * 2) + 0) })
-				$(".xyz").text(`${biomes.x} : ${biomes.z}`)
-				
-				var progress = []
+					flags[player_hash] = 0
+					flags['#red'] = 0
+					flags['#blue'] = 0
+					flags['#black'] = 0
 
-				if(rows.length){
-					for(var r = 0; r < rows.length; r++){
-						var row = rows[r];
 
-						try{
+					var _balance = $balance.text()
+
+					$balance
+						.removeClass("on")
+						.text(cookies.balance)
+					
+					if(_balance){
+						if(_balance != cookies.balance){
+							$balance.addClass("on")
+						}
+					}
+
+					
+		
+					if(rows.length){
+						for(var r = 0; r < rows.length; r++){
+							var row = rows[r];
+
 							var hashtag = getHashtag(row.Cc)
 
 							var position = row.Cc.split(` ${hashtag}`)[0]
+
+							try{
 								position = JSON.parse(`[${position}]`)
+							}catch(err){
+								position = []
+							}
+
+							var emoji = row.Cc.split("@")[1]
 
 							row.x = position[0]
 							row.z = position[1]
-							row.dice = position[2]
+							row.dice = position[2] * 1
 
-							var _nonce = row.Cc.split(` ${hashtag}`)[1]
-								_nonce = _nonce.split("@")[0].trim()
+							var biome = biomes[row.x+":"+row.z]
 
-							var biome 
+							var isRender = biomes[row.x+":"+row.z]
 
-							if(window.Biomes[hashtag]){
-								biome = window.map.biomes[row.x+":"+row.z]
-							}
+							try{
+								var _nonce = row.Cc.split(` ${hashtag}`)[1]
+									_nonce = _nonce.split("@")[0].trim()
 
-							if(row.Cc.indexOf("#dice") > -1 && isDice){
-								progress[`${row.x}:${row.z}`] = row
+								if(progress.nonce != _nonce && _nonce.indexOf(cc_address) == -1 && ((!row.Flag && window.Biomes[hashtag]) || row.Flag && !window.Biomes[hashtag]) ){
+									var _index = OAuth3.nonces.indexOf(_nonce)
 
-								progress.push(row)
-
-								progress.nonce = _nonce
-
-								if(OAuth3.nonces.indexOf(_nonce) == -1){
-									OAuth3.nonces.push(_nonce)
+									if(_index > -1){
+										OAuth3.nonces.splice(_index, 1)
+									}
 								}
-							}
-
-							if(row.Cc.indexOf("#report") > -1){
-								if(!window.map.report[row.To]){
-									window.map.report[row.To] = []
-								}
-
-								window.map.report[row.To].push(row)
+							}catch(err){
 
 							}
-						}catch(err){
-							// console.log('err',err);
-						}
-					}
-				}
 
-				if(isDice){
-					if(progress.length){
-						progress.before = progress[1]
-						progress.start = progress[progress.length - 1]
-						progress.end = progress[0]
-
-						if(progress.before){
-							if(progress.before.index > progress.end.index){
-								fields.forEach(function(field, index){
-									delete window.fields[`${field.x}:${field.z}`]
-								})
-							}
-						}
-					}
-				}
-
-				biomes.forEach(function(b, i){
-					if(
-						(biomes.x - size < b.x && biomes.x + size > b.x) &&
-						(biomes.z - size < b.z && biomes.z + size > b.z)
-					){
-						var color = window.Biomes["#"+b.biome]
-
-						var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-
-						if(window.map.biomes[_id]){
-							isBiome = true
-						}
-
-						if(progress[`${b.x}:${b.z}`] && fields[`${biomes.x}:${biomes.z}`]){
-							color = "black"
-						}
-
-						biomes[b.x+":"+b.z] = b
-
-						_assets.push({
-							id : _id,
-							hash : cc_address,
-							name : "#"+b.biome,
-							value : color,
-							color: color,
-							x : b.x,
-							y : b.y - (b.water ? 0.8 : 0.5),
-							z : b.z
-						})
-					}
-				})
-
-
-				if(cookies.subscription){
-					$('.emoji_asset[method="notify"]').addClass("on")
-				}else{
-					$('.emoji_asset[method="notify"]').removeClass("on")
-				}
-
-				
-				var flags = resp.body.flags ? resp.body.flags : []
-				flags.temp = 0
-
-				flags[player_hash] = 0
-				flags['#red'] = 0
-				flags['#blue'] = 0
-				flags['#black'] = 0
-
-
-				var _balance = $balance.text()
-
-				$balance
-					.removeClass("on")
-					.text(cookies.balance)
-				
-				if(_balance){
-					if(_balance != cookies.balance){
-						$balance.addClass("on")
-					}
-				}
-
-				
-	
-				if(rows.length){
-					for(var r = 0; r < rows.length; r++){
-						var row = rows[r];
-
-						var hashtag = getHashtag(row.Cc)
-
-						var position = row.Cc.split(` ${hashtag}`)[0]
-
-						try{
-							position = JSON.parse(`[${position}]`)
-						}catch(err){
-							position = []
-						}
-
-						var emoji = row.Cc.split("@")[1]
-
-						row.x = position[0]
-						row.z = position[1]
-						row.dice = position[2] * 1
-
-						var biome = biomes[row.x+":"+row.z]
-
-						var isRender = biomes[row.x+":"+row.z]
-
-						try{
-							var _nonce = row.Cc.split(` ${hashtag}`)[1]
-								_nonce = _nonce.split("@")[0].trim()
-
-							if(progress.nonce != _nonce && _nonce.indexOf(cc_address) == -1 && ((!row.Flag && window.Biomes[hashtag]) || row.Flag && !window.Biomes[hashtag]) ){
-								var _index = OAuth3.nonces.indexOf(_nonce)
-
-								if(_index > -1){
-									OAuth3.nonces.splice(_index, 1)
-								}
-							}
-						}catch(err){
-
-						}
-
-						if(window.Biomes[hashtag] && isRender){
-							if(row.Flag && hashtag != "#dice"){
-								delete window.map.biomes[row.Id]
-								
-								var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
-
-								if($clipped.length && !window.bingo[row.Id]){
-									window.bingo[row.Id] = true
-									bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
-								}
-							}else{
-								var _asset = {
-									id : row.Id,
-									hash : cc_address,
-									name : hashtag,
-									value : "",
-									color: "",
-									x : row.x,
-									y : biome.y,
-									z : row.y
-								}
-
-								if(window.map.nonces[row.Id]){
-									delete window.map.nonces[row.Id]
-								}
-
-								window.map.biomes[row.Id] = _asset
-							}
-						}else if(row.Subject == "#position"){
-							var player = {
-								follow : false	
-							}
-
-							var typeof_emoji = window.typeof_emoji(emoji)
-
-
-							if(row.Flag){
-								if(isRender){
+							if(window.Biomes[hashtag] && isRender){
+								if(row.Flag && hashtag != "#dice"){
+									delete window.map.biomes[row.Id]
+									
 									var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
 
 									if($clipped.length && !window.bingo[row.Id]){
 										window.bingo[row.Id] = true
 										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
 									}
-								}
-							}else if(row.From){
-								var _from = row.From
-
-								var _nonce = row.Cc.split(` ${hashtag}`)[1]
-									_nonce = _nonce.split("@")[0].trim()
-
-								if(_nonce.indexOf(cc_address) == -1){
-									_from = _nonce
-								}
-
-
-								if(typeof_emoji && (cookies.address == _from || cookies.hash == _from)){
-									self = true
-
-									player.self = true
-
-									if(cookies.address){
-										if(cookies.hash == _from){
-											continue
-										}
+								}else{
+									var _asset = {
+										id : row.Id,
+										hash : cc_address,
+										name : hashtag,
+										value : "",
+										color: "",
+										x : row.x,
+										y : biome.y,
+										z : row.y
 									}
 
-									if(self_player){
-										try{
-											if(window.current){
-												if(window.current.current.position){
-													self_player.x = window.current.current.position.x
-													self_player.y = window.current.current.position.y
-													self_player.z = window.current.current.position.z
-												}
-											}
-										}catch(err){
+									if(window.map.nonces[row.Id]){
+										delete window.map.nonces[row.Id]
+									}
 
+									window.map.biomes[row.Id] = _asset
+								}
+							}else if(row.Subject == "#position"){
+								var player = {
+									follow : false	
+								}
+
+								var typeof_emoji = window.typeof_emoji(emoji)
+
+
+								if(row.Flag){
+									if(isRender){
+										var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
+
+										if($clipped.length && !window.bingo[row.Id]){
+											window.bingo[row.Id] = true
+											bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+										}
+									}
+								}else if(row.From){
+									var _from = row.From
+
+									var _nonce = row.Cc.split(` ${hashtag}`)[1]
+										_nonce = _nonce.split("@")[0].trim()
+
+									if(_nonce.indexOf(cc_address) == -1){
+										_from = _nonce
+									}
+
+									if(typeof_emoji && (cookies.address == _from || cookies.hash == _from)){
+										self = true
+
+										player.self = true
+
+										if(cookies.address){
+											if(cookies.hash == _from){
+												continue
+											}
+										}
+
+										if(!self_player){
+											self_player = {
+												team : cookies.team ? cookies.team : "",
+												follow : false,
+												self : true,
+												hash : cookies.address ? cookies.address : cookies.hash,
+												emoji : "😀",
+												x : row.x,
+												y : (biome ? biome.y : 0) + 0.5,
+												z : row.z
+											}
 										}
 
 										player.x = self_player.x
 										player.y = (biome ? biome.y : 0) + 0.5
 										player.z = self_player.z
 										player.emoji = window.emojis.self
+									}else{
+										if(!typeof_emoji && window.map.biomes[row.Id]){
+											delete window.map.biomes[row.Id]
+										}
+
+										player.x = row.x
+										player.y = (biome ? biome.y : 0) + 0.5
+										player.z = row.z
+										player.emoji = emoji
 									}
-								}else{
-									if(!typeof_emoji && window.map.biomes[row.Id]){
-										delete window.map.biomes[row.Id]
-									}
 
-									player.x = row.x
-									player.y = (biome ? biome.y : 0) + 0.5
-									player.z = row.z
-									player.emoji = emoji
-								}
+									if(!row.Flag){
+										if(!window.map.report[_from] && (isRender || player.self)){
+											if(!rows[_from]){
+												rows[_from] = true
 
-								if(!row.Flag){
-									if(!window.map.report[_from] && (isRender || player.self)){
-										if(!rows[_from]){
-											rows[_from] = true
+												_players.push({
+													team : hashtag,
+													follow : player.follow,
+													self : player.self,
+													hash : _from,
+													dice : row.dice,
+													x : player.x,
+													y : player.y,
+													z : player.z,
+													emoji : player.emoji
+												})
+											}
 
-											_players.push({
+											if(_from == row.From){
+												if(!_players[row.From]){
+													_players.cnt += 1
+												}
+											}
+											
+
+											_players[_from] = {
+												x : player.x,
+												z : player.z,
+												emoji : player.emoji,
+												dice : row.dice
+											}
+										}
+
+										if(typeof_emoji){
+											flag_players.push({
 												team : hashtag,
 												follow : player.follow,
 												self : player.self,
@@ -1927,971 +1899,941 @@ OAuth3.on("ready", function(e){
 												emoji : player.emoji
 											})
 										}
-
-										if(_from == row.From){
-											if(!_players[row.From]){
-												_players.cnt += 1
-											}
-										}
-
-										_players[_from] = {
-											x : player.x,
-											z : player.z,
-											emoji : player.emoji,
-											dice : row.dice
-										}
-									}
-
-									if(typeof_emoji){
-										flag_players.push({
-											team : hashtag,
-											follow : player.follow,
-											self : player.self,
-											hash : _from,
-											dice : row.dice,
-											x : player.x,
-											y : player.y,
-											z : player.z,
-											emoji : player.emoji
-										})
 									}
 								}
-							}
-						}else if(row.Cc.indexOf("#message") > -1){
-							_messages.push(row)
+							}else if(row.Cc.indexOf("#message") > -1){
+								_messages.push(row)
 
 
-						}else if(row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb"){
-							if(row.From.indexOf(player_hash) > -1 && !row.Flag){
-								plant = false
-							}
-
-							
-							bombs.push(row)	
-
-							if(ethers.isAddress(row.Flag)){
-								if(row.To == player_hash){
-									var provider = ""
-
-									if(hashtag != "#bomb"){
-										if(isNaN(hashtag)){
-											provider = "youtube"
-										}else{
-											provider = "tiktok"
-										}
-									}
-
-									if(provider){
-										meme.id = row.Id
-										meme.provider = provider
-										meme.poly = hashtag.replace("#","")
-									}
+							}else if(row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb"){
+								if(row.From.indexOf(player_hash) > -1 && !row.Flag){
+									plant = false
 								}
 
-								if(row.Subject == "#bomb"){
-									var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
+								
+								bombs.push(row)	
 
-									if($clipped.length && !window.bingo[row.Id]){
-										window.bingo[row.Id] = true
-										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
-									}
-								}
+								if(ethers.isAddress(row.Flag)){
+									if(row.To == player_hash){
+										var provider = ""
 
-								delete window.map.biomes[`${row.x}:${row.z}`].bomb
-							}else if(!row.Flag && isRender){
-								var _from = row.From
-
-								var _nonce = row.Cc.split(` ${hashtag}`)[1]
-									_nonce = _nonce.split("@")[0].trim()
-
-								if(_nonce.indexOf(cc_address) == -1){
-									_from = _nonce
-								}
-
-								var player = {
-									team : hashtag,
-									follow : false,
-									self : false,
-									hash : _from,
-									dice : 0,
-									x : row.x,
-									y : (biome ? biome.y : 0) + 0.5,
-									z : row.z,
-									emoji : "💣"
-								}
-
-								_players.push(player)
-							}
-						}else if(row.Cc.indexOf("#asset") > -1){
-							var emoji = row.Cc.split("@")[1]
-
-							if(row.Flag){
-								if(window[row.Flag]){
-									window[row.Flag].emoji = ""
-
-									var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
-
-									if($clipped.length && !window.bingo[row.Id]){
-										window.bingo[row.Id] = true
-										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
-									}
-								}
-							}else if(row.To == player_hash){
-								if(!stickers[emoji]){
-									stickers[emoji] = []
-								}
-
-								row.Emoji = emoji
-
-								row.index = stickers[emoji].length
-
-								if(row.dice == 0){
-									row.color = true
-								}
-
-								stickers.push(row)
-								stickers[emoji].push(row)
-							}
-						}	
-					}
-				}
-
-				if(plant){
-					_players.push(plant)
-				}
-
-				if(self_player){
-					var x = self_player.x
-					var z = self_player.z
-
-					var biome = window.map.biomes[x+":"+z]
-
-					if(biome){
-						$body.attr("biome", biome.biome)
-
-						var field = window.fields[`${x}:${z}`]
-
-						if(field){
-							$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
-						}else{
-							$body.attr("field", "")
-						}
-
-						var type = window.typeof_emoji(self_player.emoji)
-
-						if(type == "emoji"){
-							$body.attr("emoji",self_player.emoji)
-						}
-					}
-
-					if(bombs.length){
-						for(var i = 0; i < bombs.length; i++){
-							var bomb = bombs[i]
-
-							if(bomb){
-								for(var _x = -2; _x < 3; _x++){
-									for(var _z = -2; _z < 3; _z++){
-										if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
-											if(bomb.Flag){
-												delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
+										if(hashtag != "#bomb"){
+											if(isNaN(hashtag)){
+												provider = "youtube"
 											}else{
-												window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
+												provider = "tiktok"
 											}
 										}
+
+										if(provider){
+											meme.id = row.Id
+											meme.provider = provider
+											meme.poly = hashtag.replace("#","")
+										}
 									}
-								}	
-							}
+
+									if(row.Subject == "#bomb"){
+										var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
+
+										if($clipped.length && !window.bingo[row.Id]){
+											window.bingo[row.Id] = true
+											bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+										}
+									}
+
+									delete window.map.biomes[`${row.x}:${row.z}`].bomb
+								}else if(!row.Flag && isRender){
+									var _from = row.From
+
+									var _nonce = row.Cc.split(` ${hashtag}`)[1]
+										_nonce = _nonce.split("@")[0].trim()
+
+									if(_nonce.indexOf(cc_address) == -1){
+										_from = _nonce
+									}
+
+									var player = {
+										team : hashtag,
+										follow : false,
+										self : false,
+										hash : _from,
+										dice : 0,
+										x : row.x,
+										y : (biome ? biome.y : 0) + 0.5,
+										z : row.z,
+										emoji : "💣"
+									}
+
+									_players.push(player)
+								}
+							}else if(row.Cc.indexOf("#asset") > -1){
+								var emoji = row.Cc.split("@")[1]
+
+								if(row.Flag){
+									if(window[row.Flag]){
+										window[row.Flag].emoji = ""
+
+										var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
+
+										if($clipped.length && !window.bingo[row.Id]){
+											window.bingo[row.Id] = true
+											bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+										}
+									}
+								}else if(row.To == player_hash){
+									if(!stickers[emoji]){
+										stickers[emoji] = []
+									}
+
+									row.Emoji = emoji
+
+									row.index = stickers[emoji].length
+
+									if(row.dice == 0){
+										row.color = true
+									}
+
+									stickers.push(row)
+									stickers[emoji].push(row)
+								}
+							}	
 						}
 					}
 
-					if(window.assets && !isBiome){
-						biomes.forEach(function(b, i){
-							var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+					if(plant){
+						_players.push(plant)
+					}
 
-							if(
-								(biomes.x - size < b.x && biomes.x + size > b.x) &&
-								(biomes.z - size < b.z && biomes.z + size > b.z) &&
-								!window.map.biomes[_id]
-							){
-								if(Math.random() < 0.1){
-									var _date = new Date(new Date() - time.offset)
-										_date = _date.toISOString()
-											.replace(/T/, ' ')
-											.replace(/\..+/, '')
+					if(self_player){
+						var x = self_player.x
+						var z = self_player.z
 
-									var color = window.Biomes["#"+b.biome]
+						var biome = window.map.biomes[x+":"+z]
 
-									var emoji = window.Biomes[color]
+						if(biome){
+							$body.attr("biome", biome.biome)
 
-									if(emoji){
-										window.map.biomes[_id] = {
-											id : _id,
-											hash : cc_address,
-											name : "#"+b.biome,
-											value : "",
-											color: "",
-											x : b.x,
-											y : b.y - 0.5,
-											z : b.z
+							var field = window.fields[`${x}:${z}`]
+
+							if(field){
+								$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
+							}else{
+								$body.attr("field", "")
+							}
+
+							var type = window.typeof_emoji(self_player.emoji)
+
+							if(type == "emoji"){
+								$body.attr("emoji",self_player.emoji)
+							}
+						}
+
+						if(bombs.length){
+							for(var i = 0; i < bombs.length; i++){
+								var bomb = bombs[i]
+
+								if(bomb){
+									for(var _x = -2; _x < 3; _x++){
+										for(var _z = -2; _z < 3; _z++){
+											if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
+												if(bomb.Flag){
+													delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
+												}else{
+													window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
+												}
+											}
 										}
-
-										var _row = {
-											Id : _id,
-											Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
-										}
-
-										window.map.nonces[_id] = _row
-									}
+									}	
 								}
 							}
-						})
-					}
-				}
+						}
 
-				try{
-					if(window.players){
-						if(JSON.stringify(window.players) != JSON.stringify(_players)){
-							diff = true
+						if(window.assets && !isBiome){
+							biomes.forEach(function(b, i){
+								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
 
-							window.players.set(_players)
+								if(
+									(biomes.x - size < b.x && biomes.x + size > b.x) &&
+									(biomes.z - size < b.z && biomes.z + size > b.z) &&
+									!window.map.biomes[_id]
+								){
+									if(Math.random() < 0.1){
+										var _date = new Date(new Date() - time.offset)
+											_date = _date.toISOString()
+												.replace(/T/, ' ')
+												.replace(/\..+/, '')
+
+										var color = window.Biomes["#"+b.biome]
+
+										var emoji = window.Biomes[color]
+
+										if(emoji){
+											window.map.biomes[_id] = {
+												id : _id,
+												hash : cc_address,
+												name : "#"+b.biome,
+												value : "",
+												color: "",
+												x : b.x,
+												y : b.y - 0.5,
+												z : b.z
+											}
+
+											var _row = {
+												Id : _id,
+												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
+											}
+
+											window.map.nonces[_id] = _row
+										}
+									}
+								}
+							})
 						}
 					}
 
-					if(window.assets){
-						if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
-							diff = true
-							window.assets.set(_assets)
-						}
-					}
+					try{
+						if(window.players){
+							if(!window.players.length){
+								document.querySelector('.map .canvas').src = document.querySelector('.map canvas').toDataURL()
+							}
 
-					if(diff || frameloop){
-						window.setFrameloop("always")
-					}else{
-						try{
+							if(JSON.stringify(window.players) != JSON.stringify(_players)){
+								diff = true
+
+								window.players.set(_players)
+							}
+						}
+						
+						if(window.assets){
+							if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
+								diff = true
+								window.assets.set(_assets)
+							}
+						}
+
+						if(diff || frameloop){
+							window.setFrameloop("always")
+						}else{
 							if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
 								window.setFrameloop("demand")
 							}else{
 								window.setFrameloop("always")
 							}
-						}catch(err){
-							window.setFrameloop("always")
 						}
-					}
 
-					if(bingo_body){
-						$("#bingo").html(bingo_body)
+						if(bingo_body){
+							$("#bingo").html(bingo_body)
 
-						var $bingo = $("#bingo").find('[style*="transform-origin"]')
+							var $bingo = $("#bingo").find('[style*="transform-origin"]')
 
-						$bingo.each(function(){
-							var $t = $(this);
+							$bingo.each(function(){
+								var $t = $(this);
 
-							var amount = 4;
+								var amount = 4;
 
-							if($bingo.length > 5){
-								amount = 2
-							}
-							
-							var totalSquares = Math.pow(amount, 2);
-							
-							var $clipped = $t.find('.clipped')
-								$clipped.addClass("on")
-							var width = $clipped.width() / amount;
-							var height = $clipped.height() / amount;
-							
-							var y = 0;
-
-							var body = ""
-							
-							for(var z = 0; z <= (amount*width); z = z+width) { 
-								body += `<clipped style="clip: rect(${y}px, ${(z+width)}px, ${(y+height)}px, ${z}px)"></clipped>`
-
-								if(z === (amount*width)-width) {
-								
-									y = y + height;
-									z = -width;
-								
+								if($bingo.length > 5){
+									amount = 2
 								}
 								
-								if(y === (amount*height)) {
-									z = 9999999;
-								}
+								var totalSquares = Math.pow(amount, 2);
 								
-							}
+								var $clipped = $t.find('.clipped')
+									$clipped.addClass("on")
+								var width = $clipped.width() / amount;
+								var height = $clipped.height() / amount;
+								
+								var y = 0;
 
-							$t.append(body)
-						})
+								var body = ""
+								
+								for(var z = 0; z <= (amount*width); z = z+width) { 
+									body += `<clipped style="clip: rect(${y}px, ${(z+width)}px, ${(y+height)}px, ${z}px)"></clipped>`
 
-						$('clipped').each(function() {
-							var v = random(120, 90),
-								angle = random(89, 80),
-								theta = (angle * Math.PI) / 180,
-								g = -9.8;
+									if(z === (amount*width)-width) {
+									
+										y = y + height;
+										z = -width;
+									
+									}
+									
+									if(y === (amount*height)) {
+										z = 9999999;
+									}
+									
+								}
 
-							var $self = $(this);
+								$t.append(body)
+							})
 
-							var t = 0,
-								z, r, nx, ny,
-								totalt =  15;
+							$('clipped').each(function() {
+								var v = random(120, 90),
+									angle = random(89, 80),
+									theta = (angle * Math.PI) / 180,
+									g = -9.8;
 
-							var negate = [1, -1, 0],
-								direction = negate[ Math.floor(Math.random() * negate.length) ];
+								var $self = $(this);
 
-							var randDeg = random(-5, 10), 
-								randScale = random(0.9, 1.1),
-								randDeg2 = random(30, 5);
+								var t = 0,
+									z, r, nx, ny,
+									totalt =  15;
 
-							$(this).css({
-								'transform' : 'scale('+randScale+') skew('+randDeg+'deg) rotateZ('+randDeg2+'deg)'
+								var negate = [1, -1, 0],
+									direction = negate[ Math.floor(Math.random() * negate.length) ];
+
+								var randDeg = random(-5, 10), 
+									randScale = random(0.9, 1.1),
+									randDeg2 = random(30, 5);
+
+								$(this).css({
+									'transform' : 'scale('+randScale+') skew('+randDeg+'deg) rotateZ('+randDeg2+'deg)'
+								});
+
+								z = setInterval(function(index) { 	
+									var ux = ( Math.cos(theta) * v ) * direction;
+									
+									var uy = ( Math.sin(theta) * v ) - ( (-g) * t);
+									
+									nx = (ux * t);		
+									ny = (uy * t) + (0.5 * (g) * Math.pow(t, 2));
+									
+									$self.css({'bottom' : (ny)+'px', 'left' : (nx)+'px'});
+									
+									t = t + 0.5;
+									
+									if(t > totalt) {
+										$self.closest('[style*="transform-origin"]').remove()
+										clearInterval(z);
+									}
+								},50);
 							});
 
-							z = setInterval(function(index) { 	
-								var ux = ( Math.cos(theta) * v ) * direction;
-								
-								var uy = ( Math.sin(theta) * v ) - ( (-g) * t);
-								
-								nx = (ux * t);		
-								ny = (uy * t) + (0.5 * (g) * Math.pow(t, 2));
-								
-								$self.css({'bottom' : (ny)+'px', 'left' : (nx)+'px'});
-								
-								t = t + 0.5;
-								
-								if(t > totalt) {
-									$self.closest('[style*="transform-origin"]').remove()
-									clearInterval(z);
+						}
+
+						var li = ''
+
+						var afterSticker = []
+						
+						if(stickers.length){
+							for(var i = 0; i < stickers.length; i++){
+								var row = stickers[i]
+								var emoji = row.Emoji
+		
+								var cnt = stickers[emoji].length
+								var len = cnt - 1
+
+								var _el = $('[id="'+row.Id+'"]')
+
+								if(!window.sticker[row.Id]){
+									window.sticker[row.Id] = true
+									stickers[len].new = true
 								}
-							},50);
-						});
 
-					}
+								var isToggle = false
 
-					var li = ''
-
-					var afterSticker = []
-					
-					if(stickers.length){
-						for(var i = 0; i < stickers.length; i++){
-							var row = stickers[i]
-							var emoji = row.Emoji
-	
-							var cnt = stickers[emoji].length
-							var len = cnt - 1
-
-							var _el = $('[id="'+row.Id+'"]')
-
-							if(!window.sticker[row.Id]){
-								window.sticker[row.Id] = true
-								stickers[len].new = true
-							}
-
-							var isToggle = false
-
-							if(_el.length){
-								isToggle = _el.hasClass("on")
-							}
-
-							if(len == row.index){
-								if(row.new){
-									afterSticker.push(row)
+								if(_el.length){
+									isToggle = _el.hasClass("on")
 								}
-								li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" cnt="${cnt}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
+
+								if(len == row.index){
+									if(row.new){
+										afterSticker.push(row)
+									}
+									li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" cnt="${cnt}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
+								}
 							}
 						}
+
+						$('[id="'+player_hash+'"] items ul').html(li)
+
+						$("emojis .items").html(li)
+
+						var $player = $('player[self="true"]')
+
+						if(afterSticker.length && $player.length){
+							var beforeOffset = $player.offset()
+
+							var $size = $player.find('img[alt="player"]')
+
+							var w = $size.width()
+							var h = $size.height()
+
+							try{
+								for(var i = 0; i < afterSticker.length; i++){
+									setTimeout(function(row){
+										var $sticker = $('[id="'+row.Id+'"]')
+
+										if($sticker.length){
+											var afterOffset = $sticker.offset()
+
+											$sticker
+												.animate({path : new $.path.bezier({
+													start: { 
+														x: (beforeOffset.left- (w/4)), 
+														y: (beforeOffset.top - h), 
+														angle: 90
+													},	
+													end: { 
+														x: (beforeOffset.left- w), 
+														y: (beforeOffset.top - (h*2)), 
+														angle: 90
+													}
+												})}, 400)
+												.animate({path : new $.path.bezier({
+													start: { 
+														x: (beforeOffset.left - w), 
+														y: (beforeOffset.top - (h*2)), 
+														angle: 90
+													},	
+													end: { 
+														x: afterOffset.left - 30, 
+														y: afterOffset.top - 35,
+														angle: 90
+													}
+												})}, 100, function(){
+													setTimeout(function($el){
+														$el
+															.removeClass("new")
+															.attr("style", "")
+													},100, $(this))
+												})
+										}
+									}, 100*i, afterSticker[i])
+								}
+							}catch(err){
+
+							}							
+						}
+
+					}catch(err){
+						console.log("err",err);
 					}
 
-					$('[id="'+player_hash+'"] items ul').html(li)
-
-					$("emojis .items").html(li)
-
-					var $player = $('player[self="true"]')
-
-					if(afterSticker.length && $player.length){
-						var beforeOffset = $player.offset()
-
-						var $size = $player.find('img[alt="player"]')
-
-						var w = $size.width()
-						var h = $size.height()
+					var after_body = ""
+					flags.forEach(function(flag){
+						var hashtag = getHashtag(flag.Cc)
 
 						try{
-							for(var i = 0; i < afterSticker.length; i++){
-								setTimeout(function(row){
-									var $sticker = $('[id="'+row.Id+'"]')
+							var position = flag.Cc.split(` ${hashtag}`)[0]
+								position = JSON.parse(`[${position}]`)
 
-									if($sticker.length){
-										var afterOffset = $sticker.offset()
+							var color = hashtag.replace("#","")
 
-										$sticker
-											.animate({path : new $.path.bezier({
-												start: { 
-													x: (beforeOffset.left- (w/4)), 
-													y: (beforeOffset.top - h), 
-													angle: 90
-												},	
-												end: { 
-													x: (beforeOffset.left- w), 
-													y: (beforeOffset.top - (h*2)), 
-													angle: 90
-												}
-											})}, 400)
-											.animate({path : new $.path.bezier({
-												start: { 
-													x: (beforeOffset.left - w), 
-													y: (beforeOffset.top - (h*2)), 
-													angle: 90
-												},	
-												end: { 
-													x: afterOffset.left - 30, 
-													y: afterOffset.top - 35,
-													angle: 90
-												}
-											})}, 100, function(){
-												setTimeout(function($el){
-													$el
-														.removeClass("new")
-														.attr("style", "")
-												},100, $(this))
-											})
+							var emoji = flag.Cc.split("@")[1]
+
+							flag.x = position[0] * 1
+							flag.z = position[1] * 1
+							flag.dice = position[2] * 1
+
+							flag_players.forEach(function(player, i){
+								var typeof_emoji = window.typeof_emoji(player.emoji)
+
+								if(
+									((flag.x - size < player.x && flag.x + size > player.x) &&
+									(flag.z - size < player.z && flag.z + size > player.z) &&
+									!player.self && typeof_emoji) || (!player.self && player.team == self_player.team)
+								){
+									var _color = player.team.replace("#","")
+
+									after_body += `<div style="top:${((player.z * 2))}px;left:${((player.x * 2))}px;" class="flag ${_color}"><div class="tb"><div class="tc"><i class="${_color} emoji color">${player.emoji}</i></div></div></div>`
+								}
+							})
+
+							after_body += `<div style="top:${((flag.z * 2))}px;left:${((flag.x * 2))}px;" class="flag ${color}"><div class="tb"><div class="tc"><i class="${color} emoji color">${emoji}</i></div></div></div>`
+
+							if(flag.dice == 0){
+								flags[hashtag]++
+
+								if(flag.From.indexOf(self_player.hash) > -1){
+									if(flag.Cc.indexOf(self_player.team) > -1){
+										flags[flag.From]++
 									}
-								}, 100*i, afterSticker[i])
-							}
-						}catch(err){
-
-						}							
-					}
-
-				}catch(err){
-					console.log("err",err);
-				}
-
-				var after_body = ""
-				flags.forEach(function(flag){
-					var hashtag = getHashtag(flag.Cc)
-
-					try{
-						var position = flag.Cc.split(` ${hashtag}`)[0]
-							position = JSON.parse(`[${position}]`)
-
-						var color = hashtag.replace("#","")
-
-						var emoji = flag.Cc.split("@")[1]
-
-						flag.x = position[0] * 1
-						flag.z = position[1] * 1
-						flag.dice = position[2] * 1
-
-						flag_players.forEach(function(player, i){
-							var typeof_emoji = window.typeof_emoji(player.emoji)
-
-							if(
-								((flag.x - size < player.x && flag.x + size > player.x) &&
-								(flag.z - size < player.z && flag.z + size > player.z) &&
-								!player.self && typeof_emoji) || (!player.self && player.team == self_player.team)
-							){
-								var _color = player.team.replace("#","")
-
-								after_body += `<div style="top:${((player.z * 2))}px;left:${((player.x * 2))}px;" class="flag ${_color}"><div class="tb"><div class="tc"><i class="${_color} emoji color">${player.emoji}</i></div></div></div>`
-							}
-						})
-
-						after_body += `<div style="top:${((flag.z * 2))}px;left:${((flag.x * 2))}px;" class="flag ${color}"><div class="tb"><div class="tc"><i class="${color} emoji color">${emoji}</i></div></div></div>`
-
-						if(flag.dice == 0){
-							flags[hashtag]++
-
-							if(flag.From.indexOf(self_player.hash) > -1){
-								if(flag.Cc.indexOf(self_player.team) > -1){
+								}else{
 									flags[flag.From]++
 								}
 							}else{
-								flags[flag.From]++
+								flags.temp++
 							}
-						}else{
-							flags.temp++
-						}
-					}catch(err){
-						console.log("flag",flag);
-					}	
-				})
+						}catch(err){
+							console.log("flag",flag);
+						}	
+					})
 
-				var $flags = $('#map flags')
-				var before_body = $flags.html()
-				if(before_body){
-					before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-				}
+					var $flags = $('#map flags')
+					var before_body = $flags.html()
+					if(before_body){
+						before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+					}
 
-				after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+					after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 
-				if(before_body != after_body){
-					$flags.html(after_body)
-				}
+					if(before_body != after_body){
+						$flags.html(after_body)
+					}
 
-				if(meme.poly && meme.provider){
-					if(!$meme[meme.id]){
-						var ready = function(){
-							$meme.addClass("poly")
+					if(meme.poly && meme.provider){
+						if(!$meme[meme.id]){
+							var ready = function(){
+								$meme.addClass("poly")
 
-							$meme[meme.id] = true
-							$meme.poly.contentWindow.postMessage( JSON.stringify(meme), $meme.src );
+								$meme[meme.id] = true
+								$meme.poly.contentWindow.postMessage( JSON.stringify(meme), $meme.src );
 
-							window.onmessage = function(resp){
-								if($meme.src.indexOf(resp.origin) > -1){
-									window.onmessage = null
-									$meme.removeClass("poly")
+								window.onmessage = function(resp){
+									if($meme.src.indexOf(resp.origin) > -1){
+										window.onmessage = null
+										$meme.removeClass("poly")
+									}
+									
 								}
-								
 							}
-						}
 
-						if(!$meme.poly.ready){
-							$meme.poly.ready = ready
-						}else{
-							ready()
+							if(!$meme.poly.ready){
+								$meme.poly.ready = ready
+							}else{
+								ready()
+							}
 						}
 					}
-				}
-
-			
-				if(cookies.team){
-					var _team = cookies.team.replace("#","")
-
-					$("#flag .red .cnt").text(flags["#red"] ? flags["#red"] : 0)
-					$("#flag .blue .cnt").text(flags["#blue"] ? flags["#blue"] : 0)
-					$("#flag ."+_team+" .temp").text(flags.temp ? flags.temp : "")
-					$("#flag ."+_team).addClass("on")
-				}
 
 				
-				try{
-					if(resp.body.body.cc == "dice"){
-						throw true
+					if(cookies.team){
+						var _team = cookies.team.replace("#","")
+
+						$("#flag .red .cnt").text(flags["#red"] ? flags["#red"] : 0)
+						$("#flag .blue .cnt").text(flags["#blue"] ? flags["#blue"] : 0)
+						$("#flag ."+_team+" .temp").text(flags.temp ? flags.temp : "")
+						$("#flag ."+_team).addClass("on")
 					}
 
-					setTimeout(function(){
-						for(var i = 0; i < window.players.length; i++){
-							var _player = window.players[i]
-
-							try{
-								var $player = $('player[id="'+_player.hash+'"]')
-								var $tooltip = $player.find("tooltip ul");
-									$tooltip.removeClass("open")
-
-								var _player_hash = _player.hash.indexOf("0x") == 0 ? _player.hash.replace("0x", "") : _player.hash
-									_player_hash = _player_hash.toLowerCase()
-
-								var tooltip_body = ""
-
-								var cnt = 0
-
-								if(flags[_player_hash]){
-									cnt = flags[_player_hash]
-								}
-
-								var hex = window.emojiUnicode("🔥")
-									
-								var src = `/src/fonts/emoji/animated/${hex}.webp`
-
-								if(_player.emoji == "🔥"){
-									// tooltip_body = `<li>
-									// 	<a class="hashType"></a>
-									// </li>
-									// <li>
-									// 	<a class="hashType">🏗</a>
-									// </li>
-									// <li>
-									// 	<a class="hashType"></a>
-									// </li>`
-								}else if(player_hash.indexOf(_player_hash) > -1){
-									tooltip_body = `<li>
-										<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
-									</li>
-									<li>
-										<a class="hashType Meta emoji color">
-											<i></i>
-											<div id="dice" class="slot-machine">
-												<div class="slotwrapper">
-													<ul>
-														<li>1</li>
-														<li>2</li>
-														<li>3</li>
-														<li>4</li>
-														<li>5</li>
-														<li>6</li>
-													</ul>
-													<div class="num">${Math.ceil(Math.sqrt(Math.pow(dice, 2)))}</div>
-												</div>
-											</div>
-										</a>
-									</li>
-									<li>
-										<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
-									</li>`
-								}else{
-									var typeDice = false
-
-									if(_players[_player_hash]){
-										typeDice = _players[_player_hash].dice
-									}
-
-									tooltip_body = `<li>
-										<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
-									</li>
-									<li>
-										<a class="hashType Meta emoji color">${typeDice ? `<i></i>` : ""}</a>
-									</li>
-									<li>
-										<a class="hashType Report">Report</a>\
-									</li>`
-								}
-
-								var before_body = $tooltip.html()
-								if(before_body){
-									before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-								}
-
-								var after_body = tooltip_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-
-								if(before_body != after_body){
-									$tooltip.html(after_body)
-								}
-							}catch(err){
-								console.log("err",err);
-							}
+					
+					try{
+						if(resp.body.body.cc == "dice"){
+							throw true
 						}
-					},300)
-				}catch(err){
-					// console.log("Err",err);
-				}
 
-				var plyrs = []
+						setTimeout(function(){
+							for(var i = 0; i < window.players.length; i++){
+								var _player = window.players[i]
 
-				var $talk = $("talks."+player_hash)
-
-				var $form = document.querySelector('form[name="oauth.network"]')
-
-				if(_messages.length){
-					var notify_body = ""
-					var message_body = ""
-					var onMessage = false
-
-					var talks_selector = ""
-
-					var flows = []
-
-					for(var m = 0; m < _messages.length; m++){
-						var row = _messages[m];
-
-						var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
-
-						var duplication = !document.querySelector('messages ul li[id="'+row.Id+'"]')
-
-						if(isMessage && duplication){
-							var Idx
-
-							var $items = document.createElement("items");
-
-							onMessage = true
-
-							var text = `<span>${row.Subject}</span>`
-
-							var $talks = $("talks."+row.From+" ul")
-
-							if($talks.length && !resp.body.query.date){
-								if(talks_selector){
-									talks_selector += ", "
-								}
-
-								talks_selector += "talks."+row.From
-
-								if(!document.querySelector(`talks ul li[id="${row.Id}"]`)){
-									$talks.append(`<li class="item" id="${row.Id}">
-										<div class="text">
-											<span class="icon" data-from="${row.From}"></span>
-											${text}
-										</div>
-									</li>`)
-								}
-							}
-
-							message_body += `<li id="${row.Id}" class="self item message">
-								<div class="text">
-									<span class="icon" data-from="${row.From}"></span>
-									<text>${text}</text>
-								</div>
-							</li>`
-
-						}else if(row.Cc.indexOf("#reward") > -1 && duplication){
-							// var position = row.Cc.split(" #reward")[0]
-
-							// var asset = JSON.parse("["+position+"]")
-
-							// notify_body += '<li id="'+row.Id+'" class="item notify open '+(player_hash == row.From ? "self" : "")+'">\
-							// 	<div class="text">\
-							// 		<span class="icon" data-from="'+row.From+'"></span>\
-							// 		<text><span class="xyz">['+Math.floor(asset[0])+','+Math.floor(asset[1])+'] Reward</span></text>\
-							// 	</div>\
-							// </li>'
-						}
-					}
-
-					var $messages_ul = $("messages ul")
-
-					var scrollBottom = $messages_ul.html() ? false : true
-
-					if(message_body){
-						if(resp.body.query.date){
-							$messages_ul.prepend(message_body)
-						}else{
-							$messages_ul.append(message_body)
-						}
-					}
-
-					for(var m = 0; m < _messages.length; m++){
-						var row = _messages[m];
-
-						var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
-
-						var duplication = $('messages ul>li[id="'+row.Id+'"]')
-
-						try{
-							if(isMessage && duplication.length && row.Flag){
 								try{
-									var flag = ""
+									var $player = $('player[id="'+_player.hash+'"]')
+									var $tooltip = $player.find("tooltip ul");
+										$tooltip.removeClass("open")
 
-									var flags = row.Flag.split(" ")
-									
-									for(var f = 0; f < flags.length; f++){
-										if(isNaN(flags[f])){
-											flag = flags[f]
-										}
+									var _player_hash = _player.hash.indexOf("0x") == 0 ? _player.hash.replace("0x", "") : _player.hash
+										_player_hash = _player_hash.toLowerCase()
+
+									var tooltip_body = ""
+
+									var cnt = 0
+
+									if(flags[_player_hash]){
+										cnt = flags[_player_hash]
 									}
 
-									var _row = _messages[m-1];
+									var hex = window.emojiUnicode("🔥")
+										
+									var src = `/src/fonts/emoji/animated/${hex}.webp`
 
-									var _id = ""
+									if(_player.emoji == "🔥"){
+										// tooltip_body = `<li>
+										// 	<a class="hashType"></a>
+										// </li>
+										// <li>
+										// 	<a class="hashType">🏗</a>
+										// </li>
+										// <li>
+										// 	<a class="hashType"></a>
+										// </li>`
+									}else if(player_hash.indexOf(_player_hash) > -1){
+										tooltip_body = `<li>
+											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
+										</li>
+										<li>
+											<a class="hashType Meta emoji color">
+												<i></i>
+												<div id="dice" class="slot-machine">
+													<div class="slotwrapper">
+														<ul>
+															<li>1</li>
+															<li>2</li>
+															<li>3</li>
+															<li>4</li>
+															<li>5</li>
+															<li>6</li>
+														</ul>
+														<div class="num">${Math.ceil(Math.sqrt(Math.pow(dice, 2)))}</div>
+													</div>
+												</div>
+											</a>
+										</li>
+										<li>
+											<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
+										</li>`
+									}else{
+										var typeDice = false
 
-									if(_row){
-										var el = $('messages li[id="'+_row.Id+'"]').find('item[id="'+flag+'"]')
-
-										if(el.length){
-											duplication.html("")
-
-											var seed = row.From.indexOf("0x") == 0 ? row.From : "0x"+row.From
-											var canvas = blockies.create({seed: seed})
-
-											if(row.Flag.indexOf(" ") == -1){
-												var _date = new Date(row.Subject)
-
-												if(isNaN(_date)){
-													el.attr("checked","checked").css("background-image", "url("+canvas.toDataURL()+")")
-												}else{
-													var $item = $(document.createElement("item"))
-														$item.css("background","none").attr({
-															"checked":"checked",
-															"disabled" : "disabled"
-														}).text(row.Subject)
-
-													var $bg = $(document.createElement("span"))
-														$bg.css("background-image", "url("+canvas.toDataURL()+")")
-													
-													$item.append($bg)
-
-													el.closest("items").html("").append($item)
-												}
-											}
+										if(_players[_player_hash]){
+											typeDice = _players[_player_hash].dice
 										}
+
+										tooltip_body = `<li>
+											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
+										</li>
+										<li>
+											<a class="hashType Meta emoji color">${typeDice ? `<i></i>` : ""}</a>
+										</li>
+										<li>
+											<a class="hashType Report">Report</a>\
+										</li>`
+									}
+
+									var before_body = $tooltip.html()
+									if(before_body){
+										before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+									}
+
+									var after_body = tooltip_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+
+									if(before_body != after_body){
+										$tooltip.html(after_body)
 									}
 								}catch(err){
 									console.log("err",err);
 								}
 							}
+						},300)
+					}catch(err){
+						// console.log("Err",err);
+					}
+
+					var plyrs = []
+
+					var $talk = $("talks."+player_hash)
+
+					var $form = document.querySelector('form[name="oauth.network"]')
+
+					if(_messages.length){
+						var notify_body = ""
+						var message_body = ""
+						var onMessage = false
+
+						var talks_selector = ""
+
+						var flows = []
+
+						for(var m = 0; m < _messages.length; m++){
+							var row = _messages[m];
+
+							var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
+
+							var duplication = !document.querySelector('messages ul li[id="'+row.Id+'"]')
+
+							if(isMessage && duplication){
+								var Idx
+
+								var $items = document.createElement("items");
+
+								onMessage = true
+
+								var text = `<span>${row.Subject}</span>`
+
+								var $talks = $("talks."+row.From+" ul")
+
+								if($talks.length && !resp.body.query.date){
+									if(talks_selector){
+										talks_selector += ", "
+									}
+
+									talks_selector += "talks."+row.From
+
+									if(!document.querySelector(`talks ul li[id="${row.Id}"]`)){
+										$talks.append(`<li class="item" id="${row.Id}">
+											<div class="text">
+												<span class="icon" data-from="${row.From}"></span>
+												${text}
+											</div>
+										</li>`)
+									}
+								}
+
+								message_body += `<li id="${row.Id}" class="self item message">
+									<div class="text">
+										<span class="icon" data-from="${row.From}"></span>
+										<text>${text}</text>
+									</div>
+								</li>`
+
+							}else if(row.Cc.indexOf("#reward") > -1 && duplication){
+								// var position = row.Cc.split(" #reward")[0]
+
+								// var asset = JSON.parse("["+position+"]")
+
+								// notify_body += '<li id="'+row.Id+'" class="item notify open '+(player_hash == row.From ? "self" : "")+'">\
+								// 	<div class="text">\
+								// 		<span class="icon" data-from="'+row.From+'"></span>\
+								// 		<text><span class="xyz">['+Math.floor(asset[0])+','+Math.floor(asset[1])+'] Reward</span></text>\
+								// 	</div>\
+								// </li>'
+							}
+						}
+
+						var $messages_ul = $("messages ul")
+
+						var scrollBottom = $messages_ul.html() ? false : true
+
+						if(message_body){
+							if(resp.body.query.date){
+								$messages_ul.prepend(message_body)
+							}else{
+								$messages_ul.append(message_body)
+							}
+						}
+
+						for(var m = 0; m < _messages.length; m++){
+							var row = _messages[m];
+
+							var isMessage = row.Cc.indexOf("#open") == -1 && row.Cc.indexOf("#reward") == -1
+
+							var duplication = $('messages ul>li[id="'+row.Id+'"]')
+
+							try{
+								if(isMessage && duplication.length && row.Flag){
+									try{
+										var flag = ""
+
+										var flags = row.Flag.split(" ")
+										
+										for(var f = 0; f < flags.length; f++){
+											if(isNaN(flags[f])){
+												flag = flags[f]
+											}
+										}
+
+										var _row = _messages[m-1];
+
+										var _id = ""
+
+										if(_row){
+											var el = $('messages li[id="'+_row.Id+'"]').find('item[id="'+flag+'"]')
+
+											if(el.length){
+												duplication.html("")
+
+												var seed = row.From.indexOf("0x") == 0 ? row.From : "0x"+row.From
+												var canvas = blockies.create({seed: seed})
+
+												if(row.Flag.indexOf(" ") == -1){
+													var _date = new Date(row.Subject)
+
+													if(isNaN(_date)){
+														el.attr("checked","checked").css("background-image", "url("+canvas.toDataURL()+")")
+													}else{
+														var $item = $(document.createElement("item"))
+															$item.css("background","none").attr({
+																"checked":"checked",
+																"disabled" : "disabled"
+															}).text(row.Subject)
+
+														var $bg = $(document.createElement("span"))
+															$bg.css("background-image", "url("+canvas.toDataURL()+")")
+														
+														$item.append($bg)
+
+														el.closest("items").html("").append($item)
+													}
+												}
+											}
+										}
+									}catch(err){
+										console.log("err",err);
+									}
+								}
+							}catch(err){
+								console.log("Err",err);
+							}
+						}
+
+						var scrollHeight = document.documentElement.scrollHeight - (window.innerHeight / 10)
+
+						var currentScrollHeight = Math.ceil((window.innerHeight + window.scrollY) / 10) * 10
+
+						if (
+							(typeof window.Poll.ing == "undefined") || 
+							(resp.body.body.cc == "message") || 
+							(scrollHeight - currentScrollHeight < 0 && window.scrollY > 0)) 
+						{
+							scrollBottom = true
+						}
+
+						if(scrollBottom){
+							var h = document.documentElement.scrollHeight
+
+							$("html,body").scrollTop(h)
+						}
+
+						if(notify_body){
+							$("notify ol").append(notify_body)
+						}
+
+						var $icons = $("messages li .icon")
+
+						if($icons.length){
+							$icons.each(function(i, el){
+								var hash = el.dataset.from
+
+								var $icon = $icons.eq(i)
+
+								try{
+									var canvas = blockies.create({seed: "0x"+hash})
+									$icon.css("background-image", "url("+canvas.toDataURL()+")")
+								}catch(err){
+
+								}
+							})
+						}
+
+						var $icons = $("talks li .icon")
+
+						if($icons.length){
+							$icons.each(function(i, el){
+								var hash = el.dataset.from
+
+								var $icon = $icons.eq(i)
+
+								try{
+									var canvas = blockies.create({seed: "0x"+hash})
+									$icon.css("background-image", "url("+canvas.toDataURL()+")")
+								}catch(err){
+
+								}
+							})						
+						}
+
+						if(onMessage){
+							$messages.addClass("on")
+
+							$(talks_selector).addClass("on")
+						}
+					}
+
+					if(cookies.damage){
+						$body.attr('game',"over")
+					}else{
+						$body.removeAttr('game')
+					}
+
+					var $loading = $('messages ul li.loading, messages ul li[id=""], talks ul li[id=""]')
+					
+					if($loading.length){
+						$loading.remove()
+					}
+
+					if(typeof OAuth3.timeout != "undefined"){
+						delete OAuth3.timeout
+					}else{
+						OAuth3.timeout = setTimeout(function(){
+							if(!$aside.hasClass("on")){
+								$messages.removeClass("on")
+								$("talks").removeClass("on")
+							}
+						},3000)
+					}
+
+					if(cookies.email){
+						$status.innerHTML = ''
+					}else{
+						$status.innerHTML = '<a href="/login/">Sign In</a>'
+					}
+
+					if($body.hasClass("loading") && (window.frameloop == "demand" || window.frameloop == "never" || window.tutorial)){
+						try{
+							var _address = ethers.hashMessage(resp.query.href.replace(window.location.protocol+"//",""))
+								_address = ethers.computeAddress(cc_address).toLowerCase()
+
+							if(window.location.hash){
+								_address = window.location.hash.replace("#", "0x")
+							}
+
+							if(_address.indexOf(cc_address) > -1){
+								$body.removeAttr("class")
+							}
 						}catch(err){
-							console.log("Err",err);
-						}
-					}
-
-					var scrollHeight = document.documentElement.scrollHeight - (window.innerHeight / 10)
-
-					var currentScrollHeight = Math.ceil((window.innerHeight + window.scrollY) / 10) * 10
-
-					if (
-						(typeof window.Poll.ing == "undefined") || 
-						(resp.body.body.cc == "message") || 
-						(scrollHeight - currentScrollHeight < 0 && window.scrollY > 0)) 
-					{
-						scrollBottom = true
-					}
-
-					if(scrollBottom){
-						var h = document.documentElement.scrollHeight
-
-						$("html,body").scrollTop(h)
-					}
-
-					if(notify_body){
-						$("notify ol").append(notify_body)
-					}
-
-					var $icons = $("messages li .icon")
-
-					if($icons.length){
-						$icons.each(function(i, el){
-							var hash = el.dataset.from
-
-							var $icon = $icons.eq(i)
-
-							try{
-								var canvas = blockies.create({seed: "0x"+hash})
-								$icon.css("background-image", "url("+canvas.toDataURL()+")")
-							}catch(err){
-
-							}
-						})
-					}
-
-					var $icons = $("talks li .icon")
-
-					if($icons.length){
-						$icons.each(function(i, el){
-							var hash = el.dataset.from
-
-							var $icon = $icons.eq(i)
-
-							try{
-								var canvas = blockies.create({seed: "0x"+hash})
-								$icon.css("background-image", "url("+canvas.toDataURL()+")")
-							}catch(err){
-
-							}
-						})						
-					}
-
-					if(onMessage){
-						$messages.addClass("on")
-
-						$(talks_selector).addClass("on")
-					}
-				}
-
-				if(cookies.damage){
-					$body.attr('game',"over")
-				}else{
-					$body.removeAttr('game')
-				}
-
-				var $loading = $('messages ul li.loading, messages ul li[id=""], talks ul li[id=""]')
-				
-				if($loading.length){
-					$loading.remove()
-				}
-
-				if(typeof OAuth3.timeout != "undefined"){
-					delete OAuth3.timeout
-				}else{
-					OAuth3.timeout = setTimeout(function(){
-						if(!$aside.hasClass("on")){
-							$messages.removeClass("on")
-							$("talks").removeClass("on")
-						}
-					},3000)
-				}
-
-				if(cookies.email){
-					$status.innerHTML = ''
-				}else{
-					$status.innerHTML = '<a href="/login/">Sign In</a>'
-				}
-
-				if($body.hasClass("loading") && (window.frameloop == "demand" || window.frameloop == "never" || window.tutorial)){
-					try{
-						var _address = ethers.hashMessage(resp.query.href.replace(window.location.protocol+"//",""))
-							_address = ethers.computeAddress(cc_address).toLowerCase()
-
-						if(window.location.hash){
-							_address = window.location.hash.replace("#", "0x")
-						}
-
-						if(_address.indexOf(cc_address) > -1){
 							$body.removeAttr("class")
 						}
-					}catch(err){
-						$body.removeAttr("class")
 					}
-				}
 
-				// var dice = 1
+					// var dice = 1
 
-				if(!isNaN(_dice)){
-					if(!_dice){
-						_dice = dice
+					if(!isNaN(_dice)){
+						if(!_dice){
+							_dice = dice
 
-						if(Math.ceil(dice) > 0){
-							dice = Math.ceil(dice)
+							if(Math.ceil(dice) > 0){
+								dice = Math.ceil(dice)
+							}
+						}else if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
+							dice = Math.ceil(Math.sqrt(Math.pow(dice, 2))) * -1
+						}else{
+							dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))
 						}
-					}else if(Math.sqrt(Math.pow(dice, 2)) == Math.sqrt(Math.pow(_dice, 2))){
-						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2))) * -1
-					}else{
-						dice = Math.ceil(Math.sqrt(Math.pow(dice, 2)))
 					}
-				}
 
-				$body
-					.removeAttr("bingo")
-					.attr("dice",dice)
-					.attr("team",cookies.team ? cookies.team : "")
-					.attr("balance",cookies.balance)
-			
+					$body
+						.removeAttr("bingo")
+						.attr("dice",dice)
+						.attr("team",cookies.team ? cookies.team : "")
+						.attr("balance",cookies.balance)
+				
 
-				if(typeof window.Chat == "undefined"){
-					window.Init(cookies)
-					window.cookies.dice = 0
-				}
+					if(typeof window.Chat == "undefined"){
+						window.Init(cookies)
+						window.cookies.dice = 0
+					}
 
-					
+					if(typeof window.Poll.ing == "undefined"){
+						if(cookies.hash){
+							clearInterval(window.Roll.ing)
+							delete window.Roll.ing
 
-				if(typeof window.Poll.ing == "undefined"){
-					if(cookies.hash){
-						clearInterval(window.Roll.ing)
-						delete window.Roll.ing
+							if(OAuth3.xhr){
+								OAuth3.xhr.abort()
+								delete OAuth3.xhr
+							}
 
+							window.Poll.ing = setInterval(window.Poll, time.balance)
+						}else{
+							window.location.href = OAuth3.host+"/logout"
+						}
+					}else if(dice > 0 && typeof window.Roll.ing == "undefined"){
+						window.response = resp
+
+						clearInterval(window.Poll.ing)
+						delete window.Poll.ing
+
+						if(window.Roll.back){
+							window.Roll.back.options.endNum = dice
+							window.Roll.back.loopCount = 6
+						}
+
+						setTimeout(function(){
+							$('#root player tooltip .slotwrapper ul').removeAttr("style")
+							$('#root player tooltip #dice .num').text(dice)
+
+							window.Roll.ing = setInterval(window.Roll, 500, biomes)
+						}, 500)
+					}else{
 						if(OAuth3.xhr){
 							OAuth3.xhr.abort()
 							delete OAuth3.xhr
+
+							window.response = resp
 						}
-
-						window.Poll.ing = setInterval(window.Poll, time.balance)
-					}else{
-						window.location.href = OAuth3.host+"/logout"
 					}
-				}else if(dice > 0 && typeof window.Roll.ing == "undefined"){
-					window.response = resp
-
-					clearInterval(window.Poll.ing)
-					delete window.Poll.ing
-
-					if(window.Roll.back){
-						window.Roll.back.options.endNum = dice
-						window.Roll.back.loopCount = 6
-					}
-
-					setTimeout(function(){
-						$('#root player tooltip .slotwrapper ul').removeAttr("style")
-						$('#root player tooltip #dice .num').text(dice)
-
-						window.Roll.ing = setInterval(window.Roll, 500, biomes)
-					}, 500)
-				}else{
-					if(OAuth3.xhr){
-						console.log("진입")
-						OAuth3.xhr.abort()
-						delete OAuth3.xhr
-
-						window.response = resp
-					}
+				}catch(err){
+					console.log("err",err);
 				}
-			}catch(err){
-				console.log("err",err);
 			}
 		}
 
@@ -2954,26 +2896,10 @@ OAuth3.on("ready", function(e){
 			$('.inventory').attr("href", href+"/inventory")
 			$('.exchange').attr("href", href)
 
-			var x = -35.5
-			var y = 0.5
-			var z = -65.5
-
-			var axis = cookies.axis
-			if(axis){
-				axis = axis.split(",")
-
-				x = axis[0] * 1
-				y = axis[1] * 1
-				z = axis[2] * 1
-			}
-
 			var query = {
 				href : window.location.href,
 				hash : cookies.hash,
-				token : cookies.token,
-				x : x,
-				y : y,
-				z : z
+				token : cookies.token
 			}
 
 			var url = "https://memepoly.com";
@@ -3006,13 +2932,15 @@ OAuth3.on("ready", function(e){
 						$(".layer, .layer form.popup").removeClass("on")
 						emojiChanged("🫥", true)
 
+						var respawn = Respawn()
+
 						var query = {
 							href : window.location.href,
 							hash : hash,
 							token : token,
-							x : player.x ? player.x : "1.5",
-							y : player.y ? player.y : "0",
-							z : player.z ? player.z : "1.5"
+							x : player.x ? player.x : respawn.x,
+							y : player.y ? player.y : respawn.y,
+							z : player.z ? player.z : respawn.z
 						}
 
 						OAuth3.xhr = OAuth3.fetch({
@@ -3027,25 +2955,9 @@ OAuth3.on("ready", function(e){
 
 			window.Poll = async function(){
 				try{
-					var self_player
+					var self_player = window.players.self()
 
 					var cookies = window.cookies
-
-					try{
-						if(window.players){
-							if(window.players.self){
-								self_player = window.players.self()
-							}
-						}
-					}catch(err){
-						var player_hash = cookies.address ? cookies.address : cookies.hash
-
-						try{
-							self_player = window.players.self()
-						}catch(err){
-							// console.log("err",err);
-						}
-					}
 
 					if(typeof self_player != "undefined"){
 						if(cookies.hash && !OAuth3.xhr){
@@ -3150,6 +3062,11 @@ OAuth3.on("ready", function(e){
 					}
 				}catch(err){
 					console.log("err",err);
+
+					if(OAuth3.xhr){
+						OAuth3.xhr.abort()
+						delete OAuth3.xhr
+					}
 				}
 			}
 		}
@@ -3201,7 +3118,11 @@ OAuth3.on("ready", function(e){
 			document.querySelector('#header label[for="nav"]').appendChild(icon);
 
 			window.addEventListener('focus', function(){
-				window.setFrameloop("always")
+				if(window.current.current.position.x == 0.5 && window.current.current.position.z == 0.5){
+					window.setFrameloop("demand")
+				}else{
+					window.setFrameloop("always")
+				}
 			})
 
 			window.addEventListener('blur', function(){
@@ -3861,6 +3782,8 @@ OAuth3.on("ready", function(e){
 
 														var referer = new URL(href)
 
+														var respawn = Respawn()
+
 														var request = {
 															method : "POST",
 															url : url,
@@ -3872,9 +3795,9 @@ OAuth3.on("ready", function(e){
 																href : href,
 																hash : cookies.hash,
 																token : cookies.token,
-																x : player.x ? player.x : "1.5",
-																y : player.y ? player.y : "0",
-																z : player.z ? player.z : "1.5"
+																x : player.x ? player.x : respawn.x,
+																y : player.y ? player.y : respawn.y,
+																z : player.z ? player.z : respawn.z
 															}
 														}
 
