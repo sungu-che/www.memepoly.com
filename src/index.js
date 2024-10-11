@@ -115,9 +115,9 @@ window.Subscribe = function(){
 		href : window.location.href,
 		hash : window.cookies.hash,
 		token : window.cookies.token,
-		x : window.cursor.current.position.x,
-		y : window.cursor.current.position.y,
-		z : window.cursor.current.position.z
+		x : window.current.current.position.x,
+		y : window.current.current.position.y,
+		z : window.current.current.position.z
 	}
 
 	var url = "https://memepoly.com";
@@ -1036,7 +1036,6 @@ OAuth3.on("ready", function(e){
 			}
 		}
 
-
 		window.Roll = function(biomes){
 			try{
 				var dice = window.cookies.dice  * 1
@@ -1494,8 +1493,8 @@ OAuth3.on("ready", function(e){
 							biomes.x = window.current.current.position.x = window.cursor.current.position.x = axis.x
 							biomes.z = window.current.current.position.z = window.cursor.current.position.z = axis.z
 						}else{
-							biomes.x = axis.x = window.current.current.position.x = window.cursor.current.position.x
-							biomes.z = axis.z = window.current.current.position.z = window.cursor.current.position.z 
+							biomes.x = axis.x = window.current.current.position.x
+							biomes.z = axis.z = window.current.current.position.z
 						}
 					}else{
 						biomes.x = axis.x
@@ -2104,7 +2103,7 @@ OAuth3.on("ready", function(e){
 								window.players.set(_players)
 							}
 						}
-						
+
 						if(window.assets){
 							if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
 								diff = true
@@ -2115,7 +2114,7 @@ OAuth3.on("ready", function(e){
 						if(diff || frameloop){
 							window.setFrameloop("always")
 						}else{
-							if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
+							if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && window[self_player.hash].position.x == window.current.current.position.x && window[self_player.hash].position.z == window.current.current.position.z){
 								window.setFrameloop("demand")
 							}else{
 								window.setFrameloop("always")
@@ -2796,11 +2795,6 @@ OAuth3.on("ready", function(e){
 						if(cookies.hash){
 							clearInterval(window.Roll.ing)
 							delete window.Roll.ing
-
-							if(OAuth3.xhr){
-								OAuth3.xhr.abort()
-								delete OAuth3.xhr
-							}
 
 							window.Poll.ing = setInterval(window.Poll, time.balance)
 						}else{
