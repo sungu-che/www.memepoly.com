@@ -18,18 +18,6 @@ if(!OAuth3.isMobile){
 window.bingo = {}
 window.sticker = {}
 
-if(window.fields){
-	window.fields.forEach(function(field, index){
-		if(index % 9 == 0){
-			field.drop = "❓"
-		}else if(index % 3 == 0){
-			field.item = "❔"
-		}
-
-		window.fields[`${field.x}:${field.z}`] = field
-	})
-}
-
 function Respawn(){
 	var r = fields[Math.round(Math.random() * fields.length)]
 
@@ -1062,26 +1050,6 @@ OAuth3.on("ready", function(e){
 							}
 						})
 
-						// if(!window.Beachs){
-						// 	window.Beachs = []
-						// }
-						
-						// var add = false
-
-						// if(_fields.length){
-						// 	_fields.forEach(function(beach, index){
-						// 		if(!add && !window.Beachs["_"+beach.index] && beach.x == biomes.x && beach.z == biomes.z){
-						// 			if(!window.Beachs.length && index == 0){
-						// 				window.Beachs["_"+beach.index] = add = true
-						// 				window.Beachs.push(beach)
-						// 			}else if(window.Beachs.length > 0){
-						// 				window.Beachs["_"+beach.index] = add = true
-						// 				window.Beachs.push(beach)
-						// 			}
-						// 		}
-						// 	})
-						// }
-
 						_fields.sort(function (a, b) {
 							return b.x - a.x || a.z - b.z;
 						});
@@ -1615,7 +1583,7 @@ OAuth3.on("ready", function(e){
 								}
 
 								if(row.Cc.indexOf("#dice") > -1 && isDice){
-									progress[`${row.x}:${row.z}`] = row
+									progress[`${row.x}:${row.z}`] = true
 
 									progress.push(row)
 
@@ -1640,17 +1608,58 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
+					var fields = Fields()
+
+					fields.forEach(function(field, index){
+						if(index % 9 == 0){
+							field.drop = "❓"
+						}else if(index % 3 == 0){
+							field.item = "❔"
+						}
+
+						field.index = index
+
+						fields[`${field.x}:${field.z}`] = field
+					})
+
 					if(isDice){
 						if(progress.length){
 							progress.before = progress[1]
 							progress.start = progress[progress.length - 1]
 							progress.end = progress[0]
 
-							if(progress.before){
-								if(progress.before.index > progress.end.index){
+							var div = fields[`${progress.start.x}:${progress.start.z}`]
+
+							if(div){
+								var _fields = fields.splice(div.index, fields.length)
+
+								if(_fields.length){
+									fields = _fields.concat(fields)
+
+									var start
+									var end
+
 									fields.forEach(function(field, index){
-										delete window.fields[`${field.x}:${field.z}`]
+										if(progress.start.x == field.x && progress.start.z == field.z){
+											start = true
+										}
+
+										if(biomes.x == field.x && biomes.z == field.z){
+											end = true
+										}
+
+										if(start && !end){
+											progress[`${field.x}:${field.z}`] = true
+										}
 									})
+
+									if(progress.before){
+										if(progress.before.index > progress.end.index){
+											fields.forEach(function(field, index){
+												delete fields[`${field.x}:${field.z}`]
+											})
+										}
+									}
 								}
 							}
 						}
@@ -1669,7 +1678,7 @@ OAuth3.on("ready", function(e){
 								isBiome = true
 							}
 
-							if(progress[`${b.x}:${b.z}`] && fields[`${biomes.x}:${biomes.z}`]){
+							if(progress[`${b.x}:${b.z}`]){
 								color = "black"
 							}
 
@@ -2012,7 +2021,7 @@ OAuth3.on("ready", function(e){
 						if(biome){
 							$body.attr("biome", biome.biome)
 
-							var field = window.fields[`${x}:${z}`]
+							var field = fields[`${x}:${z}`]
 
 							if(field){
 								$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
@@ -2816,7 +2825,7 @@ OAuth3.on("ready", function(e){
 							$('#root player tooltip #dice .num').text(dice)
 
 							window.Roll.ing = setInterval(window.Roll, 500, biomes)
-						}, 500)
+						}, 1000)
 					}else{
 						if(OAuth3.xhr){
 							OAuth3.xhr.abort()
