@@ -2800,6 +2800,15 @@ OAuth3.on("ready", function(e){
 						window.cookies.dice = 0
 					}
 
+					if(window.Poll.ing){
+						if(OAuth3.xhr){
+							OAuth3.xhr.abort()
+							delete OAuth3.xhr
+
+							window.response = resp
+						}
+					}
+
 					if(typeof window.Poll.ing == "undefined"){
 						if(cookies.hash){
 							clearInterval(window.Roll.ing)
@@ -2815,6 +2824,8 @@ OAuth3.on("ready", function(e){
 						clearInterval(window.Poll.ing)
 						delete window.Poll.ing
 
+						window.response = resp
+
 						if(window.Roll.back){
 							window.Roll.back.options.endNum = dice
 							window.Roll.back.loopCount = 6
@@ -2825,14 +2836,7 @@ OAuth3.on("ready", function(e){
 							$('#root player tooltip #dice .num').text(dice)
 
 							window.Roll.ing = setInterval(window.Roll, 500, biomes)
-						}, 1000)
-					}else{
-						if(OAuth3.xhr){
-							OAuth3.xhr.abort()
-							delete OAuth3.xhr
-
-							window.response = resp
-						}
+						}, 500)
 					}
 				}catch(err){
 					console.log("err",err);
@@ -3642,11 +3646,14 @@ OAuth3.on("ready", function(e){
 											delete time.out
 										}
 
+										if(OAuth3.xhr){
+											OAuth3.xhr.abort()
+											delete OAuth3.xhr
+										}
+
+										OAuth3.xhr = true
+
 										time.out = setTimeout(function(){
-											if(OAuth3.xhr){
-												OAuth3.xhr.abort()
-												delete OAuth3.xhr
-											}
 											if(window.tutorial){
 												setTimeout(function(){
 													var res = JSON.stringify(window.response)
@@ -3665,7 +3672,7 @@ OAuth3.on("ready", function(e){
 													url : url
 												}, window.Callback)
 											}
-										}, time.balance)
+										}, body.cc == "dice" ? time.balance * 3 : 0)
 										
 									}
 
@@ -3922,12 +3929,14 @@ OAuth3.on("ready", function(e){
 												delete time.out
 											}
 
-											time.out = setTimeout(function(){
-												if(OAuth3.xhr){
-													OAuth3.xhr.abort()
-													delete OAuth3.xhr
-												}
+											if(OAuth3.xhr){
+												OAuth3.xhr.abort()
+												delete OAuth3.xhr
+											}
 
+											OAuth3.xhr = true
+
+											time.out = setTimeout(function(){
 												OAuth3.xhr = OAuth3.fetch({
 													method : "POST",
 													query : query,

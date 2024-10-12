@@ -37,6 +37,20 @@ textures.glass.minFilter = THREE.LinearMipMapLinearFilter
 textures.black.magFilter = THREE.NearestFilter
 textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
+var fields = Fields()
+
+fields.forEach(function(field, index){
+	if(index % 9 == 0){
+		field.drop = "❓"
+	}else if(index % 3 == 0){
+		field.item = "❔"
+	}
+
+	field.index = index
+
+	fields[`${field.x}:${field.z}`] = field
+})
+
 
 export const Experience = () => {
 	const [players, setPlayers] = useState([]);
@@ -386,7 +400,7 @@ export const Experience = () => {
 				}
 			}
 
-			var field = window.fields[`${props.position.x}:${props.position.z}`]
+			var field = fields[`${props.position.x}:${props.position.z}`]
 
 			if(emoji){
 				if(field){
