@@ -3032,7 +3032,7 @@ OAuth3.on("ready", function(e){
 
 								for(var row in window.map.nonces){
 									if(window.map.nonces.hasOwnProperty(row)) {
-										if(!window.map.nonces[row].nonce){
+										if(!window.map.nonces[row].nonce && !window.map.biomes[row.Id]){
 											rows.push(window.map.nonces[row])
 										}
 									}
