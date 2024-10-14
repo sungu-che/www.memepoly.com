@@ -777,7 +777,7 @@ emojis .tab_content .deck .emoji_asset[method="recommand"] a{text-shadow: 0 0 0 
 	}
 }
 
-emojis .tab_content .deck .emoji_asset.new{position: fixed; transform: rotate(0deg) scale(0); z-index: 99999999999999;}
+emojis .tab_content .deck .emoji_asset.new{position: fixed; transform: rotate(0deg) scale(0); z-index: 99999999999999; pointer-events: none;}
 emojis .tab_content .deck .emoji_asset.new[style]{transform: scale(2.5); animation: 1s popup-asset1 linear 0s 1; }
 emojis .tab_content .deck .emoji_asset[style=""]{animation: 0.2s popup-asset2 linear 0s 1;}
 
@@ -1007,6 +1007,14 @@ body[dice="10"][biome="BEACH"] #root player tooltip li a.Flag,
 body[dice="0"][biome="BEACH"] #root player tooltip li a.Flag{pointer-events: none; opacity: 0.5;}
 /*body[dice="0"] #root player tooltip .slotwrapper > ul > li {opacity: 0; pointer-events: none;}*/
 
+body[dice="1"] #root player tooltip li a,
+body[dice="2"] #root player tooltip li a,
+body[dice="3"] #root player tooltip li a,
+body[dice="4"] #root player tooltip li a,
+body[dice="5"] #root player tooltip li a,
+body[dice="6"] #root player tooltip li a,
+body[dice="10"] #root player tooltip li a{pointer-events: none;}
+
 #root player tooltip #dice{overflow: hidden; position: absolute; top: -1.5em; left: 0.05em; width: 94%; height: 94%;}
 #root player tooltip #dice .num{}
 #root player tooltip .slot-machine{display: none;}
@@ -1043,6 +1051,8 @@ table{border-spacing:0px;border-collapse:collapse;}
 #meme{opacity: 0 ; z-index: -1; pointer-events: none}
 #meme.poly{opacity: 1; z-index: 0; pointer-events:initial;}
 #meme iframe{position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: #000; z-index: 3;}
+
+
 
 #map td{position: relative; padding: 4.3em; border:0px solid #fff;}
 #map td:hover:after{content: ""; position: absolute; left: 0; right: 0; bottom: 0;top: 0; background-color: #fff; z-index: -1;}

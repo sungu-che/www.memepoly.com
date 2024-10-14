@@ -76,6 +76,49 @@ export const Experience = () => {
 		var player_hash = cookies.address ? cookies.address : cookies.hash
 		var player = window[player_hash]
 
+		if(!player){
+			var position
+
+			if(cookies.axis){
+				var _axis = cookies.axis
+					_axis = _axis.split(",")
+
+				var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
+
+				position = {
+					x : _axis[0] * 1,
+					y : b.y,
+					z : _axis[2] * 1
+				}
+			}else{
+				var r = fields[Math.round(Math.random() * fields.length)]
+
+				var b = window.map.biomes[`${r.x}:${r.z}`]
+
+				position = {
+					x : r.x,
+					y : b.y,
+					z : r.z
+				}
+			}
+
+			player = {
+				team : cookies.team ? cookies.team : "",
+				follow : false,
+				self : true,
+				hash : player_hash,
+				emoji : "😀",
+				position : position
+			}
+
+			window[player_hash] = player
+			window[player_hash].group = {
+				current : {
+					position : position
+				}
+			}
+		}
+
 		return {
 			emoji : player.emoji,
 			hash : player.hash,
@@ -163,7 +206,7 @@ export const Experience = () => {
 
 		try{
 			if(cookies){
-				if(cookies.axis){
+				if(cookies.axis && !cookies.damage){
 					if(e.point){
 						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
 
@@ -294,6 +337,7 @@ export const Experience = () => {
 										}else if(window.response){
 											if(cookies.dice != 0){
 												cookies.dice = -10
+												delete cookies.damage
 												window.response.body.cookies = JSON.stringify(cookies)
 											}
 

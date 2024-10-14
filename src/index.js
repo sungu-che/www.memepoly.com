@@ -19,15 +19,48 @@ window.bingo = {}
 window.sticker = {}
 
 function Respawn(){
-	var r = fields[Math.round(Math.random() * fields.length)]
+	var cookies = window.cookies
 
-	var b = window.map.biomes[`${r.x}:${r.z}`]
+	var position
 
-	return {
-		x : r.x,
-		y : b.y,
-		z : r.z
+	var fields = Fields()
+
+	fields.forEach(function(field, index){
+		if(index % 9 == 0){
+			field.drop = "❓"
+		}else if(index % 3 == 0){
+			field.item = "❔"
+		}
+
+		field.index = index
+
+		fields[`${field.x}:${field.z}`] = field
+	})
+
+	if(cookies.axis){
+		var _axis = cookies.axis
+			_axis = _axis.split(",")
+
+		var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
+
+		position = {
+			x : _axis[0] * 1,
+			y : b.y,
+			z : _axis[2] * 1
+		}
+	}else{
+		var r = fields[Math.round(Math.random() * fields.length)]
+
+		var b = window.map.biomes[`${r.x}:${r.z}`]
+
+		position = {
+			x : r.x,
+			y : b.y,
+			z : r.z
+		}
 	}
+
+	return position
 }
 
 function nFormatter(num, digits) {
@@ -353,14 +386,22 @@ window.randomHash = function(){
 window.players = []
 window.players.set = function(){}
 window.players.self = function(){
+	var respawn = Respawn()
+
+	if(window.current){
+		respawn.x = window.current.current.position.x
+		respawn.y = window.current.current.position.y
+		respawn.z = window.current.current.position.z
+	}
+
 	return  {
 		follow : false,
 		self : true,
 		hash : window.cookies.address ? window.cookies.address : window.cookies.hash,
 		emoji : "😀",
-		x : window.current.current.position.x,
-		y : window.current.current.position.y,
-		z : window.current.current.position.z
+		x : respawn.x,
+		y : respawn.y,
+		z : respawn.z
 	}
 }
 
@@ -2120,15 +2161,7 @@ OAuth3.on("ready", function(e){
 							}
 						}
 
-						if(diff || frameloop){
-							window.setFrameloop("always")
-						}else{
-							if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && window[self_player.hash].position.x == window.current.current.position.x && window[self_player.hash].position.z == window.current.current.position.z){
-								window.setFrameloop("demand")
-							}else{
-								window.setFrameloop("always")
-							}
-						}
+						window.setFrameloop("always")
 
 						if(bingo_body){
 							$("#bingo").html(bingo_body)
@@ -2728,6 +2761,9 @@ OAuth3.on("ready", function(e){
 
 					if(cookies.damage){
 						$body.attr('game',"over")
+
+						clearInterval(window.Poll.ing)
+						delete window.Poll.ing
 					}else{
 						$body.removeAttr('game')
 					}
@@ -2809,7 +2845,7 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					if(typeof window.Poll.ing == "undefined"){
+					if(typeof window.Poll.ing == "undefined" && !cookies.damage){
 						if(cookies.hash){
 							clearInterval(window.Roll.ing)
 							delete window.Roll.ing
@@ -3125,11 +3161,7 @@ OAuth3.on("ready", function(e){
 			document.querySelector('#header label[for="nav"]').appendChild(icon);
 
 			window.addEventListener('focus', function(){
-				if(window.current.current.position.x == 0.5 && window.current.current.position.z == 0.5){
-					window.setFrameloop("demand")
-				}else{
-					window.setFrameloop("always")
-				}
+				window.setFrameloop("always")
 			})
 
 			window.addEventListener('blur', function(){
@@ -3165,6 +3197,9 @@ OAuth3.on("ready", function(e){
 									clearTimeout(time.out)
 									delete time.out
 								}
+
+								clearInterval(window.Poll.ing)
+								delete window.Poll.ing
 
 								if(OAuth3.xhr){
 									OAuth3.xhr.abort()
@@ -3236,10 +3271,16 @@ OAuth3.on("ready", function(e){
 
 												$body.attr("team",cookies.team ? cookies.team : "")
 
+												if(OAuth3.xhr){
+													OAuth3.xhr.abort()
+													delete OAuth3.xhr
+												}
+
+												window.response = _resp
+
 												window.Callback(_resp)
 											})
 										}
-
 									}
 								})
 
@@ -3651,7 +3692,9 @@ OAuth3.on("ready", function(e){
 											delete OAuth3.xhr
 										}
 
-										OAuth3.xhr = true
+										OAuth3.xhr = {
+											abort : function(){}
+										}
 
 										time.out = setTimeout(function(){
 											if(window.tutorial){
@@ -3672,7 +3715,7 @@ OAuth3.on("ready", function(e){
 													url : url
 												}, window.Callback)
 											}
-										}, body.cc == "dice" ? time.balance * 3 : 0)
+										}, time.balance * (body.cc == "dice" ? 2 : 1))
 										
 									}
 
@@ -4009,7 +4052,7 @@ OAuth3.on("ready", function(e){
 					}
 
 
-					if(isJoystick && cookies.axis && cookies.dice == 0){
+					if(isJoystick && cookies.axis && cookies.dice == 0 && !cookies.damage){
 						var position = {
 							x : 0,
 							z : 0
