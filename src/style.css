@@ -10,20 +10,20 @@
 #gtx-trans{display: none;}
 *{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000; }
 *::selection{background-color: inherit; color:inherit;}
-#root {position: fixed; left: 0; top: 0; right: 0; bottom: 0;}
+#root {position: absolute; left: 0; top: 0; width: 100vw; height: 100vh;}
 
 /*body{background-color: #fff !important;}*/
 
-.voronoi{overflow: hidden; border-radius: 50%; position: absolute; right: 0.5em; top: 0.5em; width: 200px; height: 200px; transform: scale(0.5); transform-origin: top right; background-color: #262626;}
+.voronoi{overflow: hidden; border-radius: 50%; position: absolute; right: 0.5em; top: 0.5em; width: 200px; height: 200px; transform: scale(0.5); transform-origin: top right; -webkit-transform: scale(0.5); -webkit-transform-origin: top right; background-color: #262626;}
 .voronoi:after{content: ""; position: absolute; left: 0; top: 0; bottom: 0; right: 0; border-radius: 50%; z-index: 10; cursor: pointer; box-shadow: inset 0 0 0.1px 0.1px #000;}
 
-.voronoi.zoom{transform: scale(1); z-index: 1;}
-.voronoi.zoom #map{transform: scale(1) rotate(45deg);}
+.voronoi.zoom{transform: scale(1); -webkit-transform: scale(1); z-index: 1;}
+.voronoi.zoom #map{transform: scale(1) rotate(45deg); -webkit-transform: scale(1) rotate(45deg);}
 .voronoi.zoom .map{}
 
 .xyz{position: absolute; right: 0; top: 0; font-size: 0.8em; color: #fff; z-index: 2; text-shadow: 0 0 2px black;}
 
-#map{position: absolute; overflow: hidden; right: 0; top: 0; width: 200px; height: 200px; transform: scale(2) rotate(45deg);}
+#map{position: absolute; overflow: hidden; right: 0; top: 0; width: 200px; height: 200px; transform: scale(2) rotate(45deg); -webkit-transform: scale(2) rotate(45deg);}
 
 #map .map:after{content: ""; position: absolute; left: -1px; right: -1px; top: -1px; bottom: -1px; border: 4px solid #262626; box-sizing: border-box;}
 #map .map{position: absolute; right: 0; top: 0; width: 200px; height: 200px;}
@@ -32,33 +32,33 @@
 #map .map canvas{display: none;}
 
 
-body[team="#blue"] #map maker{filter: invert(100%)}
+body[team="#blue"] #map maker{filter: invert(100%); -webkit-filter: invert(100%)}
 
 #map .config{display: none;}
 
-#map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji'; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 2; transform: rotate(-45deg)}
+#map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji'; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 2; transform: rotate(-45deg); -webkit-transform: rotate(-45deg);}
 #map flags{position: absolute; left: 0; top: 0; width: 100%; height: 100%;}
-#map flags .flag{position: absolute;margin-top: 100px; width: 200px; height: 200px; z-index: 1; transform: rotate(-45deg)}
+#map flags .flag{position: absolute;margin-top: 100px; width: 200px; height: 200px; z-index: 1; transform: rotate(-45deg); -webkit-transform: rotate(-45deg)}
 #map flags .flag.red{}
-#map flags .flag.blue{filter: invert(100%)}
+#map flags .flag.blue{filter: invert(100%); -webkit-filter: invert(100%)}
 #map flags .flag .tb{width: 100%; height: 100%;}
 #map flags .flag .tc{text-align: center; vertical-align: middle;}
 /*#map flags .flag i{position: relative; left: -20px; top: -20px;}*/
 
 
-#root{opacity: 0; transition-duration: 0.5s;}
+#root{opacity: 0; transition-duration: 0.5s; -webkit-transition-duration: 0.5s;}
 body[mode] .aside emojis{opacity: 1}
 body[mode] #map,
 body[mode] #life,
 body[mode] #root{opacity: 1; pointer-events: initial;}
 body[mode] #intro{opacity: 0; pointer-events: none;}
-emojis{opacity: 0; transition-duration: 0.5s; }
+emojis{opacity: 0; transition-duration: 0.5s; -webkit-transition-duration: 0.5s; }
 
 /*.plyr__control,
 .plyr__controls{display: none;}*/
 #root player .emoji>.plyr .plyr__poster{}
 /*body[tooltip="true"] .plyr--video .plyr__controls{opacity: 0 !important;}*/
-.plyr--video .plyr__controls{opacity: 0.8 !important; padding: 0 !important; bottom: -80px !important; left: -54px; background: inherit !important; transform: inherit !important; transition: none !important; width: 110px; margin: 0 auto; position: fixed; pointer-events:inherit !important;}
+.plyr--video .plyr__controls{opacity: 0.8 !important; padding: 0 !important; bottom: -80px !important; left: -54px; background: inherit !important; transform: inherit !important; -webkit-transform: inherit !important; transition: none !important; -webkit-transition: none !important; width: 110px; margin: 0 auto; position: fixed; pointer-events:inherit !important;}
 /*.plyr__controls .plyr__controls__item button,*/
 /*.plyr__controls .plyr__controls__item{background-color:inherit !important;}*/
 
@@ -85,7 +85,7 @@ emojis{opacity: 0; transition-duration: 0.5s; }
 
 #root player .emoji>.plyr:not(:root):fullscreen{border:0; border-radius: 0}
 
-#root player .emoji>.plyr:not(:root):fullscreen .plyr__video-embed iframe{transform:scale(1);}
+#root player .emoji>.plyr:not(:root):fullscreen .plyr__video-embed iframe{transform:scale(1); -webkit-transform:scale(1);}
 #root player .emoji>.plyr:not(:root):fullscreen .plyr__controls{display: none;}
 #root player .emoji>.plyr:not(:root):fullscreen [data-plyr="fullscreen"]{display: block;}
 
@@ -179,20 +179,24 @@ body .layer form[name="Tutorial"] .index select option{background-color: #fff;}
 @keyframes balance {
 	0% {
 		transform: scale(1.0, 1.0);
+		-webkit-transform: scale(1.0, 1.0);
 	}
 	33% {
 		transform: scale(1.0, 1.4);
+		-webkit-transform: scale(1.0, 1.4);
 	}
 	66% {
 		transform: scale(1.2, 1.0);
+		-webkit-transform: scale(1.2, 1.0);
 	}
 	100% {
 		transform: scale(1.0, 1.0);
+		-webkit-transform: scale(1.0, 1.0);
 	}
 }
 
 #header .balance span.on { animation: 0.5s balance linear 0s 1; }
-#header .balance span{display: block; line-height: 27px; font-size: 1em; font-weight: bold; color: #fff; text-shadow: 0 0 2px black; transform: scale(1.0, 1.0); transition-duration: 0.5s;}
+#header .balance span{display: block; line-height: 27px; font-size: 1em; font-weight: bold; color: #fff; text-shadow: 0 0 2px black; transform: scale(1.0, 1.0); -webkit-transform: scale(1.0, 1.0); transition-duration: 0.5s; -webkit-transition-duration: 0.5s;}
 /*.react .state .balance span:not(:empty):before{content: "📦"; display: inline; margin-right: 5px; font-family: 'Noto Color Emoji'}*/
 
 #go{position: fixed; display: none; right: 1em; top: 1em; margin: 0 auto; border: 1px solid #000; border-radius: 1em; min-width: 100px; font-size: 10px; height: 4em; line-height: 4em; background-color: #fde030; font-weight: 900; cursor: pointer; font-weight: bold; text-transform: uppercase; text-decoration: underline; background-color: #fde030; z-index: 999999999;}
@@ -227,8 +231,8 @@ clipped {
 	height: 12vh;
 	top: auto;
 	left: 0;
-	-webkit-transition: -webkit-transform 1.4s ease-in, left 0.1s, bottom 0.1s;
 	transition: transform 1.4s ease-in, left 0.1s, bottom 0.1s;
+	-webkit-transition: transform 1.4s ease-in, left 0.1s, bottom 0.1s;
 	background-color: #fde030;
 }
 
@@ -239,7 +243,7 @@ clipped {
 
 .loading #life{display: none;}
 
-#life{position: fixed; left: 1em; top: 15px; z-index: 99999999; opacity: 0; transition-duration: 0.5s; pointer-events: none;}
+#life{position: fixed; left: 1em; top: 15px; z-index: 99999999; opacity: 0; transition-duration: 0.5s; -webkit-transition-duration: 0.5s; pointer-events: none;}
 #life i{font-size: 2em; color:red; -webkit-text-stroke: 3px #000;}
 #life i:before{content: "♡";}
 #life i.on:before{content: "♥"}
@@ -268,7 +272,7 @@ clipped {
 /*#rank .icon:not(:empty):before{content: "Owner "; display: inline-block; color: #fff; padding: 8px; font-size: 11px; vertical-align: top; white-space: nowrap;}*/
 #rank .icon canvas{display: block; padding: 2px; border: 1px solid #fff; border-radius: 50%; width: 30px; height: 30px; box-sizing: border-box; opacity: 0.5}
 
-#rank .address{display: inline-block; font-size: 0; line-height: 28px; white-space: nowrap; vertical-align: top; transition-duration: 0.5s}
+#rank .address{display: inline-block; font-size: 0; line-height: 28px; white-space: nowrap; vertical-align: top; transition-duration: 0.5s; -webkit-transition-duration: 0.5s}
 #rank .address *{line-height: 28px; font-size: 11px; vertical-align: top; color: #fff;}
 #rank .address address{display: inline-block;}
 
@@ -279,13 +283,13 @@ clipped {
 #rank .address score:before{content: "(";}
 #rank .address score:after{content: " Cell Open)";}
 
-talks.on{opacity: 1; transition-delay: 0s}
+talks.on{opacity: 1; transition-delay: 0s; -webkit-transition-delay: 0s;}
 /*talks.on ul{}*/
 
 player tooltip a.Portal{text-decoration: underline;}
 player[verify="true"] tooltip a.Portal{border: 0 !important; text-decoration: inherit !important; color:#fff}
 player[self="true"] tooltip ul.open a.hashType.Mine,
-player[self="true"][verify] tooltip a.Portal{text-decoration: line-through; background-color: transparent; transform: scale(1) !important; color:#000; text-shadow: 0 0 0; box-shadow: 0 0 0px 2px #000;}
+player[self="true"][verify] tooltip a.Portal{text-decoration: line-through; background-color: transparent; transform: scale(1) !important; -webkit-transform: scale(1) !important; color:#000; text-shadow: 0 0 0; box-shadow: 0 0 0px 2px #000;}
 player[self="true"][verify="true"] tooltip a.Portal{text-decoration: underline; box-shadow: 0 0 0px 2px #fff; color: #fff;}
 /*player[self="true"] talks{bottom: 230px;}*/
 
@@ -335,7 +339,7 @@ body[team] #intro .snb li:first-child a:before{content: "Resume"; font-size: 2.7
 player[alt="player"] emoji{animation: edle1 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
 body[zoom="10"] player[alt="player"] emoji{animation: edle2 3s cubic-bezier(0.5, 0, 0.5, 1) infinite}
 
-player .address{text-align: center; text-shadow: 0 0 3px black;  opacity: 0; font-size: 0; white-space: nowrap; transition-duration: 0.5s}
+player .address{text-align: center; text-shadow: 0 0 3px black;  opacity: 0; font-size: 0; white-space: nowrap; transition-duration: 0.5s; -webkit-transition-duration: 0.5s}
 player .address address{display: block;}
 player .address address span{display: inline-block; overflow: hidden; text-overflow: ellipsis; padding: 5px; width: 50px; font-size: 12px; text-transform: lowercase; color: #fff; box-sizing: border-box;}
 player .address address span+span{margin-left: -26px;}
@@ -345,11 +349,11 @@ player[team] emoji:before{display: block; padding: 5px 0; width: 18vh; text-alig
 /*player[team] .emoji:after{content: ""; position: absolute; left: 0.5em; top: -1.8em; overflow: hidden; border:1px solid #000; border-radius: 50%; width: 25px; height: 25px; background-size: 25px;}*/
 /*player[team="#red"] emoji:before{content: "doge"; color: #fff;}*/
 
-#root player[team="#red"] .emoji picture img{filter: drop-shadow(0 0 5px red);}
-#root player[team="#blue"] .emoji picture img{filter: drop-shadow(0 0 5px blue);}
-#root player[team="#blue"] .emoji picture img[src="/src/fonts/emoji/animated/1f525.webp"]{filter: invert(100%)}
+#root player[team="#red"] .emoji picture img{filter: drop-shadow(0 0 5px red); -webkit-filter: drop-shadow(0 0 5px red);}
+#root player[team="#blue"] .emoji picture img{filter: drop-shadow(0 0 5px blue); -webkit-filter: drop-shadow(0 0 5px blue);}
+#root player[team="#blue"] .emoji picture img[src="/src/fonts/emoji/animated/1f525.webp"]{filter: invert(100%); -webkit-filter: invert(100%)}
 
-#root player[team="#black"] .emoji picture img{filter: drop-shadow(0 0 5px black);}
+#root player[team="#black"] .emoji picture img{filter: drop-shadow(0 0 5px black); -webkit-filter: drop-shadow(0 0 5px black);}
 /*player[team="#blue"] .emoji:after{background-image: url(/src/images/pepe.png)}*/
 player[team="#position"]{pointer-events: none;}
 /*player[team="#position"] i{display: block; animation: item 3s linear infinite;}*/
@@ -367,46 +371,56 @@ player[team="#bomb"] i{position: relative; display: block; animation: bomb 0.3s 
 	0% {
 		top: 0;
 		transform: scale(1.1);
+		-webkit-transform: scale(1.1);
 	}
 	25% {
 		top: 0.2em;
 		transform: scale(0.9, 1.4);
+		-webkit-transform: scale(0.9, 1.4);
 	}
 	50% {
 		top: 0;
 		transform: scale(1.1);
+		-webkit-transform: scale(1.1);
 	}
 	75% {
 		top: 0.2em;
 		transform: scale(1.4, 0.9);
+		-webkit-transform: scale(1.4, 0.9);
 	}
 	100% {
 		top: 0;
 		transform: scale(1.1);
+		-webkit-transform: scale(1.1);
 	}
 }
 @keyframes item {
 	0% {
 		transform: scale(1.1);
+		-webkit-transform: scale(1.1);
 	}
 	25% {
 		transform: scale(0.9, 1.3);
+		-webkit-transform: scale(0.9, 1.3);
 	}
 	50% {
 		transform: scale(1.1);
+		-webkit-transform: scale(1.1);
 	}
 	75% {
 		transform: scale(1.3, 0.9);
+		-webkit-transform: scale(1.3, 0.9);
 	}
 	100% {
 		transform: scale(1.1);
+		-webkit-transform: scale(1.1);
 	}
 }
 
 
 body[zoom="10"] talks{bottom: 13vh; left: -105px;}
 
-talks{position: absolute; left: -100px; bottom: 30vh; text-align: center; opacity: 0; transition: 0.5s; transition-delay: 3s; pointer-events: none}
+talks{position: absolute; left: -100px; bottom: 30vh; text-align: center; opacity: 0; transition-duration: 0.5s; transition-delay: 3s; -webkit-transition-duration: 0.5s; -webkit-transition-delay: 3s; pointer-events: none}
 talks ul{width:210px; height: auto;}
 talks li+li{margin-top: 5px;}
 talks li{display: none;}
@@ -429,7 +443,7 @@ body[tutorial] messages.on{bottom: 13em;}
 */
 
 body[bingo="dialog"] messages,
-messages.on{opacity: 1; transition-delay: 0s}
+messages.on{opacity: 1; transition-delay: 0s; -webkit-transition-delay: 0s}
 /*body[bingo="dialog"] messages ul li.self._dialog{float: left;}*/
 body[bingo="dialog"] messages ul li{z-index: 0;}
 body[bingo="dialog"] messages ul,
@@ -447,7 +461,7 @@ messages li.playlist .icon canvas{border-radius: 50%; width: 20px;height: 20px;}
 messages li.playlist .text{position: absolute; left: -2.5em; top: 0; opacity: 0.8}
 
 
-messages{display: block; margin: 0 auto; max-width: 600px; z-index: 9; opacity: 0; box-sizing: border-box; transition-duration: 0.5s; transition-delay: 3s; pointer-events: none;}
+messages{display: block; margin: 0 auto; max-width: 600px; z-index: 9; opacity: 0; box-sizing: border-box; transition-duration: 0.5s; transition-delay: 3s; -webkit-transition-duration: 0.5s; -webkit-transition-delay: 3s; pointer-events: none;}
 
 messages ul{height: 0;}
 messages.on>ul>li{z-index: 0;}
@@ -510,14 +524,14 @@ form.message .area{display: block; position: relative; height: 100%;}
 form.message input[name="message"]{overflow: hidden; padding:0 1em 4px 1.5em; border:0; border-radius: 1em; width: 100%; height: 100%; box-sizing: border-box; outline:none; pointer-events: initial; background-color: #fff;}
 form.message input[name="message"]::selection{background-color: #fde030;}
 
-#chatbox {position: absolute; left: 0; bottom: 50px; z-index: -1; opacity: 0; transition-duration: 0.5s;}
+#chatbox {position: absolute; left: 0; bottom: 50px; z-index: -1; opacity: 0; transition-duration: 0.5s; -webkit-transition-duration: 0.5s;}
 #chatbox.on{opacity: 1; z-index: 2;}
 
 #localVideo{position: absolute; width: 250px; height: 170px; left: 20px; top: 20px; object-fit: cover; background-color: #000;}
 #remoteVideo{position: absolute; width: 250px; height: 170px; left: 280px; top: 20px; object-fit: cover; background-color: #000;}
 
 .aside{pointer-events: none;}
-.aside:after{content: ""; position: fixed; left: 0; right: 0; bottom: 0; z-index: 0; box-shadow: 0 0 200px 80px #000; transition-duration: 0.2s;}
+.aside:after{content: ""; position: fixed; left: 0; right: 0; bottom: 0; z-index: 0; box-shadow: 0 0 200px 80px #000; transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
 body[bingo="dialog"] .aside:after{box-shadow: 0 0 200px 200px #000000d0;}
 body[bingo="dialog"] .aside.focus:after{box-shadow: 0 0 200px 300px #000000d0;}
 
@@ -558,7 +572,7 @@ body[zoom="10"] #root player .emoji picture *{width: 6vh;}
 
 .zoom_toggle{position: fixed; left: 1em; top: 0.9em; z-index: 99999999;}
 .zoom_toggle a.zoom{display: block;	font-size: 2em; color:#fff; cursor: pointer; text-shadow: 0 0 3px black;}
-.zoom_toggle a.zoom.color{transform:scale(1.1);}
+.zoom_toggle a.zoom.color{transform:scale(1.1); -webkit-transform:scale(1.1);}
 .zoom_toggle a+a{margin-left: 0.5em;}
 
 #capture{position: fixed; left: 1em; top: 15px; z-index: 99999999;}
@@ -575,7 +589,7 @@ body[zoom="10"] #root player .emoji picture *{width: 6vh;}
 
 #capture.open_rank>.icon:after{content: "▲"}
 #capture>.rank_toggle canvas{padding: 2px; border: 1px solid #fff; border-radius: 50%; width: 30px; height: 30px; box-sizing: border-box; opacity: 0.7}
-#capture>.rank_toggle>.address{display: inline-block; vertical-align: top; white-space: nowrap; font-size: 0; text-shadow: 0 0 3px black; transition-duration: 0.5s}
+#capture>.rank_toggle>.address{display: inline-block; vertical-align: top; white-space: nowrap; font-size: 0; text-shadow: 0 0 3px black; transition-duration: 0.5s; -webkit-transition-duration: 0.5s}
 #capture>.rank_toggle>.address *{display: inline-block; font-size: 11px; line-height: 28px; vertical-align: top; color: #fff;}
 #capture>.rank_toggle>.address span{overflow: hidden; text-overflow: ellipsis; padding: 0 8px; width: 51px; font-size: 11px; letter-spacing: -0.5px; color: #fff; box-sizing: border-box;}
 #capture>.rank_toggle>.address span+span{margin-left: -30px;}
@@ -592,12 +606,12 @@ emojis .deck .players ul li{display: inline-block;}
 .emoji_asset>canvas{display: block; padding: 3px; border: 1px solid #fff; border-radius: 50%; width: 45px; height: 45px; box-sizing: border-box; object-fit: cover; opacity: 0.7}
 .emoji_asset>img+canvas{display: none;}
 
-.emoji_asset .address{position: absolute; right: 0; bottom: 0; left: -5px; margin: 0 auto; padding: 5px; border:1px solid; border-radius: 5px; width: 40px; background-color: #fff; vertical-align: top; white-space: nowrap; font-size: 0; text-align: center; transition-duration: 0.5s; z-index: 2;}
+.emoji_asset .address{position: absolute; right: 0; bottom: 0; left: -5px; margin: 0 auto; padding: 5px; border:1px solid; border-radius: 5px; width: 40px; background-color: #fff; vertical-align: top; white-space: nowrap; font-size: 0; text-align: center; transition-duration: 0.5s; -webkit-transition-duration: 0.5s; z-index: 2;}
 .emoji_asset .address *{display: inline-block; font-size: 7px; font-weight: 500; vertical-align: top;}
 .emoji_asset .address span{overflow: hidden; text-overflow: ellipsis; width: 22px; box-sizing: border-box;}
 .emoji_asset .address span+span{margin-left: -9px;}
 .emoji_asset .address strong{text-transform: capitalize;}
-.emoji_asset.playing img{animation: playing 5s linear infinite; transform: rotate(0deg);}
+.emoji_asset.playing img{animation: playing 5s linear infinite; transform: rotate(0deg); -webkit-transform: rotate(0deg);}
 .emoji_asset.playing img+canvas{display: none;}
 
 .emoji_asset .metamask img{position: absolute; left: 0; right: 0; top: -0.5em; margin: 0 auto; padding: 0;}
@@ -608,9 +622,11 @@ emojis .tab_content .deck .emoji_asset[emoji="notifications"]{display: none;}
 @keyframes playing {
 	0% {
 		transform: rotate(0deg);
+		-webkit-transform: rotate(0deg);
 	}
 	100% {
 		transform: rotate(360deg);
+		-webkit-transform: rotate(360deg);
 	}
 }
 
@@ -687,7 +703,7 @@ body[swap] .back span{text-decoration: none}
 .aside.more emojis .tab_content .deck{padding: 1em 0; height: 100%; white-space: inherit; text-align: center;}
 .aside.more emojis .tab_content .deck>div{padding-bottom: 1em;}
 
-emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 2; transition-delay: 0.5s;}
+emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 2; transition-delay: 0.5s; -webkit-transition-delay: 0.5s;}
 emojis .scroll{overflow: hidden; overflow-x:scroll;}
 
 
@@ -709,22 +725,22 @@ emojis .deck{position: relative; margin: auto; max-width:600px; text-align: left
 emojis .tab_content .deck{padding: 1em 1.5em 0 0.3em; min-height: 70px;  z-index: 1;}
 emojis .tab_content .deck .emoji_asset:empty{display: none;}
 
-emojis .tab_content .deck .emoji_asset.on .emoji{ filter: drop-shadow(0 0 6px #fde030);}
+emojis .tab_content .deck .emoji_asset.on .emoji{ filter: drop-shadow(0 0 6px #fde030); -webkit-filter: drop-shadow(0 0 6px #fde030);}
 
 emojis .tab_content .deck .emoji_asset[method="inventory"] a{font-size: 2.7em; font-family: 'Noto Color Emoji'}
 
 /*emojis .tab_content .deck .emoji_asset[type="reward"][balance="0"],*/
 /*emojis .tab_content .deck .emoji_asset[method="open"] .cnt{display: none;}*/
-emojis .tab_content .deck .emoji_asset{position: relative; display: inline-block; padding: 0.5em; width: 50px; vertical-align: top; cursor: pointer; transform: scale(1.0); transition: transform 0.15s; pointer-events: initial;}
+emojis .tab_content .deck .emoji_asset{position: relative; display: inline-block; padding: 0.5em; width: 50px; vertical-align: top; cursor: pointer; transform: scale(1.0); -webkit-transform: scale(1.0); transition: transform 0.15s; -webkit-transition: transform 0.15s; pointer-events: initial;}
 emojis .tab_content .deck .emoji_asset:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 3;}
-emojis .tab_content .deck .emoji_asset>a{position: relative; /*overflow: hidden;*/ display: block; margin: auto; width: 53px; height: 56px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0); transition-duration: 0.2s;}
+emojis .tab_content .deck .emoji_asset>a{position: relative; /*overflow: hidden;*/ display: block; margin: auto; width: 53px; height: 56px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0); -webkit-transform: scale(1.0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
 emojis .tab_content .deck .emoji_asset>a.emoji{top: -3px;}
-emojis .tab_content .deck .emoji_asset:hover>a{transform: scale(1.2);}
+emojis .tab_content .deck .emoji_asset:hover>a{transform: scale(1.2); -webkit-transform: scale(1.2);}
 
 body[emoji="😎"] #root player tooltip li a.emoji.Meta i,
-body[emoji="😎"] emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{filter: invert(100%) grayscale(1); text-shadow: 0 0 5px #fff}
+body[emoji="😎"] emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{filter: invert(100%) grayscale(1); -webkit-filter: invert(100%) grayscale(1); text-shadow: 0 0 5px #fff}
 
-body[emoji="😎"][biome="BEACH"] #root player tooltip li a.emoji.Meta i{filter: none;}
+body[emoji="😎"][biome="BEACH"] #root player tooltip li a.emoji.Meta i{filter: none; -webkit-filter: none;}
 
 emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{font-size: 3.85em; top: -17px; left: -5px;}
 
@@ -750,35 +766,43 @@ emojis .tab_content .deck .emoji_asset[method="recommand"] a{text-shadow: 0 0 0 
 @keyframes popup-asset1 {
 	0% {
 		transform: rotate(-15deg) scale(3.0);
+		-webkit-transform: rotate(-15deg) scale(3.0);
 	}
 	33% {
 		transform: rotate(-10deg) scale(2.5);
+		-webkit-transform: rotate(-10deg) scale(2.5);
 	}
 	66% {
 		transform: rotate(-5deg) scale(1.5);
+		-webkit-transform: rotate(-5deg) scale(1.5);
 	}
 	100% {
 		transform: rotate(0deg) scale(1.0);
+		-webkit-transform: rotate(0deg) scale(1.0);
 	}
 }
 
 @keyframes popup-asset2 {
 	0% {
 		transform: scale(1.0, 1.0);
+		-webkit-transform: scale(1.0, 1.0);
 	}
 	33% {
 		transform: scale(1.3, 1.0);
+		-webkit-transform: scale(1.3, 1.0);
 	}
 	66% {
 		transform: scale(1.0, 1.3);
+		-webkit-transform: scale(1.0, 1.3);
 	}
 	100% {
 		transform: scale(1.0, 1.0);
+		-webkit-transform: scale(1.0, 1.0);
 	}
 }
 
-emojis .tab_content .deck .emoji_asset.new{position: fixed; transform: rotate(0deg) scale(0); z-index: 99999999999999; pointer-events: none;}
-emojis .tab_content .deck .emoji_asset.new[style]{transform: scale(2.5); animation: 1s popup-asset1 linear 0s 1; }
+emojis .tab_content .deck .emoji_asset.new{position: fixed; transform: rotate(0deg) scale(0); -webkit-transform: rotate(0deg) scale(0); z-index: 99999999999999; pointer-events: none;}
+emojis .tab_content .deck .emoji_asset.new[style]{transform: scale(2.5); -webkit-transform: scale(2.5); animation: 1s popup-asset1 linear 0s 1; }
 emojis .tab_content .deck .emoji_asset[style=""]{animation: 0.2s popup-asset2 linear 0s 1;}
 
 body[bingo="notify"] form.message{bottom: 1em;}
@@ -939,7 +963,7 @@ emojis .scroll::-webkit-scrollbar-track {}
 
 
 
-body[swap] #swap{overflow: hidden; overflow-y: scroll; opacity: 1; z-index: 2; pointer-events: initial; transition-duration: 0.2s;}
+body[swap] #swap{overflow: hidden; overflow-y: scroll; opacity: 1; z-index: 2; pointer-events: initial; transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
 body[swap] #swap::-webkit-scrollbar {height: 3px;}
 body[swap] #swap::-webkit-scrollbar-thumb {background-color: #fff;}
 body[swap] #swap::-webkit-scrollbar-track {}
@@ -956,12 +980,12 @@ body[swap] player *{pointer-events: none;}
 player tooltip{position: absolute; overflow: hidden; width: 0; height: 0; left: -6.3em; top: -8em; white-space: nowrap; pointer-events: none;}
 player tooltip.on{width: auto; height: auto; overflow: visible;}
 player tooltip ul{}
-player tooltip a{opacity: 0; transition-duration: 0.3s; cursor: pointer;  pointer-events: initial;}
+player tooltip a{opacity: 0; transition-duration: 0.3s; -webkit-transition-duration: 0.3s; cursor: pointer;  pointer-events: initial;}
 player tooltip a:after{content: ""; position: absolute; left: 0; bottom: 0.45em; height: 100%; width: 100%; z-index: 1;}
 player tooltip.on a{opacity: 1; z-index: 11;}
 player tooltip li{display: inline-block;}
-player tooltip li:hover a{transform: scale(1.2);}
-player tooltip li a{transform: scale(1.0); transition-duration: 0.2s;}
+player tooltip li:hover a{transform: scale(1.2); -webkit-transform: scale(1.2);}
+player tooltip li a{transform: scale(1.0); -webkit-transform: scale(1.0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
 player tooltip li a.Follow{color:#fff; background-color: #009aff;}
 player[follow="true"] tooltip li a.Follow{text-transform: lowercase;}
 player[follow="true"] tooltip li a.Follow:before{content: "Un"; text-transform: capitalize;}
@@ -977,8 +1001,8 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 /*player[self="true"][team="#blue"] tooltip li a.Flag{background-color: blue; box-shadow: 0 0 2px blue;}*/
 /*player[self="true"][team="#black"] tooltip li a.Flag{background-color: #000; box-shadow: 0 0 2px #000;}*/
 
-#root player[self="true"][team="#black"] a.Flag img{filter: grayscale(100%);}
-#root player[self="true"][team="#blue"] a.Flag img{filter: invert(100%)}
+#root player[self="true"][team="#black"] a.Flag img{filter: grayscale(100%); -webkit-filter: grayscale(100%);}
+#root player[self="true"][team="#blue"] a.Flag img{filter: invert(100%); -webkit-filter: invert(100%)}
 
 
 #root player tooltip li a.Flag:after{top:-10px; bottom: -10px; height: auto;}
@@ -987,7 +1011,7 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 #root player tooltip li a.Flag *{ pointer-events: none}
 #root player tooltip li a.Flag .cnt{top: 14px; font-size: 16px;}
 
-#root player tooltip li a.Flag img{width: 48px; filter: drop-shadow(0 1px 2px #000); transform: scale(1.5);}
+#root player tooltip li a.Flag img{width: 48px; filter: drop-shadow(0 1px 2px #000); -webkit-filter: drop-shadow(0 1px 2px #000); transform: scale(1.5); -webkit-transform: scale(1.5);}
 
 
 body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="😎"]{display: none;}
@@ -1013,7 +1037,7 @@ body[dice="3"] #root player tooltip li a,
 body[dice="4"] #root player tooltip li a,
 body[dice="5"] #root player tooltip li a,
 body[dice="6"] #root player tooltip li a,
-body[dice="10"] #root player tooltip li a{pointer-events: none;}
+body[dice="10"] #root player tooltip li a{pointer-events: none !important;}
 
 #root player tooltip #dice{overflow: hidden; position: absolute; top: -1.5em; left: 0.05em; width: 94%; height: 94%;}
 #root player tooltip #dice .num{}
@@ -1060,7 +1084,7 @@ table{border-spacing:0px;border-collapse:collapse;}
 
 
 
-#root emoji{position: relative; left: -64px; top: -6vh; display: block; cursor: pointer; transition-duration: 0.2s}
+#root emoji{position: relative; left: -64px; top: -6vh; display: block; cursor: pointer; transition-duration: 0.2s; -webkit-transition-duration: 0.2s}
 #root emoji:after{content:""; position: absolute; left: 0; width: 0; top: 0; z-index: 2;}
 #root .emoji{position: relative; display: block; left: 0; width: 0; z-index: -1;}
 
@@ -1080,7 +1104,7 @@ table{border-spacing:0px;border-collapse:collapse;}
 
 body #root .emoji .address{display: none;}
 #root .emoji .address,
-#root .emoji picture *{position: relative; display: block; width: 18vh; height: auto; transition-duration: 0.2s; filter: drop-shadow(0 1px 2px #000); opacity: 0.9}
+#root .emoji picture *{position: relative; display: block; width: 18vh; height: auto; transition-duration: 0.2s; -webkit-transition-duration: 0.2s; filter: drop-shadow(0 1px 2px #000); -webkit-filter: drop-shadow(0 1px 2px #000); opacity: 0.9}
 #root .emoji picture source{display: none;}
 /*{pointer-events: none}*/
 
@@ -1121,13 +1145,13 @@ body[media="audio"] #root player .emoji.getUserMedia picture,
 #root player stream a.screen.mic{left: 0; top: -40px;}
 #root player stream a.screen.volume{left: 0; bottom: -40px;}
 
-#root player stream.cast{position: absolute; top: -120px; left: -25px; display: block; max-width: inherit; min-width: inherit; min-height: inherit; width: 155px; transition-duration: 0.5s; z-index: 3;}
+#root player stream.cast{position: absolute; top: -120px; left: -25px; display: block; max-width: inherit; min-width: inherit; min-height: inherit; width: 155px; transition-duration: 0.5s; -webkit-transition-duration: 0.5s; z-index: 3;}
 #root player stream.cast video{overflow: hidden; width: 100%; border-radius: 5px;}
 
 
 #root player stream.videocam{position: relative; display: block; z-index: 2;}
 #root player stream.videocam,
-#root player .emoji>.plyr{position: relative; overflow: hidden; max-width: inherit; min-width: inherit; min-height: inherit; width:18vh; height:18vh; border:3px solid #fff; border-radius: 50%; transition-duration: 0.5s; z-index: 1;}
+#root player .emoji>.plyr{position: relative; overflow: hidden; max-width: inherit; min-width: inherit; min-height: inherit; width:18vh; height:18vh; border:3px solid #fff; border-radius: 50%; transition-duration: 0.5s; -webkit-transition-duration: 0.5s; z-index: 1;}
 
 #root player video{display: block; width: 100%; height: 100%; background-color: #000;}
 
@@ -1137,7 +1161,7 @@ body[media="audio"] #root player .emoji.getUserMedia picture,
 
 #root player stream.videocam video,
 #root player .emoji>.plyr .plyr__poster,
-#root player .emoji>.plyr .plyr__video-embed iframe{transform:scale(2);}
+#root player .emoji>.plyr .plyr__video-embed iframe{transform:scale(2); -webkit-transform:scale(2);}
 
 
 .main{padding: 1em;}
@@ -1164,10 +1188,10 @@ body[media="audio"] #root player .emoji.getUserMedia picture,
 .main oauth .tb{width: 100%; height: 100%;}
 .main oauth .tc{text-align:center; vertical-align:middle;}
 
-.main oauth forms:after{content:"";position: fixed;left: -3em;right: -3em; top: -2em;bottom: -10em;z-index: -1;background-color: rgba(255,255,255,0.0);transition-duration: 0.5s;}
+.main oauth forms:after{content:"";position: fixed;left: -3em;right: -3em; top: -2em;bottom: -10em;z-index: -1;background-color: rgba(255,255,255,0.0); transition-duration: 0.5s; -webkit-transition-duration: 0.5s;}
 /*.main oauth .items>ul{position: relative; opacity: 0; z-index: -1;}*/
 .main oauth .items{position: relative; margin: 0 auto; max-width: 320px;}
-.main oauth forms.loading:after{z-index: 10; background-color: rgba(255,255,255,0.9); backdrop-filter: blur(5px);}
+.main oauth forms.loading:after{z-index: 10; background-color: rgba(255,255,255,0.9); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);}
 .main oauth .items>ul li+li{margin-top: 15px;}
 
 .main oauth a[href*="Kakao"]{display: block;padding: 20px;border-radius:5px;font-size: 20px;line-height: 25px;font-weight: bold;color: #000;background: #FEE500;}
@@ -1184,7 +1208,7 @@ body[media="audio"] #root player .emoji.getUserMedia picture,
 .main oauth a[href*="apple"]{background-color: #000; color:#fff;}
 
 
-forms .msg{position: absolute; opacity: 0; left: 0; right: 0; top: 0; bottom: 0; z-index: -1; transition-duration: 1s; background: #fff;}
+forms .msg{position: absolute; opacity: 0; left: 0; right: 0; top: 0; bottom: 0; z-index: -1; transition-duration: 1s; -webkit-transition-duration: 1s; background: #fff;}
 forms .msg .icon{font-family: xeicon; font-size: 80px; margin-bottom: 30px;}
 forms .tb{width: 100%; height: 100%;}
 forms .tc{text-align: center; vertical-align: middle;}
@@ -1196,7 +1220,7 @@ forms.complete strong:after{content:"인증이 완료되었습니다"; font-size
 .main oauth forms.complete .tutorial{opacity: 0}
 
 
-.lds-ring{position: absolute; left: 0;right: 0;top: 0;bottom: 0; margin:auto; width: 80px; height: 80px; opacity: 0; z-index: -1; transition-duration: 0.5s;}
+.lds-ring{position: absolute; left: 0;right: 0;top: 0;bottom: 0; margin:auto; width: 80px; height: 80px; opacity: 0; z-index: -1; transition-duration: 0.5s; -webkit-transition-duration: 0.5s;}
 
 .loading .lds-ring {
 	z-index: 11;
@@ -1226,14 +1250,16 @@ forms.complete strong:after{content:"인증이 완료되었습니다"; font-size
 @keyframes lds-ring {
 	0% {
 		transform: rotate(0deg);
+		-webkit-transform: rotate(0deg);
 	}
 	100% {
 		transform: rotate(360deg);
+		-webkit-transform: rotate(360deg);
 	}
 }
 
 #root canvas[data-engine],
-#root player{user-select: none; opacity: 1; transition:opacity 0.5s 0.5s;}
+#root player{user-select: none; opacity: 1; transition:opacity 0.5s 0.5s; -webkit-transition:opacity 0.5s 0.5s;}
 body[zoom="10"] #root player{pointer-events: none;}
 body[chat][bingo] #root canvas[data-engine],
 body[chat][bingo] #root player{opacity: 1 !important}
@@ -1243,7 +1269,7 @@ body[chat][bingo="dialog"] emojis .scroll .deck>div{display: none;}
 body[chat][bingo="dialog"] emojis .scroll .deck>.emojis{display: block;}
 
 body[bingo] #root canvas[data-engine],
-body[bingo] #root player{opacity: 0.5 !important; transition-delay: 0s}
+body[bingo] #root player{opacity: 0.5 !important; transition-delay: 0s; -webkit-transition-delay: 0s;}
 body[bingo] #root player[self="true"]{opacity: 1;}
 /*body[bingo="dialog"] emojis{display: none;}*/
 
@@ -1279,7 +1305,7 @@ oauth .tutorial .tc{padding-bottom: 56px;}
 oauth .tutorial .steps{position: absolute; left: 0;right: 0;top: 0;bottom: 0;}
 oauth .tutorial ul,
 oauth .tutorial li{position: relative; min-width: 100%; height: 100%;}
-oauth .tutorial li .context *{opacity: 0.4; transition-duration: 0.5s;}
+oauth .tutorial li .context *{opacity: 0.4; transition-duration: 0.5s; -webkit-transition-duration: 0.5s;}
 oauth .tutorial li .context .tit{margin: 1em}
 oauth .tutorial li[aria-hidden="false"] .context *{opacity: 1;}
 
@@ -1315,7 +1341,7 @@ body.loading:before{padding: 3em;}
 
 html[user-agent] body.loading:before{padding: 0 !important; pointer-events: initial;}
 body[referer]:before{display: none;}
-html[user-agent] body:before{content: ""; position: fixed; padding: 50vw; border:50vh solid #000; border-radius: 50%; width: 0; height: 0; margin: auto; left: 0; right: 0; top: 0; bottom: 0; z-index: 1; transition-duration: 1.5s; transform: scale(4); pointer-events:none;}
+html[user-agent] body:before{content: ""; position: fixed; padding: 50vw; border:50vh solid #000; border-radius: 50%; width: 0; height: 0; margin: auto; left: 0; right: 0; top: 0; bottom: 0; z-index: 1; transition-duration: 1.5s; -webkit-transition-duration: 1.5s; transform: scale(4); -webkit-transform: scale(4); pointer-events:none;}
 
 html[user-agent] body[axis="x"]:before{padding: 50vw; border:50vh solid #000;}
 html[user-agent] body[axis="y"]:before{padding: 50vh; border:50vw solid #000;}
@@ -1330,7 +1356,7 @@ body.loading a[href="/login/"]{display: none;}
 body.loading #root player,
 /*body.loading #intro .snb,*/
 /*body.loading #intro .notice,*/
-body.loading emojis{opacity: 0; transition-delay: 0; transition-duration: 0s;}
+body.loading emojis{opacity: 0; transition-delay: 0; transition-duration: 0s; -webkit-transition-delay: 0; -webkit-transition-duration: 0s;}
 body.loading .aside emojis{display: none;}
 body.loading #intro{opacity: 1;}
 
@@ -1342,7 +1368,7 @@ body[team] #intro{opacity: 0; pointer-events: none;}
 /*body.paging #intro{opacity: 0; transition-duration: 0.5s; transition-delay: 0s;}*/
 
 
-#intro{position: fixed; left: 0; right: 0; top: 0; bottom: 0; opacity: 1; transition-duration: 0s; transition-delay: 0s; z-index: 10; overflow: hidden; overflow-y: scroll;}
+#intro{position: absolute; left: 0; right: 0; top: 0; width: 100vw; height: 100vh; opacity: 1; transition-duration: 0s; transition-delay: 0s; -webkit-transition-duration: 0s; -webkit-transition-delay: 0s; z-index: 10; overflow: hidden; overflow-y: scroll;}
 #intro .tb{width: 100%; height: 100%; z-index: 3;}
 #intro .tc{padding: 2em; text-align: center; vertical-align: middle;}
 
@@ -1558,11 +1584,12 @@ body[tutorial] .layer.on+.aside .area{display: block;}
 	overflow: hidden;
 	z-index: -1;
 	transform:scale(1.5);
+	-webkit-transform:scale(1.5);
 	zoom:0.7;
 }
 body[axis="x"] .bg{width: 100vh; height: 100vh;}
 body[axis="y"] .bg{width: 100vw; height: 100vw;}
-#intro .bg{position: fixed; left: 0; right: 0; top: 0; bottom: 0; margin: auto; transform: scale(1.7);}
+#intro .bg{position: fixed; left: 0; right: 0; top: 0; bottom: 0; margin: auto; transform: scale(1.7); -webkit-transform: scale(1.7);}
 .constelacao {
 	position: absolute;
 	margin: auto;
@@ -1585,6 +1612,7 @@ body[axis="y"] .bg{width: 100vw; height: 100vw;}
 	animation-timing-function: linear;
 	animation-iteration-count: infinite;
 	transform: scale(0.3);
+	-webkit-transform: scale(0.3);
 }
 
 .estrela.style1 { animation-duration: 0.5s; animation-name: estrela; }
