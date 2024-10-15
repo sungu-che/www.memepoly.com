@@ -10,7 +10,7 @@
 #gtx-trans{display: none;}
 *{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000; }
 *::selection{background-color: inherit; color:inherit;}
-#root {position: absolute; left: 0; top: 0; width: 100vw; height: 100vh;}
+#root {position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 0;}
 
 /*body{background-color: #fff !important;}*/
 
