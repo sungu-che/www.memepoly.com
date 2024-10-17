@@ -2346,6 +2346,8 @@ OAuth3.on("ready", function(e){
 														$el
 															.removeClass("new")
 															.attr("style", "")
+
+														$('html,body').scrollTop(0)
 													},100, $(this))
 												})
 										}

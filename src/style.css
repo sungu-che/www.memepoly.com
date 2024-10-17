@@ -1,12 +1,13 @@
 @charset "utf-8";
 
+
 @import url('https://fonts.googleapis.com/earlyaccess/notosanskr.css');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@700&display=fallback');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
-@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=fallback');
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=block');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@700&display=fallback');
 
 #gtx-trans{display: none;}
-*{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000; }
+*{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000;}
 *::selection{background-color: inherit; color:inherit;}
 #root {position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 0;}
 
@@ -30,13 +31,13 @@
 #map .map canvas{display: none;}
 
 
-body[team="#blue"] #map maker{filter: invert(100%); -webkit-filter: invert(100%)}
+body[team="#blue"] #map maker{filter: invert(100%); -webkit-filter: invert(100%);}
 
 #map .config{display: none;}
 
-#map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji', sans-serif; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 2; transform: rotate(-45deg); -webkit-transform: rotate(-45deg);}
+#map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji', sans-serif; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 2; transform: rotate(-45deg); -webkit-transform: rotate(-45deg); -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
 #map flags{position: absolute; left: 0; top: 0; width: 100%; height: 100%;}
-#map flags .flag{position: absolute;margin-top: 100px; width: 200px; height: 200px; z-index: 1; transform: rotate(-45deg); -webkit-transform: rotate(-45deg)}
+#map flags .flag{position: absolute;margin-top: 100px; width: 200px; height: 200px; z-index: 1; transform: rotate(-45deg); -webkit-transform: rotate(-45deg); -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
 #map flags .flag.red{}
 #map flags .flag.blue{filter: invert(100%); -webkit-filter: invert(100%)}
 #map flags .flag .tb{width: 100%; height: 100%;}
@@ -710,46 +711,35 @@ emojis .scroll{overflow: hidden; overflow-x:scroll; width: 100%; -webkit-overflo
 
 emojis .scroll .deck>div ul{display: inline;}
 emojis .scroll .deck .emojis>.emoji_asset.items:after{display: none;}
-emojis .scroll .deck .emojis>.emoji_asset.items{display: inline; padding: 0; width: auto;}
-emojis .scroll .deck .emojis>.emoji_asset.items .emoji{color: #fff;}
+emojis .scroll .deck .emojis>.emoji_asset.items{display: inline; padding: 0; width: auto; top: -1px;}
+emojis .scroll .deck .emojis>.emoji_asset.items .emoji{color: #fff; -webkit-transform-style: preserve-3d;  -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
 emojis .scroll .deck .emojis>.emoji_asset:last-child{margin-right: 2%}
-/*emojis .scroll .deck>div[method="chat"]{display: block; position: absolute; left: 1em; top: 1em; padding-left: 0;}*/
-
-/*.aside.more emojis .scroll .deck>div[method="chat"]{left: 0.5em;}*/
 
 emojis .emojis_filter.scroll{display: none;}
 
 emojis .deck{position: relative; margin: auto; max-width:600px; text-align: left; white-space: nowrap;}
 
-emojis .tab_content .deck{padding: 1em 1.5em 0 0.3em; min-height: 65px;  z-index: 1;}
+emojis .tab_content .deck{padding: 1em 1.5em 0 0.3em; min-height: 65px; z-index: 1;}
 emojis .tab_content .deck .emoji_asset:empty{display: none;}
 
 emojis .tab_content .deck .emoji_asset.on .emoji{ filter: drop-shadow(0 0 6px #fde030); -webkit-filter: drop-shadow(0 0 6px #fde030);}
 
 emojis .tab_content .deck .emoji_asset[method="inventory"] a{font-size: 2.7em; font-family: 'Noto Color Emoji', sans-serif;}
 
-/*emojis .tab_content .deck .emoji_asset[type="reward"][balance="0"],*/
-/*emojis .tab_content .deck .emoji_asset[method="open"] .cnt{display: none;}*/
-emojis .tab_content .deck .emoji_asset{position: relative; display: inline-block; padding: 0.5em; width: 50px; height: 56px; cursor: pointer; transform: scale(1.0); -webkit-transform: scale(1.0); transition: transform 0.15s; -webkit-transition: transform 0.15s; pointer-events: initial;}
+emojis .tab_content .deck .emoji_asset{position: relative; display: inline-block; padding: 0.5em; width: 50px; height: 56px; cursor: pointer; pointer-events: initial;}
 emojis .tab_content .deck .emoji_asset:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 3;}
-emojis .tab_content .deck .emoji_asset>a{position: relative; display: inline-block; margin: auto; width: 53px; height: 43px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0); -webkit-transform: scale(1.0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
-body[mobile="ios"] emojis .tab_content .deck .emoji_asset>a{font-family: sans-serif;}
+emojis .tab_content .deck .emoji_asset>a{position: relative; display: inline-block; margin: auto; width: 53px; height: 53px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0) translateZ(0); -webkit-transform: scale(1.0) translateZ(0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s; -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
+/*body[mobile="ios"] emojis .tab_content .deck .emoji_asset>a{font-family: sans-serif;}*/
 
-emojis .tab_content .deck .emoji_asset:hover>a{transform: scale(1.2); -webkit-transform: scale(1.2);}
+emojis .tab_content .deck .emoji_asset:hover>a{transform: scale(1.2) translateZ(0); -webkit-transform: scale(1.2) translateZ(0); -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;}
 
 body[emoji="😎"] #root player tooltip li a.emoji.Meta i,
-body[emoji="😎"] emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{filter: invert(100%) grayscale(1); -webkit-filter: invert(100%) grayscale(1); text-shadow: 0 0 5px #fff}
+body[emoji="😎"] emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{filter: invert(100%) grayscale(1); -webkit-filter: invert(100%) grayscale(1); text-shadow: 0 0 5px #fff; -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;}
 
-body[emoji="😎"][biome="BEACH"] #root player tooltip li a.emoji.Meta i{filter: none; -webkit-filter: none;}
+body[emoji="😎"][biome="BEACH"] #root player tooltip li a.emoji.Meta i{filter: none; -webkit-filter: none; -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;}
 
-/*emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{font-size: 3.85em; top: -17px; left: -5px;}*/
-emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{top: -9px; transform: scale(1.3); -webkit-transform: scale(1.3);}
-emojis .tab_content .deck .emoji_asset[emoji="💣"]:hover>a{transform: scale(1.5); -webkit-transform: scale(1.5);}
-
-/*{filter: grayscale(1);}*/
-emojis .tab_content .deck .emoji_asset[method="recommand"] a{text-shadow: 0 0 0 #ffffff; animation: recommand 2s cubic-bezier(0.5, 0, 0.5, 1) infinite;}
-
-/*emojis .deck .emoji_asset[emoji="mic"]{display: none;}*/
+emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{top: -8px; transform: scale(1.3) translateZ(0); -webkit-transform: scale(1.3) translateZ(0); -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;}
+emojis .tab_content .deck .emoji_asset[emoji="💣"]:hover>a{transform: scale(1.5) translateZ(0); -webkit-transform: scale(1.5) translateZ(0); -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;}
 
 @keyframes recommand {
 	0% {
@@ -767,39 +757,47 @@ emojis .tab_content .deck .emoji_asset[method="recommand"] a{text-shadow: 0 0 0 
 
 @keyframes popup-asset1 {
 	0% {
-		transform: rotate(-15deg) scale(3.0);
-		-webkit-transform: rotate(-15deg) scale(3.0);
+		transform: rotate(-15deg) scale(3.0) translateZ(0);
+		-webkit-transform: rotate(-15deg) scale(3.0) translateZ(0);
+		-webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;
 	}
 	33% {
-		transform: rotate(-10deg) scale(2.5);
-		-webkit-transform: rotate(-10deg) scale(2.5);
+		transform: rotate(-10deg) scale(2.5) translateZ(0);
+		-webkit-transform: rotate(-10deg) scale(2.5) translateZ(0);
+		-webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;
 	}
 	66% {
-		transform: rotate(-5deg) scale(1.5);
-		-webkit-transform: rotate(-5deg) scale(1.5);
+		transform: rotate(-5deg) scale(1.5) translateZ(0);
+		-webkit-transform: rotate(-5deg) scale(1.5) translateZ(0);
+		-webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;
 	}
 	100% {
-		transform: rotate(0deg) scale(1.0);
-		-webkit-transform: rotate(0deg) scale(1.0);
+		transform: rotate(0deg) scale(1.0) translateZ(0);
+		-webkit-transform: rotate(0deg) scale(1.0) translateZ(0);
+		-webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;
 	}
 }
 
 @keyframes popup-asset2 {
 	0% {
-		transform: scale(1.0, 1.0);
-		-webkit-transform: scale(1.0, 1.0);
+		transform: scale(1.0, 1.0) translateZ(0);
+		-webkit-transform: scale(1.0, 1.0) translateZ(0);
+		-webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;
 	}
 	33% {
-		transform: scale(1.3, 1.0);
-		-webkit-transform: scale(1.3, 1.0);
+		transform: scale(1.3, 1.0) translateZ(0);
+		-webkit-transform: scale(1.3, 1.0) translateZ(0);
+		-webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;
 	}
 	66% {
-		transform: scale(1.0, 1.3);
-		-webkit-transform: scale(1.0, 1.3);
+		transform: scale(1.0, 1.3) translateZ(0);
+		-webkit-transform: scale(1.0, 1.3) translateZ(0);
+		-webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;
 	}
 	100% {
-		transform: scale(1.0, 1.0);
-		-webkit-transform: scale(1.0, 1.0);
+		transform: scale(1.0, 1.0) translateZ(0);
+		-webkit-transform: scale(1.0, 1.0) translateZ(0);
+		-webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;
 	}
 }
 
@@ -946,13 +944,13 @@ emojis .tab_content .deck .emoji_asset[method="notify"] a,
 emojis .tab_content .deck .emoji_asset[method="chat"] a,
 emojis .tab_content .deck .emoji_asset[method="getUserMedia"] a,
 emojis .tab_content .deck .emoji_asset[method="getDisplayMedia"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-weight: bold; color: #422b0d; font-size: 22px; font-family: 'Material Symbols Outlined'; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
-emojis .tab_content .deck .emoji_asset[method="chat"] a{display: inline-block; top: -3px; line-height: 46px;}
+emojis .tab_content .deck .emoji_asset[method="chat"] a{display: inline-block; top: -2px; line-height: 46px;}
 
 
 emojis .tab_content .deck .emoji_asset>a[type="emoji"]{text-shadow: 0 0 4px #000}
 
 emojis .tab_content .deck .emoji_asset[emoji=notifications]>a,
-emojis .tab_content .deck .emoji_asset[method="chat"]>a{text-shadow:none; box-shadow: 0 0 4px 0px #000000, inset 0 0 7px 1px #eb8f00;}
+emojis .tab_content .deck .emoji_asset[method="chat"]>a{text-shadow:none; box-shadow: 0 0 1px 0px #000000, inset 0 0 7px 1px #eb8f00;}
 
 /*emojis .tab_content .deck .emoji_asset[method="notify"]{display: none;}*/
 
@@ -992,8 +990,8 @@ player tooltip a{opacity: 0; transition-duration: 0.3s; -webkit-transition-durat
 player tooltip a:after{content: ""; position: absolute; left: 0; bottom: 0; height: 100%; width: 100%; z-index: 1;}
 player tooltip.on a{opacity: 1; z-index: 11;}
 player tooltip li{display: inline-block;}
-player tooltip li:hover a{transform: scale(1.2); -webkit-transform: scale(1.2);}
-player tooltip li a{transform: scale(1.0); -webkit-transform: scale(1.0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
+player tooltip li:hover a{transform: scale(1.2); -webkit-transform: scale(1.2); -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden;}
+player tooltip li a{transform: scale(1.0); -webkit-transform: scale(1.0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s; -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
 player tooltip li a.Follow{color:#fff; background-color: #009aff;}
 player[follow="true"] tooltip li a.Follow{text-transform: lowercase;}
 player[follow="true"] tooltip li a.Follow:before{content: "Un"; text-transform: capitalize;}
@@ -1056,25 +1054,25 @@ body[dice="5"] #root player tooltip li a,
 body[dice="6"] #root player tooltip li a,
 body[dice="10"] #root player tooltip li a{pointer-events: none !important;}*/
 
-#root player tooltip #dice{overflow: hidden; position: absolute; top: -1px; left: -1px; width: 100%; height: 100%;}
+#root player tooltip #dice{overflow: hidden; position: absolute; top: 3px; left: 0; bottom: 2px; width: 100%;}
 #root player tooltip #dice .num{}
 #root player tooltip .slot-machine{display: none;}
 
 #root player tooltip li a.emoji.Meta{opacity: 0; pointer-events: none;}
-#root player tooltip li a.emoji.Meta i{display: block; font-size: 1em; width: 100%; height: 49px; background: url(/src/fonts/emoji/emoji_u1f4a3.png) no-repeat; background-size: cover;}
-/*#root player tooltip li a.emoji.Meta i:after{content: "💣"; position: relative; left: -5px; top: -16px; display: inline; font-size: 1.35em;}*/
+#root player tooltip li a.emoji.Meta i{display: block; font-size: 1em; width: 100%;}
+#root player tooltip li a.emoji.Meta i:after{content: "💣"; position: relative; left: -5px; top: -16px; display: block; height: 49px; font-size: 1.35em;}
 #root player[self="true"] tooltip li a.emoji.Meta{opacity: 1; pointer-events: initial; font-family: 'Noto Sans KR', sans-serif;}
 
-/*body[biome="BEACH"] #root player tooltip li a.emoji.Meta i:after{content: "🎲"; position: static; font-size: 1em; font-display: fallback}*/
-body[biome="BEACH"] #root player tooltip li a.emoji.Meta i{position: static; font-size: 1em; background-image: url(/src/fonts/emoji/emoji_u1f3b2.png);}
+body[biome="BEACH"] #root player tooltip li a.emoji.Meta i:after{content: "🎲"; position: static; font-size: 1em;}
+body[biome="BEACH"] #root player tooltip li a.emoji.Meta i{position: static; font-size: 1em;}
 body[biome="BEACH"] #root player tooltip .slot-machine {display: block; position: relative;}
-body[biome="BEACH"] #root player tooltip .slotwrapper {position: absolute; left: 2px; top: 2px; bottom: 2px; overflow: hidden; width: 46px;  text-align: center;}
+body[biome="BEACH"] #root player tooltip .slotwrapper {position: absolute; left: 0; top: -1px; bottom: 0; overflow: hidden; width: 100%; text-align: center;}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul[style]{opacity: 1}
-body[biome="BEACH"] #root player tooltip .slotwrapper > ul {padding: 0; margin: 0; list-style: none; position: relative; font-size: 2em; line-height: 200px; opacity: 0}
+body[biome="BEACH"] #root player tooltip .slotwrapper > ul {padding: 0; margin: 0; list-style: none; position: relative; left: 2px; font-size: 2em; line-height: 200px; opacity: 0}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul > li {display: block; margin: 0; padding: 0; line-height: 44px; font-size: 1em; font-weight: 900; color: #ffffff;}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul[style] > li{opacity: 1}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul[style]+.num{opacity: 0;}
-body[biome="BEACH"] #root player tooltip .slotwrapper .num{position: absolute; left: 0; right: 0; top: 0; line-height: 44px; font-size: 2em; font-weight: 900; color: #ffffff;}
+body[biome="BEACH"] #root player tooltip .slotwrapper .num{position: absolute; left: 4px; right: 0; top: 0; line-height: 44px; font-size: 2em; font-weight: 900; color: #ffffff;}
 
 
 #root player tooltip li a.Report{top: 15px;}
@@ -1102,8 +1100,9 @@ table{border-spacing:0px;border-collapse:collapse;}
 
 
 
-#root emoji{position: relative; left: -64px; top: -6vh; display: block; cursor: pointer; transition-duration: 0.2s; -webkit-transition-duration: 0.2s}
+#root emoji{position: relative; left: -64px; top: -6vh; display: block; cursor: pointer; transition-duration: 0.2s; -webkit-transition-duration: 0.2s; -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
 #root emoji:after{content:""; position: absolute; left: 0; width: 0; top: 0; z-index: 2;}
+#root player[type="text"] i{-webkit-transition-duration: 0.2s; -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
 #root .emoji{position: relative; display: block; left: 0; width: 0; z-index: -1;}
 
 #root player[type="text"] .plyr,
