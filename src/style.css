@@ -1,16 +1,14 @@
 @charset "utf-8";
 
-
-
-@import url('//fonts.googleapis.com/earlyaccess/notosanskr.css');
-@import url('//fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@700&display=swap');
-@import url('//fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
-@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap');
+@import url('https://fonts.googleapis.com/earlyaccess/notosanskr.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@700&display=fallback');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=fallback');
 
 #gtx-trans{display: none;}
 *{ margin: 0; padding: 0; border: 0; line-height: 1; text-decoration:none; list-style:none; font-style:normal; font-size:14px; font-family: 'Noto Sans KR', sans-serif; color: #000; }
 *::selection{background-color: inherit; color:inherit;}
-#root {position: absolute; left: 0; top: 0; width: 100vw; height: 100vh;}
+#root {position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 0;}
 
 /*body{background-color: #fff !important;}*/
 
@@ -36,7 +34,7 @@ body[team="#blue"] #map maker{filter: invert(100%); -webkit-filter: invert(100%)
 
 #map .config{display: none;}
 
-#map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji'; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 2; transform: rotate(-45deg); -webkit-transform: rotate(-45deg);}
+#map maker{position: absolute; left: 50%; top: 50%; font-family: 'Noto Color Emoji', sans-serif; margin: -15px 0 0 -15px; text-align: center; width: 30px; height: 30px; line-height: 30px; z-index: 2; transform: rotate(-45deg); -webkit-transform: rotate(-45deg);}
 #map flags{position: absolute; left: 0; top: 0; width: 100%; height: 100%;}
 #map flags .flag{position: absolute;margin-top: 100px; width: 200px; height: 200px; z-index: 1; transform: rotate(-45deg); -webkit-transform: rotate(-45deg)}
 #map flags .flag.red{}
@@ -94,7 +92,7 @@ body[zoom="10"] .plyr--video .plyr__controls{display: none;}
 [data-plyr="play"]{display: none;}
 
 .emoji{font-weight: 400;font-family: 'Noto Emoji', sans-serif;text-align: center;}
-.emoji.color{font-family: 'Noto Color Emoji'}
+.emoji.color{font-family: 'Noto Color Emoji', sans-serif;}
 
 
 .tb{position:relative; display:table; width: 100%;}
@@ -197,7 +195,7 @@ body .layer form[name="Tutorial"] .index select option{background-color: #fff;}
 
 #header .balance span.on { animation: 0.5s balance linear 0s 1; }
 #header .balance span{display: block; line-height: 27px; font-size: 1em; font-weight: bold; color: #fff; text-shadow: 0 0 2px black; transform: scale(1.0, 1.0); -webkit-transform: scale(1.0, 1.0); transition-duration: 0.5s; -webkit-transition-duration: 0.5s;}
-/*.react .state .balance span:not(:empty):before{content: "📦"; display: inline; margin-right: 5px; font-family: 'Noto Color Emoji'}*/
+/*.react .state .balance span:not(:empty):before{content: "📦"; display: inline; margin-right: 5px; font-family: 'Noto Color Emoji', sans-serif;}*/
 
 #go{position: fixed; display: none; right: 1em; top: 1em; margin: 0 auto; border: 1px solid #000; border-radius: 1em; min-width: 100px; font-size: 10px; height: 4em; line-height: 4em; background-color: #fde030; font-weight: 900; cursor: pointer; font-weight: bold; text-transform: uppercase; text-decoration: underline; background-color: #fde030; z-index: 999999999;}
 #go[href]{display: block;}
@@ -506,7 +504,7 @@ messages li items item[disabled] span{position: absolute; left: 0; right: 0; top
 body[tutorial] form.message{bottom: 6.5em;}*/
 
 form.message fieldset{position: absolute; left: 0; right: 5em; top: 0; bottom: 0;}
-form.message a.close{position: absolute; right: 0; top: 0; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji'; box-shadow: 0 0 4px #000; background: #000000d6; cursor: pointer; pointer-events: initial;}
+form.message a.close{position: absolute; right: 0; top: 0; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji', sans-serif; box-shadow: 0 0 4px #000; background: #000000d6; cursor: pointer; pointer-events: initial;}
 
 form.message input[type="submit"]{position: absolute; right: 0; width: 2em; height: 100%; font-family: 'Material Symbols Outlined'; background: transparent; font-size: 1.6em; cursor: pointer; pointer-events: initial;}
 
@@ -530,8 +528,8 @@ form.message input[name="message"]::selection{background-color: #fde030;}
 #localVideo{position: absolute; width: 250px; height: 170px; left: 20px; top: 20px; object-fit: cover; background-color: #000;}
 #remoteVideo{position: absolute; width: 250px; height: 170px; left: 280px; top: 20px; object-fit: cover; background-color: #000;}
 
-.aside{pointer-events: none;}
-.aside:after{content: ""; position: fixed; left: 0; right: 0; bottom: 0; z-index: 0; box-shadow: 0 0 200px 80px #000; transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
+/*.aside{pointer-events: none;}*/
+/*.aside:after{content: ""; position: fixed; left: 0; right: 0; bottom: 0; z-index: 0; box-shadow: 0 0 200px 80px #000; transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}*/
 body[bingo="dialog"] .aside:after{box-shadow: 0 0 200px 200px #000000d0;}
 body[bingo="dialog"] .aside.focus:after{box-shadow: 0 0 200px 300px #000000d0;}
 
@@ -600,6 +598,7 @@ body[zoom="10"] #root player .emoji picture *{width: 6vh;}
 #capture>.rank_toggle>.address>score:before{content: "(";}
 #capture>.rank_toggle>.address>score:after{content: " Cell Open)";}
 
+emojis .deck .emojis{transform: translate3d(0,0,0)}
 emojis .deck .follows ul li,
 emojis .deck .players ul li{display: inline-block;}
 .emoji_asset>img,
@@ -636,7 +635,7 @@ emojis .tab_content .deck .emoji_asset[emoji="notifications"]{display: none;}
 /*body[tutorial] emojis,
 body[address=""] emojis{bottom: 5.5em;}*/
 .aside.more .emojis_filter{top: -3.5em;}
-.emojis_filter{position: absolute; left: 0; right: 0; top: -2.6em; padding: 0 1em; text-align: center; overflow: hidden; overflow-x: scroll;}
+.emojis_filter{position: absolute; left: 0; right: 0; top: -2.6em; padding: 0 1em;  width: 100%; text-align: center; overflow: hidden; overflow-x: scroll; -webkit-overflow-scrolling: touch;}
 .emojis_filter .filter_area{margin: 0 auto; max-width: 600px; text-align: left; white-space: nowrap;}
 .emojis_filter.scroll{height: auto !important}
 .emojis_filter::-webkit-scrollbar {height: 3px;}
@@ -670,7 +669,7 @@ a.back:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom:
 a.back .emoji{font-size: 2em; color:#fff; cursor: pointer;}
 
 
-body[swap] .back{position: absolute; left: 50%; top: 1em; margin-left: 244px; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji'; box-shadow: 0 0 4px #000; background: #000000ee; cursor: pointer; pointer-events: initial; display: block; z-index: 111;}
+body[swap] .back{position: absolute; left: 50%; top: 1em; margin-left: 244px; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji', sans-serif; box-shadow: 0 0 4px #000; background: #000000ee; cursor: pointer; pointer-events: initial; display: block; z-index: 111;}
 body[swap] .back span{text-decoration: none}
 
 #root player.on items{display: block;}
@@ -678,7 +677,7 @@ body[swap] .back span{text-decoration: none}
 #root player items{display: none; position: relative;}
 #root player[type]+items{top: -30px; left:-55px;}
 #root player items .emoji_asset .emoji{font-size: 7.5em}
-#root player i{font-family: "Noto Color Emoji"; text-shadow: 0 0 5px black;}
+#root player i{font-family: "Noto Color Emoji", sans-serif; text-shadow: 0 0 5px black;}
 
 
 
@@ -704,7 +703,7 @@ body[swap] .back span{text-decoration: none}
 .aside.more emojis .tab_content .deck>div{padding-bottom: 1em;}
 
 emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 2; transition-delay: 0.5s; -webkit-transition-delay: 0.5s;}
-emojis .scroll{overflow: hidden; overflow-x:scroll;}
+emojis .scroll{overflow: hidden; overflow-x:scroll; width: 100%; -webkit-overflow-scrolling: touch;}
 
 
 /*emojis .scroll .deck>div.items{position: absolute; opacity: 0}*/
@@ -720,21 +719,22 @@ emojis .scroll .deck .emojis>.emoji_asset:last-child{margin-right: 2%}
 
 emojis .emojis_filter.scroll{display: none;}
 
-emojis .deck{position: relative; margin: auto; max-width:600px; text-align: left; white-space: nowrap; pointer-events: none;}
+emojis .deck{position: relative; margin: auto; max-width:600px; text-align: left; white-space: nowrap;}
 
-emojis .tab_content .deck{padding: 1em 1.5em 0 0.3em; min-height: 70px;  z-index: 1;}
+emojis .tab_content .deck{padding: 1em 1.5em 0 0.3em; min-height: 65px;  z-index: 1;}
 emojis .tab_content .deck .emoji_asset:empty{display: none;}
 
 emojis .tab_content .deck .emoji_asset.on .emoji{ filter: drop-shadow(0 0 6px #fde030); -webkit-filter: drop-shadow(0 0 6px #fde030);}
 
-emojis .tab_content .deck .emoji_asset[method="inventory"] a{font-size: 2.7em; font-family: 'Noto Color Emoji'}
+emojis .tab_content .deck .emoji_asset[method="inventory"] a{font-size: 2.7em; font-family: 'Noto Color Emoji', sans-serif;}
 
 /*emojis .tab_content .deck .emoji_asset[type="reward"][balance="0"],*/
 /*emojis .tab_content .deck .emoji_asset[method="open"] .cnt{display: none;}*/
-emojis .tab_content .deck .emoji_asset{position: relative; display: inline-block; padding: 0.5em; width: 50px; vertical-align: top; cursor: pointer; transform: scale(1.0); -webkit-transform: scale(1.0); transition: transform 0.15s; -webkit-transition: transform 0.15s; pointer-events: initial;}
+emojis .tab_content .deck .emoji_asset{position: relative; display: inline-block; padding: 0.5em; width: 50px; height: 56px; cursor: pointer; transform: scale(1.0); -webkit-transform: scale(1.0); transition: transform 0.15s; -webkit-transition: transform 0.15s; pointer-events: initial;}
 emojis .tab_content .deck .emoji_asset:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 3;}
-emojis .tab_content .deck .emoji_asset>a{position: relative; /*overflow: hidden;*/ display: block; margin: auto; width: 53px; height: 56px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0); -webkit-transform: scale(1.0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
-emojis .tab_content .deck .emoji_asset>a.emoji{top: -3px;}
+emojis .tab_content .deck .emoji_asset>a{position: relative; display: inline-block; margin: auto; width: 53px; height: 43px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0); -webkit-transform: scale(1.0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s;}
+body[mobile="ios"] emojis .tab_content .deck .emoji_asset>a{font-family: sans-serif;}
+
 emojis .tab_content .deck .emoji_asset:hover>a{transform: scale(1.2); -webkit-transform: scale(1.2);}
 
 body[emoji="😎"] #root player tooltip li a.emoji.Meta i,
@@ -742,7 +742,9 @@ body[emoji="😎"] emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{filter
 
 body[emoji="😎"][biome="BEACH"] #root player tooltip li a.emoji.Meta i{filter: none; -webkit-filter: none;}
 
-emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{font-size: 3.85em; top: -17px; left: -5px;}
+/*emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{font-size: 3.85em; top: -17px; left: -5px;}*/
+emojis .tab_content .deck .emoji_asset[emoji="💣"]>a{top: -9px; transform: scale(1.3); -webkit-transform: scale(1.3);}
+emojis .tab_content .deck .emoji_asset[emoji="💣"]:hover>a{transform: scale(1.5); -webkit-transform: scale(1.5);}
 
 /*{filter: grayscale(1);}*/
 emojis .tab_content .deck .emoji_asset[method="recommand"] a{text-shadow: 0 0 0 #ffffff; animation: recommand 2s cubic-bezier(0.5, 0, 0.5, 1) infinite;}
@@ -944,7 +946,13 @@ emojis .tab_content .deck .emoji_asset[method="notify"] a,
 emojis .tab_content .deck .emoji_asset[method="chat"] a,
 emojis .tab_content .deck .emoji_asset[method="getUserMedia"] a,
 emojis .tab_content .deck .emoji_asset[method="getDisplayMedia"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-weight: bold; color: #422b0d; font-size: 22px; font-family: 'Material Symbols Outlined'; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
-emojis .tab_content .deck .emoji_asset[method="chat"] a{line-height: 46px;}
+emojis .tab_content .deck .emoji_asset[method="chat"] a{display: inline-block; top: -3px; line-height: 46px;}
+
+
+emojis .tab_content .deck .emoji_asset>a[type="emoji"]{text-shadow: 0 0 4px #000}
+
+emojis .tab_content .deck .emoji_asset[emoji=notifications]>a,
+emojis .tab_content .deck .emoji_asset[method="chat"]>a{text-shadow:none; box-shadow: 0 0 4px 0px #000000, inset 0 0 7px 1px #eb8f00;}
 
 /*emojis .tab_content .deck .emoji_asset[method="notify"]{display: none;}*/
 
@@ -953,7 +961,7 @@ emojis .tab_content .deck .emoji_asset.on[method] a{box-shadow: none;}
 emojis .tab_content .deck .emoji_asset label{display: block; width: 45px; height: 45px;}
 emojis .tab_content .deck .emoji_asset label canvas{display: block; width: 100%; height: 100%;}
 
-emojis .tab_content .deck .emoji_asset .cnt{position: absolute; right: 0.5em; bottom: 1.2em; font-weight: 900; color:#fff; text-shadow: 0 0 10px #000; -webkit-text-stroke: 0.3px #000;}
+emojis .tab_content .deck .emoji_asset .cnt{position: absolute; right: 0.4em; bottom: 0.4em; font-weight: 900; color:#fff; text-shadow: 0 0 10px #000; -webkit-text-stroke: 0.3px #000;}
 emojis .tab_content .deck .emoji_asset.lounge:before{content: "\40"; display: block; border-radius: 50%; width: 45px; height: 45px; font-size: 3.2em; font-family: "Font Awesome 6 Free"; font-weight: 100; -webkit-text-stroke: 2.5px #fff; color: #000; z-index: 1; background-color: #fff;}
 
 emojis .scroll::-webkit-scrollbar {height: 3px;}
@@ -981,7 +989,7 @@ player tooltip{position: absolute; overflow: hidden; width: 0; height: 0; left: 
 player tooltip.on{width: auto; height: auto; overflow: visible;}
 player tooltip ul{}
 player tooltip a{opacity: 0; transition-duration: 0.3s; -webkit-transition-duration: 0.3s; cursor: pointer;  pointer-events: initial;}
-player tooltip a:after{content: ""; position: absolute; left: 0; bottom: 0.45em; height: 100%; width: 100%; z-index: 1;}
+player tooltip a:after{content: ""; position: absolute; left: 0; bottom: 0; height: 100%; width: 100%; z-index: 1;}
 player tooltip.on a{opacity: 1; z-index: 11;}
 player tooltip li{display: inline-block;}
 player tooltip li:hover a{transform: scale(1.2); -webkit-transform: scale(1.2);}
@@ -1005,11 +1013,15 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 #root player[self="true"][team="#blue"] a.Flag img{filter: invert(100%); -webkit-filter: invert(100%)}
 
 
+
+#root player tooltip li{position: relative;}
 #root player tooltip li a.Flag:after{top:-10px; bottom: -10px; height: auto;}
 #root player tooltip li a.Flag:before{content: "Fire"; position: absolute; left: 0; right: 0; bottom: 6px; z-index: 1; color:#fff;}
-#root player tooltip li a.Flag{overflow: visible; top: 26px; display: inline-block; border:0; width: 49px; height: 47px; line-height: 0; border:none; background-size: cover; box-shadow: none;}
+#root player tooltip li a.Flag{overflow: visible; display: inline-block; border:0; width: 49px; height: 47px; line-height: 0; border:none; background-size: cover; box-shadow: none; opacity: 0; pointer-events: none;}
 #root player tooltip li a.Flag *{ pointer-events: none}
 #root player tooltip li a.Flag .cnt{top: 14px; font-size: 16px;}
+
+#root player[self="true"] tooltip li a.Flag{opacity: 1; pointer-events: initial;}
 
 #root player tooltip li a.Flag img{width: 48px; filter: drop-shadow(0 1px 2px #000); -webkit-filter: drop-shadow(0 1px 2px #000); transform: scale(1.5); -webkit-transform: scale(1.5);}
 
@@ -1021,9 +1033,14 @@ body[biome="BEACH"] emojis .tab_content .deck .emoji_asset[emoji="💣"]{display
 body[field="item"] #root player tooltip li a.Flag,
 body[field="meme"] #root player tooltip li a.Flag{pointer-events: none; opacity: 0.8; text-decoration: line-through;}
 
-#root player tooltip li a.emoji.Balance{top: 20px;}
-#root player tooltip li a.emoji.Balance .cnt{top: -22px; right: -2px; left: 3px; bottom: 19px; border-radius: 50%; line-height: 48px; background: #00000096;}
-#root player tooltip li a.emoji{overflow: visible; display: inline-block; top: -20px; border:0; width: 49px; height: 47px; line-height: 0; box-shadow: none; vertical-align: top; font-size: 3.1em;}
+#root player tooltip>ul>li:first-child{top: 28px;}
+#root player tooltip>ul>li:first-child+li{top: -2.5em;}
+#root player tooltip>ul>li:last-child{top: 0;}
+
+#root player tooltip li a.emoji.Balance i{position: relative; display: block; width: 100%; height: 100%; font-size: 1em; background: url(/src/fonts/emoji/emoji_u1fa99.png) no-repeat; background-size: cover; filter: brightness(0.5); z-index: 0;}
+#root player tooltip li a.emoji.Balance .cnt{top: 0; right: 0; left: 0; bottom: 0; border-radius: 50%; line-height: 46px; color: #fff; font-weight: 900; font-size: 0.35em; text-shadow: none;}
+#root player tooltip li a.emoji{overflow: visible; display: inline-block; border:0; width: 49px; height: 49px; line-height: 1; box-shadow: none; vertical-align: top; font-size: 3.1em;}
+
 
 body[field="❓"][biome="BEACH"] #root player tooltip li a.Flag,
 body[field="❔"][biome="BEACH"] #root player tooltip li a.Flag,
@@ -1031,35 +1048,36 @@ body[dice="10"][biome="BEACH"] #root player tooltip li a.Flag,
 body[dice="0"][biome="BEACH"] #root player tooltip li a.Flag{pointer-events: none; opacity: 0.5;}
 /*body[dice="0"] #root player tooltip .slotwrapper > ul > li {opacity: 0; pointer-events: none;}*/
 
-body[dice="1"] #root player tooltip li a,
+/*body[dice="1"] #root player tooltip li a,
 body[dice="2"] #root player tooltip li a,
 body[dice="3"] #root player tooltip li a,
 body[dice="4"] #root player tooltip li a,
 body[dice="5"] #root player tooltip li a,
 body[dice="6"] #root player tooltip li a,
-body[dice="10"] #root player tooltip li a{pointer-events: none !important;}
+body[dice="10"] #root player tooltip li a{pointer-events: none !important;}*/
 
-#root player tooltip #dice{overflow: hidden; position: absolute; top: -1.5em; left: 0.05em; width: 94%; height: 94%;}
+#root player tooltip #dice{overflow: hidden; position: absolute; top: -1px; left: -1px; width: 100%; height: 100%;}
 #root player tooltip #dice .num{}
 #root player tooltip .slot-machine{display: none;}
 
 #root player tooltip li a.emoji.Meta{opacity: 0; pointer-events: none;}
-#root player tooltip li a.emoji.Meta i{display: block; font-size: 1em; position: relative; top: -21px;}
-#root player tooltip li a.emoji.Meta i:after{content: "💣"; font-size: 1.33em; position: relative; left: -5px; top: -14px;}
-#root player[self="true"] tooltip li a.emoji.Meta{opacity: 1; pointer-events: initial;}
+#root player tooltip li a.emoji.Meta i{display: block; font-size: 1em; width: 100%; height: 49px; background: url(/src/fonts/emoji/emoji_u1f4a3.png) no-repeat; background-size: cover;}
+/*#root player tooltip li a.emoji.Meta i:after{content: "💣"; position: relative; left: -5px; top: -16px; display: inline; font-size: 1.35em;}*/
+#root player[self="true"] tooltip li a.emoji.Meta{opacity: 1; pointer-events: initial; font-family: 'Noto Sans KR', sans-serif;}
 
-body[biome="BEACH"] #root player tooltip li a.emoji.Meta i:after{content: "🎲";  font-size: 1em; left: 0; top: 0;}
-body[biome="BEACH"] #root player tooltip .slot-machine {display: block; position: relative; border: 3px solid #000; border-radius: 50%;}
-body[biome="BEACH"] #root player tooltip .slotwrapper {position: absolute; left: -1px; top: -2px; overflow: hidden; width: 47px; height: 44px; text-align: center;}
+/*body[biome="BEACH"] #root player tooltip li a.emoji.Meta i:after{content: "🎲"; position: static; font-size: 1em; font-display: fallback}*/
+body[biome="BEACH"] #root player tooltip li a.emoji.Meta i{position: static; font-size: 1em; background-image: url(/src/fonts/emoji/emoji_u1f3b2.png);}
+body[biome="BEACH"] #root player tooltip .slot-machine {display: block; position: relative;}
+body[biome="BEACH"] #root player tooltip .slotwrapper {position: absolute; left: 2px; top: 2px; bottom: 2px; overflow: hidden; width: 46px;  text-align: center;}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul[style]{opacity: 1}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul {padding: 0; margin: 0; list-style: none; position: relative; font-size: 2em; line-height: 200px; opacity: 0}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul > li {display: block; margin: 0; padding: 0; line-height: 44px; font-size: 1em; font-weight: 900; color: #ffffff;}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul[style] > li{opacity: 1}
 body[biome="BEACH"] #root player tooltip .slotwrapper > ul[style]+.num{opacity: 0;}
-body[biome="BEACH"] #root player tooltip .slotwrapper .num{position: absolute; left: -1px; right: 0; top: 0; line-height: 44px; font-size: 2em; font-weight: 900; color: #ffffff;}
+body[biome="BEACH"] #root player tooltip .slotwrapper .num{position: absolute; left: 0; right: 0; top: 0; line-height: 44px; font-size: 2em; font-weight: 900; color: #ffffff;}
 
 
-#root player tooltip li a.Report{top: 20px;}
+#root player tooltip li a.Report{top: 15px;}
 
 
 tooltip li+li{margin-left: 14px;}
@@ -1163,7 +1181,7 @@ body[media="audio"] #root player .emoji.getUserMedia picture,
 #root player .emoji>.plyr .plyr__poster,
 #root player .emoji>.plyr .plyr__video-embed iframe{transform:scale(2); -webkit-transform:scale(2);}
 
-
+.wrap.third .main{padding: 0;}
 .main{padding: 1em;}
 .main oauth forms{position: relative; display: block; max-width: 320px; margin: 50px auto 0; padding: 0 2em; box-sizing: border-box;}
 .main oauth forms .title{margin-bottom: 40px; font-size:20px;}
@@ -1561,7 +1579,7 @@ body[tutorial] .layer.on+.aside .area{display: block;}
 .layer form.popup{display: none; position: absolute; bottom: 1em; left: 1em; right: 1em; max-width: 600px; margin: auto; z-index: 1;}
 .layer form.popup.on{display: block;}
 
-.layer form.popup back{position: absolute; right: 0; bottom: 0; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji'; box-shadow: 0 0 4px #000; background: #000000d6; cursor: pointer;}
+.layer form.popup back{position: absolute; right: 0; bottom: 0; border-radius: 1em; width: 56px; height: 56px; line-height: 52px; text-align: center; font-family: 'Noto Color Emoji', sans-serif; box-shadow: 0 0 4px #000; background: #000000d6; cursor: pointer;}
 
 .layer form.popup input[type="hidden"]+.submit{margin-top: 0;}
 .layer form.popup .submit{display: block; margin-top: 1.25em; margin-right: 5em; border: 1px solid #000; border-radius: 1em;}

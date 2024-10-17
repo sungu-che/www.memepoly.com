@@ -76,7 +76,12 @@ export const Experience = () => {
 		var player_hash = cookies.address ? cookies.address : cookies.hash
 		var player = window[player_hash]
 
-		if(!player){
+		if(player){
+			if(window[player_hash].group.current == null && player.position){
+				window[player_hash].group.current = player.position
+
+			}
+		}else{
 			var position
 
 			if(cookies.axis){

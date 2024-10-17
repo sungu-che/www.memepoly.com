@@ -677,6 +677,8 @@ OAuth3.on("ready", function(e){
 		$body.attr("app", OAuth3.isMobile)
 	}
 
+	$body.attr("mobile", OAuth3.isMobile)
+
 	try{
 		var style = ["style1", "style2", "style3", "style4"];
 		var tam = ["tam1", "tam1", "tam1", "tam2", "tam3"];
@@ -1663,6 +1665,94 @@ OAuth3.on("ready", function(e){
 						fields[`${field.x}:${field.z}`] = field
 					})
 
+					if(self_player){
+						var x = self_player.x
+						var z = self_player.z
+
+						var biome = window.map.biomes[x+":"+z]
+
+						if(biome){
+							$body.attr("biome", biome.biome)
+						}
+
+						var field = fields[`${x}:${z}`]
+
+						if(field){
+							$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
+						}else{
+							$body.attr("field", "")
+						}
+
+						var type = window.typeof_emoji(self_player.emoji)
+
+						if(type == "emoji"){
+							$body.attr("emoji",self_player.emoji)
+						}
+
+						if(bombs.length){
+							for(var i = 0; i < bombs.length; i++){
+								var bomb = bombs[i]
+
+								if(bomb){
+									for(var _x = -2; _x < 3; _x++){
+										for(var _z = -2; _z < 3; _z++){
+											if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
+												if(bomb.Flag){
+													delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
+												}else{
+													window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
+												}
+											}
+										}
+									}	
+								}
+							}
+						}
+
+						if(window.assets && !isBiome){
+							biomes.forEach(function(b, i){
+								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+
+								if(
+									(biomes.x - size < b.x && biomes.x + size > b.x) &&
+									(biomes.z - size < b.z && biomes.z + size > b.z) &&
+									!window.map.biomes[_id]
+								){
+									if(Math.random() < 0.1){
+										var _date = new Date(new Date() - time.offset)
+											_date = _date.toISOString()
+												.replace(/T/, ' ')
+												.replace(/\..+/, '')
+
+										var color = window.Biomes["#"+b.biome]
+
+										var emoji = window.Biomes[color]
+
+										if(emoji){
+											window.map.biomes[_id] = {
+												id : _id,
+												hash : cc_address,
+												name : "#"+b.biome,
+												value : "",
+												color: "",
+												x : b.x,
+												y : b.y - 0.5,
+												z : b.z
+											}
+
+											var _row = {
+												Id : _id,
+												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
+											}
+
+											window.map.nonces[_id] = _row
+										}
+									}
+								}
+							})
+						}
+					}
+
 					if(isDice){
 						if(progress.length){
 							progress.before = progress[1]
@@ -1766,8 +1856,6 @@ OAuth3.on("ready", function(e){
 							$balance.addClass("on")
 						}
 					}
-
-					
 		
 					if(rows.length){
 						for(var r = 0; r < rows.length; r++){
@@ -2053,94 +2141,6 @@ OAuth3.on("ready", function(e){
 						_players.push(plant)
 					}
 
-					if(self_player){
-						var x = self_player.x
-						var z = self_player.z
-
-						var biome = window.map.biomes[x+":"+z]
-
-						if(biome){
-							$body.attr("biome", biome.biome)
-
-							var field = fields[`${x}:${z}`]
-
-							if(field){
-								$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
-							}else{
-								$body.attr("field", "")
-							}
-
-							var type = window.typeof_emoji(self_player.emoji)
-
-							if(type == "emoji"){
-								$body.attr("emoji",self_player.emoji)
-							}
-						}
-
-						if(bombs.length){
-							for(var i = 0; i < bombs.length; i++){
-								var bomb = bombs[i]
-
-								if(bomb){
-									for(var _x = -2; _x < 3; _x++){
-										for(var _z = -2; _z < 3; _z++){
-											if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
-												if(bomb.Flag){
-													delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
-												}else{
-													window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
-												}
-											}
-										}
-									}	
-								}
-							}
-						}
-
-						if(window.assets && !isBiome){
-							biomes.forEach(function(b, i){
-								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-
-								if(
-									(biomes.x - size < b.x && biomes.x + size > b.x) &&
-									(biomes.z - size < b.z && biomes.z + size > b.z) &&
-									!window.map.biomes[_id]
-								){
-									if(Math.random() < 0.1){
-										var _date = new Date(new Date() - time.offset)
-											_date = _date.toISOString()
-												.replace(/T/, ' ')
-												.replace(/\..+/, '')
-
-										var color = window.Biomes["#"+b.biome]
-
-										var emoji = window.Biomes[color]
-
-										if(emoji){
-											window.map.biomes[_id] = {
-												id : _id,
-												hash : cc_address,
-												name : "#"+b.biome,
-												value : "",
-												color: "",
-												x : b.x,
-												y : b.y - 0.5,
-												z : b.z
-											}
-
-											var _row = {
-												Id : _id,
-												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
-											}
-
-											window.map.nonces[_id] = _row
-										}
-									}
-								}
-							})
-						}
-					}
-
 					try{
 						if(window.players){
 							if(!window.players.length){
@@ -2251,7 +2251,7 @@ OAuth3.on("ready", function(e){
 
 						}
 
-						var li = ''
+						var after_body = ''
 
 						var afterSticker = []
 						
@@ -2280,14 +2280,24 @@ OAuth3.on("ready", function(e){
 									if(row.new){
 										afterSticker.push(row)
 									}
-									li += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" cnt="${cnt}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
+									after_body += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" cnt="${cnt}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
 								}
 							}
 						}
 
-						$('[id="'+player_hash+'"] items ul').html(li)
+						$('[id="'+player_hash+'"] items ul').html(after_body)
 
-						$("emojis .items").html(li)
+						
+						var before_body = $("emojis .items").html()
+						if(before_body){
+							before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+						}
+
+						after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+
+						if(before_body != after_body){
+							$("emojis .items").html(after_body)
+						}
 
 						var $player = $('player[self="true"]')
 
@@ -2510,7 +2520,7 @@ OAuth3.on("ready", function(e){
 											</a>
 										</li>
 										<li>
-											<a class="hashType Balance emoji color">🪙<span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
+											<a class="hashType Balance emoji color"><i class="emoji color"></i><span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
 										</li>`
 									}else{
 										var typeDice = false
@@ -2761,6 +2771,7 @@ OAuth3.on("ready", function(e){
 
 					if(cookies.damage){
 						$body.attr('game',"over")
+						$('html,body').scrollTop(0)
 
 						clearInterval(window.Poll.ing)
 						delete window.Poll.ing
@@ -2834,6 +2845,8 @@ OAuth3.on("ready", function(e){
 					if(typeof window.Chat == "undefined"){
 						window.Init(cookies)
 						window.cookies.dice = 0
+
+						$('html,body').scrollTop(0)
 					}
 
 					if(window.Poll.ing){
@@ -3279,6 +3292,8 @@ OAuth3.on("ready", function(e){
 												window.response = _resp
 
 												window.Callback(_resp)
+
+												$('html,body').scrollTop(0)
 											})
 										}
 									}
@@ -3367,6 +3382,12 @@ OAuth3.on("ready", function(e){
 						if(window.players){
 							if(window.players.length){
 								if(cookies.hash){
+									var $pending = document.querySelector('player[self="true"] picture img[src*="1fae5.webp"]')
+
+									if($pending){
+										return
+									}
+									
 									var player
 
 									try{
@@ -3598,6 +3619,14 @@ OAuth3.on("ready", function(e){
 											}
 
 											if($this.hasClass("Meta")){
+												var _dice = $body.attr("dice") * 1
+
+												if(!isNaN(_dice)){
+													if(_dice > 0){
+														return
+													}
+												}
+
 												window.cookies.dice = 0
 												
 												body.cc = "bomb"
@@ -3769,6 +3798,10 @@ OAuth3.on("ready", function(e){
 										
 
 										if(type == "item"){
+											if($this.find(".emoji.color").length == 0){
+												return
+											}
+
 											$('tooltip').removeClass("on")
 											$body.removeAttr("tooltip")
 											$this.toggleClass("on")
