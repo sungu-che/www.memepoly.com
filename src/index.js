@@ -2280,7 +2280,7 @@ OAuth3.on("ready", function(e){
 									if(row.new){
 										afterSticker.push(row)
 									}
-									after_body += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" cnt="${cnt}" type="item"><a class="emoji ${row.color ? "color" : ""}">${emoji}</a><span class="cnt">${cnt}</span></div>`	
+									after_body += `<div id="${row.Id}" draggable="false" class="emoji_asset ${(isToggle ? "on" : "")} ${(row.new ? "new" : "")}" emoji="${emoji}" cnt="${cnt}" type="item"><a color="${row.color ? "color" : ""}" class="emoji color">${emoji}</a><span class="cnt">${cnt}</span></div>`	
 								}
 							}
 						}
@@ -3800,7 +3800,7 @@ OAuth3.on("ready", function(e){
 										
 
 										if(type == "item"){
-											if($this.find(".emoji.color").length == 0){
+											if($this.find(".emoji.color").attr("color") == ""){
 												return
 											}
 
