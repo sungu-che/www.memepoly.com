@@ -1017,8 +1017,11 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 #root player tooltip li a.Flag:after{top:-10px; bottom: -10px; height: auto;}
 #root player tooltip li a.Flag:before{content: "Fire"; position: absolute; left: 0; right: 0; bottom: 6px; z-index: 1; color:#fff;}
 #root player tooltip li a.Flag{overflow: visible; display: inline-block; border:0; width: 49px; height: 47px; line-height: 0; border:none; background-size: cover; box-shadow: none; opacity: 0; pointer-events: none;}
-#root player tooltip li a.Flag *{ pointer-events: none}
+#root player tooltip li a.Flag *{pointer-events: none}
 #root player tooltip li a.Flag .cnt{top: 14px; font-size: 16px;}
+
+#root player[self=""] tooltip li:first-child a.Flag,
+#root player[self=""] tooltip li:first-child+li a.Flag{opacity: 0 !important; pointer-events: none !important;}
 
 #root player[self="true"] tooltip li a.Flag{opacity: 1; pointer-events: initial;}
 

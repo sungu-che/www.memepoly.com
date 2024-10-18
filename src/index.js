@@ -190,7 +190,7 @@ window.listToBiomes = function(list, elementsPerSubArray) {
 		list.forEach(function(item, i){
 			if(item){
 				item.x = index + 0.5
-				item.y = item.elevation * 1
+				item.y = (item.elevation * 1) + 0.5
 				item.z = (i - area) + 0.5
 
 				window.map.biomes[item.x+":"+item.z] = item
@@ -635,6 +635,7 @@ OAuth3.on("ready", function(e){
 
 	var flow_template = ""
 
+	var $root = $('html,body')
 	var $body = $("body")
 	var $nav = $('input[id="nav"]')
 
@@ -966,7 +967,7 @@ OAuth3.on("ready", function(e){
 			}
 
 			if(bomb){
-				var biome = window.map.biomes[player.x+":"+player.z]
+				var b = window.map.biomes[player.x+":"+player.z]
 
 				plant = {
 					team : "#bomb",
@@ -975,7 +976,7 @@ OAuth3.on("ready", function(e){
 					hash : ethers.ZeroAddress,
 					dice : 0,
 					x : player.x + "",
-					y : (biome ? biome.y : 0) + 0.5,
+					y : b.y + 0.5,
 					z : player.z + "",
 					emoji : "💣"
 				}
@@ -1426,6 +1427,8 @@ OAuth3.on("ready", function(e){
 					var rows = JSON.stringify(resp.body.rows)
 						rows = JSON.parse(rows)
 
+					var size = 4
+
 					var biomes = listToBiomes(window.map.biomes, 100)
 
 					var isDice = Math.sqrt(Math.pow(cookies.dice, 2)) > 0 && cookies.dice != -10
@@ -1457,8 +1460,6 @@ OAuth3.on("ready", function(e){
 
 					var score_board = []
 
-					var size = 4
-
 					var isBiome = false
 
 					var canvas = blockies.create({seed: seed.toLowerCase()})
@@ -1486,18 +1487,18 @@ OAuth3.on("ready", function(e){
 						emoji : canvas.toDataURL()
 					}
 
+					var progress = []
+
 					var _axis = cookies.axis
 						_axis = _axis.split(",")
-	
+
 					var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
 
 					var axis = {
 						x : _axis[0] * 1,
-						y : b.y,
+						y : b ? b.y : _axis[1] * 1,
 						z : _axis[2] * 1
 					}
-				
-					var b = window.map.biomes[`${axis.x}:${axis.z}`]
 
 					if(window.current){
 						if(window.current.current.position.x == 0.5 && window.current.current.position.z == 0.5){
@@ -1511,6 +1512,15 @@ OAuth3.on("ready", function(e){
 						biomes.x = axis.x
 						biomes.z = axis.z
 					}
+
+					biomes.forEach(function(b, i){
+						if(
+							(biomes.x - size < b.x && biomes.x + size > b.x) &&
+							(biomes.z - size < b.z && biomes.z + size > b.z)
+						){
+							biomes[b.x+":"+b.z] = b
+						}
+					})
 
 					// var $assets = $('#pool li')
 					var $assets = $('.emoji_asset.on')
@@ -1598,9 +1608,8 @@ OAuth3.on("ready", function(e){
 					}
 
 					$(".voronoi .map").css({top : - ((biomes.z * 2) + 100) , left : - ((biomes.x * 2) + 0) })
-					$(".xyz").text(`${biomes.x} : ${biomes.z}`)
-					
-					var progress = []
+					$(".xyz").text(`${Math.floor(biomes.x)} : ${Math.floor(biomes.z)}`)
+
 
 					if(rows.length){
 						for(var r = 0; r < rows.length; r++){
@@ -1618,12 +1627,6 @@ OAuth3.on("ready", function(e){
 
 								var _nonce = row.Cc.split(` ${hashtag}`)[1]
 									_nonce = _nonce.split("@")[0].trim()
-
-								var biome 
-
-								if(window.Biomes[hashtag]){
-									biome = window.map.biomes[row.x+":"+row.z]
-								}
 
 								if(row.Cc.indexOf("#dice") > -1 && isDice){
 									progress[`${row.x}:${row.z}`] = true
@@ -1664,94 +1667,6 @@ OAuth3.on("ready", function(e){
 
 						fields[`${field.x}:${field.z}`] = field
 					})
-
-					if(self_player){
-						var x = self_player.x
-						var z = self_player.z
-
-						var biome = window.map.biomes[x+":"+z]
-
-						if(biome){
-							$body.attr("biome", biome.biome)
-						}
-
-						var field = fields[`${x}:${z}`]
-
-						if(field){
-							$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
-						}else{
-							$body.attr("field", "")
-						}
-
-						var type = window.typeof_emoji(self_player.emoji)
-
-						if(type == "emoji"){
-							$body.attr("emoji",self_player.emoji)
-						}
-
-						if(bombs.length){
-							for(var i = 0; i < bombs.length; i++){
-								var bomb = bombs[i]
-
-								if(bomb){
-									for(var _x = -2; _x < 3; _x++){
-										for(var _z = -2; _z < 3; _z++){
-											if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
-												if(bomb.Flag){
-													delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
-												}else{
-													window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
-												}
-											}
-										}
-									}	
-								}
-							}
-						}
-
-						if(window.assets && !isBiome){
-							biomes.forEach(function(b, i){
-								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-
-								if(
-									(biomes.x - size < b.x && biomes.x + size > b.x) &&
-									(biomes.z - size < b.z && biomes.z + size > b.z) &&
-									!window.map.biomes[_id]
-								){
-									if(Math.random() < 0.1){
-										var _date = new Date(new Date() - time.offset)
-											_date = _date.toISOString()
-												.replace(/T/, ' ')
-												.replace(/\..+/, '')
-
-										var color = window.Biomes["#"+b.biome]
-
-										var emoji = window.Biomes[color]
-
-										if(emoji){
-											window.map.biomes[_id] = {
-												id : _id,
-												hash : cc_address,
-												name : "#"+b.biome,
-												value : "",
-												color: "",
-												x : b.x,
-												y : b.y - 0.5,
-												z : b.z
-											}
-
-											var _row = {
-												Id : _id,
-												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
-											}
-
-											window.map.nonces[_id] = _row
-										}
-									}
-								}
-							})
-						}
-					}
 
 					if(isDice){
 						if(progress.length){
@@ -1796,45 +1711,11 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					biomes.forEach(function(b, i){
-						if(
-							(biomes.x - size < b.x && biomes.x + size > b.x) &&
-							(biomes.z - size < b.z && biomes.z + size > b.z)
-						){
-							var color = window.Biomes["#"+b.biome]
-
-							var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-
-							if(window.map.biomes[_id]){
-								isBiome = true
-							}
-
-							if(progress[`${b.x}:${b.z}`]){
-								color = "black"
-							}
-
-							biomes[b.x+":"+b.z] = b
-
-							_assets.push({
-								id : _id,
-								hash : cc_address,
-								name : "#"+b.biome,
-								value : color,
-								color: color,
-								x : b.x,
-								y : b.y - (b.water ? 0.8 : 0.5),
-								z : b.z
-							})
-						}
-					})
-
-
 					if(cookies.subscription){
 						$('.emoji_asset[method="notify"]').addClass("on")
 					}else{
 						$('.emoji_asset[method="notify"]').removeClass("on")
 					}
-
 					
 					var flags = resp.body.flags ? resp.body.flags : []
 					flags.temp = 0
@@ -1843,7 +1724,6 @@ OAuth3.on("ready", function(e){
 					flags['#red'] = 0
 					flags['#blue'] = 0
 					flags['#black'] = 0
-
 
 					var _balance = $balance.text()
 
@@ -1877,9 +1757,13 @@ OAuth3.on("ready", function(e){
 							row.z = position[1]
 							row.dice = position[2] * 1
 
-							var biome = biomes[row.x+":"+row.z]
+							var b = biomes[row.x+":"+row.z]
 
-							var isRender = biomes[row.x+":"+row.z]
+							var y = 0
+
+							if(window.map.biomes[row.x+":"+row.z]){
+								y = window.map.biomes[row.x+":"+row.z].y
+							}
 
 							try{
 								var _nonce = row.Cc.split(` ${hashtag}`)[1]
@@ -1896,7 +1780,7 @@ OAuth3.on("ready", function(e){
 
 							}
 
-							if(window.Biomes[hashtag] && isRender){
+							if(window.Biomes[hashtag] && b){
 								if(row.Flag && hashtag != "#dice"){
 									delete window.map.biomes[row.Id]
 									
@@ -1904,7 +1788,9 @@ OAuth3.on("ready", function(e){
 
 									if($clipped.length && !window.bingo[row.Id]){
 										window.bingo[row.Id] = true
-										bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+										if(b){
+											bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
+										}
 									}
 								}else{
 									var _asset = {
@@ -1914,7 +1800,7 @@ OAuth3.on("ready", function(e){
 										value : "",
 										color: "",
 										x : row.x,
-										y : biome.y,
+										y : y,
 										z : row.y
 									}
 
@@ -1931,9 +1817,8 @@ OAuth3.on("ready", function(e){
 
 								var typeof_emoji = window.typeof_emoji(emoji)
 
-
 								if(row.Flag){
-									if(isRender){
+									if(b){
 										var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
 
 										if($clipped.length && !window.bingo[row.Id]){
@@ -1970,13 +1855,13 @@ OAuth3.on("ready", function(e){
 												hash : cookies.address ? cookies.address : cookies.hash,
 												emoji : "😀",
 												x : row.x,
-												y : (biome ? biome.y : 0) + 0.5,
+												y : y,
 												z : row.z
 											}
 										}
 
 										player.x = self_player.x
-										player.y = (biome ? biome.y : 0) + 0.5
+										player.y = y
 										player.z = self_player.z
 										player.emoji = window.emojis.self
 									}else{
@@ -1985,13 +1870,13 @@ OAuth3.on("ready", function(e){
 										}
 
 										player.x = row.x
-										player.y = (biome ? biome.y : 0) + 0.5
+										player.y = y
 										player.z = row.z
 										player.emoji = emoji
 									}
 
 									if(!row.Flag){
-										if(!window.map.report[_from] && (isRender || player.self)){
+										if(!window.map.report[_from] && (b || player.self)){
 											if(!rows[_from]){
 												rows[_from] = true
 
@@ -2002,7 +1887,7 @@ OAuth3.on("ready", function(e){
 													hash : _from,
 													dice : row.dice,
 													x : player.x,
-													y : player.y,
+													y : player.y + 0.5,
 													z : player.z,
 													emoji : player.emoji
 												})
@@ -2047,7 +1932,6 @@ OAuth3.on("ready", function(e){
 									plant = false
 								}
 
-								
 								bombs.push(row)	
 
 								if(ethers.isAddress(row.Flag)){
@@ -2079,7 +1963,7 @@ OAuth3.on("ready", function(e){
 									}
 
 									delete window.map.biomes[`${row.x}:${row.z}`].bomb
-								}else if(!row.Flag && isRender){
+								}else if(!row.Flag && b){
 									var _from = row.From
 
 									var _nonce = row.Cc.split(` ${hashtag}`)[1]
@@ -2096,7 +1980,7 @@ OAuth3.on("ready", function(e){
 										hash : _from,
 										dice : 0,
 										x : row.x,
-										y : (biome ? biome.y : 0) + 0.5,
+										y : y,
 										z : row.z,
 										emoji : "💣"
 									}
@@ -2134,6 +2018,122 @@ OAuth3.on("ready", function(e){
 									stickers[emoji].push(row)
 								}
 							}	
+						}
+
+						var x = self_player.x
+						var z = self_player.z
+
+						var b = biomes[x+":"+z]
+
+						if(b){
+							$body.attr("biome", b.biome)
+						}
+
+						var field = fields[`${x}:${z}`]
+
+						if(field){
+							$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
+						}else{
+							$body.attr("field", "")
+						}
+
+						var type = window.typeof_emoji(self_player.emoji)
+
+						if(type == "emoji"){
+							$body.attr("emoji",self_player.emoji)
+						}
+
+						if(bombs.length){
+							for(var i = 0; i < bombs.length; i++){
+								var bomb = bombs[i]
+
+								if(bomb){
+									for(var _x = -2; _x < 3; _x++){
+										for(var _z = -2; _z < 3; _z++){
+											if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
+												if(bomb.Flag){
+													delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
+												}else{
+													window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
+												}
+											}
+										}
+									}	
+								}
+							}
+						}
+
+						biomes.forEach(function(b, i){
+							if(
+								(biomes.x - size < b.x && biomes.x + size > b.x) &&
+								(biomes.z - size < b.z && biomes.z + size > b.z)
+							){
+								var color = window.Biomes["#"+b.biome]
+
+								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+
+								if(window.map.biomes[_id]){
+									isBiome = true
+								}
+
+								if(progress[`${b.x}:${b.z}`]){
+									color = "black"
+								}
+
+								_assets.push({
+									id : _id,
+									hash : cc_address,
+									name : "#"+b.biome,
+									value : color,
+									color: color,
+									x : b.x,
+									y : b.y - (b.water ? 0.8 : 0.5),
+									z : b.z
+								})	
+							}
+						})
+
+						if(window.assets && !isBiome){
+							biomes.forEach(function(b, i){
+								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+
+								if(
+									(biomes.x - size < b.x && biomes.x + size > b.x) &&
+									(biomes.z - size < b.z && biomes.z + size > b.z) &&
+									!window.map.biomes[_id]
+								){
+									if(Math.random() < 0.1){
+										var _date = new Date(new Date() - time.offset)
+											_date = _date.toISOString()
+												.replace(/T/, ' ')
+												.replace(/\..+/, '')
+
+										var color = window.Biomes["#"+b.biome]
+
+										var emoji = window.Biomes[color]
+
+										if(emoji){
+											window.map.biomes[_id] = {
+												id : _id,
+												hash : cc_address,
+												name : "#"+b.biome,
+												value : "",
+												color: "",
+												x : b.x,
+												y : b.y - 0.5,
+												z : b.z
+											}
+
+											var _row = {
+												Id : _id,
+												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
+											}
+
+											window.map.nonces[_id] = _row
+										}
+									}
+								}
+							})
 						}
 					}
 
@@ -2347,7 +2347,7 @@ OAuth3.on("ready", function(e){
 															.removeClass("new")
 															.attr("style", "")
 
-														$('html,body').scrollTop(0)
+														$root.scrollTop(0)
 													},100, $(this))
 												})
 										}
@@ -2723,7 +2723,7 @@ OAuth3.on("ready", function(e){
 						if(scrollBottom){
 							var h = document.documentElement.scrollHeight
 
-							$("html,body").scrollTop(h)
+							$root.scrollTop(h)
 						}
 
 						if(notify_body){
@@ -2773,7 +2773,6 @@ OAuth3.on("ready", function(e){
 
 					if(cookies.damage){
 						$body.attr('game',"over")
-						$('html,body').scrollTop(0)
 
 						clearInterval(window.Poll.ing)
 						delete window.Poll.ing
@@ -2842,13 +2841,12 @@ OAuth3.on("ready", function(e){
 						.attr("dice",dice)
 						.attr("team",cookies.team ? cookies.team : "")
 						.attr("balance",cookies.balance)
-				
+
+					$root.scrollTop(0)
 
 					if(typeof window.Chat == "undefined"){
 						window.Init(cookies)
 						window.cookies.dice = 0
-
-						$('html,body').scrollTop(0)
 					}
 
 					if(window.Poll.ing){
@@ -2959,6 +2957,26 @@ OAuth3.on("ready", function(e){
 				hash : cookies.hash,
 				token : cookies.token
 			}
+
+			if(cookies.axis){
+				var biomes = listToBiomes(window.map.biomes, 100)
+
+				var _axis = cookies.axis
+					_axis = _axis.split(",")
+
+				var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
+
+				var position = {
+					x : _axis[0] * 1,
+					y : b.y,
+					z : _axis[2] * 1
+				}
+
+				query.x = position.x
+				query.y = position.y
+				query.z = position.z
+			}
+
 
 			var url = "https://memepoly.com";
 
@@ -3295,7 +3313,7 @@ OAuth3.on("ready", function(e){
 
 												window.Callback(_resp)
 
-												$('html,body').scrollTop(0)
+												$root.scrollTop(0)
 											})
 										}
 									}
@@ -4145,13 +4163,11 @@ OAuth3.on("ready", function(e){
 								player.x = window.current.current.position.x + position.x
 								player.z = window.current.current.position.z + position.z
 
-							var biome = window.map.biomes[player.x+":"+player.z]
+							var b = window.map.biomes[player.x+":"+player.z]
 
-							if(biome.water){
+							if(b.water){
 								return
 							}
-
-							// player.y = biome.y
 
 							var edge = (1000000000000000000 / 2) + 1
 							
@@ -4164,7 +4180,7 @@ OAuth3.on("ready", function(e){
 									}
 								}
 
-								window[player.hash].position.y = window.current.current.position.y = window.cursor.current.position.y = biome.y + 0.01
+								window[player.hash].position.y = window.current.current.position.y = window.cursor.current.position.y = b.y + 0.01
 
 								window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = player.x								
 								window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = player.z
@@ -4372,7 +4388,7 @@ OAuth3.on("ready", function(e){
 
 					var h = document.documentElement.scrollHeight
 
-					$("html,body").scrollTop(h)
+					$root.scrollTop(h)
 
 					OAuth3.timeout = true
 				}

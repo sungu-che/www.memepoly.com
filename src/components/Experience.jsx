@@ -79,7 +79,6 @@ export const Experience = () => {
 		if(player){
 			if(window[player_hash].group.current == null && player.position){
 				window[player_hash].group.current = player.position
-
 			}
 		}else{
 			var position
@@ -136,22 +135,6 @@ export const Experience = () => {
 		}
 	}
 
-	var interval = function(){
-		if(OAuth3.after){
-			if(OAuth3.before == OAuth3.after){
-				clearInterval(OAuth3.interval)
-
-				OAuth3.interval = undefined
-				OAuth3.after = undefined
-				OAuth3.before = undefined
-			}
-		}		
-		
-		if(OAuth3.before){
-			OAuth3.after = OAuth3.before
-		}
-	}
-
 	useFrame((e,delta) => {
 		var cookies = window.cookies
 		
@@ -188,16 +171,6 @@ export const Experience = () => {
 					e.camera?.lookAt(vec)
 					e.camera.position.lerp(new THREE.Vector3(position.x+far.x,position.y+far.y,position.z+far.z ), 0.2)
 				}
-
-				if(OAuth3.interval){
-					if(!OAuth3.after){
-						if(window.frameloop == "demand"){
-							window.setFrameloop("always")
-						}
-					}
-
-					OAuth3.before = position.x
-				}
 			}
 		}
 	})
@@ -205,8 +178,6 @@ export const Experience = () => {
 	var point = {}
 
 	var onClick = function(e){
-		window.setFrameloop("always")
-
 		var cookies = window.cookies
 
 		try{
@@ -250,8 +221,6 @@ export const Experience = () => {
 										window[player.hash].position.x = current.current.position.x = point.x
 										window[player.hash].position.z = current.current.position.z = point.z
 
-										OAuth3.interval = setInterval(interval, 2000)
-
 										var $player = $('player[id="'+player.hash+'"]')
 										// $player.removeClass("select_puzzle")
 
@@ -266,7 +235,7 @@ export const Experience = () => {
 
 										// maker
 										$(".map").css({top : - ((point.z * 2) + 100) , left : - ((point.x * 2) + 0) })
-										$(".xyz").text(`${point.x} : ${point.z}`)
+										$(".xyz").text(`${Math.floor(point.x)} : ${Math.floor(point.z)}`)
 
 										var url = "https://emption.red"
 

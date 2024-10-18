@@ -9,6 +9,8 @@ export function Player({
 }) {
 	const group = useRef();
 
+	var cookies = window.cookies
+
 	var props_hash = props.hash
 	window[props_hash] = props
 	window[props_hash].group = group
@@ -29,8 +31,7 @@ export function Player({
 
 	var follow = props.follow ? "true" : ""
 
-	var self_hash = window.cookies.address ? window.cookies.address : window.cookies.hash
-
+	var self_hash = cookies.address ? cookies.address : cookies.hash
 
 	try{
 		if(window.map.follow[self_hash].indexOf(props_hash) > -1){
@@ -42,8 +43,14 @@ export function Player({
 
 	useFrame((e) => {
 		position = window[props_hash].position
+		
+		if(cookies){
+			if(window.current.current.position.y == 0){
+				var b = window.map.biomes[`${group.current.position.x}:${group.current.position.z}`]
 
-		if(window.cookies){
+				window.current.current.position.y = window.cursor.current.position.y = b.y
+			}
+
 			if(window.cookies.address){
 				if(window.cookies.address == props_hash){
 					position.x = window.current.current.position.x
