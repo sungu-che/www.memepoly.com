@@ -703,7 +703,8 @@ body[swap] .back span{text-decoration: none}
 .aside.more emojis .tab_content .deck{padding: 1em 0; height: 100%; white-space: inherit; text-align: center;}
 .aside.more emojis .tab_content .deck>div{padding-bottom: 1em;}
 
-emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 2; transition-delay: 0.5s; -webkit-transition-delay: 0.5s;}
+emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 2; transition-delay: 0.5s; -webkit-transition-delay: 0.5s; pointer-events:none;}
+body[mobile="ios"] emojis{pointer-events:initial;}
 emojis .scroll{overflow: hidden; overflow-x:scroll; width: 100%; -webkit-overflow-scrolling: touch;}
 
 
