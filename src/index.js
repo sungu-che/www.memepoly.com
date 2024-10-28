@@ -2611,7 +2611,7 @@ OAuth3.on("ready", function(e){
 									}
 								}
 
-								message_body += `<li id="${row.Id}" class="self item message">
+								message_body += `<li id="${row.Id}" class="${(player_hash == row.From ? "self" : "")} item message">
 									<div class="text">
 										<span class="icon" data-from="${row.From}"></span>
 										<text>${text}</text>
