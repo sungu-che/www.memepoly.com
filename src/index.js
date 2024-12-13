@@ -2616,6 +2616,7 @@ OAuth3.on("ready", function(e){
 										<span class="icon" data-from="${row.From}"></span>
 										<text>${text}</text>
 									</div>
+									<input type="hidden" name="date" value="${row.Date}">\
 								</li>`
 
 							}else if(row.Cc.indexOf("#reward") > -1 && duplication){
@@ -2842,7 +2843,7 @@ OAuth3.on("ready", function(e){
 						.attr("team",cookies.team ? cookies.team : "")
 						.attr("balance",cookies.balance)
 
-					$root.scrollTop(0)
+					// $root.scrollTop(0)
 
 					if(typeof window.Chat == "undefined"){
 						window.Init(cookies)
