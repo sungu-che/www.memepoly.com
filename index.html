@@ -18,6 +18,11 @@
 		<meta property="og:title" content="MEMEPOLY">
 		<meta property="og:url" content="https://www.memepoly.com">
 
+		<meta name="fc:frame" content="{&quot;version&quot;:&quot;next&quot;,&quot;imageUrl&quot;:&quot;https://www.memepoly.com/src/images/preview.png&quot;,&quot;button&quot;:{&quot;title&quot;:&quot;MEMEPOLY&quot;,&quot;action&quot;:{&quot;type&quot;:&quot;launch_frame&quot;,&quot;name&quot;:&quot;MEMEPOLY frame&quot;,&quot;url&quot;:&quot;https://www.memepoly.com/&quot;,&quot;splashImageUrl&quot;:&quot;https://www.memepoly.com/favicon.png&quot;,&quot;splashBackgroundColor&quot;:&quot;#262626&quot;}}}">
+		
+
+
+
 		<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
 		<link rel="stylesheet" href="/src/fonts/fontawesome/css/all.min.css">
 		<link rel="stylesheet" href="/src/fonts/xeicon/xeicon.min.css">
@@ -370,5 +375,9 @@
 		<script type="module" src="/src/items.js"></script>
 		<script type="module" src="/src/index.js"></script>
 		<script type="module" src="/src/main.jsx"></script>
+		<script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js"></script>
+		<script>
+		  frame.sdk.actions.ready();
+		</script>
 	</body>
 </html>
