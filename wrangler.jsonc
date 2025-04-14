@@ -1,5 +1,7 @@
 {
   "name": "www-memepoly-com",
   "compatibility_date": "2025-04-14",
-  "pages_build_output_dir": "./dist"
+  "assets": {
+    "directory": "./dist"
+  }
 }
