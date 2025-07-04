@@ -12,8 +12,8 @@ html[lang="en"] .policy .items.en{display: block;}
 #header{position: relative; border-bottom: 1px solid #efefef;}
 #header h1{position: absolute; padding: 0 2em; left: 0; top: 0; bottom: 0;}
 #header h1 a{position: relative; display: block; left: -2px; font-size:1em; font-weight: 700; text-decoration:none;}
-#header h1 a[href="/"]{overflow: hidden; width: 36px; height: 58px; text-indent: -9999px; line-height: 58px;}
-#header h1 a:after {content: "\40";font-size: 35px;font-family: "Font Awesome 6 Free";font-weight: 100;-webkit-text-stroke: 2.4px #fafafa;color: #000;position: absolute;text-indent: 0;left: 0;top: 0;z-index: 1;}
+#header h1 a[href="/"]{overflow: hidden; top: 10px; width: 36px; height: 36px;}
+#header h1 a[href="/"] svg{display: block; width: 36px; height: 36px;}
 
 .area{margin: 0 auto; max-width: 900px;}
 
