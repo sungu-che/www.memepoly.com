@@ -75,6 +75,22 @@ window.MapReset = function(){
 	return window.map
 }
 
+window.BiomeAt = function(_x, _z){
+	try{
+		var b = window.map.biomes[_x+":"+_z]
+
+		if(b){
+			if(b.biome){
+				return "#"+b.biome
+			}
+		}
+	}catch(err){
+
+	}
+
+	return ""
+}
+
 window.far = {
 	x : 4.5,
 	y : 5.5,
@@ -287,15 +303,36 @@ function Respawn(){
 
 		var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
 
-		position = {
-			x : _axis[0] * 1,
-			y : b.y,
-			z : _axis[2] * 1
+		if(b){
+			position = {
+				x : _axis[0] * 1,
+				y : b.y,
+				z : _axis[2] * 1
+			}
 		}
-	}else{
-		var r = fields[Math.round(Math.random() * fields.length)]
+	}
 
-		var b = window.map.biomes[`${r.x}:${r.z}`]
+	if(!position){
+		var r, b
+
+		for(var i = 0; i < fields.length; i++){
+			r = fields[Math.floor(Math.random() * fields.length)]
+			b = window.map.biomes[`${r.x}:${r.z}`]
+
+			if(b){
+				if(!b.water){
+					break
+				}
+			}
+		}
+
+		if(!r){
+			r = fields[0]
+		}
+
+		if(!b){
+			b = { y : 0.5 }
+		}
 
 		position = {
 			x : r.x,
@@ -1329,6 +1366,12 @@ OAuth3.on("ready", function(e){
 			z : player.z
 		}
 
+		var _biome = window.BiomeAt(player.x, player.z)
+
+		if(_biome){
+			query.biome = _biome
+		}
+
 		if(!body.emoji){
 			body.emoji = window.emojis.self
 		}
@@ -1825,12 +1868,17 @@ OAuth3.on("ready", function(e){
 
 		window.BoardCallback = async function(resp){
 			var url = new URL(window.location.href)
-
 			var _dice = window.cookies.dice * 1
-
 			var cookies = window.cookies = JSON.parse(resp.body.cookies)
-
 			var dice = cookies.dice * 1
+
+			try{
+				if(window.MatchVerify){
+					window.MatchVerify(cookies)
+				}
+			}catch(err){
+				console.log("match err",err);
+			}
 
 			if(!isNaN(cookies.speed) && cookies.speed){
 				window.speed = 0.1 * (cookies.speed * 1)
@@ -1943,22 +1991,48 @@ OAuth3.on("ready", function(e){
 
 					var _axis = cookies.axis
 						_axis = _axis.split(",")
-
 					var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
-
 					var axis = {
 						x : _axis[0] * 1,
 						y : b ? b.y : _axis[1] * 1,
 						z : _axis[2] * 1
 					}
 
+					if(!b){
+						var _respawn = Respawn()
+
+						axis.x = _respawn.x
+						axis.y = _respawn.y
+						axis.z = _respawn.z
+
+						cookies.axis = [axis.x, axis.y, axis.z].toString()
+					}
+
 					if(window.current){
-						if(window.current.current.position.x == 0.5 && window.current.current.position.z == 0.5){
+						var _cur = window.current.current.position
+						var _cur_biome = window.map.biomes[`${_cur.x}:${_cur.z}`]
+
+						if(!window.current.axis || !_cur_biome){
+							window.current.axis = true
+
 							biomes.x = window.current.current.position.x = window.cursor.current.position.x = axis.x
 							biomes.z = window.current.current.position.z = window.cursor.current.position.z = axis.z
+
+							window.current.current.position.y = axis.y + 0.01
+							window.cursor.current.position.y = axis.y + 0.01
+
+							var _self_hash = cookies.address ? cookies.address : cookies.hash
+
+							if(window[_self_hash]){
+								if(window[_self_hash].position){
+									window[_self_hash].position.x = axis.x
+									window[_self_hash].position.y = axis.y + 0.5
+									window[_self_hash].position.z = axis.z
+								}
+							}
 						}else{
-							biomes.x = axis.x = window.current.current.position.x
-							biomes.z = axis.z = window.current.current.position.z
+							biomes.x = axis.x = _cur.x
+							biomes.z = axis.z = _cur.z
 						}
 					}else{
 						biomes.x = axis.x
@@ -3437,16 +3511,7 @@ OAuth3.on("ready", function(e){
 			}else if(cookies.axis){
 				var biomes = listToBiomes(window.map.biomes, 100)
 
-				var _axis = cookies.axis
-					_axis = _axis.split(",")
-
-				var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
-
-				var position = {
-					x : _axis[0] * 1,
-					y : b.y,
-					z : _axis[2] * 1
-				}
+				var position = Respawn()
 
 				query.x = position.x
 				query.y = position.y
@@ -3562,6 +3627,12 @@ OAuth3.on("ready", function(e){
 								x : self_player.x,
 								y : self_player.y,
 								z : self_player.z
+							}
+
+							var _biome = window.BiomeAt(self_player.x, self_player.z)
+
+							if(_biome){
+								query.biome = _biome
 							}
 
 							if(assets.length){
@@ -4098,18 +4169,21 @@ OAuth3.on("ready", function(e){
 												z : player.z
 											}
 
+											var _biome = window.BiomeAt(player.x, player.z)
+
+											if(_biome){
+												query.biome = _biome
+											}
+
 											if(OAuth3.nonces){
 												if(OAuth3.nonces.length){
 													body.nonces = []
-
 													for(var i = 0; i < OAuth3.nonces.length; i++){
 														var nonce = OAuth3.nonces[i]
-
 														if(nonce){
 															body.nonces.push(nonce)
 														}
 													}
-
 													body.nonces = JSON.stringify(body.nonces)
 												}
 											}
@@ -4660,6 +4734,10 @@ OAuth3.on("ready", function(e){
 
 							var b = window.map.biomes[player.x+":"+player.z]
 
+							if(!b){
+								return
+							}
+
 							if(b.water){
 								return
 							}
@@ -5049,6 +5127,12 @@ OAuth3.on("ready", function(e){
 				document.scrollingElement.scrollTop = 0
 
 				window.MapReset()
+
+				try{
+					delete window.current.axis
+				}catch(err){
+
+				}
 
 				delete window.dialog
 

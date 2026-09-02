@@ -118,15 +118,36 @@ export const Experience = () => {
 
 				var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
 
-				position = {
-					x : _axis[0] * 1,
-					y : b.y,
-					z : _axis[2] * 1
+				if(b){
+					position = {
+						x : _axis[0] * 1,
+						y : b.y,
+						z : _axis[2] * 1
+					}
 				}
-			}else{
-				var r = fields[Math.round(Math.random() * fields.length)]
+			}
 
-				var b = window.map.biomes[`${r.x}:${r.z}`]
+			if(!position){
+				var r, b
+
+				for(var i = 0; i < fields.length; i++){
+					r = fields[Math.floor(Math.random() * fields.length)]
+					b = window.map.biomes[`${r.x}:${r.z}`]
+
+					if(b){
+						if(!b.water){
+							break
+						}
+					}
+				}
+
+				if(!r){
+					r = fields[0]
+				}
+
+				if(!b){
+					b = { y : 0.5 }
+				}
 
 				position = {
 					x : r.x,
@@ -272,22 +293,26 @@ export const Experience = () => {
 				if(cookies.axis && !cookies.damage){
 					if(e.point){
 						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
-
 						var biome = window.map.biomes[_point.x+":"+_point.z]
+
+						if(!biome){
+							return
+						}
 
 						if(biome.water){
 							return
 						}
-
 						point = _point
 					}else if(e.target.tagName == "CANVAS"){
 						if(typeof point.x != "undefined" && typeof point.z != "undefined"){
 							var player = self()
-
 							var biome = window.map.biomes[point.x+":"+point.z]
 
-							point.y = biome.y
+							if(!biome){
+								return
+							}
 
+							point.y = biome.y
 							if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
 								if(cookies.hash && players.length){
 									if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
