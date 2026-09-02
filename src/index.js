@@ -215,6 +215,37 @@ window.listToBiomes = function(list, elementsPerSubArray) {
 	return biomes;
 }
 
+window.PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
+window.PropertyCost = [100, 200, 500, 1000, 2500]
+window.PropertyToll = [0, 20, 50, 120, 300]
+window.PropertyMaterials = [
+	[],
+	["🪵", "🪵"],
+	["🪵", "🪵", "🪵", "🪨", "🪨"],
+	["🪵", "🪵", "🪵", "🪵", "🪵", "🪨", "🪨", "🪨", "🛢"],
+	["🪵", "🪵", "🪵", "🪵", "🪵", "🪵", "🪵", "🪵", "🪨", "🪨", "🪨", "🪨", "🪨", "🛢", "🛢", "🛢", "❄"]
+]
+window.Recipes = [
+	{ index: 0,  result: "🛡", name: "방패",        grade: "rare",    cost: 100, materials: ["🪵", "🪵", "🪵"] },
+	{ index: 1,  result: "⛏", name: "곡괭이",      grade: "common",  cost: 100, materials: ["🪨", "🪨", "🪵"] },
+	{ index: 2,  result: "🪓", name: "도끼",        grade: "common",  cost: 100, materials: ["🪵", "🪵", "🪨"] },
+	{ index: 3,  result: "🪖", name: "군용 헬멧",   grade: "common",  cost: 100, materials: ["🪨", "🪨", "🪨", "🛢"] },
+	{ index: 4,  result: "🏹", name: "활",          grade: "rare",    cost: 100, materials: ["🪵", "🪵", "🪵", "🪵"] },
+	{ index: 5,  result: "🦺", name: "안전 조끼",   grade: "common",  cost: 100, materials: ["🪵", "🪵", "🛢", "🛢"] },
+	{ index: 6,  result: "🧤", name: "작업 장갑",   grade: "common",  cost: 100, materials: ["🪵", "🪵", "🛢"] },
+	{ index: 7,  result: "👢", name: "장화",        grade: "common",  cost: 100, materials: ["🪵", "🪵", "🪵", "🛢"] },
+	{ index: 8,  result: "🔫", name: "물총",        grade: "common",  cost: 100, materials: ["🪨", "🛢", "🛢"] },
+	{ index: 9,  result: "🗡", name: "단검",        grade: "common",  cost: 100, materials: ["🪨", "🪨", "🛢"] },
+	{ index: 10, result: "🎣", name: "낚싯대",      grade: "rare",    cost: 250, materials: ["🪵", "🪵", "🪵", "🪨"] },
+	{ index: 11, result: "⛑", name: "구조 헬멧",   grade: "rare",    cost: 250, materials: ["🪨", "🪨", "🪨", "🪨", "🛢", "🛢", "❄"] },
+	{ index: 12, result: "🥋", name: "도복",        grade: "rare",    cost: 250, materials: ["🪵", "🪵", "🪵", "🪵", "❄", "❄"] },
+	{ index: 13, result: "🥾", name: "등산화",      grade: "rare",    cost: 250, materials: ["🪵", "🪵", "🪵", "🪵", "🪨", "🪨", "🛢"] },
+	{ index: 14, result: "🥊", name: "복싱 글러브", grade: "rare",    cost: 250, materials: ["🪵", "🪵", "🪨", "🪨", "🛢", "🛢"] },
+	{ index: 15, result: "⚔", name: "검",          grade: "rare",    cost: 250, materials: ["🪨", "🪨", "🪨", "🪨", "🪨", "🛢", "🛢"] },
+	{ index: 16, result: "💣", name: "폭탄",        grade: "special", cost: 500, materials: ["🛢", "🛢", "🛢", "🪨", "🪨"] },
+	{ index: 17, result: "🧪", name: "물약",        grade: "consume", cost: 50,  materials: ["🐟", "🐟", "❄"] }
+]
+window.MaxHp = { "" : 10, "PLAYER" : 10, "PMC" : 8, "SCAV" : 5, "UCAV" : 8 }
 window.Biomes = {
 	// biomes
 	"#OCEAN": "#44447a",
@@ -226,11 +257,10 @@ window.Biomes = {
 	"#LAKE": "#336699",
 	"#336699" : "",
 	"#RIVER": "#225588",
-	"#225588" : "",
 	"#MARSH": "#2f6666",
 	"#2f6666" : "",
 	"#ICE": "#99ffff",
-	"#99ffff" : "❄️",
+	"#99ffff" : "❄",
 	"#BEACH": "#a09077",
 	"#a09077" : "🌴",
 	"#ROAD1": "#442211",
@@ -246,7 +276,7 @@ window.Biomes = {
 
 	// Terrain
 	"#SNOW": "#ffffff",
-	"#ffffff" : "❄️",
+	"#ffffff" : "❄",
 	"#TUNDRA": "#bbbbaa",
 	"#bbbbaa" : "🪨",
 	"#BARE": "#888888",
@@ -335,18 +365,48 @@ window.typeof_emoji = function(icon){
 	return false
 }
 
-window.typeof_item = function(icon){
+window.typeof_shield = function(icon){
 	for(var i = 0; i < items.length; i++){
 		var item = items[i];
-
+		if(item.char == icon && item.subgroup == "equipment-consumable" && item.shield){
+			return item
+		}
+	}
+	return false
+}
+window.typeof_item = function(icon){
+	if(window.typeof_shield(icon)){
+		return false
+	}
+	for(var i = 0; i < items.length; i++){
+		var item = items[i];
 		if(item.char == icon){
 			return item.name
 		}
 	}
-
 	return false
 }
-
+window.typeof_equipment = function(icon){
+	for(var i = 0; i < items.length; i++){
+		var item = items[i];
+		if(item.char == icon && (item.subgroup == "equipment-armor" || item.subgroup == "equipment-weapon" || item.subgroup == "equipment-tool" || item.subgroup == "equipment-consumable")){
+			return item
+		}
+	}
+	return false
+}
+window.typeof_role = function(icon, role){
+	if(icon == "⚔"){
+		return "PMC"
+	}
+	if(icon == "🗡"){
+		return "SCAV"
+	}
+	if(icon == "🛩"){
+		return "UCAV"
+	}
+	return role ? role : ""
+}
 window.isItem = function(icon){
 	for(var i = 0; i < window.items.length; i++){
 		var item = window.items[i];
@@ -937,6 +997,94 @@ OAuth3.on("ready", function(e){
 		}
 	}
 
+	window.Action = function(body){
+		var player = window.players.self()
+
+		if(!player){
+			return
+		}
+
+		var cookies = window.cookies
+
+		if(OAuth3.xhr){
+			OAuth3.xhr.abort()
+			delete OAuth3.xhr
+		}
+
+		var url = "https://memepoly.com"
+
+		if(OAuth3.localhost){
+			url = "http://localhost:3001"
+		}
+
+		var dice = cookies.dice * 1
+
+		var query = {
+			dice : dice != 0 ? dice : 0,
+			href : window.location.href,
+			hash : cookies.hash,
+			token : cookies.token,
+			x : player.x,
+			y : player.y,
+			z : player.z
+		}
+
+		if(!body.emoji){
+			body.emoji = window.emojis.self
+		}
+
+		OAuth3.xhr = OAuth3.fetch({
+			method : "POST",
+			url : url,
+			body : body,
+			query : query
+		}, window.Callback);
+	}
+
+	window.Equipment = function(equip, unequip){
+		window.Action({
+			cc : "equip",
+			equip : equip ? equip : [],
+			unequip : unequip ? unequip : []
+		})
+	}
+
+	window.Craft = function(recipe){
+		window.Action({
+			cc : "craft",
+			recipe : recipe
+		})
+	}
+
+	window.Consume = function(item){
+		window.Action({
+			cc : "consume",
+			item : item ? item : "🧪"
+		})
+	}
+
+	window.Property = function(level, _x, _z){
+		var player = window.players.self()
+
+		window.Action({
+			cc : "property",
+			level : level,
+			x : typeof _x != "undefined" ? _x : player.x,
+			z : typeof _z != "undefined" ? _z : player.z
+		})
+	}
+
+	window.Auction = function(bid, _x, _z){
+		var player = window.players.self()
+
+		window.Action({
+			cc : "auction",
+			bid : bid,
+			x : typeof _x != "undefined" ? _x : player.x,
+			z : typeof _z != "undefined" ? _z : player.z
+		})
+	}
+
 	function emojiChanged(emoji, local, bomb){
 		var player = window.players.self()
 
@@ -1381,6 +1529,10 @@ OAuth3.on("ready", function(e){
 			var _dice = window.cookies.dice * 1
 
 			var cookies = window.cookies = JSON.parse(resp.body.cookies)
+
+			if(!isNaN(cookies.speed) && cookies.speed){
+				window.speed = 0.1 * (cookies.speed * 1)
+			}
 
 			var dice = cookies.dice * 1
 
@@ -1889,7 +2041,8 @@ OAuth3.on("ready", function(e){
 													x : player.x,
 													y : player.y + 0.5,
 													z : player.z,
-													emoji : player.emoji
+													emoji : player.emoji,
+													role : window.typeof_role(player.emoji, player.self ? cookies.role : "")
 												})
 											}
 
@@ -1923,10 +2076,15 @@ OAuth3.on("ready", function(e){
 										}
 									}
 								}
+							}else if(row.Subject == "#property"){
+								var propertyField = window.fields ? window.fields[`${row.x}:${row.z}`] : null
+								if(propertyField && propertyField.property){
+									propertyField.property.level = row.dice
+									propertyField.property.owner = row.Flag ? row.Flag : row.From
+									propertyField.property.toll = propertyField.property.tollTable ? propertyField.property.tollTable[row.dice] : 0
+								}
 							}else if(row.Cc.indexOf("#message") > -1){
 								_messages.push(row)
-
-
 							}else if(row.Cc.indexOf("#bomb") > -1 || row.Subject == "#bomb"){
 								if(row.From.indexOf(player_hash) > -1 && !row.Flag){
 									plant = false
@@ -2500,7 +2658,13 @@ OAuth3.on("ready", function(e){
 										// 	<a class="hashType"></a>
 										// </li>`
 									}else if(player_hash.indexOf(_player_hash) > -1){
+										var _maxHp = window.MaxHp[cookies.role ? cookies.role : ""]
+										var _hp = typeof cookies.hp != "undefined" ? cookies.hp : _maxHp
+
 										tooltip_body = `<li>
+											<a class="hashType Hp"><i class="emoji color">❤️</i><span class="cnt">${_hp}/${_maxHp}</span></a>
+										</li>
+										<li>
 											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
@@ -2842,6 +3006,9 @@ OAuth3.on("ready", function(e){
 						.attr("dice",dice)
 						.attr("team",cookies.team ? cookies.team : "")
 						.attr("balance",cookies.balance)
+						.attr("role",cookies.role ? cookies.role : "")
+						.attr("hp",typeof cookies.hp != "undefined" ? cookies.hp : "")
+						.attr("maxhp",window.MaxHp[cookies.role ? cookies.role : ""])
 
 					// $root.scrollTop(0)
 

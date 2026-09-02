@@ -38,18 +38,28 @@ textures.black.magFilter = THREE.NearestFilter
 textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
 var fields = Fields()
-
+var PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
 fields.forEach(function(field, index){
 	if(index % 9 == 0){
 		field.drop = "❓"
+		field.gate = true
 	}else if(index % 3 == 0){
 		field.item = "❔"
 	}
-
 	field.index = index
-
+	field.property = {
+		level: 0,
+		owner: "",
+		type: "empty",
+		toll: 0,
+		cost: window.PropertyCost,
+		tollTable: window.PropertyToll,
+		materials: window.PropertyMaterials
+	}
 	fields[`${field.x}:${field.z}`] = field
 })
+
+window.fields = fields
 
 
 export const Experience = () => {
@@ -422,27 +432,69 @@ export const Experience = () => {
 
 			if(emoji){
 				if(field){
+					if(field.gate){
+						return <>
+						<group position={props.position}>
+							<mesh position={[0, 0, 0.005]} onClick={onClick}>
+								<boxGeometry attach="geometry" args={[1, 1]} />
+								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color="#ffcc00" />
+							</mesh>
+							<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
+								<planeGeometry attach="geometry" args={[1, 1]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
+							</mesh>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+								<planeGeometry attach="geometry" args={[0.7, 0.7]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode("🚪")}.png`)} transparent />
+							</mesh>
+							<Html className="clipped">
+								<div className="emoji color gate" x={props.position.x} z={props.position.z}></div>
+							</Html>
+						</group>
+						</>
+					}
+					if(field.property && field.property.level > 0){
+						var propertyEmoji = PropertyLevelEmoji[field.property.level]
+						return <>
+						<group position={props.position}>
+							<mesh position={[0, 0, 0.005]} onClick={onClick}>
+								<boxGeometry attach="geometry" args={[1, 1]} />
+								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
+							</mesh>
+							<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
+								<planeGeometry attach="geometry" args={[1, 1]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
+							</mesh>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+								<planeGeometry attach="geometry" args={[0.7, 0.7]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(propertyEmoji)}.png`)} transparent />
+							</mesh>
+							<Html className="clipped">
+								<div className="emoji color property" level={field.property.level} x={props.position.x} z={props.position.z}></div>
+							</Html>
+						</group>
+						</>
+					}
 					if(field.item || field.drop){
 						return <>
-							<group position={props.position}>
-								<mesh position={[0, 0, 0.005]} onClick={onClick}>
-									<boxGeometry attach="geometry" args={[1, 1]} />
-									<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
-								</mesh>
-								<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
-									<planeGeometry attach="geometry" args={[1, 1]} />
-									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
-								</mesh>
-								<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
-									<planeGeometry attach="geometry" args={[0.5, 0.5]} />
-									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.drop)}.png`)} transparent />
-								</mesh>
-
-								<Html className="clipped">
-									<div className="emoji color" x={props.position.x} z={props.position.z}></div>
-								</Html>
-							</group>
-						</>	
+						<group position={props.position}>
+							<mesh position={[0, 0, 0.005]} onClick={onClick}>
+								<boxGeometry attach="geometry" args={[1, 1]} />
+								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
+							</mesh>
+							<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
+								<planeGeometry attach="geometry" args={[1, 1]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
+							</mesh>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+								<planeGeometry attach="geometry" args={[0.5, 0.5]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.drop)}.png`)} transparent />
+							</mesh>
+							<Html className="clipped">
+								<div className="emoji color" x={props.position.x} z={props.position.z}></div>
+							</Html>
+						</group>
+						</>
 					}
 				}
 
@@ -464,23 +516,57 @@ export const Experience = () => {
 				</>	
 			}else{
 				if(field){
+					if(field.gate){
+						return <>
+						<group position={props.position}>
+							<mesh position={[0, 0, 0.005]} onClick={onClick}>
+								<boxGeometry attach="geometry" args={[1, 1]} />
+								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color="#ffcc00" />
+							</mesh>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+								<planeGeometry attach="geometry" args={[0.7, 0.7]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode("🚪")}.png`)} transparent />
+							</mesh>
+							<Html className="clipped">
+								<div className="emoji color gate" x={props.position.x} z={props.position.z}></div>
+							</Html>
+						</group>
+						</>
+					}
+					if(field.property && field.property.level > 0){
+						var propertyEmoji = PropertyLevelEmoji[field.property.level]
+						return <>
+						<group position={props.position}>
+							<mesh position={[0, 0, 0.005]} onClick={onClick}>
+								<boxGeometry attach="geometry" args={[1, 1]} />
+								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
+							</mesh>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+								<planeGeometry attach="geometry" args={[0.7, 0.7]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(propertyEmoji)}.png`)} transparent />
+							</mesh>
+							<Html className="clipped">
+								<div className="emoji color property" level={field.property.level} x={props.position.x} z={props.position.z}></div>
+							</Html>
+						</group>
+						</>
+					}
 					if(field.item || field.drop){
 						return <>
-							<group position={props.position}>
-								<mesh position={[0, 0, 0.005]} onClick={onClick}>
-									<boxGeometry attach="geometry" args={[1, 1]} />
-									<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
-								</mesh>
-								<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.511, 0]}>
-									<planeGeometry attach="geometry" args={[0.5, 0.5]} />
-									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.drop)}.png`)} transparent />
-								</mesh>
-
-								<Html className="clipped">
-									<div className="emoji color" x={props.position.x} z={props.position.z}></div>
-								</Html>
-							</group>
-						</>	
+						<group position={props.position}>
+							<mesh position={[0, 0, 0.005]} onClick={onClick}>
+								<boxGeometry attach="geometry" args={[1, 1]} />
+								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
+							</mesh>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.511, 0]}>
+								<planeGeometry attach="geometry" args={[0.5, 0.5]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(field.item || field.drop)}.png`)} transparent />
+							</mesh>
+							<Html className="clipped">
+								<div className="emoji color" x={props.position.x} z={props.position.z}></div>
+							</Html>
+						</group>
+						</>
 					}
 				}
 
@@ -495,7 +581,7 @@ export const Experience = () => {
 							<div className="emoji color" x={props.position.x} z={props.position.z}></div>
 						</Html>
 					</group>
-				</>	
+				</>
 			}
 		}else{
 			return <>
@@ -597,6 +683,7 @@ export const Experience = () => {
 						emoji={player.emoji}
 						self={player.self}
 						follow={player.follow}
+						role={player.role}
 						position={
 							new THREE.Vector3(
 								player.x,

@@ -5974,5 +5974,211 @@ window.items = [
         "category": "Objects (household)",
         "group": "Objects",
         "subgroup": "household"
+    },
+    {
+        "codes": "1FA96",
+        "char": "🪖",
+        "name": "military helmet",
+        "category": "Equipment (equipment-armor)",
+        "group": "Equipment",
+        "subgroup": "equipment-armor",
+        "slot": "head",
+        "defense": 1
+    },
+    {
+        "codes": "26D1",
+        "char": "⛑",
+        "name": "rescue helmet",
+        "category": "Equipment (equipment-armor)",
+        "group": "Equipment",
+        "subgroup": "equipment-armor",
+        "slot": "head",
+        "defense": 2,
+        "heal": 1
+    },
+    {
+        "codes": "1F9BA",
+        "char": "🦺",
+        "name": "safety vest",
+        "category": "Equipment (equipment-armor)",
+        "group": "Equipment",
+        "subgroup": "equipment-armor",
+        "slot": "body",
+        "defense": 1
+    },
+    {
+        "codes": "1F94B",
+        "char": "🥋",
+        "name": "martial arts uniform",
+        "category": "Equipment (equipment-armor)",
+        "group": "Equipment",
+        "subgroup": "equipment-armor",
+        "slot": "body",
+        "defense": 2,
+        "dodge": 0.05
+    },
+    {
+        "codes": "1F9E4",
+        "char": "🧤",
+        "name": "gloves",
+        "category": "Equipment (equipment-armor)",
+        "group": "Equipment",
+        "subgroup": "equipment-armor",
+        "slot": "hand",
+        "defense": 1
+    },
+    {
+        "codes": "1F94A",
+        "char": "🥊",
+        "name": "boxing glove",
+        "category": "Equipment (equipment-weapon)",
+        "group": "Equipment",
+        "subgroup": "equipment-weapon",
+        "attack": 2
+    },
+    {
+        "codes": "1F462",
+        "char": "👢",
+        "name": "woman's boot",
+        "category": "Equipment (equipment-armor)",
+        "group": "Equipment",
+        "subgroup": "equipment-armor",
+        "slot": "foot",
+        "defense": 1
+    },
+    {
+        "codes": "1F97E",
+        "char": "🥾",
+        "name": "hiking boot",
+        "category": "Equipment (equipment-armor)",
+        "group": "Equipment",
+        "subgroup": "equipment-armor",
+        "slot": "foot",
+        "defense": 2,
+        "speed": 0.05
+    },
+    {
+        "codes": "1F6E1",
+        "char": "🛡",
+        "name": "shield",
+        "category": "Equipment (equipment-armor)",
+        "group": "Equipment",
+        "subgroup": "equipment-armor",
+        "slot": "accessory",
+        "defense": 3,
+        "shield": 1
+    },
+    {
+        "codes": "2694",
+        "char": "⚔",
+        "name": "crossed swords",
+        "category": "Equipment (equipment-weapon)",
+        "group": "Equipment",
+        "subgroup": "equipment-weapon",
+        "attack": 3
+    },
+    {
+        "codes": "1F3F9",
+        "char": "🏹",
+        "name": "bow and arrow",
+        "category": "Equipment (equipment-weapon)",
+        "group": "Equipment",
+        "subgroup": "equipment-weapon",
+        "attack": 2,
+        "range": true
+    },
+    {
+        "codes": "1F52B",
+        "char": "🔫",
+        "name": "water pistol",
+        "category": "Equipment (equipment-weapon)",
+        "group": "Equipment",
+        "subgroup": "equipment-weapon",
+        "attack": 1,
+        "range": true
+    },
+    {
+        "codes": "1F4A3",
+        "char": "💣",
+        "name": "bomb",
+        "category": "Equipment (equipment-weapon)",
+        "group": "Equipment",
+        "subgroup": "equipment-weapon",
+        "attack": 5,
+        "area": true
+    },
+    {
+        "codes": "1F576",
+        "char": "🕶",
+        "name": "sunglasses",
+        "category": "Equipment (equipment-consumable)",
+        "group": "Equipment",
+        "subgroup": "equipment-consumable",
+        "slot": "consumable",
+        "shield": 1
+    },
+    {
+        "codes": "1F60E",
+        "char": "😎",
+        "name": "smiling face with sunglasses",
+        "category": "Equipment (equipment-consumable)",
+        "group": "Equipment",
+        "subgroup": "equipment-consumable",
+        "slot": "consumable",
+        "shield": 1,
+        "cost": 100
+    },
+    {
+        "codes": "1FA93",
+        "char": "🪓",
+        "name": "axe",
+        "category": "Equipment (equipment-tool)",
+        "group": "Equipment",
+        "subgroup": "equipment-tool",
+        "slot": "tool",
+        "gatherRate": 2,
+        "gatherTarget": "🪵"
+    },
+    {
+        "codes": "26CF",
+        "char": "⛏",
+        "name": "pickaxe",
+        "category": "Equipment (equipment-tool)",
+        "group": "Equipment",
+        "subgroup": "equipment-tool",
+        "slot": "tool",
+        "gatherRate": 2,
+        "gatherTarget": "🪨"
+    },
+    {
+        "codes": "1F3A3",
+        "char": "🎣",
+        "name": "fishing pole",
+        "category": "Equipment (equipment-tool)",
+        "group": "Equipment",
+        "subgroup": "equipment-tool",
+        "slot": "tool",
+        "gatherRate": 1,
+        "gatherTarget": "🐟"
+    },
+    {
+        "codes": "1F9EA",
+        "char": "🧪",
+        "name": "test tube",
+        "category": "Equipment (equipment-consumable)",
+        "group": "Equipment",
+        "subgroup": "equipment-consumable",
+        "slot": "consumable",
+        "heal": 1
+    },
+    {
+        "codes": "1F5E1",
+        "char": "🗡",
+        "name": "dagger",
+        "category": "Equipment (equipment-weapon)",
+        "group": "Equipment",
+        "subgroup": "equipment-weapon",
+        "attack": 1,
+        "bonusVs": "PMC"
     }
 ]

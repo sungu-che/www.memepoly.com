@@ -41,9 +41,19 @@ export function Player({
 
 	}
 
+	var roleEmoji = ""
+
+	if(props.role == "PMC"){
+		roleEmoji = "⚔"
+	}else if(props.role == "SCAV"){
+		roleEmoji = "🗡"
+	}else if(props.role == "UCAV"){
+		roleEmoji = "🛩"
+	}
+
 	useFrame((e) => {
 		position = window[props_hash].position
-		
+
 		if(cookies){
 			if(window.current.current.position.y == 0){
 				var b = window.map.biomes[`${group.current.position.x}:${group.current.position.z}`]
@@ -156,7 +166,7 @@ export function Player({
 		<group ref={group} {...props} position={position}>
 			<group>
 				<Html>
-					<player id={props_hash} team={props.team} dice={props.dice} type={type} self={self} follow={follow} verify={verify} alt={alt} x={position.x} y={position.y} z={position.z}>
+					<player id={props_hash} team={props.team} dice={props.dice} type={type} self={self} follow={follow} verify={verify} alt={alt} role={props.role ? props.role : ""} x={position.x} y={position.y} z={position.z}>
 						<emoji type={type} selector={props_hash}>
 							<div className="emoji color">
 								<div data-plyr-provider={provider} data-plyr-embed-id={embed}></div>
@@ -164,6 +174,7 @@ export function Player({
 									<img draggable="false" src={src} alt={alt} width="32" height="32" />
 								</picture>
 								<i>{emoji}</i>
+								{roleEmoji ? <i className="role-emoji">{roleEmoji}</i> : null}
 								<portal href={href}>
 									<div class="mask"></div>
 								</portal>
@@ -175,6 +186,11 @@ export function Player({
 								</div>
 							</div>
 						</emoji>
+						<div className="equipment" data-hash={props_hash}>
+							<equipment>
+								<ul></ul>
+							</equipment>
+						</div>
 						<div className="tooltip">
 							<tooltip>
 								<ul className={props_hash}></ul>
