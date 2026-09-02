@@ -185,7 +185,47 @@
 						<div id="meme"></div>
 						
 						<div id="bingo"></div>
-
+						<div id="capture">
+							<div class="icon"></div>
+							<div class="xyz">
+								<span class="x"></span>
+								<span class="z"></span>
+							</div>
+							<div class="rank_toggle"></div>
+							<div id="rank">
+								<ol></ol>
+							</div>
+						</div>
+						<form name="oauth.network">
+							<fields>
+								<field draggable="false">
+									<h0></h0>
+									<items>
+										<item class="radio" type="radio"></item>
+										<item class="checkbox" type="checkbox"></item>
+									</items>
+									<flows></flows>
+									<toolbar>
+										<input name="count" type="number">
+										<input name="created" type="datetime-local">
+										<input name="guest" type="checkbox" id="oauth.network.guest">
+										<input name="started" type="datetime-local">
+										<input name="expired" type="datetime-local">
+									</toolbar>
+									<tooltip></tooltip>
+								</field>
+							</fields>
+							<details>
+								<cable></cable>
+								<table>
+									<tbody></tbody>
+								</table>
+							</details>
+							<div class="submit">
+								<input type="submit" value="send">
+							</div>
+							<a class="message close">❌</a>
+						</form>
 						<div class="layer">
 							<form action="javascript:window.Report()" name="report" class="popup">
 								<input type="hidden" name="emoji">
@@ -321,7 +361,7 @@
 									</div>
 									<div class="scroll tab_content">
 										<div class="deck">
-											<!-- <div class="items"></div> -->
+											<div class="items"></div>
 											<div class="emojis"></div>
 											<div class="follows"></div>
 											<!-- <div class="players"></div> -->
@@ -370,6 +410,10 @@
 		<script type="module" src="/src/fields.js"></script>
 		<script type="module" src="/src/emojis.js"></script>
 		<script type="module" src="/src/items.js"></script>
+		<script type="module" src="/src/role.js"></script>
+		<script type="module" src="/src/myroom.js"></script>
+		<script type="module" src="/src/dialog.js"></script>
+		<script type="module" src="/src/room.js"></script>
 		<script type="module" src="/src/index.js"></script>
 		<script type="module" src="/src/main.jsx"></script>
 		<script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js"></script>

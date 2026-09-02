@@ -5,6 +5,13 @@ var time = {
 }
 var offset = -540
 
+if(typeof window.setFrameloop == "undefined"){
+	window.frameloop = "never"
+	window.setFrameloop = function(value){
+		window.frameloop = value
+	}
+}
+
 if(offset + 60 <= time.zone || offset - 60 >= time.zone || OAuth3.localhost){
 	time.balance = 0
 }
@@ -17,6 +24,243 @@ if(!OAuth3.isMobile){
 
 window.bingo = {}
 window.sticker = {}
+
+window.com = {}
+
+window.Mode = function(cookies){
+	cookies = cookies ? cookies : window.cookies
+
+	if(!cookies){
+		return "board"
+	}
+
+	var hash = window.location.hash.replace("#","").toLowerCase()
+
+	if(!hash){
+		return "board"
+	}
+
+	var owner = (cookies.address ? cookies.address : cookies.hash) + ""
+		owner = owner.replace("0x","").toLowerCase()
+
+	if(owner && hash == owner){
+		return "room"
+	}
+
+	if(cookies.mode){
+		return cookies.mode
+	}
+
+	return "board"
+}
+
+window.MapReset = function(){
+	var biomes = (window.map && window.map.biomes) ? window.map.biomes : []
+
+	window.map = {
+		nonces : [],
+		biomes : biomes,
+		dissolve : {},
+		quest : {},
+		score : {},
+		open : {},
+		item : {},
+		thread : {},
+		puzzle : {},
+		follow : {},
+		report : {},
+		reward : {}
+	}
+
+	return window.map
+}
+
+window.far = {
+	x : 4.5,
+	y : 5.5,
+	z : 4.5
+}
+window.far.set = function(){}
+
+window.grid = []
+window.grid.size = 40
+window.grid.edge = 10 - 1
+window.grid.x = window.grid.size
+window.grid.z = window.grid.size
+window.grid.center = "#000"
+window.grid.line = "#000"
+window.grid.set = function(){}
+
+window.selector = {}
+window.selector.set = function(){}
+
+window.dpr = 1
+window.setDpr = function(){}
+
+window.effect = true
+window.setEffect = function(){}
+
+window.Zoom = function(){
+	var $zoom = $(".zoom_toggle a.zoom")
+
+	if(!$zoom.length){
+		return
+	}
+
+	if(!$zoom.hasClass("color")){
+		return
+	}
+
+	$zoom.removeClass("color")
+
+	var _far = window.far
+
+	_far.x = 4.5
+	_far.y = window.Mode() == "room" ? 4.5 : 5.5
+	_far.z = 4.5
+
+	window.speed = 0.1
+
+	if(window.far.set){
+		window.far.set(_far)
+	}
+
+	if(window.setDpr){
+		window.setDpr(OAuth3.isMobile ? 0.8 : 1)
+	}
+
+	$("body").removeAttr("zoom")
+	$("body").removeAttr("class")
+}
+
+window.Callback = async function(resp){
+	var _cookies
+
+	try{
+		_cookies = JSON.parse(resp.body.cookies)
+	}catch(err){
+		_cookies = window.cookies
+	}
+
+	var mode = window.Mode(_cookies)
+
+	$("body").attr("world", mode)
+
+	try{
+		if(window.setEffect){
+			if(window.effect != (mode == "room")){
+				window.setEffect(mode == "room")
+			}
+		}
+	}catch(err){
+
+	}
+
+	if(mode == "room"){
+		if(window.RoomCallback){
+			return await window.RoomCallback(resp)
+		}
+
+		return
+	}
+
+	if(window.BoardCallback){
+		return await window.BoardCallback(resp)
+	}
+}
+
+window.Poll = async function(){
+	var mode = window.Mode()
+
+	if(mode == "room"){
+		if(window.RoomPoll){
+			return await window.RoomPoll()
+		}
+
+		return
+	}
+
+	if(window.BoardPoll){
+		return await window.BoardPoll()
+	}
+}
+
+window.Init = function(cookies){
+	var mode = window.Mode(cookies)
+
+	if(!window.Init.done){
+		window.Init.done = {}
+	}
+
+	window.Init.mode = mode
+
+	if(window.Init.done[mode]){
+		return
+	}
+
+	window.Init.done[mode] = true
+
+	if(mode == "room"){
+		if(window.RoomInit){
+			window.RoomInit(cookies)
+		}
+
+		return
+	}
+
+	if(window.BoardInit){
+		window.BoardInit(cookies)
+	}
+}
+
+window.Init.done = {}
+
+window.Chat = function(flow, date){
+	if(window.Mode() == "room"){
+		if(window.RoomChat){
+			return window.RoomChat(flow, date)
+		}
+
+		return
+	}
+
+	if(window.BoardChat){
+		return window.BoardChat(flow, date)
+	}
+}
+
+window.onhashchange = function(e){
+	var mode = window.Mode()
+
+	$("body").attr("world", mode)
+
+	try{
+		if(window.RolePanel){
+			window.RolePanel.close()
+		}
+	}catch(err){
+
+	}
+
+	$("#myroom").removeClass("on")
+	$("body").removeAttr("myroom")
+
+	if(mode == "room"){
+		if(window.RoomHashChange){
+			window.RoomHashChange(e)
+		}
+	}else{
+		if(window.BoardHashChange){
+			window.BoardHashChange(e)
+		}
+	}
+
+	try{
+		window.Init(window.cookies)
+	}catch(err){
+		console.log("init err",err);
+	}
+}
 
 function Respawn(){
 	var cookies = window.cookies
@@ -137,7 +381,7 @@ window.Subscribe = function(){
 		hash : window.cookies.hash,
 		token : window.cookies.token,
 		x : window.current.current.position.x,
-		y : window.current.current.position.y,
+		y : window.Mode() == "room" ? 0 : window.current.current.position.y,
 		z : window.current.current.position.z
 	}
 
@@ -443,9 +687,39 @@ window.randomHash = function(){
 	return account.address.toLowerCase()
 }
 
+window.assets = []
+window.assets.set = function(){}
+
+window.camera = {}
+window.camera.set = function(){}
+
 window.players = []
 window.players.set = function(){}
 window.players.self = function(){
+	if(window.Mode() == "room"){
+		var _position = {
+			x : 1.5,
+			y : 0.5,
+			z : 1.5
+		}
+
+		if(window.current){
+			_position.x = window.current.current.position.x
+			_position.z = window.current.current.position.z
+		}
+
+		return {
+			follow : false,
+			self : true,
+			type : "player",
+			hash : window.cookies.address ? window.cookies.address : window.cookies.hash,
+			emoji : window.emojis.self ? window.emojis.self : "😀",
+			x : _position.x,
+			y : _position.y,
+			z : _position.z
+		}
+	}
+
 	var respawn = Respawn()
 
 	if(window.current){
@@ -835,8 +1109,18 @@ OAuth3.on("ready", function(e){
 						delete OAuth3.xhr
 					}
 
-					var respawn = Respawn()
-					
+					var _x = player.x ? player.x : 1.5
+					var _y = player.y ? player.y : 0
+					var _z = player.z ? player.z : 1.5
+
+					if(window.Mode() == "board"){
+						var respawn = Respawn()
+
+						_x = player.x ? player.x : respawn.x
+						_y = player.y ? player.y : respawn.y
+						_z = player.z ? player.z : respawn.z
+					}
+
 					OAuth3.fetch({
 						method : "GET",
 						url : url,
@@ -846,9 +1130,9 @@ OAuth3.on("ready", function(e){
 							href : window.location.href,
 							hash : hash,
 							token : token,
-							x : player.x ? player.x : respawn.x,
-							y : player.y ? player.y : respawn.y,
-							z : player.z ? player.z : respawn.z
+							x : _x,
+							y : _y,
+							z : _z
 						}
 					}, function(res){
 						window.location.href = OAuth3.host+"/logout"
@@ -860,25 +1144,33 @@ OAuth3.on("ready", function(e){
 
 	window.Feedback = function(){
 		var player = window.players.self()
-
 		if(player){
 			var $form = document.forms.feedback
 			var hash = $form.hash.value
 			var token = $form.token.value
-
 			var body = {
 				cc : "feedback",
 				subject : $form.subject.value,
 				emoji : $form.emoji.value
 			}
-
 			if(body.subject){
+				var _url = "https://memepoly.com"
+
+				if(OAuth3.localhost){
+					_url = "http://localhost:3001"
+				}
+
 				$(".layer, .layer form.popup").removeClass("on")
-				emojiChanged("🫥", true)
+
+				if(window.Mode() == "room"){
+					window.RoomEmoji("🫥")
+				}else{
+					emojiChanged("🫥", true)
+				}
 
 				OAuth3.fetch({
 					method : "POST",
-					url : url,
+					url : _url,
 					body : body,
 					query : {
 						href : window.location.href,
@@ -894,6 +1186,14 @@ OAuth3.on("ready", function(e){
 	}
 
 	window.Tutorial = function(value, step){
+		if(window.Mode() != "board"){
+			return
+		}
+
+		if(Object.keys(window.com).length){
+			return
+		}
+
 		var $form = document.forms.Tutorial
 		var $index = $form.index
 
@@ -1523,18 +1823,18 @@ OAuth3.on("ready", function(e){
 			}
 		}
 
-		window.Callback = async function(resp){
+		window.BoardCallback = async function(resp){
 			var url = new URL(window.location.href)
 
 			var _dice = window.cookies.dice * 1
 
 			var cookies = window.cookies = JSON.parse(resp.body.cookies)
 
+			var dice = cookies.dice * 1
+
 			if(!isNaN(cookies.speed) && cookies.speed){
 				window.speed = 0.1 * (cookies.speed * 1)
 			}
-
-			var dice = cookies.dice * 1
 
 			if(cookies.axis){
 				try{
@@ -3012,7 +3312,7 @@ OAuth3.on("ready", function(e){
 
 					// $root.scrollTop(0)
 
-					if(typeof window.Chat == "undefined"){
+					if(!window.Init.done["board"]){
 						window.Init(cookies)
 						window.cookies.dice = 0
 					}
@@ -3126,7 +3426,15 @@ OAuth3.on("ready", function(e){
 				token : cookies.token
 			}
 
-			if(cookies.axis){
+			var mode = window.Mode(cookies)
+
+			$body.attr("world", mode)
+
+			if(mode == "room"){
+				query.x = 1.5
+				query.y = 0
+				query.z = 1.5
+			}else if(cookies.axis){
 				var biomes = listToBiomes(window.map.biomes, 100)
 
 				var _axis = cookies.axis
@@ -3174,17 +3482,28 @@ OAuth3.on("ready", function(e){
 
 					if(body.to && body.emoji){
 						$(".layer, .layer form.popup").removeClass("on")
-						emojiChanged("🫥", true)
 
-						var respawn = Respawn()
+						if(window.Mode() == "room"){
+							window.RoomEmoji("🫥")
+						}else{
+							emojiChanged("🫥", true)
+						}
 
 						var query = {
 							href : window.location.href,
 							hash : hash,
 							token : token,
-							x : player.x ? player.x : respawn.x,
-							y : player.y ? player.y : respawn.y,
-							z : player.z ? player.z : respawn.z
+							x : player.x,
+							y : player.y,
+							z : player.z
+						}
+
+						if(window.Mode() == "board"){
+							var respawn = Respawn()
+
+							query.x = player.x ? player.x : respawn.x
+							query.y = player.y ? player.y : respawn.y
+							query.z = player.z ? player.z : respawn.z
 						}
 
 						OAuth3.xhr = OAuth3.fetch({
@@ -3197,7 +3516,7 @@ OAuth3.on("ready", function(e){
 				}
 			}
 
-			window.Poll = async function(){
+			window.BoardPoll = async function(){
 				try{
 					var self_player = window.players.self()
 
@@ -3315,7 +3634,7 @@ OAuth3.on("ready", function(e){
 			}
 		}
 
-		window.Init = function(cookies){
+		window.BoardInit = function(cookies){
 			var player_hash = cookies.address ? cookies.address : cookies.hash
 
 			var tutorials = [
@@ -3357,10 +3676,10 @@ OAuth3.on("ready", function(e){
 				${(cookies.address ? `<li><a class="feedback">Feedback</a></li><li><a href="${OAuth3.host}/logout">Logout</a></li>` : '<li><a href="/login/">Login</a></li>')}
 			</ul>`;
 
+			$('#header label[for="nav"] canvas').remove()
+
 			var icon = blockies.create({seed: player_hash.indexOf("0x") > -1 ? player_hash : "0x"+player_hash});
-
 			document.querySelector('#header label[for="nav"]').appendChild(icon);
-
 			window.addEventListener('focus', function(){
 				window.setFrameloop("always")
 			})
@@ -3371,6 +3690,10 @@ OAuth3.on("ready", function(e){
 
 			$body.on({
 				click : async function(e){
+					if(window.Mode() != "board"){
+						return
+					}
+
 					var $this = $(e.target)
 
 					var cookies = window.cookies
@@ -4262,6 +4585,10 @@ OAuth3.on("ready", function(e){
 					y : 0
 				},
 				set : function(e){
+					if(window.Mode() != "board"){
+						return
+					}
+
 					var cookies = window.cookies
 
 					var $el = $(e.target)
@@ -4393,6 +4720,10 @@ OAuth3.on("ready", function(e){
 			});
 
 			var onscroll = function(){
+				if(window.Mode() != "board"){
+					return
+				}
+
 				var t = document.scrollingElement.scrollTop
 
 				if(t){
@@ -4432,7 +4763,7 @@ OAuth3.on("ready", function(e){
 
 			var $chat = $(document.forms.chat)
 
-			window.Chat = function(flow, date){
+			window.BoardChat = function(flow, date){
 				var player = window.players.self()
 				var len = players.length
 
@@ -4701,111 +5032,80 @@ OAuth3.on("ready", function(e){
 
 			$emojis.addEventListener('mousedown', function(e){
 				e.preventDefault()
-
 				isTouch = true
-
 				y = e.pageY
 				x = e.pageX
 				top = $emojis.scrollTop
 				left = $emojis.scrollLeft
-
 				document.addEventListener('mousemove', draggingFunction)
 			})
-
 			window.addEventListener('mouseup', function() {
 				isTouch = false
 			})
 
-			if(!window.onhashchange){
-				window.onhashchange = function(e){
-					document.scrollingElement.scrollTop = 0
+			window.BoardHashChange = function(e){
+				var cookies = window.cookies
 
-					window.map = {}
+				document.scrollingElement.scrollTop = 0
 
-					$body
-						.removeAttr("class")
-						.removeAttr("bingo")
-						.removeAttr("chat")
-						.addClass("loading")
+				window.MapReset()
 
-					var $form = $('form[name="oauth.network"]')
-					$form.removeClass("on")
+				delete window.dialog
 
-					if(form_template.length > 0){
-						$form[0].outerHTML = form_template
-					}
+				$body
+					.removeAttr("class")
+					.removeAttr("bingo")
+					.removeAttr("chat")
+					.addClass("loading")
 
-					$nav.prop("checked",false)
-					
-					$('messages ul, talks ul').html("")
+				$('form[name="oauth.network"]').removeClass("on")
 
-					var address = window.location.hash.replace("#","0x")
+				$nav.prop("checked",false)
 
-					var player = window.players.self()
+				$('messages ul, #rank ol, #capture>.rank_toggle, talks ul').html("")
 
-					var default_img = '' //'<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">'
+				var address = window.location.hash.replace("#","0x")
 
-					
-					if(host_address.indexOf(address) == -1){
-						$("#nav").prop("checked",false)
+				if(address.length > 2){
+					$("#intro .title .emoji").html("")
+					$("#intro .title .emoji").append(blockies.create({seed: address}))
+					$("#intro .coptyright p").html(`<span class="address">
+						<address>
+							<span>${address}</span>
+							<span dir="rtl">${address}</span>
+						</address>
+					</span>`)
+				}
 
-						$("#intro .title .emoji").html("")
-						$("#intro .title .emoji").append(blockies.create({seed: address}))
+				if(OAuth3.xhr){
+					OAuth3.xhr.abort()
+					delete OAuth3.xhr
+				}
 
-						$("#intro .coptyright p").html(`<span class="address">
-							<address>
-								<span>${address}</span>
-								<span dir="rtl">${address}</span>
-							</address>
-						</span>`)
-					}else{
-						$("#intro .title .emoji").html('<img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif" alt="">')
-						$("#intro .coptyright p").html('memepoly.com')
-					}
+				clearInterval(window.Roll.ing)
+				delete window.Roll.ing
 
-					if(OAuth3.xhr){
-						OAuth3.xhr.abort()
-						delete OAuth3.xhr
-					}
+				clearInterval(window.Poll.ing)
+				delete window.Poll.ing
 
-					clearInterval(window.Poll.ing)
+				$status.innerHTML = `<div class="loading">
+					<strong>Loading...</strong>
+				</div>`
+
+				setTimeout(function(){
+					window.speed = 0.1
+
+					window.camera.set({})
+					window.assets.set([])
+
+					window.setFrameloop("always")
+
 					window.Poll.ing = setInterval(window.Poll, time.balance)
 
-					$status.innerHTML = `<div class="loading">
-						<strong>Loading...</strong>
-					</div>`
-
-					setTimeout(function(){
-						$('player[self="true"] emoji').click()
-
-						window.speed = 0.2
-
-						window.camera.set({})
-
-						// window.players.set([{
-						// 	follow : false,
-						// 	self : true,
-						// 	hash : cookies.address ? cookies.address : cookies.hash,
-						// 	emoji : "😀",
-						// 	x : 1.5,
-						// 	y : 0.5,
-						// 	z : 1.5
-						// }])
-
-						// window.assets.set([])
-						// window.setFrameloop("always")
-
-						// window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = 1.5
-						// window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = 1.5
-
-						if(!window.tutorial){
-							delete window.response
-						}
-					}, 2000)
-				}
+					delete window.response
+				}, 1000)
 			}
 		}
-
 		OAuth3.fetch(request, response);
 	}
 })

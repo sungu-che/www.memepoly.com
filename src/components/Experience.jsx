@@ -3,6 +3,7 @@ import { Environment, Html, Text } from "@react-three/drei"
 import { Suspense, useEffect, useRef, useState, useMemo } from "react"
 
 import { Player } from "./Player"
+import { RoomAsset, RoomGrid } from "./RoomWorld"
 
 import * as THREE from "three"
 import { useFrame, useThree, useLoader } from "@react-three/fiber"
@@ -69,11 +70,23 @@ export const Experience = () => {
 
 	const [camera, setCamera] = useState({});
 
-	const far = {
+	const [selector, setSelector] = useState({});
+
+	const [grid, setGrid] = useState([]);
+
+	const [far, setFar] = useState({
 		x : 4.5,
 		y : 5.5,
 		z : 4.5
-	}
+	});
+
+	grid.size = 40
+	grid.edge = 10 - 1
+
+	grid.x = grid.size
+	grid.z = grid.size
+	grid.center = "#000"
+	grid.line = "#000"
 
 	const current = useRef()
 	const cursor = useRef()
@@ -93,7 +106,13 @@ export const Experience = () => {
 		}else{
 			var position
 
-			if(cookies.axis){
+			if(window.Mode() == "room"){
+				position = {
+					x : 1.5,
+					y : 0.5,
+					z : 1.5
+				}
+			}else if(cookies.axis){
 				var _axis = cookies.axis
 					_axis = _axis.split(",")
 
@@ -133,20 +152,60 @@ export const Experience = () => {
 			}
 		}
 
+		var _position = player.position
+
+		try{
+			if(window.Mode() == "room"){
+				if(current.current){
+					_position = current.current.position
+				}
+			}
+		}catch(err){
+
+		}
+
 		return {
 			emoji : player.emoji,
 			hash : player.hash,
 			follow : player.follow,
 			self : player.self,
 			team : player.team,
-			x : player.position.x,
+			type : player.type,
+			x : _position.x,
 			y : player.position.y,
-			z : player.position.z
+			z : _position.z
 		}
 	}
 
+	var interval = function(){
+		if(OAuth3.after){
+			if(OAuth3.before == OAuth3.after){
+				clearInterval(OAuth3.interval)
+
+				OAuth3.interval = undefined
+				OAuth3.after = undefined
+				OAuth3.before = undefined
+			}
+		}		
+		
+		if(OAuth3.before){
+			OAuth3.after = OAuth3.before
+		}
+	}
+
+	window.RoomInterval = interval
+
 	useFrame((e,delta) => {
 		var cookies = window.cookies
+
+		if(window.Mode() == "room"){
+			try{
+				current.current.position.y = 0
+				cursor.current.position.y = -0.001
+			}catch(err){
+
+			}
+		}
 		
 		if(cookies){
 			var position
@@ -181,6 +240,16 @@ export const Experience = () => {
 					e.camera?.lookAt(vec)
 					e.camera.position.lerp(new THREE.Vector3(position.x+far.x,position.y+far.y,position.z+far.z ), 0.2)
 				}
+
+				if(OAuth3.interval){
+					if(!OAuth3.after){
+						if(window.frameloop == "demand"){
+							window.setFrameloop("always")
+						}
+					}
+
+					OAuth3.before = position.x
+				}
 			}
 		}
 	})
@@ -188,6 +257,14 @@ export const Experience = () => {
 	var point = {}
 
 	var onClick = function(e){
+		if(window.Mode() == "room"){
+			if(window.RoomClick){
+				return window.RoomClick(e)
+			}
+
+			return
+		}
+
 		var cookies = window.cookies
 
 		try{
@@ -623,19 +700,31 @@ export const Experience = () => {
 		window.camera = camera;
 		window.camera.set = setCamera;
 
+		window.selector = selector;
+		window.selector.set = setSelector;
+
+		window.far = far;
+		window.far.set = setFar;
+
+		window.grid = grid
+
 		window.cursor = cursor;
 		window.current = current;
 
 		window.gl = gl
 
 		window.addEventListener('click', onClick);
+		window.addEventListener('contextmenu', onContextmenu);
 		gl.domElement.addEventListener('webglcontextlost', onContextLost, false);
 
 		return () => {
 			window.removeEventListener('click', onClick);
+			window.removeEventListener('contextmenu', onContextmenu);
 			gl.domElement.removeEventListener('webglcontextlost', onContextLost, false)
 		}
 	})
+
+	var mode = window.Mode()
 
 	return (
 		<>
@@ -648,28 +737,48 @@ export const Experience = () => {
 				<meshStandardMaterial attach="material" color={cursor.color} />
 			</mesh>
 
-			<mesh ref={current} rotation-x={-Math.PI / 2} position={[0.5, 0, 0.5]}>
+			<mesh ref={current} rotation-x={-Math.PI / 2} position={[1.5, 0, 1.5]}>
 				<planeGeometry attach="geometry" args={[0.9, 0.9]} />
 				<meshStandardMaterial attach="material" color={current.color} />
 			</mesh>
 
+			{mode == "room" ? <RoomGrid onClick={onClick} /> : null}
+
 			<Suspense>
 				{assets.map((asset) => (
-					<Asset 
-						key={asset.id}
-						uid={asset.id}
-						hash={asset.hash}
-						name={asset.name}
-						value={asset.value}
-						color={asset.color}
-						position={
-							new THREE.Vector3(
-								asset.x,
-								asset.y,
-								asset.z
-							)
-						}
-					/>
+					mode == "room" ? (
+						<RoomAsset
+							key={asset.id + ":" + asset.name}
+							uid={asset.id}
+							hash={asset.hash}
+							name={asset.name}
+							value={asset.value}
+							color={asset.color}
+							position={
+								new THREE.Vector3(
+									asset.x,
+									asset.y,
+									asset.z
+								)
+							}
+						/>
+					) : (
+						<Asset 
+							key={asset.id}
+							uid={asset.id}
+							hash={asset.hash}
+							name={asset.name}
+							value={asset.value}
+							color={asset.color}
+							position={
+								new THREE.Vector3(
+									asset.x,
+									asset.y,
+									asset.z
+								)
+							}
+						/>
+					)
 				))}
 			</Suspense>
 			
@@ -684,6 +793,7 @@ export const Experience = () => {
 						self={player.self}
 						follow={player.follow}
 						role={player.role}
+						dice={player.dice}
 						position={
 							new THREE.Vector3(
 								player.x,

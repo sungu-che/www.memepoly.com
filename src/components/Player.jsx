@@ -31,9 +31,11 @@ export function Player({
 
 	var follow = props.follow ? "true" : ""
 
-	var self_hash = cookies.address ? cookies.address : cookies.hash
+	var self_hash = ""
 
 	try{
+		self_hash = cookies.address ? cookies.address : cookies.hash
+
 		if(window.map.follow[self_hash].indexOf(props_hash) > -1){
 			follow = "true"
 		}
@@ -54,23 +56,43 @@ export function Player({
 	useFrame((e) => {
 		position = window[props_hash].position
 
+		var mode = window.Mode()
+
 		if(cookies){
-			if(window.current.current.position.y == 0){
-				var b = window.map.biomes[`${group.current.position.x}:${group.current.position.z}`]
+			if(mode == "room"){
+				if(window.cookies.address){
+					if(window.cookies.address == props_hash){
+						position.x = window.current.current.position.x
+						position.z = window.current.current.position.z
+					}
+				}else if(props_hash == window.cookies.hash){
+					position.x = window.current.current.position.x
+					position.z = window.current.current.position.z
+				}
+			}else{
+				try{
+					if(window.current.current.position.y == 0){
+						var b = window.map.biomes[`${group.current.position.x}:${group.current.position.z}`]
 
-				window.current.current.position.y = window.cursor.current.position.y = b.y
-			}
+						if(b){
+							window.current.current.position.y = window.cursor.current.position.y = b.y
+						}
+					}
+				}catch(err){
 
-			if(window.cookies.address){
-				if(window.cookies.address == props_hash){
+				}
+
+				if(window.cookies.address){
+					if(window.cookies.address == props_hash){
+						position.x = window.current.current.position.x
+						position.y = window.current.current.position.y + 0.5
+						position.z = window.current.current.position.z
+					}
+				}else if(props_hash == window.cookies.hash){
 					position.x = window.current.current.position.x
 					position.y = window.current.current.position.y + 0.5
 					position.z = window.current.current.position.z
 				}
-			}else if(props_hash == window.cookies.hash){
-				position.x = window.current.current.position.x
-				position.y = window.current.current.position.y + 0.5
-				position.z = window.current.current.position.z
 			}
 		}
 
@@ -152,9 +174,11 @@ export function Player({
 	}else{
 		alt = "player"
 
+		var _animated = ["🔥", "🎃", "👻", "🛩", "⚔", "🗡"]
+
 		if(props.emoji == "💣"){
 
-		}else if(window.typeof_emoji(props.emoji) || props.emoji == "🔥" || props.emoji == "🎃" || props.emoji == "👻"){
+		}else if(window.typeof_emoji(props.emoji) || _animated.indexOf(props.emoji) > -1){
 			type = "image"
 			hex = window.emojiUnicode(props.emoji)
 			
@@ -166,7 +190,7 @@ export function Player({
 		<group ref={group} {...props} position={position}>
 			<group>
 				<Html>
-					<player id={props_hash} team={props.team} dice={props.dice} type={type} self={self} follow={follow} verify={verify} alt={alt} role={props.role ? props.role : ""} x={position.x} y={position.y} z={position.z}>
+					<player id={props_hash} team={props.team} dice={props.dice} type={type} self={self} follow={follow} verify={verify} alt={alt} role={props.role ? props.role : ""} world={window.Mode()} x={position.x} y={position.y} z={position.z}>
 						<emoji type={type} selector={props_hash}>
 							<div className="emoji color">
 								<div data-plyr-provider={provider} data-plyr-embed-id={embed}></div>
@@ -176,7 +200,7 @@ export function Player({
 								<i>{emoji}</i>
 								{roleEmoji ? <i className="role-emoji">{roleEmoji}</i> : null}
 								<portal href={href}>
-									<div class="mask"></div>
+									<div className="mask"></div>
 								</portal>
 								<div className="address">
 									<address>
