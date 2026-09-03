@@ -69,6 +69,8 @@ window.MapReset = function(){
 		puzzle : {},
 		follow : {},
 		report : {},
+		/* 개발 Part 8 : 차단 목록 */
+		block : {},
 		reward : {}
 	}
 
@@ -177,13 +179,25 @@ window.Zoom = function(){
 
 window.Callback = async function(resp){
 	var _cookies
-
 	try{
 		_cookies = JSON.parse(resp.body.cookies)
 	}catch(err){
 		_cookies = window.cookies
 	}
-
+	/*
+		개발 Part 12
+		서버가 rows[] 와 함께 도메인 DTO(state)를 보낸다.
+		여기서 흡수해 window.State 에 보관한다.
+		화면 로직은 아직 rows[] 를 쓰지만, 전환된 부분부터
+		window.State 를 읽는다.
+	*/
+	try{
+		if(window.StateApply){
+			window.StateApply(resp)
+		}
+	}catch(err){
+		console.log("state apply err", err)
+	}
 	var mode = window.Mode(_cookies)
 
 	$("body").attr("world", mode)
@@ -1327,13 +1341,19 @@ OAuth3.on("ready", function(e){
 
 	window.Action = function(body){
 		var player = window.players.self()
-
 		if(!player){
 			return
 		}
-
 		var cookies = window.cookies
-
+		/*
+			개발 Part 11
+			요청 단위 멱등성 키를 붙인다.
+			네트워크 재시도나 더블클릭으로 같은 액션이 두 번 실행되는 것을 막는다.
+			서버가 (계정, 액션, 좌표, 이 키)로 중복을 판정한다.
+		*/
+		if(!body.idempotency){
+			body.idempotency = window.randomHash()
+		}
 		if(OAuth3.xhr){
 			OAuth3.xhr.abort()
 			delete OAuth3.xhr
@@ -2171,12 +2191,21 @@ OAuth3.on("ready", function(e){
 								}
 
 								if(row.Cc.indexOf("#report") > -1){
+									/*
+										개발 Part 8
+										서버가 reports / blocks 를 함께 내려보낸다.
+										__blocked 인 상대는 신고와 동일하게 화면에서 제외한다.
+									*/
 									if(!window.map.report[row.To]){
 										window.map.report[row.To] = []
 									}
-
 									window.map.report[row.To].push(row)
-
+									if(row.__blocked){
+										if(!window.map.block){
+											window.map.block = {}
+										}
+										window.map.block[row.To] = true
+									}
 								}
 							}catch(err){
 								// console.log('err',err);
@@ -2393,7 +2422,15 @@ OAuth3.on("ready", function(e){
 									}
 
 									if(!row.Flag){
-										if(!window.map.report[_from] && (b || player.self)){
+										/*
+											개발 Part 12
+											신고/차단 판정을 window.State 로 전환한다.
+											DTO 가 없으면 기존 window.map.report 로 폴백한다.
+										*/
+										var _hidden = window.StateReady()
+											? window.StateHidden(_from)
+											: (window.map.report[_from] ? true : false)
+										if(!_hidden && (b || player.self)){
 											if(!rows[_from]){
 												rows[_from] = true
 
@@ -2442,11 +2479,28 @@ OAuth3.on("ready", function(e){
 									}
 								}
 							}else if(row.Subject == "#property"){
+								/*
+									개발 Part 12
+									서버가 __propertyId / __level / __toll 을 실어 보낸다.
+									DTO 가 있으면 그쪽을 우선 쓴다.
+								*/
 								var propertyField = window.fields ? window.fields[`${row.x}:${row.z}`] : null
 								if(propertyField && propertyField.property){
-									propertyField.property.level = row.dice
-									propertyField.property.owner = row.Flag ? row.Flag : row.From
-									propertyField.property.toll = propertyField.property.tollTable ? propertyField.property.tollTable[row.dice] : 0
+									var _dtoProp = window.StateReady()
+										? window.StateProperty(row.x, row.z) : null
+									if(_dtoProp){
+										propertyField.property.level = _dtoProp.level
+										propertyField.property.owner = _dtoProp.hash
+										propertyField.property.ownerId = _dtoProp.ownerId
+										propertyField.property.toll = _dtoProp.toll
+									}else{
+										propertyField.property.level = typeof row.__level != "undefined"
+											? row.__level : row.dice
+										propertyField.property.owner = row.Flag ? row.Flag : row.From
+										propertyField.property.toll = typeof row.__toll != "undefined"
+											? row.__toll
+											: (propertyField.property.tollTable ? propertyField.property.tollTable[row.dice] : 0)
+									}
 								}
 							}else if(row.Cc.indexOf("#message") > -1){
 								_messages.push(row)
@@ -3558,12 +3612,20 @@ OAuth3.on("ready", function(e){
 					var hash = $form.hash.value
 					var token = $form.token.value
 
+					/*
+						개발 Part 8
+						reason 을 함께 보낸다. 서버가 ENUM 으로 정규화하며
+						미지정/미지원 값은 'other' 로 떨어진다.
+						block 체크 시 차단까지 함께 수행한다.
+					*/
 					var body = {
 						cc : "report",
 						to : $form.to.value,
-						emoji : $form.emoji.value
+						emoji : $form.emoji.value,
+						subject : $form.subject ? $form.subject.value : "",
+						reason : $form.reason ? $form.reason.value : "other",
+						block : ($form.block && $form.block.checked) ? true : false
 					}
-
 					if(body.to && body.emoji){
 						$(".layer, .layer form.popup").removeClass("on")
 
@@ -4537,6 +4599,12 @@ OAuth3.on("ready", function(e){
 																	$body.append('<notify><input type="checkbox" id="notify"><div class="tb"><div class="tc"></div></div></notify>')
 																}
 
+																/*
+																	개발 Part 10
+																	현행은 템플릿 리터럴 안에 '+cookies.vapid+' 를 그대로 써서
+																	문자열 "'+cookies.vapid+'" 가 value 에 들어갔다.
+																	페어링 토큰이 전달되지 않아 구독이 항상 실패했다.
+																*/
 																document.querySelector("notify .tc").innerHTML = `<form name="memepoly.com" action="javascript:Subscribe()">
 																	<qr>
 																		<a class="qr-code"></a>
@@ -4545,7 +4613,7 @@ OAuth3.on("ready", function(e){
 																			<span class="en">notification agree</span>
 																		</label>
 																	</qr>
-																	<input name="vapid" type="hidden" value="'+cookies.vapid+'">
+																	<input name="vapid" type="hidden" value="${cookies.vapid}">
 																	<div class="area">
 																		<input disabled type="submit">
 																	</div>

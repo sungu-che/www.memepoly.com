@@ -2161,7 +2161,26 @@ window.RoomCallback = async function(resp){
 
 									connection.onicecandidate = (event) => {
 										var connection = event.target
-
+										/*
+											개발 Part 9
+											candidate 를 즉시 큐에 넣어 다음 폴링에 실어 보낸다.
+											현행은 SDP 교환이 끝나야만 전달돼 연결 수립이 느렸다.
+										*/
+										if(event.candidate){
+											if(!window.rtcQueue){
+												window.rtcQueue = []
+											}
+											window.rtcQueue.push({
+												hash : connection.hash,
+												type : "candidate",
+												candidates : [{
+													candidate : event.candidate.candidate,
+													sdpMid : event.candidate.sdpMid,
+													sdpMLineIndex : event.candidate.sdpMLineIndex,
+													usernameFragment : event.candidate.usernameFragment
+												}]
+											})
+										}
 										if(connection.index < index){
 											connection.pendingOfferDescription = connection.localDescription
 											connection.pendingOfferDescription.hash = connection.hash
@@ -2199,7 +2218,15 @@ window.RoomCallback = async function(resp){
 							$('.emojis .emoji_asset').removeClass("on")
 						}
 					}else if(row.Cc.indexOf("#description") > -1){
-						var connection = peers[peerId]
+						/*
+							개발 Part 9
+							서버가 rtc_signals 에서 __sdp / __kind / __candidates 를 실어 보낸다.
+							현행은 Subject 를 JSON.parse 했는데, SDP 가 varchar 한계로
+							잘리면 파싱 자체가 실패해 연결이 조용히 끊겼다.
+							row.__rtc 가 있으면 컬럼을 쓰고, 없으면 레거시 파싱으로 폴백한다.
+						*/
+						var _rtcPeer = row.__rtc ? (row.__fromHash ? row.__fromHash : row.From) : peerId
+						var connection = peers[_rtcPeer]
 						if(connection){
 							if(cookies.address == row.From || cookies.hash == row.From){
 								if(connection.pendingOfferDescription){
@@ -2207,51 +2234,78 @@ window.RoomCallback = async function(resp){
 									
 								}else if(connection.pendingAnswerDescription){
 									connection.pendingAnswerDescription.flag = row.Flag
-
 								}
-							}else if(ethers.isAddress(peerId)){
+							}else if(ethers.isAddress(_rtcPeer)){
 								var date = new Date(row.Date).getTime()
-
 								var remote_description = ""
-								try{
-									remote_description = JSON.parse(row.Subject)
-								}catch(err){
-
+								if(row.__rtc){
+									if(row.__sdp){
+										remote_description = {
+											type : row.__kind,
+											sdp : row.__sdp
+										}
+									}
+								}else{
+									try{
+										remote_description = JSON.parse(row.Subject)
+									}catch(err){
+									}
 								}
-
 								try{
 									if(connection.connectionState == "connected" && connection.signalingState == "stable"){
-
 									}else{
-										if(remote_description.type && typeof sessionStorage[row.Id] == "undefined"){
+										if(remote_description && remote_description.type && typeof sessionStorage[row.Id] == "undefined"){
 											if(remote_description.type == "offer" && row.To == player_hash){
 												sessionStorage[row.Id] = true
-
-												connection.hash = peerId
-
+												connection.hash = _rtcPeer
 												var desc = new RTCSessionDescription(remote_description)
 												var stuff = connection.setRemoteDescription(desc)
-
 												var answer = await connection.createAnswer()
 												await connection.setLocalDescription(answer)
-
 											}else if(remote_description.type == "answer" && connection.pendingOfferDescription){
-												if(connection.pendingOfferDescription.hash == peerId){
-													// console.log("remote_description",remote_description);
-													// console.log("typeof",typeof sessionStorage[row.Id] == "undefined");
+												if(connection.pendingOfferDescription.hash == _rtcPeer){
 													sessionStorage[row.Id] = true
-
 													var desc = new RTCSessionDescription(remote_description)
 													var stuff = connection.setRemoteDescription(desc)
-
 													delete connection.pendingOfferDescription
 												}
 											}
 										}
 									}
-
+									/*
+										개발 Part 9
+										trickle ICE. SDP 교환을 기다리지 않고 즉시 추가한다.
+										remoteDescription 이 아직 없으면 큐에 담아 두었다가
+										setRemoteDescription 이후에 흘려 넣는다.
+									*/
+									if(row.__candidates && row.__candidates.length){
+										if(!connection.pendingRemoteCandidates){
+											connection.pendingRemoteCandidates = []
+										}
+										for(var _ci = 0; _ci < row.__candidates.length; _ci++){
+											var _cand = row.__candidates[_ci]
+											if(connection.remoteDescription){
+												try{
+													await connection.addIceCandidate(new RTCIceCandidate(_cand))
+												}catch(err){
+												}
+											}else{
+												connection.pendingRemoteCandidates.push(_cand)
+											}
+										}
+									}
+									if(connection.remoteDescription && connection.pendingRemoteCandidates){
+										for(var _pi = 0; _pi < connection.pendingRemoteCandidates.length; _pi++){
+											try{
+												await connection.addIceCandidate(
+													new RTCIceCandidate(connection.pendingRemoteCandidates[_pi])
+												)
+											}catch(err){
+											}
+										}
+										delete connection.pendingRemoteCandidates
+									}
 								}catch(err){
-									// connection = undefined
 									// console.log("Err",err);
 								}
 							}
@@ -4463,10 +4517,22 @@ window.RoomPoll = async function(){
 						}
 					}
 
+					/*
+						개발 Part 9
+						SDP 큐와 candidate 큐를 합쳐 보낸다.
+						candidate 는 SDP 를 기다리지 않고 즉시 전송된다.
+						description 이 false 인 경우(연결 실패)에도 candidate 는 버린다.
+					*/
 					if(description){
+						if(window.rtcQueue && window.rtcQueue.length){
+							description = description.concat(window.rtcQueue)
+							window.rtcQueue = []
+						}
 						if(description.length){
 							body.description = JSON.stringify(description)
 						}
+					}else if(window.rtcQueue){
+						window.rtcQueue = []
 					}
 					
 				}catch(err){
