@@ -38,29 +38,59 @@ textures.glass.minFilter = THREE.LinearMipMapLinearFilter
 textures.black.magFilter = THREE.NearestFilter
 textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
-var fields = Fields()
 var PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
-fields.forEach(function(field, index){
-	if(index % 9 == 0){
-		field.drop = "❓"
-		field.gate = true
-	}else if(index % 3 == 0){
-		field.item = "❔"
+var fields = []
+window.FieldsSync = function(force){
+	var key = ""
+	try{
+		key = window.MapGen ? window.MapGen.key : ""
+	}catch(err){
 	}
-	field.index = index
-	field.property = {
-		level: 0,
-		owner: "",
-		type: "empty",
-		toll: 0,
-		cost: window.PropertyCost,
-		tollTable: window.PropertyToll,
-		materials: window.PropertyMaterials
+	if(!force && window.fields && window.FieldsSync.key === key && window.fields.length){
+		return window.fields
 	}
-	fields[`${field.x}:${field.z}`] = field
-})
-
-window.fields = fields
+	var hash = ""
+	try{
+		hash = window.MapGen && window.MapGen.target() ? window.MapGen.target().hash : ""
+	}catch(err){
+	}
+	var next = window.Fields(hash)
+	next.forEach(function(field, index){
+		if(index % 45 == 0){
+			field.jail = true
+		}else if(index % 9 == 0){
+			field.drop = "❓"
+			field.gate = true
+		}else if(index % 3 == 0){
+			field.item = "❔"
+		}
+		field.index = index
+		var b = window.map && window.map.biomes ? window.map.biomes[`${field.x}:${field.z}`] : null
+		if(b){
+			field.biome = "#" + b.biome
+			field.y = b.y
+			field.water = b.water ? true : false
+		}
+		if(!field.property){
+			field.property = {
+				level: 0,
+				owner: "",
+				type: "empty",
+				toll: 0,
+				cost: window.PropertyCost,
+				tollTable: window.PropertyToll,
+				materials: window.PropertyMaterials
+			}
+		}
+		next[`${field.x}:${field.z}`] = field
+	})
+	fields = next
+	window.fields = next
+	window.FieldsSync.key = key
+	return next
+}
+window.FieldsSync.key = null
+window.FieldsSync()
 
 
 export const Experience = () => {
@@ -287,9 +317,12 @@ export const Experience = () => {
 		}
 
 		var cookies = window.cookies
-
 		try{
 			if(cookies){
+				if(window.CanFreeMove && !window.CanFreeMove()){
+					return
+				}
+
 				if(cookies.axis && !cookies.damage){
 					if(e.point){
 						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
@@ -530,10 +563,23 @@ export const Experience = () => {
 				}
 			}
 
-			var field = fields[`${props.position.x}:${props.position.z}`]
+			var field = (window.Mode() == "room") ? null : (window.fields ? window.fields[`${props.position.x}:${props.position.z}`] : null)
 
 			if(emoji){
 				if(field){
+					if(field.jail){
+						return <>
+						<group position={props.position}>
+							<mesh position={[0, 0, 0.005]} onClick={onClick}>
+								<boxGeometry attach="geometry" args={[1, 1]} />
+								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color="#5a5a7a" />
+							</mesh>
+							<Html className="clipped">
+								<div className="emoji color jail" x={props.position.x} z={props.position.z}></div>
+							</Html>
+						</group>
+						</>
+					}
 					if(field.gate){
 						return <>
 						<group position={props.position}>
@@ -618,6 +664,19 @@ export const Experience = () => {
 				</>	
 			}else{
 				if(field){
+					if(field.jail){
+						return <>
+						<group position={props.position}>
+							<mesh position={[0, 0, 0.005]} onClick={onClick}>
+								<boxGeometry attach="geometry" args={[1, 1]} />
+								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color="#5a5a7a" />
+							</mesh>
+							<Html className="clipped">
+								<div className="emoji color jail" x={props.position.x} z={props.position.z}></div>
+							</Html>
+						</group>
+						</>
+					}
 					if(field.gate){
 						return <>
 						<group position={props.position}>
@@ -715,10 +774,13 @@ export const Experience = () => {
 	window.players.self = self;
 
 	useEffect((e) => {
+		try{
+			if(window.FieldsSync){ window.FieldsSync() }
+		}catch(err){
+		}
 		window.players = players;
 		window.players.set = setPlayers;
 		window.players.self = self;
-
 		window.assets = assets
 		window.assets.set = setAssets
 
@@ -767,11 +829,11 @@ export const Experience = () => {
 				<meshStandardMaterial attach="material" color={current.color} />
 			</mesh>
 
-			{mode == "room" ? <RoomGrid onClick={onClick} /> : null}
+			{(mode == "room" && !(window.MapGen && window.MapGen.ready)) ? <RoomGrid onClick={onClick} /> : null}
 
 			<Suspense>
 				{assets.map((asset) => (
-					mode == "room" ? (
+					(mode == "room" && (asset.name + "").indexOf("#") !== 0) ? (
 						<RoomAsset
 							key={asset.id + ":" + asset.name}
 							uid={asset.id}

@@ -814,6 +814,20 @@ window.RoomCallback = async function(resp){
 	var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
 		cc_address = ethers.computeAddress(cc_address).toLowerCase()
 	var iceServers = window.RoomState.iceServers
+	try{
+		if(window.MatchVerify){ window.MatchVerify(cookies) }
+	}catch(err){
+		console.log("match err",err);
+	}
+	try{
+		if(window.MapGen){ window.MapGen.apply() }
+	}catch(err){
+		console.log("mapgen err",err);
+	}
+	try{
+		if(window.FieldsSync){ window.FieldsSync() }
+	}catch(err){
+	}
 
 	
 
@@ -2662,6 +2676,19 @@ window.RoomCallback = async function(resp){
 			}
 
 			try{
+				try{
+					if(window.MapGen && window.MapGen.ready && self_player){
+						var _biomeAssets = window.MapGen.assets(cc_address, {
+							x : self_player.x,
+							z : self_player.z
+						}, 4)
+						if(_biomeAssets.length){
+							_assets = _biomeAssets.concat(_assets)
+						}
+					}
+				}catch(err){
+					console.log("room biome err",err);
+				}
 				var diff = false
 				if(window.players){
 					if(JSON.stringify(window.players) != JSON.stringify(_players)){
@@ -7057,9 +7084,14 @@ window.RoomHashChange = function(e){
 	var $go = $("#go")
 
 	document.scrollingElement.scrollTop = 0
-
 	window.MapReset()
-
+	if(window.MapGen){
+		window.MapGen.ready = false
+		window.MapGen.apply(true)
+	}
+	if(window.FieldsSync){
+		window.FieldsSync(true)
+	}
 	delete window.dialog
 
 	$body

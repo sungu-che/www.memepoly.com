@@ -2188,3 +2188,149 @@ body.contenteditable form[name="oauth.network"][contenteditable] field[draggable
 
 body.contenteditable form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] flow+flow{border-top:1px solid #ddd;}
 body.contenteditable form[name="oauth.network"][contenteditable] field[draggable="true"][type="flow"] item[draggable="true"][cc]{}
+
+
+/* ===== Lobby / Raid Loading / Notice / Property / Craft ===== */
+body[stage="lobby"] #lobby{opacity: 1; pointer-events: initial;}
+body[stage="lobby"] #root,
+body[stage="lobby"] emojis,
+body[stage="lobby"] #capture,
+body[stage="lobby"] #flag,
+body[stage="lobby"] .voronoi,
+body[stage="lobby"] messages,
+body[stage="lobby"] form.message{opacity: 0 !important; pointer-events: none !important;}
+#lobby{position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 11113; background-color: #262626; opacity: 0; pointer-events: none; transition-duration: 0.4s; -webkit-transition-duration: 0.4s; overflow-y: auto;}
+#lobby .tb{width: 100%; height: 100%;}
+#lobby .tc{padding: 2em; text-align: center; vertical-align: middle;}
+#lobby .title{margin-bottom: 2em;}
+#lobby .title p{display: inline-block; padding: 0.06em 0.3em 0.2em; border: 0.1em solid #fff; font-size: 2.6em; font-weight: 900; color: #fff; background-color: red; text-shadow: 0 2px 5px #000; box-shadow: inset 0 0 10px 0px #000;}
+#lobby .profile{margin-bottom: 2em;}
+#lobby .profile .icon canvas{display: block; margin: 0 auto 1em; padding: 3px; border: 1px solid #fff; border-radius: 50%; width: 56px; height: 56px; box-sizing: border-box;}
+#lobby .stat{display: inline-block;}
+#lobby .stat li{display: inline-block; margin: 0 0.6em;}
+#lobby .stat li i{display: block; margin-bottom: 0.3em; font-size: 1.4em;}
+#lobby .stat li span{font-size: 0.9em; font-weight: 900; color: #fff;}
+#lobby .keys{margin: 0 auto 2em; padding: 1em; border-radius: 1em; max-width: 340px; background-color: #ffffff14;}
+#lobby .keys .label{display: block; margin-bottom: 0.8em; font-size: 0.7em; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #fde030;}
+#lobby .keys .list li{display: inline-block; margin: 0.2em; padding: 0.4em; border-radius: 0.6em; background-color: #ffffff1f;}
+#lobby .keys .list li i{font-size: 1.6em;}
+#lobby .actions{}
+#lobby .actions .btn{display: block; margin: 0 auto 0.8em; border-radius: 1em; max-width: 340px; height: 4em; line-height: 4em; font-weight: 900; cursor: pointer;}
+#lobby .actions .btn.raid{background-color: #fde030; color: #000;}
+#lobby .actions .btn.stash{border: 1px solid #ffffff55; color: #fff;}
+body[stage="raid"] #raid{opacity: 1; pointer-events: initial;}
+#raid{position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 11114; background-color: #000; opacity: 0; pointer-events: none; transition-duration: 0.4s; -webkit-transition-duration: 0.4s;}
+#raid .tb{width: 100%; height: 100%;}
+#raid .tc{text-align: center; vertical-align: middle;}
+#raid .title{margin-bottom: 2em;}
+#raid .title p{display: inline-block; padding: 0.06em 0.3em 0.2em; border: 0.1em solid #fff; font-size: 2.6em; font-weight: 900; color: #fff; background-color: red; text-shadow: 0 2px 5px #000; box-shadow: inset 0 0 10px 0px #000;}
+#raid .progress{margin: 0 auto 1.2em; overflow: hidden; border-radius: 1em; max-width: 260px; height: 6px; background-color: #ffffff22;}
+#raid .progress .bar{width: 0; height: 100%; background-color: #fde030; transition: width 0.3s linear; -webkit-transition: width 0.3s linear;}
+#raid .tip{font-size: 0.8em; color: #ffffff99;}
+#notice.on{opacity: 1;}
+#notice{position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 11115; background-color: #000000cc; opacity: 0; pointer-events: none; transition-duration: 0.3s; -webkit-transition-duration: 0.3s;}
+#notice .tb{width: 100%; height: 100%;}
+#notice .tc{padding: 2em; text-align: center; vertical-align: middle;}
+#notice .head{display: block; margin-bottom: 0.8em; font-size: 1.8em; font-weight: 900; color: #fde030;}
+#notice .body{line-height: 1.6; font-size: 0.9em; color: #fff;}
+body[dice="0"][jail] #root player tooltip li a.emoji.Meta{opacity: 0.4;}
+body[jail] #capture:before{content: "JAIL"; position: absolute; left: 0; top: -14px; font-size: 8px; font-weight: 900; letter-spacing: 1px; color: #fde030;}
+#root .emoji.color.property{position: absolute; left: -22px; top: -30px; width: 44px; font-size: 10px; font-weight: 900; text-align: center; color: #fff; text-shadow: 0 0 3px #000;}
+#root .emoji.color.property:before{content: "Lv." attr(level);}
+#root .emoji.color.gate{position: absolute; left: -22px; top: -30px; width: 44px; font-size: 9px; font-weight: 900; text-align: center; color: #fde030; text-shadow: 0 0 3px #000;}
+#root .emoji.color.jail{position: absolute; left: -26px; top: -30px; width: 52px; font-size: 9px; font-weight: 900; letter-spacing: 1px; text-align: center; color: #9fa8ff; text-shadow: 0 0 3px #000;}
+#root .emoji.color.jail:before{content: "SAFE";}
+#root player[self="true"] tooltip li a.hashType.Hp{position: relative;}
+#root player[self="true"] tooltip li a.hashType.Hp i{display: block; font-size: 1.6em; line-height: 47px;}
+#root player[self="true"] tooltip li a.hashType.Hp .cnt{top: 0; bottom: 0; line-height: 47px; font-size: 11px;}
+body[potion="on"] #root player[self="true"] tooltip li a.hashType.Hp:after{content: "🧪"; position: absolute; right: -4px; top: -4px; width: 18px; height: 18px; line-height: 18px; border-radius: 50%; font-size: 11px; background-color: #fde030; z-index: 3;}
+#panel .row.auction{border: 1px solid #fde03055; background-color: #fde0301a; opacity: 1; cursor: default;}
+#panel .row.auction .name{color: #fde030;}
+#panel .row.auction .cost{color: #ffffff99;}
+#panel .row.bid .name{color: #fde030;}
+#panel .row.build .name{color: #fff;}
+emojis .tab_content .deck .emoji_asset[method="property"] a,
+emojis .tab_content .deck .emoji_asset[method="craft"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-size: 22px; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
+emojis .tab_content .deck .emoji_asset[method="property"].disabled,
+emojis .tab_content .deck .emoji_asset[method="craft"].disabled{opacity: 0.35; pointer-events: none;}
+body[panel] #panel{opacity: 1; pointer-events: initial;}
+#panel{position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 11112; background-color: #000000d0; opacity: 0; pointer-events: none; transition-duration: 0.3s; -webkit-transition-duration: 0.3s; overflow-y: auto;}
+#panel .tb{width: 100%; height: 100%;}
+#panel .tc{padding: 2em 1em; text-align: center; vertical-align: middle;}
+#panel .head{display: block; margin-bottom: 1.2em; font-size: 1.4em; font-weight: 900; color: #fff;}
+#panel .row{margin: 0 auto 0.6em; padding: 1em; border-radius: 1em; max-width: 380px; text-align: left; background-color: #ffffff14; cursor: pointer;}
+#panel .row:hover{background-color: #ffffff26;}
+#panel .row.disabled{opacity: 0.4; cursor: not-allowed;}
+#panel .row .name{display: block; margin-bottom: 0.4em; font-weight: 900; color: #fff;}
+#panel .row .cost{display: block; font-size: 0.8em; color: #fde030;}
+#panel .row .mat{display: block; margin-top: 0.4em; font-size: 1.2em;}
+#panel .close{display: block; margin: 1.2em auto 0; border-radius: 1em; max-width: 380px; height: 3.4em; line-height: 3.4em; font-weight: 900; cursor: pointer; background-color: #fde030; color: #000;}
+
+/* ===== My Room (mode=first) ===== */
+body[mode="first"] .zoom_toggle,
+body[mode="first"] #flag,
+body[mode="first"] .voronoi,
+body[mode="first"] #capture{display: none;}
+body[mode="first"] emojis .scroll .deck>div,
+body[mode="first"] .emojis_filter .emoji{display: none;}
+body[mode="first"] emojis .scroll .deck>div.emojis,
+body[mode="first"] .emojis_filter .emoji[type="emoji"]{display: inline-block;}
+body[mode="first"] #root.fiber>div>div,
+body[mode="first"] #root canvas[data-engine]{display: none !important;}
+body[mode="first"] #root.fiber>div{display: block !important; justify-content: center;}
+body[mode="first"] #root.fiber div.flex{float: left; position: static !important; display: block !important; transform: inherit !important; -webkit-transform: inherit !important; flex-basis: auto;}
+body[mode="first"] #root.fiber div.flex>div{position: static !important; display: table; width: 100%; height: 100%;}
+body[mode="first"] #root.fiber div.flex>div player{position: relative; display: table-cell; text-align: center; vertical-align: middle;}
+body[mode="first"] #root.fiber div.flex>div player tooltip.on{top: 4.8em; left: 0.75em;}
+body[mode="first"] #root.fiber div.flex>div player tooltip>ul>li:first-child a,
+body[mode="first"] #root.fiber div.flex>div player tooltip>ul>li:last-child a{top: 0;}
+body[mode="first"] #root emoji,
+body[mode="first"] #root .emoji{display: inline-block; position: static; top: inherit; left: inherit; width: auto; height: auto;}
+body[mode="first"] #root player stream.cast{top: 0; left: 0; width: 100%; height: 100%; z-index: 0;}
+body[mode="first"] #root player stream.mic video{display: none;}
+body[mode="first"][tooltip="true"] #root player stream a.screen{display: block;}
+body[mode="first"] #root player stream a.screen{display: none; overflow: hidden; position: absolute; font-size: 35px; background: #fff; border-radius: 5px; font-family: 'Material Symbols Outlined'; z-index: 3;}
+body[mode="first"] #root player stream a.screen.full{right: 0.4em; top: 1.5em;}
+body[mode="first"] #root player stream a.screen.wide{right: 40px; bottom: 40px;}
+body[mode="first"] #root player stream a.screen.close{right: 0; top: 40px; display: none;}
+body[mode="first"] #root player stream a.screen.pip{right: 0.4em; top: 2.8em; bottom: initial;}
+body[mode="first"] #root player stream a.screen.mic{left: 0; top: 40px;}
+body[mode="first"] #root player stream a.screen.volume{right: 0.4em; left: initial; top: 4.1em; bottom: initial;}
+body[mode="first"] #root player tooltip>ul>li:first-child{display: none;}
+body[mode="first"] #root player tooltip li{display: block;}
+body[mode="first"] #root player tooltip li+li{margin-left: 0; margin-top: 10px;}
+body[mode="first"] #root .emoji picture *{position: absolute; left: 0.3em; top: 0.3em; width: 10vh !important; height: auto !important; transition-duration: 0s; -webkit-transition-duration: 0s;}
+body[mode="first"] #root player[self="true"] .address address:after{padding-left: 5px; line-height: 32px;}
+body[mode="first"] #root player .address{position: absolute; top: 2.5vh; left: 12vh; font-size: initial; text-align: left; transition-duration: 0s; -webkit-transition-duration: 0s; opacity: 1;}
+body[mode="first"] #root player .address span{line-height: 34px;}
+body[mode="first"] #root player talks{top: 4.5em; left: 5.5em; text-align: left;}
+body[mode="first"] #root player .getUserMedia.getDisplayMedia stream.videocam{border-width: 2px; border-radius: 50%; left: 0.3em; top: 0.3em; width: 10vh; height: 10vh;}
+body[mode="first"] #root player .getUserMedia.getDisplayMedia stream.videocam video{transform: scale(2); -webkit-transform: scale(2);}
+body[mode="first"] #root player .getUserMedia stream.videocam{position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-width: 0; border-radius: 0;}
+body[mode="first"] #root player .getUserMedia stream.videocam video{transform: inherit; -webkit-transform: inherit;}
+body[mode="first"] #root.fiber[count="1"] div.flex{width: 100vw; height: 100vh;}
+body[mode="first"][axis="x"] #root.fiber[count="2"] div.flex{width: 50vw; height: 100vh;}
+body[mode="first"][axis="x"] #root.fiber[count="3"] div.flex{width: 33.33vw; height: 100vh;}
+body[mode="first"][axis="x"] #root.fiber[count="4"] div.flex{width: 50vw; height: 50vh;}
+body[mode="first"][axis="x"] #root.fiber[count="5"] div.flex,
+body[mode="first"][axis="x"] #root.fiber[count="6"] div.flex{width: 33.33vw; height: 50vh;}
+body[mode="first"][axis="x"] #root.fiber[count="7"] div.flex,
+body[mode="first"][axis="x"] #root.fiber[count="8"] div.flex{width: 25vw; height: 50vh;}
+body[mode="first"][axis="x"] #root.fiber[count="9"] div.flex,
+body[mode="first"][axis="x"] #root.fiber[count="10"] div.flex,
+body[mode="first"][axis="x"] #root.fiber[count="11"] div.flex,
+body[mode="first"][axis="x"] #root.fiber[count="12"] div.flex{width: 25vw; height: 33.33vh;}
+body[mode="first"][axis="y"] #root.fiber[count="2"] div.flex{width: 100vw; height: 50vh;}
+body[mode="first"][axis="y"] #root.fiber[count="3"] div.flex{width: 100vw; height: 33.33vh;}
+body[mode="first"][axis="y"] #root.fiber[count="4"] div.flex{width: 50vw; height: 50vh;}
+body[mode="first"][axis="y"] #root.fiber[count="5"] div.flex,
+body[mode="first"][axis="y"] #root.fiber[count="6"] div.flex{width: 50vw; height: 33.33vh;}
+body[mode="first"][axis="y"] #root.fiber[count="7"] div.flex,
+body[mode="first"][axis="y"] #root.fiber[count="8"] div.flex{width: 50vw; height: 25vh;}
+body[mode="first"][axis="y"] #root.fiber[count="9"] div.flex,
+body[mode="first"][axis="y"] #root.fiber[count="10"] div.flex,
+body[mode="first"][axis="y"] #root.fiber[count="11"] div.flex,
+body[mode="first"][axis="y"] #root.fiber[count="12"] div.flex{width: 33.33vw; height: 25vh;}
+body[mode="first"] #lobby,
+body[mode="first"] #raid,
+body[mode="first"] #panel{display: none;}

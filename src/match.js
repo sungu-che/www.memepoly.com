@@ -55,22 +55,7 @@
 
 	window.MatchApply = function(match){
 		match = match ? match : window.Match()
-
-		var $seed = document.getElementById("seed")
-		var $shapeSeed = document.getElementById("shapeSeed")
-
-		if($seed){
-			$seed.value = match.seed
-			$seed.setAttribute("value", match.seed)
-		}
-
-		if($shapeSeed){
-			$shapeSeed.value = match.shapeSeed
-			$shapeSeed.setAttribute("value", match.shapeSeed)
-		}
-
 		window.match = match
-
 		return match
 	}
 
@@ -94,54 +79,68 @@
 		window.location.reload()
 	}
 
+	window.MatchRefresh = function(){
+		window.MatchApply()
+		if(window.MapGen){
+			window.MapGen.ready = false
+			window.MapGen.apply(true)
+		}
+		try{
+			if(window.FieldsCache){
+				window.FieldsCache.hash = ""
+				window.FieldsCache.fields = null
+				window.FieldsCache.tiles = null
+			}
+		}catch(err){
+		}
+		try{
+			if(window.FieldsSync){
+				window.FieldsSync(true)
+			}
+		}catch(err){
+		}
+		try{
+			if(window.response && window.Callback){
+				window.Callback(window.response)
+			}
+		}catch(err){
+		}
+	}
 	window.MatchVerify = function(cookies){
 		if(!cookies){
 			return
 		}
-
 		if(typeof cookies.matchIndex == "undefined"){
 			return
 		}
-
 		var serverIndex = cookies.matchIndex * 1
-
 		if(isNaN(serverIndex)){
 			return
 		}
-
 		var current = window.match ? window.match : window.MatchApply()
-
 		if(current.index == serverIndex){
 			try{
 				delete sessionStorage.matchReload
 			}catch(err){
-
 			}
-
 			if(!current.timer){
 				var left = current.expired - (Date.now() + window.MatchOffset())
-
 				if(left < 1000){
 					left = 1000
 				}
-
 				current.timer = setTimeout(function(){
-					window.MatchReload()
+					delete current.timer
+					window.MatchRefresh()
 				}, left)
 			}
-
 			return
 		}
-
 		try{
 			var delta = (serverIndex - current.index) * MATCH_INTERVAL
-
 			localStorage.matchOffset = window.MatchOffset() + delta
 		}catch(err){
-
 		}
-
-		window.MatchReload()
+		window.MatchRefresh()
 	}
 
 	window.MatchApply()

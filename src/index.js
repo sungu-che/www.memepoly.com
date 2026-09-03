@@ -55,12 +55,12 @@ window.Mode = function(cookies){
 }
 
 window.MapReset = function(){
-	var biomes = (window.map && window.map.biomes) ? window.map.biomes : []
-
+	var biomes = (window.map && window.map.biomes) ? window.map.biomes : {}
+	var dissolve = (window.map && window.map.dissolve) ? window.map.dissolve : {}
 	window.map = {
 		nonces : [],
 		biomes : biomes,
-		dissolve : {},
+		dissolve : dissolve,
 		quest : {},
 		score : {},
 		open : {},
@@ -73,6 +73,32 @@ window.MapReset = function(){
 	}
 
 	return window.map
+}
+
+window.CanFreeMove = function(){
+	var cookies = window.cookies
+
+	if(!cookies){
+		return false
+	}
+
+	if(cookies.damage){
+		return false
+	}
+
+	if(!cookies.enter){
+		return false
+	}
+
+	if(cookies.jail){
+		return true
+	}
+
+	if(cookies.onJail){
+		return true
+	}
+
+	return false
 }
 
 window.BiomeAt = function(_x, _z){
@@ -280,22 +306,11 @@ window.onhashchange = function(e){
 
 function Respawn(){
 	var cookies = window.cookies
-
+	if(window.MapGen && !window.MapGen.ready){
+		window.MapGen.apply()
+	}
 	var position
-
-	var fields = Fields()
-
-	fields.forEach(function(field, index){
-		if(index % 9 == 0){
-			field.drop = "❓"
-		}else if(index % 3 == 0){
-			field.item = "❔"
-		}
-
-		field.index = index
-
-		fields[`${field.x}:${field.z}`] = field
-	})
+	var fields = window.fields ? window.fields : Fields()
 
 	if(cookies.axis){
 		var _axis = cookies.axis
@@ -450,50 +465,28 @@ window.Subscribe = function(){
 	});
 }
 
-window.listToBiomes = function(list, elementsPerSubArray) {
-	var matrix = [], i, k;
-
-	for (i = 0, k = -1; i < list.length; i++) {
-		if (i % elementsPerSubArray === 0) {
-			k++;
-			matrix[k] = [];
-		}
-
-		matrix[k].push(list[i]);
-	}
-
-	var area = 100
-	var index = - (area / 2)
-
+window.listToBiomes = function(){
+	/* MapGen.apply() 가 window.map.biomes 를 채운다.
+	   호출부 호환을 위해 현재 타일 배열만 돌려준다. */
 	var biomes = []
-
-	matrix.forEach(function(list, k){
-		list.forEach(function(item, i){
-			if(item){
-				item.x = index + 0.5
-				item.y = (item.elevation * 1) + 0.5
-				item.z = (i - area) + 0.5
-
-				window.map.biomes[item.x+":"+item.z] = item
-				
-				if(window.players.length){
-
-				}else if(!item.water){
-					if(Math.random() < 0.1){
-						biomes.x = item.x
-						biomes.y = item.y
-						biomes.z = item.z
-					}
-				}
-
-				biomes.push(item)
+	if(!window.map || !window.map.biomes){
+		return biomes
+	}
+	for(var key in window.map.biomes){
+		if(window.map.biomes.hasOwnProperty(key)){
+			var item = window.map.biomes[key]
+			if(!item || typeof item.x == "undefined"){
+				continue
 			}
-		})
-
-		index += 1
-	})
-
-	return biomes;
+			if(typeof biomes.x == "undefined" && !item.water){
+				biomes.x = item.x
+				biomes.y = item.y
+				biomes.z = item.z
+			}
+			biomes.push(item)
+		}
+	}
+	return biomes
 }
 
 window.PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
@@ -1880,6 +1873,21 @@ OAuth3.on("ready", function(e){
 				console.log("match err",err);
 			}
 
+			try{
+				if(window.StageSync){
+					window.StageSync(cookies)
+				}
+			}catch(err){
+				console.log("stage err",err);
+			}
+			try{
+				if(window.MapGen){
+					window.MapGen.apply()
+				}
+			}catch(err){
+				console.log("mapgen err",err);
+			}
+
 			if(!isNaN(cookies.speed) && cookies.speed){
 				window.speed = 0.1 * (cookies.speed * 1)
 			}
@@ -1928,9 +1936,7 @@ OAuth3.on("ready", function(e){
 						rows = JSON.parse(rows)
 
 					var size = 4
-
-					var biomes = listToBiomes(window.map.biomes, 100)
-
+					var biomes = listToBiomes()
 					var isDice = Math.sqrt(Math.pow(cookies.dice, 2)) > 0 && cookies.dice != -10
 
 					var self_player
@@ -2180,20 +2186,7 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					var fields = Fields()
-
-					fields.forEach(function(field, index){
-						if(index % 9 == 0){
-							field.drop = "❓"
-						}else if(index % 3 == 0){
-							field.item = "❔"
-						}
-
-						field.index = index
-
-						fields[`${field.x}:${field.z}`] = field
-					})
-
+					var fields = window.fields ? window.fields : Fields()
 					if(isDice){
 						if(progress.length){
 							progress.before = progress[1]
@@ -3384,6 +3377,28 @@ OAuth3.on("ready", function(e){
 						.attr("hp",typeof cookies.hp != "undefined" ? cookies.hp : "")
 						.attr("maxhp",window.MaxHp[cookies.role ? cookies.role : ""])
 
+					try{
+						if($('emojis .items .emoji_asset[emoji="🧪"]').length){
+							$body.attr("potion", "on")
+						}else{
+							$body.removeAttr("potion")
+						}
+					}catch(err){
+
+					}
+
+					try{
+						if(cookies.onJail && !window.BoardCallback.jailed){
+							window.BoardCallback.jailed = true
+
+							window.Notice("SAFE ZONE", "You can move freely here", 2600)
+						}else if(!cookies.onJail){
+							delete window.BoardCallback.jailed
+						}
+					}catch(err){
+
+					}
+
 					// $root.scrollTop(0)
 
 					if(!window.Init.done["board"]){
@@ -3509,8 +3524,9 @@ OAuth3.on("ready", function(e){
 				query.y = 0
 				query.z = 1.5
 			}else if(cookies.axis){
-				var biomes = listToBiomes(window.map.biomes, 100)
-
+				if(window.MapGen){
+					window.MapGen.apply()
+				}
 				var position = Respawn()
 
 				query.x = position.x
@@ -4236,12 +4252,31 @@ OAuth3.on("ready", function(e){
 
 											}else if($this.hasClass("Flag")){
 												body.cc = "flag"
+											}else if($this.hasClass("Hp")){
+												var _maxHp = window.MaxHp[cookies.role ? cookies.role : ""]
+												var _hp = typeof cookies.hp != "undefined" ? cookies.hp * 1 : _maxHp
 
-											}else if($this.hasClass("Balance")){
+												if(_hp >= _maxHp){
+													window.Notice("FULL HP", "No damage to heal", 1800)
 
+													return
+												}
+
+												var _potion = $('emojis .items .emoji_asset[emoji="🧪"]')
+
+												if(!_potion.length){
+													window.Notice("NO POTION", "Craft 🧪 with 🐟 🐟 ❄", 2600)
+
+													return
+												}
+
+												if(window.Consume){
+													window.Consume("🧪")
+												}
 
 												return
-
+											}else if($this.hasClass("Balance")){
+												return
 											}else if($this.hasClass("Report")){
 												var $form = document.forms.report
 												$form.to.value = $$player.attr("id")
@@ -4542,19 +4577,23 @@ OAuth3.on("ready", function(e){
 
 												}else if(method == "chat"){
 													$aside.addClass("on")
-
 													if(!$messages.hasClass("on")){
 														$messages.addClass("on")
-
 														$talk.addClass("on")
 													}
-
 													$('form.message input[name="message"]').focus()
-
 													return
-
+												}else if(method == "property"){
+													if(window.PropertyPanel){
+														window.PropertyPanel()
+													}
+													return
+												}else if(method == "craft"){
+													if(window.CraftPanel){
+														window.CraftPanel()
+													}
+													return
 												}else if(method != "open"){										
-
 													return
 												}
 											}
@@ -4674,7 +4713,7 @@ OAuth3.on("ready", function(e){
 					}
 
 
-					if(isJoystick && cookies.axis && cookies.dice == 0 && !cookies.damage){
+					if(isJoystick && cookies.axis && cookies.dice == 0 && !cookies.damage && window.CanFreeMove()){
 						var position = {
 							x : 0,
 							z : 0
@@ -5007,7 +5046,16 @@ OAuth3.on("ready", function(e){
 				icon : "chat",
 				type : "emoji"
 			})
-
+			window.emojis.unshift({
+				method : "craft",
+				icon : "construction",
+				type : "emoji"
+			})
+			window.emojis.unshift({
+				method : "property",
+				icon : "home",
+				type : "emoji"
+			})
 			window.emojis.unshift({
 				method : "notify",
 				icon : "notifications",
@@ -5123,15 +5171,15 @@ OAuth3.on("ready", function(e){
 
 			window.BoardHashChange = function(e){
 				var cookies = window.cookies
-
 				document.scrollingElement.scrollTop = 0
-
 				window.MapReset()
-
+				if(window.MapGen){
+					window.MapGen.ready = false
+					window.MapGen.apply(true)
+				}
 				try{
 					delete window.current.axis
 				}catch(err){
-
 				}
 
 				delete window.dialog

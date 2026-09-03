@@ -41,10 +41,17 @@ window.PropertyInit = function(fields){
 	if(!fields){
 		return fields
 	}
-
 	fields.forEach(function(field, index){
-		field.index = index
+		if(index % 45 == 0){
+			field.jail = true
+		}else if(index % 9 == 0){
+			field.drop = "❓"
+			field.gate = true
+		}else if(index % 3 == 0){
+			field.item = "❔"
+		}
 
+		field.index = index
 		field.property = {
 			level : 0,
 			owner : "",
@@ -54,11 +61,36 @@ window.PropertyInit = function(fields){
 			tollTable : window.PropertyToll,
 			materials : window.PropertyMaterials
 		}
-
 		fields[`${field.x}:${field.z}`] = field
 	})
-
 	window.fields = fields
-
 	return fields
 }
+window.RecipeSignature = (function(){
+	var strHash = function(s){
+		var h = 5381
+
+		for(var i = 0; i < s.length; i++){
+			h = (Math.imul(h, 33) ^ s.charCodeAt(i)) | 0
+		}
+
+		return (h >>> 0).toString(16)
+	}
+
+	var s = ""
+
+	for(var i = 0; i < window.Recipes.length; i++){
+		var r = window.Recipes[i]
+
+		s += r.index + "|" + r.result + "|" + r.cost + "|" + r.materials.join("") + ";"
+	}
+
+	s += window.PropertyCost.join(",") + ";"
+	s += window.PropertyToll.join(",") + ";"
+
+	for(var p = 0; p < window.PropertyMaterials.length; p++){
+		s += window.PropertyMaterials[p].join("") + ","
+	}
+
+	return strHash(s)
+})()
