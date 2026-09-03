@@ -1,3 +1,27 @@
+window.MyRoomEnter = function(cookies){
+	var used = cookies.raidUsed ? cookies.raidUsed.split(",") : []
+	var aborted = cookies.raidAborted ? true : false
+	var pmcOk = used.indexOf("PMC") == -1 && !aborted
+	var ucavOk = used.indexOf("UCAV") == -1
+	var body = ""
+	body += '<a class="btn board '+(pmcOk ? "" : "disabled")+'" data-role="PMC">\
+		<i class="emoji color">⚔</i>\
+		<span class="ko">'+(pmcOk ? "PMC 출격" : "PMC 사용됨")+'</span>\
+		<span class="en">'+(pmcOk ? "Deploy PMC" : "PMC used")+'</span>\
+	</a>'
+	body += '<a class="btn board '+(ucavOk ? "" : "disabled")+'" data-role="UCAV">\
+		<i class="emoji color">🛩</i>\
+		<span class="ko">'+(ucavOk ? "UCAV 출격" : "UCAV 사용됨")+'</span>\
+		<span class="en">'+(ucavOk ? "Deploy UCAV" : "UCAV used")+'</span>\
+	</a>'
+	if(!pmcOk && !ucavOk){
+		body += '<p class="tip">\
+			<span class="ko">이번 세션은 종료되었습니다. 다음 매치를 기다리세요.</span>\
+			<span class="en">This session is over. Wait for the next match.</span>\
+		</p>'
+	}
+	return body
+}
 window.MyRoom = function(resp){
 	var cookies = window.cookies
 
@@ -114,12 +138,7 @@ window.MyRoom = function(resp){
 		</strong>\
 		<ul class="stash">'+items_body+'</ul>\
 	</section>\
-	<footer class="myroom_foot">\
-		<a class="btn board" href="/">\
-			<span class="ko">보드판으로</span>\
-			<span class="en">To board</span>\
-		</a>\
-	</footer>'
+	<footer class="myroom_foot">'+window.MyRoomEnter(cookies)+'</footer>'
 
 	var $panel = $("#myroom")
 
@@ -173,6 +192,26 @@ $(document).on("click", "#myroom .stash .item .btn.withdraw", function(e){
 	})
 })
 
+$(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
+	e.preventDefault()
+	var $t = $(this)
+	if($t.hasClass("disabled")){
+		return
+	}
+	try{
+		sessionStorage.raidRole = $t.attr("data-role") ? $t.attr("data-role") : ""
+	}catch(err){
+	}
+	$("#myroom").removeClass("on")
+	$("body").removeAttr("myroom")
+	if(window.history && window.history.replaceState){
+		window.history.replaceState(null, "", window.location.pathname)
+	}
+	window.location.hash = ""
+	if(window.onhashchange){
+		window.onhashchange()
+	}
+})
 $(document).on("click", "#myroom .myroom_close", function(e){
 	e.preventDefault()
 

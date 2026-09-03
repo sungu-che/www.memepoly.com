@@ -828,6 +828,36 @@ window.RoomCallback = async function(resp){
 		if(window.FieldsSync){ window.FieldsSync() }
 	}catch(err){
 	}
+	try{
+		if(window.MapGen && window.MapGen.ready && window.current && window.fields && window.fields.length){
+			var _cp = window.current.current.position
+			var _cb = window.map.biomes[_cp.x + ":" + _cp.z]
+			if(!_cb || _cb.water){
+				var _sr, _sb
+				for(var _si = 0; _si < window.fields.length; _si++){
+					_sr = window.fields[Math.floor(Math.random() * window.fields.length)]
+					_sb = window.map.biomes[_sr.x + ":" + _sr.z]
+					if(_sb && !_sb.water){ break }
+				}
+				if(_sr && _sb){
+					var _sh = cookies.address ? cookies.address : cookies.hash
+					window.current.current.position.x = window.cursor.current.position.x = _sr.x
+					window.current.current.position.y = window.cursor.current.position.y = _sb.y + 0.01
+					window.current.current.position.z = window.cursor.current.position.z = _sr.z
+					if(window[_sh] && window[_sh].position){
+						window[_sh].position.x = _sr.x
+						window[_sh].position.y = _sb.y + 0.5
+						window[_sh].position.z = _sr.z
+					}
+					if(window[_sh] && window[_sh].group && window[_sh].group.current){
+						window[_sh].group.current.position = window[_sh].position
+					}
+				}
+			}
+		}
+	}catch(err){
+		console.log("room spawn err",err);
+	}
 
 	
 
@@ -1611,11 +1641,17 @@ window.RoomCallback = async function(resp){
 					var peerId = row.From
 
 					if(row.Cc.indexOf("#position") > -1){
-						var position = row.Cc.split(" #position")[0]
-
-						var emoji = row.Cc.split("@")[1]
-
-						var player = JSON.parse("["+position+"]")
+						/* 개발 Part 4 : 좌표/이모지를 컬럼에서 읽는다 */
+						var player
+						var emoji
+						if(typeof row.x != "undefined"){
+							player = [row.x * 1, row.z * 1]
+							emoji = row.emoji
+						}else{
+							var position = row.Cc.split(" #position")[0]
+							emoji = row.Cc.split("@")[1]
+							player = JSON.parse("["+position+"]")
+						}
 							player.follow = false
 
 						if(cookies.address == row.From || cookies.hash == row.From){
@@ -2221,17 +2257,31 @@ window.RoomCallback = async function(resp){
 							}
 						}
 					}else if(row.Cc.indexOf("#link") > -1){
-						var position = row.Cc.split(" #link")[0]
-
-						var link = row.Cc.split("https://")[1]
-
-						var asset = JSON.parse("["+position+"]")
-
+						/*
+							개발 Part 4
+							서버가 __url / __provider / __thumbUrl 을 함께 보낸다.
+							Cc.split("https://")[1] 로 자르던 방식은 URL 안에
+							https:// 가 두 번 나오면 깨졌다.
+						*/
+						var asset
+						var link
+						if(typeof row.x != "undefined" && row.__url){
+							asset = [row.x * 1, row.z * 1]
+							link = row.__url
+						}else{
+							var position = row.Cc.split(" #link")[0]
+							link = "https://" + row.Cc.split("https://")[1]
+							asset = JSON.parse("["+position+"]")
+						}
 						try{
-							var url = new URL("https://"+link)
+							var url = new URL(link)
 							link = url.href
-
-							var oembed = window.oembed(url)
+							var oembed = row.__provider ? {
+								id : row.__providerId,
+								host : row.__host ? row.__host : url.host,
+								provider : row.__provider,
+								src : row.__thumbUrl
+							} : window.oembed(url)
 
 							_players.push({
 								type : "player",
@@ -2271,12 +2321,15 @@ window.RoomCallback = async function(resp){
 							console.log("err",err);
 						}
 					}else if(row.Cc.indexOf("#portal") > -1){
-						var position = row.Cc.split(" #portal")[0]
-
-						var asset = JSON.parse("["+position+"]")
-
-						var canvas = blockies.create({seed: row.From.toLowerCase()})
-
+						/* 개발 Part 4 : 좌표를 컬럼에서 읽는다 */
+						var asset
+						if(typeof row.x != "undefined"){
+							asset = [row.x * 1, row.z * 1]
+						}else{
+							var position = row.Cc.split(" #portal")[0]
+							asset = JSON.parse("["+position+"]")
+						}
+						var canvas = blockies.create({seed: (row.From ? row.From.toLowerCase() : "0x0")})
 						_players.push({
 							self : row.From,
 							hash : row.Id,
@@ -2285,26 +2338,36 @@ window.RoomCallback = async function(resp){
 							z : asset[1],
 							emoji : canvas.toDataURL()
 						})
-
 					}else if(row.Cc.indexOf("#bingo") > -1){
-						var position = row.Cc.split(" #bingo")[0]
-
-						var asset = JSON.parse("["+position+"]")
-
+						/* 개발 Part 4 : 좌표를 컬럼에서 읽는다 */
+						var asset
+						if(typeof row.x != "undefined"){
+							asset = [row.x * 1, row.z * 1]
+						}else{
+							var position = row.Cc.split(" #bingo")[0]
+							asset = JSON.parse("["+position+"]")
+						}
 						var $clipped = $('.clipped .emoji[x="'+asset[0]+'"][z="'+asset[1]+'"]')
-
 						if($clipped.length && !window.bingo[row.Id]){
 							window.bingo[row.Id] = true
 							bingo_body += $clipped.closest('[style*="transform-origin"]')[0].outerHTML
 						}
-
 					}else if(row.Cc.indexOf("#puzzle") > -1){
-						var position = row.Cc.split(" #puzzle")[0]
-
-						var emoji = row.Cc.split("@")[1]
-
-						var asset = JSON.parse("["+position+"]")
-
+						/*
+							개발 Part 4
+							서버가 x / z / emoji 를 컬럼에서 실어 보낸다.
+							값이 없을 때만 Cc 를 파싱한다(레거시 폴백).
+						*/
+						var asset
+						var emoji
+						if(typeof row.x != "undefined"){
+							asset = [row.x * 1, row.z * 1]
+							emoji = row.emoji
+						}else{
+							var position = row.Cc.split(" #puzzle")[0]
+							emoji = row.Cc.split("@")[1]
+							asset = JSON.parse("["+position+"]")
+						}
 						window.map.puzzle[(asset[0]+":"+asset[1])] = {
 							id : row.Id,
 							hash : row.From,
@@ -2315,7 +2378,6 @@ window.RoomCallback = async function(resp){
 							y : -0.04,
 							z : asset[1]
 						}
-
 						_assets.push({
 							id : row.Id,
 							hash : row.From,
@@ -2326,14 +2388,22 @@ window.RoomCallback = async function(resp){
 							y : 0,
 							z : asset[1]
 						})
-
 					}else if(row.Cc.indexOf("#asset") > -1){
-						var position = row.Cc.split(" #asset")[0]
-
-						var emoji = row.Cc.split("@")[1]
-
-						var asset = JSON.parse("["+position+"]")
-
+						/*
+							개발 Part 4
+							#asset 은 아직 레거시 테이블(개발 Part 5 에서 이관)이므로
+							Cc 파싱을 유지하되, 컬럼이 있으면 우선 사용한다.
+						*/
+						var asset
+						var emoji
+						if(typeof row.x != "undefined"){
+							asset = [row.x * 1, row.z * 1]
+							emoji = row.emoji ? row.emoji : row.Cc.split("@")[1]
+						}else{
+							var position = row.Cc.split(" #asset")[0]
+							emoji = row.Cc.split("@")[1]
+							asset = JSON.parse("["+position+"]")
+						}
 						if(row.Flag){
 							_assets.push({
 								id : row.Id,
@@ -2360,10 +2430,14 @@ window.RoomCallback = async function(resp){
 							}
 						}
 					}else if(row.Cc.indexOf("#mine") > -1){
-						var position = row.Cc.split(" #mine")[0]
-
-						var asset = JSON.parse("["+position+"]")
-
+						/* 개발 Part 4 : 좌표를 컬럼에서 읽는다 */
+						var asset
+						if(typeof row.x != "undefined"){
+							asset = [row.x * 1, row.z * 1]
+						}else{
+							var position = row.Cc.split(" #mine")[0]
+							asset = JSON.parse("["+position+"]")
+						}
 						_assets.push({
 							id : row.Id,
 							hash : row.From,
@@ -2374,14 +2448,15 @@ window.RoomCallback = async function(resp){
 							y : 0,
 							z : asset[1]
 						})
-
 					}else if(row.Cc.indexOf("#flag") > -1){
-						var position = row.Cc.split(" #flag")[0]
-
-						var emoji = row.Cc.split("@")[1]
-
-						var asset = JSON.parse("["+position+"]")
-
+						/* 개발 Part 4 : 좌표를 컬럼에서 읽는다 */
+						var asset
+						if(typeof row.x != "undefined"){
+							asset = [row.x * 1, row.z * 1]
+						}else{
+							var position = row.Cc.split(" #flag")[0]
+							asset = JSON.parse("["+position+"]")
+						}
 						_assets.push({
 							id : row.Id,
 							hash : row.From,
@@ -2393,12 +2468,14 @@ window.RoomCallback = async function(resp){
 							z : asset[1]
 						})
 					}else if(row.Cc.indexOf("#chord") > -1){
-						var position = row.Cc.split(" #chord")[0]
-
-						var emoji = row.Cc.split("@")[1]
-
-						var asset = JSON.parse("["+position+"]")
-
+						/* 개발 Part 4 : 좌표를 컬럼에서 읽는다 */
+						var asset
+						if(typeof row.x != "undefined"){
+							asset = [row.x * 1, row.z * 1]
+						}else{
+							var position = row.Cc.split(" #chord")[0]
+							asset = JSON.parse("["+position+"]")
+						}
 						window.map.open[(asset[0]+":"+asset[1])] = {
 							id : row.Id,
 							hash : row.From,
@@ -2421,20 +2498,19 @@ window.RoomCallback = async function(resp){
 							z : asset[1]
 						})
 					}else if(row.Cc.indexOf("#open") > -1){
-						var position = row.Cc.split(" #open")[0]
-
-						var emoji = row.Cc.split("@")[1]
-
-						var asset = JSON.parse("["+position+"]")
-
+						/* 개발 Part 4 : 좌표를 컬럼에서 읽는다 */
+						var asset
+						if(typeof row.x != "undefined"){
+							asset = [row.x * 1, row.z * 1]
+						}else{
+							var position = row.Cc.split(" #open")[0]
+							asset = JSON.parse("["+position+"]")
+						}
 						var color = "black"
-
 						if(!score_board[row.From]){
 							score_board[row.From] = 0
 						}
-
 						score_board[row.From]++
-
 						if(self_player.x == asset[0] && self_player.z == asset[1]){
 							open = row
 						}
@@ -2678,10 +2754,42 @@ window.RoomCallback = async function(resp){
 			try{
 				try{
 					if(window.MapGen && window.MapGen.ready && self_player){
+						var _size = 4
 						var _biomeAssets = window.MapGen.assets(cc_address, {
 							x : self_player.x,
 							z : self_player.z
-						}, 4)
+						}, _size)
+						var _visible = []
+						for(var _ai = 0; _ai < _assets.length; _ai++){
+							var _a = _assets[_ai]
+							if((_a.name + "").indexOf("#") === 0){
+								_visible.push(_a)
+								continue
+							}
+							var _pad = ((_a.name + "").indexOf("chord") === 0) ? 1 : 0
+							if(_a.x < self_player.x - _size - _pad || _a.x > self_player.x + _size + _pad){
+								continue
+							}
+							if(_a.z < self_player.z - _size - _pad || _a.z > self_player.z + _size + _pad){
+								continue
+							}
+							var _ab = window.map.biomes[_a.x + ":" + _a.z]
+							if(!_ab){
+								continue
+							}
+							var _lift = 0.02
+							var _an = _a.name + ""
+							if(_an.indexOf("open") === 0){
+								_lift = 0.14
+							}else if(_an.indexOf("chord") === 0){
+								_lift = 0.10
+							}else if(_an.indexOf("flag") === 0){
+								_lift = 0.18
+							}
+							_a.y = _ab.y + _lift
+							_visible.push(_a)
+						}
+						_assets = _visible
 						if(_biomeAssets.length){
 							_assets = _biomeAssets.concat(_assets)
 						}
@@ -5434,10 +5542,10 @@ window.RoomInit = function(cookies){
 
 								}else if($this.hasClass("Chord")){
 									body.cc = "chord"
-
+								}else if($this.hasClass("Fire")){
+									return
 								}else if($this.hasClass("Flag")){
 									body.cc = "flag"
-
 								}else if($this.hasClass("Open")){
 									body.cc = "open"
 
@@ -6466,10 +6574,19 @@ window.RoomInit = function(cookies){
 						player.x = window.current.current.position.x + position.x
 						player.z = window.current.current.position.z + position.z
 
-					var edge = (window.grid.edge / 2) + 1
-
+					var _islandMode = (window.MapGen && window.MapGen.ready) ? true : false
+					var edge = _islandMode ? (1000000000000000000 / 2) + 1 : (window.grid.edge / 2) + 1
 					var $go = $("#go")
-					
+					if(_islandMode){
+						var _nb = window.map.biomes[player.x + ":" + player.z]
+						if(!_nb){
+							return
+						}
+						if(_nb.water){
+							return
+						}
+						player.y = _nb.y
+					}
 					if(player.x < edge && player.x > -edge && player.z < edge && player.z > -edge){
 						if(window.camera){
 							if(window.camera.hash){
@@ -6479,9 +6596,13 @@ window.RoomInit = function(cookies){
 							}
 						}
 
+						if(_islandMode){
+							window[player.hash].position.y = player.y + 0.5
+							window.current.current.position.y = player.y + 0.01
+							window.cursor.current.position.y = player.y + 0.01
+						}
 						window[player.hash].position.x = window.current.current.position.x = window.cursor.current.position.x = player.x
 						window[player.hash].position.z = window.current.current.position.z = window.cursor.current.position.z = player.z
-
 						if(window.map.open){
 							var open = window.map.open[player.x+":"+player.z]
 
@@ -6616,8 +6737,7 @@ window.RoomInit = function(cookies){
 						}
 					}
 
-					var _edge = ( window.grid.edge / 2 ) - 1
-
+					var _edge = _islandMode ? ((1000000000000000000 / 2) - 1) : (( window.grid.edge / 2 ) - 1)
 					if(player.x < -_edge || player.z < -_edge || player.x > _edge || player.z > _edge){
 						var alpha = 0
 
@@ -7208,30 +7328,45 @@ window.RoomHashChange = function(e){
 
 		window.camera.set({})
 
+		var _rp = { x : 1.5, y : 0.5, z : 1.5 }
+		try{
+			if(window.MapGen && window.MapGen.ready && window.fields && window.fields.length){
+				var _rr, _rb
+				for(var _ri = 0; _ri < window.fields.length; _ri++){
+					_rr = window.fields[Math.floor(Math.random() * window.fields.length)]
+					_rb = window.map.biomes[_rr.x + ":" + _rr.z]
+					if(_rb && !_rb.water){
+						break
+					}
+				}
+				if(_rr && _rb){
+					_rp = { x : _rr.x, y : _rb.y, z : _rr.z }
+				}
+			}
+		}catch(err){
+		}
 		window.players.set([{
 			follow : false,
 			self : true,
 			type : "player",
 			hash : cookies.address ? cookies.address : cookies.hash,
 			emoji : window.emojis.self ? window.emojis.self : "😀",
-			x : 1.5,
-			y : 0.5,
-			z : 1.5
+			x : _rp.x,
+			y : _rp.y + 0.5,
+			z : _rp.z
 		}])
-
 		window.assets.set([])
 		window.setFrameloop("always")
-
 		try{
-			window.current.current.position.x = window.cursor.current.position.x = 1.5
-			window.current.current.position.z = window.cursor.current.position.z = 1.5
-
+			window.current.current.position.x = window.cursor.current.position.x = _rp.x
+			window.current.current.position.y = window.cursor.current.position.y = _rp.y + 0.01
+			window.current.current.position.z = window.cursor.current.position.z = _rp.z
 			if(window[player.hash]){
-				window[player.hash].position.x = 1.5
-				window[player.hash].position.z = 1.5
+				window[player.hash].position.x = _rp.x
+				window[player.hash].position.y = _rp.y + 0.5
+				window[player.hash].position.z = _rp.z
 			}
 		}catch(err){
-
 		}
 
 		delete window.response

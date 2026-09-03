@@ -158,7 +158,7 @@ window.Zoom = function(){
 	var _far = window.far
 
 	_far.x = 4.5
-	_far.y = window.Mode() == "room" ? 4.5 : 5.5
+	_far.y = 5.5
 	_far.z = 4.5
 
 	window.speed = 0.1
@@ -489,132 +489,125 @@ window.listToBiomes = function(){
 	return biomes
 }
 
-window.PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
-window.PropertyCost = [100, 200, 500, 1000, 2500]
-window.PropertyToll = [0, 20, 50, 120, 300]
-window.PropertyMaterials = [
-	[],
-	["🪵", "🪵"],
-	["🪵", "🪵", "🪵", "🪨", "🪨"],
-	["🪵", "🪵", "🪵", "🪵", "🪵", "🪨", "🪨", "🪨", "🛢"],
-	["🪵", "🪵", "🪵", "🪵", "🪵", "🪵", "🪵", "🪵", "🪨", "🪨", "🪨", "🪨", "🪨", "🛢", "🛢", "🛢", "❄"]
-]
-window.Recipes = [
-	{ index: 0,  result: "🛡", name: "방패",        grade: "rare",    cost: 100, materials: ["🪵", "🪵", "🪵"] },
-	{ index: 1,  result: "⛏", name: "곡괭이",      grade: "common",  cost: 100, materials: ["🪨", "🪨", "🪵"] },
-	{ index: 2,  result: "🪓", name: "도끼",        grade: "common",  cost: 100, materials: ["🪵", "🪵", "🪨"] },
-	{ index: 3,  result: "🪖", name: "군용 헬멧",   grade: "common",  cost: 100, materials: ["🪨", "🪨", "🪨", "🛢"] },
-	{ index: 4,  result: "🏹", name: "활",          grade: "rare",    cost: 100, materials: ["🪵", "🪵", "🪵", "🪵"] },
-	{ index: 5,  result: "🦺", name: "안전 조끼",   grade: "common",  cost: 100, materials: ["🪵", "🪵", "🛢", "🛢"] },
-	{ index: 6,  result: "🧤", name: "작업 장갑",   grade: "common",  cost: 100, materials: ["🪵", "🪵", "🛢"] },
-	{ index: 7,  result: "👢", name: "장화",        grade: "common",  cost: 100, materials: ["🪵", "🪵", "🪵", "🛢"] },
-	{ index: 8,  result: "🔫", name: "물총",        grade: "common",  cost: 100, materials: ["🪨", "🛢", "🛢"] },
-	{ index: 9,  result: "🗡", name: "단검",        grade: "common",  cost: 100, materials: ["🪨", "🪨", "🛢"] },
-	{ index: 10, result: "🎣", name: "낚싯대",      grade: "rare",    cost: 250, materials: ["🪵", "🪵", "🪵", "🪨"] },
-	{ index: 11, result: "⛑", name: "구조 헬멧",   grade: "rare",    cost: 250, materials: ["🪨", "🪨", "🪨", "🪨", "🛢", "🛢", "❄"] },
-	{ index: 12, result: "🥋", name: "도복",        grade: "rare",    cost: 250, materials: ["🪵", "🪵", "🪵", "🪵", "❄", "❄"] },
-	{ index: 13, result: "🥾", name: "등산화",      grade: "rare",    cost: 250, materials: ["🪵", "🪵", "🪵", "🪵", "🪨", "🪨", "🛢"] },
-	{ index: 14, result: "🥊", name: "복싱 글러브", grade: "rare",    cost: 250, materials: ["🪵", "🪵", "🪨", "🪨", "🛢", "🛢"] },
-	{ index: 15, result: "⚔", name: "검",          grade: "rare",    cost: 250, materials: ["🪨", "🪨", "🪨", "🪨", "🪨", "🛢", "🛢"] },
-	{ index: 16, result: "💣", name: "폭탄",        grade: "special", cost: 500, materials: ["🛢", "🛢", "🛢", "🪨", "🪨"] },
-	{ index: 17, result: "🧪", name: "물약",        grade: "consume", cost: 50,  materials: ["🐟", "🐟", "❄"] }
-]
-window.MaxHp = { "" : 10, "PLAYER" : 10, "PMC" : 8, "SCAV" : 5, "UCAV" : 8 }
-window.Biomes = {
-	// biomes
-	"#OCEAN": "#44447a",
-	"#44447a" : "",
-	"#COAST": "#33335a",
-	"#33335a" : "",
-	"#LAKESHORE": "#225588",
-	"#225588" : "",
-	"#LAKE": "#336699",
-	"#336699" : "",
-	"#RIVER": "#225588",
-	"#MARSH": "#2f6666",
-	"#2f6666" : "",
-	"#ICE": "#99ffff",
-	"#99ffff" : "❄",
-	"#BEACH": "#a09077",
-	"#a09077" : "🌴",
-	"#ROAD1": "#442211",
-	"#442211" : "📦",
-	"#ROAD2": "#553322",
-	"#553322" : "📦",
-	"#ROAD3": "#664433",
-	"#664433" : "📦",
-	"#BRIDGE": "#686860",
-	"#686860" : "📦",
-	"#LAVA": "#cc3333",
-	"#cc3333" : "🪨",
+/*
+	개발 Part 3
+	PropertyCost / PropertyToll / PropertyType / PropertyLevelEmoji /
+	PropertyMaterials / Recipes / MaxHp / Biomes 정의를 제거한다.
 
-	// Terrain
-	"#SNOW": "#ffffff",
-	"#ffffff" : "❄",
-	"#TUNDRA": "#bbbbaa",
-	"#bbbbaa" : "🪨",
-	"#BARE": "#888888",
-	"#888888" : "🪨",
-	"#SCORCHED": "#555555",
-	"#555555" : "🪨",
-	"#TAIGA": "#99aa77",
-	"#99aa77" : "🎄",
-	"#SHRUBLAND": "#889977",
-	"#889977" : "🌾",
-	"#TEMPERATE_DESERT": "#c9d29b",
-	"#c9d29b" : "🌵",
-	"#TEMPERATE_RAIN_FOREST": "#448855",
-	"#448855" : "🌳",
-	"#TEMPERATE_DECIDUOUS_FOREST": "#679459",
-	"#679459" : "🌾",
-	"#GRASSLAND": "#88aa55",
-	"#88aa55" : "🌾",
-	"#SUBTROPICAL_DESERT": "#d2b98b",
-	"#d2b98b" : "🛢",
-	"#TROPICAL_RAIN_FOREST": "#337755",
-	"#337755" : "🌳",
-	"#TROPICAL_SEASONAL_FOREST": "#559944",
-	"#559944" : "🌳"
-}
+	이유
+	  src/recipe.js 가 이미 동일 값을 정의하고 있어 로드 순서에 따라
+	  서로를 덮어쓰는 구조였다. 단일 진실 원천은 서버 DB 룰셋이며,
+	  src/ruleset.js 가 /ruleset 응답으로 window 전역을 채운다.
 
-function getHashtag(str){
-	var hashtag = ""
-	var hashtags = str.match(/\B#[A-Za-z0-9\-\.\_]+\b/g)
-
-	if(hashtags.length){
-		hashtags.forEach(function(h, i){
-			if(!hashtag){
-				hashtag = h
-			}
-		})
+	폴백
+	  서버 룰셋 로드에 실패하면 src/recipe.js 의 정적 정의가 남아 동작한다.
+	  Biomes 색상 맵도 src/ruleset.js 가 biomeColors 로 덮어쓴다.
+	  로드 실패 시를 대비해 색상 맵만 최소 기본값으로 남긴다.
+*/
+if(typeof window.Biomes == "undefined"){
+	window.Biomes = {
+		"#OCEAN": "#44447a",
+		"#44447a" : "",
+		"#COAST": "#33335a",
+		"#33335a" : "",
+		"#LAKESHORE": "#225588",
+		"#225588" : "",
+		"#LAKE": "#336699",
+		"#336699" : "",
+		"#RIVER": "#225588",
+		"#MARSH": "#2f6666",
+		"#2f6666" : "",
+		"#ICE": "#99ffff",
+		"#99ffff" : "❄",
+		"#BEACH": "#a09077",
+		"#a09077" : "🌴",
+		"#ROAD1": "#442211",
+		"#442211" : "📦",
+		"#ROAD2": "#553322",
+		"#553322" : "📦",
+		"#ROAD3": "#664433",
+		"#664433" : "📦",
+		"#BRIDGE": "#686860",
+		"#686860" : "📦",
+		"#LAVA": "#cc3333",
+		"#cc3333" : "🪨",
+		"#SNOW": "#ffffff",
+		"#ffffff" : "❄",
+		"#TUNDRA": "#bbbbaa",
+		"#bbbbaa" : "🪨",
+		"#BARE": "#888888",
+		"#888888" : "🪨",
+		"#SCORCHED": "#555555",
+		"#555555" : "🪨",
+		"#TAIGA": "#99aa77",
+		"#99aa77" : "🎄",
+		"#SHRUBLAND": "#889977",
+		"#889977" : "🌾",
+		"#TEMPERATE_DESERT": "#c9d29b",
+		"#c9d29b" : "🌵",
+		"#TEMPERATE_RAIN_FOREST": "#448855",
+		"#448855" : "🌳",
+		"#TEMPERATE_DECIDUOUS_FOREST": "#679459",
+		"#679459" : "🌾",
+		"#GRASSLAND": "#88aa55",
+		"#88aa55" : "🌾",
+		"#SUBTROPICAL_DESERT": "#d2b98b",
+		"#d2b98b" : "🛢",
+		"#TROPICAL_RAIN_FOREST": "#337755",
+		"#337755" : "🌳",
+		"#TROPICAL_SEASONAL_FOREST": "#559944",
+		"#559944" : "🌳"
 	}
+}
 
-	return hashtag
+/*
+	개발 Part 4
+	match 가 null 일 때 .length 접근으로 TypeError 를 던지던 버그를 해소한다.
+	서버가 rows[].Cc 를 컬럼에서 "조립"해 내려주므로 포맷은 안정적이다.
+	개발 Part 12 에서 프론트가 DTO 를 직접 읽게 되면 이 함수를 제거한다.
+*/
+function getHashtag(str){
+	if(!str){
+		return ""
+	}
+	var hashtags = String(str).match(/\B#[A-Za-z0-9\-\.\_]+\b/g)
+	if(!hashtags || !hashtags.length){
+		return ""
+	}
+	return hashtags[0]
 }
 
 
+/*
+	개발 Part 4
+	youtu.be 분기가 id 에 "/watch?v=" 를 넣어 썸네일 URL 이 깨지던 버그를 해소한다.
+	서버 services/oembedService.js 와 동일 규칙으로 맞춘다.
+*/
 window.oembed = function(url){
 	var id = ""
 	var provider = ""
 	var src = ""
-
+	if(!url || !url.host){
+		return { id : "", host : "", provider : "", src : "" }
+	}
 	if(url.host.indexOf("youtube.com") > -1){
 		provider = "youtube"
 		if(url.pathname.indexOf("/shorts/") > -1){
 			id = url.pathname.replace("/shorts/","")
 		}else{
-			id = url.searchParams.get("v")
+			id = url.searchParams.get("v") || ""
 		}
-
-		src = 'https://i.ytimg.com/vi/'+id+'/default.jpg'
+		if(id){
+			src = 'https://i.ytimg.com/vi/'+id+'/default.jpg'
+		}
 	}
-
 	if(url.host.indexOf("youtu.be") > -1){
 		provider = "youtube"
-
-		id = url.pathname.replace("/shorts/","/watch?v=")
+		id = url.pathname.replace("/shorts/","").replace("/","")
+		if(id){
+			src = 'https://i.ytimg.com/vi/'+id+'/default.jpg'
+		}
 	}
-
 	return {
 		id : id,
 		host : url.host,
@@ -732,12 +725,17 @@ window.players.self = function(){
 			y : 0.5,
 			z : 1.5
 		}
-
 		if(window.current){
 			_position.x = window.current.current.position.x
 			_position.z = window.current.current.position.z
+			try{
+				var _pb = window.map.biomes[_position.x + ":" + _position.z]
+				if(_pb){
+					_position.y = _pb.y
+				}
+			}catch(err){
+			}
 		}
-
 		return {
 			follow : false,
 			self : true,
@@ -2889,41 +2887,46 @@ OAuth3.on("ready", function(e){
 
 					var after_body = ""
 					flags.forEach(function(flag){
+						/*
+							개발 Part 4
+							서버가 rows[] 에 x / z / dice / emoji / __team 을 함께 실어 보낸다.
+							Cc 파싱은 값이 없을 때만 폴백으로 수행한다.
+						*/
 						var hashtag = getHashtag(flag.Cc)
-
 						try{
-							var position = flag.Cc.split(` ${hashtag}`)[0]
-								position = JSON.parse(`[${position}]`)
-
-							var color = hashtag.replace("#","")
-
-							var emoji = flag.Cc.split("@")[1]
-
-							flag.x = position[0] * 1
-							flag.z = position[1] * 1
-							flag.dice = position[2] * 1
-
+							if(typeof flag.x == "undefined"){
+								var position = flag.Cc.split(` ${hashtag}`)[0]
+									position = JSON.parse(`[${position}]`)
+								flag.x = position[0] * 1
+								flag.z = position[1] * 1
+								flag.dice = position[2] * 1
+							}else{
+								flag.x = flag.x * 1
+								flag.z = flag.z * 1
+								flag.dice = flag.dice * 1
+							}
+							var color = flag.__team ? flag.__team : hashtag.replace("#","")
+							var emoji = typeof flag.emoji != "undefined" ? flag.emoji : flag.Cc.split("@")[1]
 							flag_players.forEach(function(player, i){
 								var typeof_emoji = window.typeof_emoji(player.emoji)
-
 								if(
 									((flag.x - size < player.x && flag.x + size > player.x) &&
 									(flag.z - size < player.z && flag.z + size > player.z) &&
 									!player.self && typeof_emoji) || (!player.self && player.team == self_player.team)
 								){
 									var _color = player.team.replace("#","")
-
 									after_body += `<div style="top:${((player.z * 2))}px;left:${((player.x * 2))}px;" class="flag ${_color}"><div class="tb"><div class="tc"><i class="${_color} emoji color">${player.emoji}</i></div></div></div>`
 								}
 							})
-
 							after_body += `<div style="top:${((flag.z * 2))}px;left:${((flag.x * 2))}px;" class="flag ${color}"><div class="tb"><div class="tc"><i class="${color} emoji color">${emoji}</i></div></div></div>`
-
 							if(flag.dice == 0){
-								flags[hashtag]++
-
+								var _teamTag = "#" + color
+								if(typeof flags[_teamTag] == "undefined"){
+									flags[_teamTag] = 0
+								}
+								flags[_teamTag]++
 								if(flag.From.indexOf(self_player.hash) > -1){
-									if(flag.Cc.indexOf(self_player.team) > -1){
+									if(_teamTag == self_player.team){
 										flags[flag.From]++
 									}
 								}else{
@@ -3032,7 +3035,7 @@ OAuth3.on("ready", function(e){
 											<a class="hashType Hp"><i class="emoji color">❤️</i><span class="cnt">${_hp}/${_maxHp}</span></a>
 										</li>
 										<li>
-											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
+											<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
 											<a class="hashType Meta emoji color">
@@ -3063,7 +3066,7 @@ OAuth3.on("ready", function(e){
 										}
 
 										tooltip_body = `<li>
-											<a class="hashType Flag"><img src="${src}"><span class="cnt">${cnt}</span></a>
+											<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
 											<a class="hashType Meta emoji color">${typeDice ? `<i></i>` : ""}</a>
@@ -4250,8 +4253,10 @@ OAuth3.on("ready", function(e){
 
 												$('#dice ul').playSpin();
 
-											}else if($this.hasClass("Flag")){
+											}else if($this.hasClass("Fire")){
 												body.cc = "flag"
+											}else if($this.hasClass("Flag")){
+												return
 											}else if($this.hasClass("Hp")){
 												var _maxHp = window.MaxHp[cookies.role ? cookies.role : ""]
 												var _hp = typeof cookies.hp != "undefined" ? cookies.hp * 1 : _maxHp
@@ -4305,18 +4310,14 @@ OAuth3.on("ready", function(e){
 										}
 
 										var id = cookies.hash+"["+player.x+","+player.z+"]"
-
 										var _assets = window.assets;
-
 										var diff = false
-
 										if(body.cc == "flag"){
 											diff = true
-
 											_assets.push({
 												id : id,
 												hash : player.hash,
-												name : "flag",
+												name : "fire",
 												value : "",
 												color: "orange",
 												x : player.x,

@@ -135,12 +135,29 @@ export const Experience = () => {
 			}
 		}else{
 			var position
-
 			if(window.Mode() == "room"){
-				position = {
-					x : 1.5,
-					y : 0.5,
-					z : 1.5
+				if(window.MapGen && window.MapGen.ready && fields.length){
+					var _rr, _rb
+					for(var _ri = 0; _ri < fields.length; _ri++){
+						_rr = fields[Math.floor(Math.random() * fields.length)]
+						_rb = window.map.biomes[`${_rr.x}:${_rr.z}`]
+						if(_rb && !_rb.water){
+							break
+						}
+					}
+					if(!_rr){ _rr = fields[0] }
+					if(!_rb){ _rb = { y : 0.5 } }
+					position = {
+						x : _rr.x,
+						y : _rb.y,
+						z : _rr.z
+					}
+				}else{
+					position = {
+						x : 1.5,
+						y : 0.5,
+						z : 1.5
+					}
 				}
 			}else if(cookies.axis){
 				var _axis = cookies.axis
@@ -248,13 +265,11 @@ export const Experience = () => {
 
 	useFrame((e,delta) => {
 		var cookies = window.cookies
-
-		if(window.Mode() == "room"){
+		if(window.Mode() == "room" && !(window.MapGen && window.MapGen.ready)){
 			try{
 				current.current.position.y = 0
 				cursor.current.position.y = -0.001
 			}catch(err){
-
 			}
 		}
 		
@@ -308,22 +323,20 @@ export const Experience = () => {
 	var point = {}
 
 	var onClick = function(e){
-		if(window.Mode() == "room"){
+		if(window.Mode() == "room" && !(window.MapGen && window.MapGen.ready)){
 			if(window.RoomClick){
 				return window.RoomClick(e)
 			}
-
 			return
 		}
-
 		var cookies = window.cookies
 		try{
 			if(cookies){
-				if(window.CanFreeMove && !window.CanFreeMove()){
+				var _isRoom = window.Mode() == "room"
+				if(!_isRoom && window.CanFreeMove && !window.CanFreeMove()){
 					return
 				}
-
-				if(cookies.axis && !cookies.damage){
+				if((_isRoom || cookies.axis) && !cookies.damage){
 					if(e.point){
 						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
 						var biome = window.map.biomes[_point.x+":"+_point.z]
@@ -480,6 +493,87 @@ export const Experience = () => {
 
 	const onContextmenu = function(e){
 		e.preventDefault();
+	}
+
+	const ChordTile = function(props){
+		var cells = useMemo(function(){
+			var out = []
+			for(var _cx = -1; _cx < 2; _cx++){
+				for(var _cz = -1; _cz < 2; _cz++){
+					var bx = props.position.x + _cx
+					var bz = props.position.z + _cz
+					var b = null
+					try{
+						b = window.map.biomes[bx + ":" + bz]
+					}catch(err){
+					}
+					if(!b){
+						continue
+					}
+					if(b.water){
+						continue
+					}
+					out.push({
+						key : bx + ":" + bz,
+						x : _cx,
+						y : (b.y + 0.02) - props.position.y,
+						z : _cz
+					})
+				}
+			}
+			return out
+		}, [props.position.x, props.position.z, props.position.y])
+		return <>
+			<group position={props.position}>
+				{cells.map(function(c){
+					return <mesh key={c.key} rotation-x={-Math.PI / 2} position={[c.x, c.y, c.z]} onClick={onClick}>
+						<planeGeometry attach="geometry" args={[0.9, 0.9]} />
+						<meshStandardMaterial attach="material" color={props.color ? props.color : "yellow"} transparent opacity={0.55} />
+					</mesh>
+				})}
+			</group>
+		</>
+	}
+
+	const OpenTile = function(props){
+		var texture = useMemo(function(){
+			try{
+				var _seed = (props.hash + "")
+				if(_seed.indexOf("0x") != 0){
+					_seed = "0x" + _seed
+				}
+				var _canvas = blockies.create({
+					seed : _seed.toLowerCase(),
+					size : 8,
+					scale : 8
+				})
+				var _t = new THREE.CanvasTexture(_canvas)
+				_t.magFilter = THREE.NearestFilter
+				_t.minFilter = THREE.NearestFilter
+				_t.needsUpdate = true
+				return _t
+			}catch(err){
+				return null
+			}
+		}, [props.hash])
+		if(!texture){
+			return <>
+				<group position={props.position}>
+					<group></group>
+				</group>
+			</>
+		}
+		return <>
+			<group position={props.position}>
+				<mesh rotation-x={-Math.PI / 2} position={[0, 0.02, 0]} onClick={onClick}>
+					<planeGeometry attach="geometry" args={[0.94, 0.94]} />
+					<meshBasicMaterial attach="material" map={texture} transparent opacity={0.92} />
+				</mesh>
+				<Html className="clipped">
+					<div className="emoji color open" x={props.position.x} z={props.position.z}></div>
+				</Html>
+			</group>
+		</>
 	}
 
 	const Asset = function(props){
@@ -833,7 +927,35 @@ export const Experience = () => {
 
 			<Suspense>
 				{assets.map((asset) => (
-					(mode == "room" && (asset.name + "").indexOf("#") !== 0) ? (
+					(mode == "room" && (window.MapGen && window.MapGen.ready) && (asset.name + "").indexOf("chord") === 0) ? (
+						<ChordTile
+							key={asset.id + ":chord"}
+							uid={asset.id}
+							hash={asset.hash}
+							color={asset.color}
+							position={
+								new THREE.Vector3(
+									asset.x,
+									asset.y,
+									asset.z
+								)
+							}
+						/>
+					) : (mode == "room" && (window.MapGen && window.MapGen.ready) && (asset.name + "").indexOf("open") === 0) ? (
+						<OpenTile
+							key={asset.id + ":" + asset.name}
+							uid={asset.id}
+							hash={asset.hash}
+							name={asset.name}
+							position={
+								new THREE.Vector3(
+									asset.x,
+									asset.y,
+									asset.z
+								)
+							}
+						/>
+					) : (mode == "room" && (asset.name + "").indexOf("#") !== 0) ? (
 						<RoomAsset
 							key={asset.id + ":" + asset.name}
 							uid={asset.id}

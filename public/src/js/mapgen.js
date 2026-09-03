@@ -113,6 +113,11 @@ window.MapGen.paint = function(list){
 		canvas.height = side
 		var ctx = canvas.getContext("2d")
 		ctx.clearRect(0, 0, side, side)
+		var minX = Infinity, minZ = Infinity
+		for(var m = 0; m < list.length; m++){
+			if(list[m].x < minX){ minX = list[m].x }
+			if(list[m].z < minZ){ minZ = list[m].z }
+		}
 		for(var i = 0; i < list.length; i++){
 			var b = list[i]
 			var color = window.Biomes["#" + b.biome]
@@ -120,7 +125,7 @@ window.MapGen.paint = function(list){
 				continue
 			}
 			ctx.fillStyle = color
-			ctx.fillRect(b.x + 49.5, b.z + 99.5, 1, 1)
+			ctx.fillRect(b.x - minX, b.z - minZ, 1, 1)
 		}
 		var img = document.querySelector(".map .canvas")
 		if(img){

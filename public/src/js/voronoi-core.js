@@ -426,7 +426,545 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			midpoint: null, river: 0
 		};
 	}
-
+	/* ------------------------------------------------- grid voronoi graph builder */
+	function buildGridGraph(map, side, width, height) {
+		var cw = width / side;
+		var ch = height / side;
+		var i, j;
+		var centerAt = [];
+		for (i = 0; i < side; i++) {
+			centerAt[i] = [];
+			for (j = 0; j < side; j++) {
+				var c = Center();
+				c.index = map.centers.length;
+				c.point = { x: ((0.5 + i) / side) * width, y: ((0.5 + j) / side) * height };
+				c.neighbors = [];
+				c.borders = [];
+				c.corners = [];
+				map.centers.push(c);
+				centerAt[i][j] = c;
+			}
+		}
+		var cornerAt = [];
+		for (i = 0; i <= side; i++) {
+			cornerAt[i] = [];
+			for (j = 0; j <= side; j++) {
+				var q = Corner();
+				q.index = map.corners.length;
+				q.point = { x: i * cw, y: j * ch };
+				q.border = (i === 0 || i === side || j === 0 || j === side);
+				q.touches = [];
+				q.protrudes = [];
+				q.adjacent = [];
+				map.corners.push(q);
+				cornerAt[i][j] = q;
+			}
+		}
+		function addToCenterList(list, c) {
+			if (c !== null && list.indexOf(c) < 0) { list.push(c); }
+		}
+		function addToCornerList(list, q) {
+			if (q !== null && list.indexOf(q) < 0) { list.push(q); }
+		}
+		function makeEdge(d0, d1, v0, v1) {
+			var e = Edge();
+			e.index = map.edges.length;
+			e.river = 0;
+			map.edges.push(e);
+			e.d0 = d0;
+			e.d1 = d1;
+			e.v0 = v0;
+			e.v1 = v1;
+			e.midpoint = (v0 !== null && v1 !== null)
+				? Point.interpolate(v0.point, v1.point, 0.5)
+				: null;
+			if (d0 !== null) { d0.borders.push(e); }
+			if (d1 !== null) { d1.borders.push(e); }
+			if (v0 !== null) { v0.protrudes.push(e); }
+			if (v1 !== null) { v1.protrudes.push(e); }
+			if (d0 !== null && d1 !== null) {
+				addToCenterList(d0.neighbors, d1);
+				addToCenterList(d1.neighbors, d0);
+			}
+			if (v0 !== null && v1 !== null) {
+				addToCornerList(v0.adjacent, v1);
+				addToCornerList(v1.adjacent, v0);
+			}
+			if (d0 !== null) {
+				addToCornerList(d0.corners, v0);
+				addToCornerList(d0.corners, v1);
+			}
+			if (d1 !== null) {
+				addToCornerList(d1.corners, v0);
+				addToCornerList(d1.corners, v1);
+			}
+			if (v0 !== null) {
+				addToCenterList(v0.touches, d0);
+				addToCenterList(v0.touches, d1);
+			}
+			if (v1 !== null) {
+				addToCenterList(v1.touches, d0);
+				addToCenterList(v1.touches, d1);
+			}
+			return e;
+		}
+		for (i = 0; i < side; i++) {
+			for (j = 0; j < side; j++) {
+				if (i + 1 < side) {
+					makeEdge(centerAt[i][j], centerAt[i + 1][j],
+						cornerAt[i + 1][j], cornerAt[i + 1][j + 1]);
+				}
+				if (j + 1 < side) {
+					makeEdge(centerAt[i][j], centerAt[i][j + 1],
+						cornerAt[i][j + 1], cornerAt[i + 1][j + 1]);
+				}
+			}
+		}
+		for (i = 0; i < side; i++) {
+			makeEdge(centerAt[i][0], null, cornerAt[i][0], cornerAt[i + 1][0]);
+			makeEdge(centerAt[i][side - 1], null, cornerAt[i][side], cornerAt[i + 1][side]);
+		}
+		for (j = 0; j < side; j++) {
+			makeEdge(centerAt[0][j], null, cornerAt[0][j], cornerAt[0][j + 1]);
+			makeEdge(centerAt[side - 1][j], null, cornerAt[side][j], cornerAt[side][j + 1]);
+		}
+		map.grid = { side: side, cw: cw, ch: ch, centerAt: centerAt, cornerAt: cornerAt };
+	}
+	/* -------------------------------------------------------------- [29] map */
+	var DEFAULT_LAKE_THRESHOLD = 0.3;
+	var DEFAULT_NUMBER_OF_POINTS = 1000;
+	function getBiome(p) {
+		if (p.ocean) { return "OCEAN"; }
+		if (p.water) {
+			if (p.elevation < 0.1) { return "MARSH"; }
+			if (p.elevation > 0.8) { return "ICE"; }
+			return "LAKE";
+		}
+		if (p.coast) { return "BEACH"; }
+		if (p.elevation > 0.8) {
+			if (p.moisture > 0.5) { return "SNOW"; }
+			if (p.moisture > 0.33) { return "TUNDRA"; }
+			if (p.moisture > 0.16) { return "BARE"; }
+			return "SCORCHED";
+		}
+		if (p.elevation > 0.6) {
+			if (p.moisture > 0.66) { return "TAIGA"; }
+			if (p.moisture > 0.33) { return "SHRUBLAND"; }
+			return "TEMPERATE_DESERT";
+		}
+		if (p.elevation > 0.3) {
+			if (p.moisture > 0.83) { return "TEMPERATE_RAIN_FOREST"; }
+			if (p.moisture > 0.5) { return "TEMPERATE_DECIDUOUS_FOREST"; }
+			if (p.moisture > 0.16) { return "GRASSLAND"; }
+			return "TEMPERATE_DESERT";
+		}
+		if (p.moisture > 0.66) { return "TROPICAL_RAIN_FOREST"; }
+		if (p.moisture > 0.33) { return "TROPICAL_SEASONAL_FOREST"; }
+		if (p.moisture > 0.16) { return "GRASSLAND"; }
+		return "SUBTROPICAL_DESERT";
+	}
+	function Map(size) {
+		var map = {};
+		map.SIZE = size;
+		map.islandShape = null;
+		map.mapRandom = PMPRNG();
+		map.needsMoreRandomness = false;
+		map.points = [];
+		map.centers = [];
+		map.corners = [];
+		map.edges = [];
+		map.newIsland = function (shape, seed) {
+			map.islandShape = shape;
+			map.mapRandom.seed = seed;
+		};
+		map.reset = function () {
+			map.points = [];
+			map.centers = [];
+			map.corners = [];
+			map.edges = [];
+		};
+		map.go0PlacePoints = function (numPoints, selector) {
+			map.needsMoreRandomness = PointSelector.needsMoreRandomness(selector);
+			numPoints = def(numPoints, DEFAULT_NUMBER_OF_POINTS);
+			map.reset();
+			map.points = selector(numPoints);
+		};
+		map.go1BuildGraph = function (side) {
+			buildGridGraph(map, side, map.SIZE.width, map.SIZE.height);
+			map.improveCorners();
+			map.points = null;
+		};
+		map.go2AssignElevations = function (lakeThreshold) {
+			lakeThreshold = def(lakeThreshold, DEFAULT_LAKE_THRESHOLD);
+			map.assignCornerElevations();
+			map.assignOceanCoastAndLand(lakeThreshold);
+			map.redistributeElevations(map.landCorners(map.corners));
+			var i;
+			for (i = 0; i < map.corners.length; i++) {
+				var q = map.corners[i];
+				if (q.ocean || q.coast) { q.elevation = 0; }
+			}
+			map.assignPolygonElevations();
+		};
+		map.go3AssignMoisture = function (riverChance) {
+			riverChance = def(riverChance, null);
+			map.calculateDownslopes();
+			map.calculateWatersheds();
+			map.createRivers(riverChance);
+			map.assignCornerMoisture();
+			map.redistributeMoisture(map.landCorners(map.corners));
+			map.assignPolygonMoisture();
+		};
+		map.go4DecorateMap = function () {
+			map.assignBiomes();
+		};
+		map.improveCorners = function () {
+			var newCorners = [];
+			var i, j;
+			for (i = 0; i < map.corners.length; i++) {
+				var q = map.corners[i];
+				if (q.border) {
+					newCorners[q.index] = q.point;
+				} else {
+					var p = { x: 0, y: 0 };
+					for (j = 0; j < q.touches.length; j++) {
+						p.x += q.touches[j].point.x;
+						p.y += q.touches[j].point.y;
+					}
+					p.x /= q.touches.length;
+					p.y /= q.touches.length;
+					newCorners[q.index] = p;
+				}
+			}
+			for (i = 0; i < map.corners.length; i++) {
+				map.corners[i].point = newCorners[i];
+			}
+			for (i = 0; i < map.edges.length; i++) {
+				var e = map.edges[i];
+				if (e.v0 !== null && e.v1 !== null) {
+					e.midpoint = Point.interpolate(e.v0.point, e.v1.point, 0.5);
+				}
+			}
+		};
+		map.landCorners = function (corners) {
+			var out = [];
+			for (var i = 0; i < corners.length; i++) {
+				var q = corners[i];
+				if (!q.ocean && !q.coast) { out.push(q); }
+			}
+			return out;
+		};
+		map.assignCornerElevations = function () {
+			var i, queue = [];
+			for (i = 0; i < map.corners.length; i++) {
+				map.corners[i].water = !map.inside(map.corners[i].point);
+			}
+			for (i = 0; i < map.corners.length; i++) {
+				var q = map.corners[i];
+				if (q.border) {
+					q.elevation = 0;
+					queue.push(q);
+				} else {
+					q.elevation = Number.POSITIVE_INFINITY;
+				}
+			}
+			while (queue.length > 0) {
+				var c = queue.shift();
+				for (var n = 0; n < c.adjacent.length; n++) {
+					var s = c.adjacent[n];
+					var newElevation = 0.01 + c.elevation;
+					if (!c.water && !s.water) {
+						newElevation += 1;
+						if (map.needsMoreRandomness) {
+							newElevation += map.mapRandom.nextDouble();
+						}
+					}
+					if (newElevation < s.elevation) {
+						s.elevation = newElevation;
+						queue.push(s);
+					}
+				}
+			}
+		};
+		map.redistributeElevations = function (locations) {
+			locations.sort(function (a, b) {
+				if (a.elevation > b.elevation) { return 1; }
+				if (a.elevation < b.elevation) { return -1; }
+				if (a.index > b.index) { return 1; }
+				if (a.index < b.index) { return -1; }
+				return 0;
+			});
+			for (var i = 0; i < locations.length; i++) {
+				var y = i / (locations.length - 1);
+				var x = Math.sqrt(1.1) - Math.sqrt(1.1 * (1 - y));
+				if (x > 1) { x = 1; }
+				locations[i].elevation = x;
+			}
+		};
+		map.redistributeMoisture = function (locations) {
+			locations.sort(function (a, b) {
+				if (a.moisture > b.moisture) { return 1; }
+				if (a.moisture < b.moisture) { return -1; }
+				if (a.index > b.index) { return 1; }
+				if (a.index < b.index) { return -1; }
+				return 0;
+			});
+			for (var i = 0; i < locations.length; i++) {
+				locations[i].moisture = i / (locations.length - 1);
+			}
+		};
+		map.assignOceanCoastAndLand = function (lakeThreshold) {
+			var i, j, queue = [];
+			for (i = 0; i < map.centers.length; i++) {
+				var p = map.centers[i];
+				var numWater = 0;
+				for (j = 0; j < p.corners.length; j++) {
+					var q = p.corners[j];
+					if (q.border) {
+						p.border = true;
+						p.ocean = true;
+						q.water = true;
+						queue.push(p);
+					}
+					if (q.water) { numWater += 1; }
+				}
+				p.water = (p.ocean || numWater >= p.corners.length * lakeThreshold);
+			}
+			while (queue.length > 0) {
+				var c = queue.shift();
+				for (j = 0; j < c.neighbors.length; j++) {
+					var r = c.neighbors[j];
+					if (r.water && !r.ocean) {
+						r.ocean = true;
+						queue.push(r);
+					}
+				}
+			}
+			for (i = 0; i < map.centers.length; i++) {
+				var pc = map.centers[i];
+				var numOcean = 0, numLand = 0;
+				for (j = 0; j < pc.neighbors.length; j++) {
+					numOcean += intFromBoolean(pc.neighbors[j].ocean);
+					numLand += intFromBoolean(!pc.neighbors[j].water);
+				}
+				pc.coast = (numOcean > 0) && (numLand > 0);
+			}
+			for (i = 0; i < map.corners.length; i++) {
+				var qc = map.corners[i];
+				var oceanCount = 0, landCount = 0;
+				for (j = 0; j < qc.touches.length; j++) {
+					oceanCount += intFromBoolean(qc.touches[j].ocean);
+					landCount += intFromBoolean(!qc.touches[j].water);
+				}
+				qc.ocean = (oceanCount === qc.touches.length);
+				qc.coast = (oceanCount > 0) && (landCount > 0);
+				qc.water = qc.border || ((landCount !== qc.touches.length) && !qc.coast);
+			}
+		};
+		map.assignPolygonElevations = function () {
+			for (var i = 0; i < map.centers.length; i++) {
+				var p = map.centers[i];
+				var sum = 0;
+				for (var j = 0; j < p.corners.length; j++) {
+					sum += p.corners[j].elevation;
+				}
+				p.elevation = sum / p.corners.length;
+			}
+		};
+		map.calculateDownslopes = function () {
+			for (var i = 0; i < map.corners.length; i++) {
+				var q = map.corners[i];
+				var r = q;
+				for (var j = 0; j < q.adjacent.length; j++) {
+					if (q.adjacent[j].elevation <= r.elevation) { r = q.adjacent[j]; }
+				}
+				q.downslope = r;
+			}
+		};
+		map.calculateWatersheds = function () {
+			var i, j, q, r, changed;
+			for (i = 0; i < map.corners.length; i++) {
+				q = map.corners[i];
+				q.watershed = q;
+				if (!q.ocean && !q.coast) { q.watershed = q.downslope; }
+			}
+			for (i = 0; i < 100; i++) {
+				changed = false;
+				for (j = 0; j < map.corners.length; j++) {
+					q = map.corners[j];
+					if (!q.ocean && !q.coast && !q.watershed.coast) {
+						r = q.downslope.watershed;
+						if (!r.ocean) { q.watershed = r; }
+						changed = true;
+					}
+				}
+				if (!changed) { break; }
+			}
+			for (i = 0; i < map.corners.length; i++) {
+				q = map.corners[i];
+				r = q.watershed;
+				r.watershedSize = 1 + (r.watershedSize || 0);
+			}
+		};
+		map.createRivers = function (riverChance) {
+			riverChance = coalesce(riverChance, toInt((map.SIZE.width + map.SIZE.height) / 4));
+			for (var i = 0; i < riverChance; i++) {
+				var q = map.corners[map.mapRandom.nextIntRange(0, map.corners.length - 1)];
+				if (q.ocean || q.elevation < 0.3 || q.elevation > 0.9) { continue; }
+				while (!q.coast && q !== q.downslope) {
+					var edge = map.lookupEdgeFromCorner(q, q.downslope);
+					edge.river = edge.river + 1;
+					q.river = (q.river || 0) + 1;
+					q.downslope.river = (q.downslope.river || 0) + 1;
+					q = q.downslope;
+				}
+			}
+		};
+		map.assignCornerMoisture = function () {
+			var i, queue = [];
+			for (i = 0; i < map.corners.length; i++) {
+				var q = map.corners[i];
+				if ((q.water || q.river > 0) && !q.ocean) {
+					q.moisture = q.river > 0 ? Math.min(3, 0.2 * q.river) : 1;
+					queue.push(q);
+				} else {
+					q.moisture = 0;
+				}
+			}
+			while (queue.length > 0) {
+				var c = queue.shift();
+				for (var j = 0; j < c.adjacent.length; j++) {
+					var r = c.adjacent[j];
+					var newMoisture = c.moisture * 0.9;
+					if (newMoisture > r.moisture) {
+						r.moisture = newMoisture;
+						queue.push(r);
+					}
+				}
+			}
+			for (i = 0; i < map.corners.length; i++) {
+				var qc = map.corners[i];
+				if (qc.ocean || qc.coast) { qc.moisture = 1; }
+			}
+		};
+		map.assignPolygonMoisture = function () {
+			for (var i = 0; i < map.centers.length; i++) {
+				var p = map.centers[i];
+				var sum = 0;
+				for (var j = 0; j < p.corners.length; j++) {
+					var q = p.corners[j];
+					if (q.moisture > 1) { q.moisture = 1; }
+					sum += q.moisture;
+				}
+				p.moisture = sum / p.corners.length;
+			}
+		};
+		map.assignBiomes = function () {
+			for (var i = 0; i < map.centers.length; i++) {
+				map.centers[i].biome = getBiome(map.centers[i]);
+			}
+		};
+		map.lookupEdgeFromCenter = function (p, r) {
+			for (var i = 0; i < p.borders.length; i++) {
+				var e = p.borders[i];
+				if (e.d0 === r || e.d1 === r) { return e; }
+			}
+			return null;
+		};
+		map.lookupEdgeFromCorner = function (q, s) {
+			for (var i = 0; i < q.protrudes.length; i++) {
+				var e = q.protrudes[i];
+				if (e.v0 === s || e.v1 === s) { return e; }
+			}
+			return null;
+		};
+		map.inside = function (p) {
+			return map.islandShape({
+				x: 2 * (p.x / map.SIZE.width - 0.5),
+				y: 2 * (p.y / map.SIZE.height - 0.5)
+			});
+		};
+		map.reset();
+		return map;
+	}
+	/* ------------------------------------------------------ hash -> seed helper */
+	function hashToSeeds(hash) {
+		hash = (hash + "").replace(/^0x/, "").toLowerCase();
+		if (!hash) { return null; }
+		while (hash.length < 16) { hash += hash; }
+		var seed = parseInt(hash.substr(0, 8), 16);
+		var shapeSeed = parseInt(hash.substr(8, 8), 16);
+		if (isNaN(seed) || seed === 0) { seed = 1; }
+		if (isNaN(shapeSeed) || shapeSeed === 0) { shapeSeed = 1; }
+		return {
+			seed: seed % INT32_MAX,
+			shapeSeed: shapeSeed % INT32_MAX
+		};
+	}
+	/* ------------------------------------------------------------------- build */
+	function build(opts) {
+		opts = opts || {};
+		var side = def(opts.side, 100);
+		var width = def(opts.width, 400);
+		var height = def(opts.height, 400);
+		var seeds = null;
+		if (typeof opts.seed !== "undefined" && typeof opts.shapeSeed !== "undefined") {
+			seeds = { seed: opts.seed * 1, shapeSeed: opts.shapeSeed * 1 };
+		} else {
+			seeds = hashToSeeds(opts.hash);
+		}
+		if (!seeds) { return null; }
+		var map = Map({ width: width, height: height });
+		var shapeName = def(opts.islandShape, "radial");
+		var shape;
+		if (shapeName === "perlin") {
+			shape = IslandShape.makePerlin(seeds.shapeSeed, def(opts.oceanRatio, 0.5));
+		} else if (shapeName === "square") {
+			shape = IslandShape.makeSquare();
+		} else if (shapeName === "blob") {
+			shape = IslandShape.makeBlob();
+		} else if (shapeName === "noise") {
+			shape = IslandShape.makeNoise(seeds.shapeSeed);
+		} else {
+			shape = IslandShape.makeRadial(seeds.shapeSeed, def(opts.islandFactor, 1.07));
+		}
+		map.newIsland(shape, seeds.seed);
+		var selector = PointSelector.generateSquare(width, height);
+		map.go0PlacePoints(side * side, selector);
+		map.go1BuildGraph(side);
+		map.go2AssignElevations(def(opts.lakeThreshold, 0.3));
+		map.go3AssignMoisture(def(opts.riverChance, 120));
+		map.go4DecorateMap();
+		var tiles = {};
+		for (var idx = 0; idx < map.centers.length; idx++) {
+			var c = map.centers[idx];
+			var i = toInt(idx / side);
+			var j = idx % side;
+			var bx = i - side / 2 + 0.5;
+			var bz = (j - side) + 0.5;
+			tiles[bx + ":" + bz] = {
+				index: idx,
+				biome: c.biome,
+				elevation: c.elevation,
+				moisture: c.moisture,
+				water: c.water ? true : false,
+				ocean: c.ocean ? true : false,
+				coast: c.coast ? true : false,
+				x: bx,
+				y: c.elevation + 0.5,
+				z: bz
+			};
+		}
+		return {
+			map: map,
+			side: side,
+			width: width,
+			height: height,
+			seed: seeds.seed,
+			shapeSeed: seeds.shapeSeed,
+			tiles: tiles
+		};
+	}
 	return {
 		def: def,
 		toInt: toInt,
@@ -445,6 +983,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		PointSelector: PointSelector,
 		Center: Center,
 		Corner: Corner,
-		Edge: Edge
+		Edge: Edge,
+		Map: Map,
+		getBiome: getBiome,
+		hashToSeeds: hashToSeeds,
+		build: build,
+		DEFAULT_LAKE_THRESHOLD: DEFAULT_LAKE_THRESHOLD
 	};
 });

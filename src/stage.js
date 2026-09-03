@@ -138,13 +138,19 @@ window.Raid = function(){
 		$bar.css("width", pct + "%")
 	}, 120)
 
+	var _role = ""
+	try{
+		_role = sessionStorage.raidRole ? sessionStorage.raidRole : ""
+		delete sessionStorage.raidRole
+	}catch(err){
+	}
 	if(window.Action){
 		window.Action({
-			cc : "start"
+			cc : "start",
+			role : _role
 		})
 	}
 }
-
 window.RaidDone = function(){
 	if(window.Stage.current != "raid"){
 		return
@@ -172,13 +178,31 @@ window.StageSync = function(cookies){
 		return
 	}
 
+	/*
+		개발 Part 3
+		룰셋은 서버 DB 가 단일 원천이며 src/ruleset.js 가 /ruleset 으로 받아온다.
+		서명 불일치는 "정적 파일 폴백 중" 또는 "룰셋 캐시가 낡음" 을 의미하므로
+		경고 후 룰셋을 재로드한다.
+	*/
 	if(cookies.recipeSignature && window.RecipeSignature){
 		if(cookies.recipeSignature != window.RecipeSignature && !window.StageSync.warned){
 			window.StageSync.warned = true
-
-			console.log("recipe mismatch", window.RecipeSignature, cookies.recipeSignature)
-
-			window.Notice("VERSION MISMATCH", "Recipe data differs from server", 4000)
+			console.log("ruleset mismatch", window.RecipeSignature, cookies.recipeSignature)
+			if(window.RulesetLoad){
+				try{
+					localStorage.removeItem("memepoly.ruleset")
+				}catch(err){
+				}
+				window.RulesetLoad(function(ok){
+					if(ok){
+						console.log("ruleset reloaded :", window.RecipeSignature)
+					}else{
+						window.Notice("RULESET SYNC", "Using local fallback data", 3000)
+					}
+				})
+			}else{
+				window.Notice("VERSION MISMATCH", "Recipe data differs from server", 4000)
+			}
 		}
 	}
 
@@ -188,6 +212,10 @@ window.StageSync = function(cookies){
 		$("body").removeAttr("jail")
 	}
 
+	if(cookies.raidBlocked){
+		window.Notice("DEPLOY BLOCKED", "No slots left this match", 3000)
+		window.Stage.set("")
+	}
 	if(cookies.exitBlocked){
 		var keys = window.ExitKeys()
 

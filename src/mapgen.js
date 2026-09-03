@@ -1,23 +1,8 @@
 window.MapGen = {
 	key : "",
 	ready : false,
-	cols : 100,
-	points : 10000,
-	size : { width : 400, height : 400 },
-	offset : { x : 0, z : 0 }
-}
-window.MapGen.hashSeed = function(hash){
-	hash = (hash + "").replace("0x","").toLowerCase()
-	if(!hash){
-		return null
-	}
-	while(hash.length < 16){
-		hash += hash
-	}
-	return {
-		seed : hash.substr(0, 8),
-		shapeSeed : hash.substr(8, 8)
-	}
+	mode : "",
+	tiles : null
 }
 window.MapGen.target = function(){
 	var cookies = window.cookies ? window.cookies : {}
@@ -28,70 +13,17 @@ window.MapGen.target = function(){
 			owner = ((cookies.address ? cookies.address : cookies.hash) || "") + ""
 		}
 		owner = owner.replace("0x","").toLowerCase()
-		var s = window.MapGen.hashSeed(owner)
-		if(!s){
+		if(!owner){
 			return null
 		}
-		return {
-			mode : "room",
-			key : "room:" + owner,
-			seed : s.seed,
-			shapeSeed : s.shapeSeed,
-			offset : { x : 0, z : 50 }
-		}
+		return { mode : "room", key : "room:" + owner, hash : owner }
 	}
 	var m = window.match ? window.match : null
-	var seed = cookies.seed ? cookies.seed : (m ? m.seed : "")
-	var shapeSeed = cookies.shapeSeed ? cookies.shapeSeed : (m ? m.shapeSeed : "")
-	var index = typeof cookies.matchIndex != "undefined" ? cookies.matchIndex : (m ? m.index : "")
-	if(!seed){
+	var hash = cookies.match ? cookies.match : (m ? m.hash : "")
+	if(!hash){
 		return null
 	}
-	return {
-		mode : "board",
-		key : "board:" + index + ":" + seed,
-		seed : seed,
-		shapeSeed : shapeSeed,
-		offset : { x : 0, z : 0 }
-	}
-}
-window.MapGen.set = function(id, value){
-	var el = document.getElementById(id)
-	if(!el){
-		return
-	}
-	if(el.tagName == "SELECT"){
-		for(var i = 0; i < el.options.length; i++){
-			if(el.options[i].value == value){
-				el.selectedIndex = i
-				return
-			}
-		}
-		return
-	}
-	if(el.type == "checkbox"){
-		el.checked = value ? true : false
-		return
-	}
-	el.value = value
-	el.setAttribute("value", value)
-}
-window.MapGen.commit = function(t){
-	try{
-		var centers = window.map ? window.map.biomes : null
-		if(!centers || !centers.length){
-			return false
-		}
-		window.map.dissolve = {}
-		window.MapGen.offset = t.offset
-		window.listToBiomes(centers, window.MapGen.cols, t.offset)
-		window.MapGen.key = t.key
-		window.MapGen.ready = true
-		return true
-	}catch(err){
-		console.log("MapGen commit err", err)
-		return false
-	}
+	return { mode : "board", key : "board:" + hash, hash : hash }
 }
 window.MapGen.apply = function(force){
 	var t = window.MapGen.target()
@@ -101,39 +33,81 @@ window.MapGen.apply = function(force){
 	if(!force && window.MapGen.ready && window.MapGen.key == t.key){
 		return false
 	}
-	var $gen = document.getElementById("generate")
-	if(!$gen){
-		return false
-	}
-	var set = window.MapGen.set
-	/* 결정성 확보: 아래 값들이 바뀌면 같은 해시라도 다른 섬이 나온다 */
-	set("pointSelection", "square")
-	set("numberOfPoints", window.MapGen.points)
-	set("numberOfLands", "")
-	set("islandShape", "radial")
-	set("islandFactor", "1.07")
-	set("lakeThreshold", "0.3")
-	set("riverChance", "120")
-	set("edgeNoise", "0.5")
-	set("lloydIterations", "2")
-	set("roadElevationThresholds", "0,0.05,0.37,0.64")
-	set("width", window.MapGen.size.width)
-	set("height", window.MapGen.size.height)
-	set("renderer", "canvas")
-	set("view", "smooth")
-	set("seed", t.seed)
-	set("shapeSeed", t.shapeSeed)
-	window.MapGen.ready = false
+	var fields
 	try{
-		$($gen).click()
+		fields = window.Fields(t.hash)
 	}catch(err){
-		console.log("MapGen apply err", err)
+		console.log("MapGen fields err", err)
 		return false
 	}
-	return window.MapGen.commit(t)
+	if(!fields || !fields.tiles){
+		return false
+	}
+	if(!window.map){
+		window.MapReset()
+	}
+	window.map.biomes = {}
+	window.map.dissolve = {}
+	var list = []
+	for(var key in fields.tiles){
+		if(fields.tiles.hasOwnProperty(key)){
+			var t0 = fields.tiles[key]
+			var item = {
+				biome : t0.biome,
+				elevation : t0.elevation,
+				moisture : t0.moisture,
+				water : t0.water,
+				ocean : t0.ocean,
+				coast : t0.coast,
+				x : t0.x,
+				y : t0.y,
+				z : t0.z
+			}
+			window.map.biomes[item.x + ":" + item.z] = item
+			list.push(item)
+		}
+	}
+	window.MapGen.tiles = fields.tiles
+	window.MapGen.mode = t.mode
+	window.MapGen.key = t.key
+	window.MapGen.ready = true
+	window.MapGen.paint(list)
+	return true
+}
+window.MapGen.paint = function(list){
+	try{
+		var canvas = document.querySelector(".map canvas")
+		if(!canvas){
+			return
+		}
+		var side = 100
+		canvas.width = side
+		canvas.height = side
+		var ctx = canvas.getContext("2d")
+		ctx.clearRect(0, 0, side, side)
+		var minX = Infinity, minZ = Infinity
+		for(var m = 0; m < list.length; m++){
+			if(list[m].x < minX){ minX = list[m].x }
+			if(list[m].z < minZ){ minZ = list[m].z }
+		}
+		for(var i = 0; i < list.length; i++){
+			var b = list[i]
+			var color = window.Biomes["#" + b.biome]
+			if(!color){
+				continue
+			}
+			ctx.fillStyle = color
+			ctx.fillRect(b.x - minX, b.z - minZ, 1, 1)
+		}
+		var img = document.querySelector(".map .canvas")
+		if(img){
+			img.src = canvas.toDataURL()
+		}
+	}catch(err){
+		console.log("MapGen paint err", err)
+	}
 }
 window.MapGen.assets = function(address, center, size){
-	/* 보드/룸 공용 : 플레이어 주변 biome 타일을 3D 에셋 배열로 만든다 */
 	var out = []
 	if(!window.map || !window.map.biomes){
 		return out

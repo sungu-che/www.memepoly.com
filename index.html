@@ -459,6 +459,13 @@
 		<script type="module" src="/src/fields.js"></script>
 		<script type="module" src="/src/emojis.js"></script>
 		<script type="module" src="/src/items.js"></script>
+		<!--
+			개발 Part 3
+			ruleset.js 는 정적 정의(recipe/emojis/items) 이후에 로드되어
+			서버 룰셋으로 덮어쓴다. 서버 로드 실패 시 정적 정의가 폴백으로 남는다.
+			개발 Part 12 에서 정적 3파일을 제거하고 ruleset.js 단독으로 전환한다.
+		-->
+		<script type="module" src="/src/ruleset.js"></script>
 		<script type="module" src="/src/role.js"></script>
 		<script type="module" src="/src/myroom.js"></script>
 		<script type="module" src="/src/stage.js"></script>
@@ -468,9 +475,5 @@
 		<script type="module" src="/src/room.js"></script>
 		<script type="module" src="/src/index.js"></script>
 		<script type="module" src="/src/main.jsx"></script>
-		<script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js"></script>
-		<script>
-		  frame.sdk.actions.ready();
-		</script>
 	</body>
 </html>
