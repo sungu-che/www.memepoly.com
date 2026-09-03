@@ -160,13 +160,17 @@ window.MyRoom = function(resp){
 
 	if(before_body != after_body){
 		$tc.html(after_body)
-
 		try{
-			var canvas = blockies.create({seed: "0x"+owner})
-
-			$panel.find(".myroom_head .icon").html("").append(canvas)
+			/*
+				개발 Part 14 (검수) - E7'
+				"0x"+owner 는 owner 가 빈 문자열일 때 "0x" 가 된다.
+				Blockie 가 시드를 정규화하고 null 대신 폴백 캔버스를 돌려준다.
+			*/
+			var canvas = window.Blockie(owner)
+			if(canvas){
+				$panel.find(".myroom_head .icon").html("").append(canvas)
+			}
 		}catch(err){
-
 		}
 	}
 

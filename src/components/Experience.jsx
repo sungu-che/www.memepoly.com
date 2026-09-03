@@ -126,9 +126,14 @@ export const Experience = () => {
 
 	const self = function(){
 		var cookies = window.cookies
+		if(!cookies){
+			return null
+		}
 		var player_hash = cookies.address ? cookies.address : cookies.hash
+		if(!player_hash){
+			return null
+		}
 		var player = window[player_hash]
-
 		if(player){
 			if(window[player_hash].group.current == null && player.position){
 				window[player_hash].group.current = player.position
@@ -160,16 +165,20 @@ export const Experience = () => {
 					}
 				}
 			}else if(cookies.axis){
-				var _axis = cookies.axis
-					_axis = _axis.split(",")
-
-				var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
-
-				if(b){
+				/*
+					개발 Part 14 (검수) - G2
+					현행은 바이옴이 없으면 position 을 만들지 않고
+					아래 랜덤 스폰 루프로 빠져 저장 좌표를 버렸다.
+					또한 axis 의 y 는 서버가 +1 오프셋을 더한 값이라
+					그대로 쓰면 캐릭터가 공중에 떴다.
+					window.AxisParse 가 두 문제를 함께 처리한다.
+				*/
+				var _ax = window.AxisParse ? window.AxisParse(cookies.axis) : null
+				if(_ax && _ax.ok){
 					position = {
-						x : _axis[0] * 1,
-						y : b.y,
-						z : _axis[2] * 1
+						x : _ax.x,
+						y : _ax.y,
+						z : _ax.z
 					}
 				}
 			}
@@ -321,7 +330,6 @@ export const Experience = () => {
 	})
 
 	var point = {}
-
 	var onClick = function(e){
 		if(window.Mode() == "room" && !(window.MapGen && window.MapGen.ready)){
 			if(window.RoomClick){
@@ -329,22 +337,42 @@ export const Experience = () => {
 			}
 			return
 		}
+		/*
+			개발 Part 14 (검수) - G3
+			MapGen 이 준비되지 않았으면 window.map.biomes 가 비어 있어
+			아래 biome 조회가 전부 실패하고 조용히 return 한다.
+			그 상태가 "클릭이 안 먹는다" 로 보이므로 여기서 한 번 시도한다.
+		*/
+		if(window.MapGen && !window.MapGen.ready){
+			try{
+				window.MapGen.apply()
+			}catch(err){
+			}
+		}
 		var cookies = window.cookies
 		try{
 			if(cookies){
 				var _isRoom = window.Mode() == "room"
-				if(!_isRoom && window.CanFreeMove && !window.CanFreeMove()){
-					return
-				}
+				/*
+					개발 Part 14 (검수) - G3
+					현행은 CanFreeMove() 가 false 면 함수 최상단에서 return 했다.
+					그래서 커서(1차 클릭) 조차 움직이지 않아
+					"클릭이 아예 먹지 않는다" 로 보였다.
+					여기서는 게이트를 옮긴다.
+					  커서 이동(e.point)  항상 허용. 지형 확인 / 조준 용도다.
+					  실제 이동(2차 클릭) CanFreeMove() 통과 시에만 허용.
+					이렇게 하면 주사위 이동 중에도 타일을 눌러 정보를 볼 수 있다.
+				*/
+				var _canMove = _isRoom
+					? true
+					: (window.CanFreeMove ? window.CanFreeMove() : true)
 				if((_isRoom || cookies.axis) && !cookies.damage){
 					if(e.point){
 						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
 						var biome = window.map.biomes[_point.x+":"+_point.z]
-
 						if(!biome){
 							return
 						}
-
 						if(biome.water){
 							return
 						}
@@ -353,16 +381,33 @@ export const Experience = () => {
 						if(typeof point.x != "undefined" && typeof point.z != "undefined"){
 							var player = self()
 							var biome = window.map.biomes[point.x+":"+point.z]
-
 							if(!biome){
 								return
 							}
-
 							point.y = biome.y
 							if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
+								/*
+									개발 Part 14 (검수) - G3
+									2차 클릭(확정 이동)에서만 이동 권한을 본다.
+									개발 Part 15 (규칙 R3)
+									  이동이 막힌 이유를 알려준다.
+									  아무 반응이 없으면 조작 불능으로 오인된다.
+								*/
+								if(!_canMove){
+									try{
+										if(cookies.damage || cookies.dead){
+											window.Notice("DEAD", "Go to My Room", 2000)
+										}else if((cookies.dice * 1) > 0){
+											window.Notice("ROLLING", "Wait for the dice", 1600)
+										}else if(!cookies.enter){
+											window.Notice("BOARD MODE", "Roll the dice to move", 2000)
+										}
+									}catch(err){
+									}
+									return
+								}
 								if(cookies.hash && players.length){
 									if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
-
 									}else{
 										if(window.camera){
 											if(window.camera.hash){
@@ -371,7 +416,6 @@ export const Experience = () => {
 												}
 											}
 										}
-
 										window[player.hash].position.y = point.y + 0.5
 										
 										current.current.position.y = point.y + 0.01

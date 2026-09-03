@@ -71,15 +71,25 @@ export function Player({
 				}
 			}else{
 				try{
-					if(window.current.current.position.y == 0){
-						var b = window.map.biomes[`${group.current.position.x}:${group.current.position.z}`]
-
-						if(b){
+					/*
+						개발 Part 14 (검수) - G2
+						현행은 current.position.y 가 정확히 0 일 때만 보정했다.
+						서버 axis 오프셋(+1)이 그대로 들어와 y 가 1.01 등이 되면
+						조건에 걸리지 않아 캐릭터가 계속 공중에 떠 있었다.
+						group 좌표의 실제 지형 높이와 어긋나면 항상 맞춘다.
+						허용 오차 0.05 는 이동 보간 중의 미세 차이를 무시하기 위한 값이다.
+					*/
+					var b = window.map.biomes[`${Math.round(group.current.position.x - 0.5) + 0.5}:${Math.round(group.current.position.z - 0.5) + 0.5}`]
+					if(!b){
+						b = window.map.biomes[`${group.current.position.x}:${group.current.position.z}`]
+					}
+					if(b){
+						var _cy = window.current.current.position.y
+						if(typeof _cy === "undefined" || Math.abs(_cy - b.y) > 0.05){
 							window.current.current.position.y = window.cursor.current.position.y = b.y
 						}
 					}
 				}catch(err){
-
 				}
 
 				if(window.cookies.address){

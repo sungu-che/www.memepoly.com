@@ -824,6 +824,14 @@ window.RoomCallback = async function(resp){
 	}catch(err){
 		console.log("mapgen err",err);
 	}
+	/*
+		개발 Part 14 (검수) - E6
+		룸도 window.map.open / puzzle / item / follow / report / reward 를
+		무검증으로 쓴다. 같은 방어를 적용한다.
+	*/
+	if(window.MapGuard){
+		window.MapGuard()
+	}
 	try{
 		if(window.FieldsSync){ window.FieldsSync() }
 	}catch(err){
@@ -997,13 +1005,15 @@ window.RoomCallback = async function(resp){
 			}
 
 			cc_address = cc_address.replace("0x","")
-
-			var canvas = blockies.create({seed: seed.toLowerCase()})
-
+			/*
+				개발 Part 14 (검수) - E7'
+				blockies.create() 직접 호출을 Blockie() 로 바꾼다.
+				seed 는 location.hash 유무에 따라 "0x..." 또는
+				cc_address(40자 hex) 가 되므로 형식 정규화가 필요하다.
+			*/
+			var canvas = window.Blockie(seed)
 			var self = false
-
 			var diff = false
-
 			var selector = window.selector
 
 			if(Object.keys(window.com).length){
@@ -1534,7 +1544,13 @@ window.RoomCallback = async function(resp){
 				x : 0.5,
 				y : 0.5,
 				z : 0.5,
-				emoji : canvas.toDataURL()
+				/*
+					개발 Part 14 (검수) - E7'
+					canvas 가 null 이면 여기서 TypeError 로 중단됐다.
+					BlockieUrl 은 실패 시 "" 를 반환하고
+					Player.jsx 가 type="text" 로 렌더하므로 화면이 깨지지 않는다.
+				*/
+				emoji : window.BlockieUrl(seed)
 			}
 
 			var _balance = $balance.text()
@@ -2383,14 +2399,20 @@ window.RoomCallback = async function(resp){
 							var position = row.Cc.split(" #portal")[0]
 							asset = JSON.parse("["+position+"]")
 						}
-						var canvas = blockies.create({seed: (row.From ? row.From.toLowerCase() : "0x0")})
+						/*
+							개발 Part 14 (검수) - E7'
+							현행은 row.From 이 없을 때 "0x0" 을 시드로 넘겼다.
+							blockies 는 40자 hex 가 아닌 시드에 null 을 반환하므로
+							바로 다음 줄의 canvas.toDataURL() 이 예외를 던졌다.
+							폴백 시드도 row.Id 로 바꿔 포털마다 다른 아이콘이 나오게 한다.
+						*/
 						_players.push({
 							self : row.From,
 							hash : row.Id,
 							x : asset[0],
 							y : 0.5,
 							z : asset[1],
-							emoji : canvas.toDataURL()
+							emoji : window.BlockieUrl(row.From ? row.From : row.Id)
 						})
 					}else if(row.Cc.indexOf("#bingo") > -1){
 						/* 개발 Part 4 : 좌표를 컬럼에서 읽는다 */
@@ -2773,10 +2795,18 @@ window.RoomCallback = async function(resp){
 
 					if(open){
 						$capture.addClass("on")
-						$("#capture>.icon").html(blockies.create({seed: (open.From.indexOf("0x") == 0 ? open.From : "0x"+open.From)}))
-						
+						$("#capture>.icon").html(window.Blockie(open.From))
+						/*
+							개발 Part 14 (검수) - E7'
+							scoreboard 가 없으면 scoreboard.rank 에서 TypeError 가 났다.
+							window.map.score 는 랭킹 블록이 채우는데,
+							open.From 이 랭킹에 없을 수 있다(자기 타일이 0개인 경우).
+							기본값 0 으로 방어한다.
+						*/
 						var scoreboard = window.map.score[open.From]
-
+						if(!scoreboard){
+							scoreboard = { rank : 0, score : 0 }
+						}
 						$("#capture>.icon").append('<div class="address">\
 							<span>'+open.From+'</span>\
 							<span dir="rtl">'+open.From+'</span>\
@@ -2785,16 +2815,17 @@ window.RoomCallback = async function(resp){
 						</div>')
 					}else{
 						$capture.removeClass("on")
-
 						var scoreboard = window.map.score["0x"+cc_address]
-
 						if(!scoreboard){
 							scoreboard = window.map.score[cc_address]
 						}
-
-
+						/*
+							개발 Part 14 (검수) - E7'
+							"0x"+cc_address 는 cc_address 가 빈 문자열일 때 "0x" 가 된다.
+							Blockie 가 시드를 정규화하고 null 을 반환하지 않는다.
+						*/
 						$("#capture>.icon")
-							.html(blockies.create({seed: "0x"+cc_address}))
+							.html(window.Blockie(cc_address))
 							.append('<div class="address">\
 								<span>'+cc_address+'</span>\
 								<span dir="rtl">'+cc_address+'</span>\

@@ -73,50 +73,221 @@ window.MapReset = function(){
 		block : {},
 		reward : {}
 	}
-
 	return window.map
+}
+/*
+	개발 Part 14 (검수) - E6
+	window.map 하위 컨테이너를 보장한다.
+	현행 문제
+	  MapGen.apply() 는 window.map 이 없을 때만 MapReset() 을 호출하고
+	  그 뒤 biomes / dissolve 만 새 객체로 교체한다.
+	  타깃 없음 / Fields 실패 / 이미 ready 인 경로에서는 return false 로
+	  조기 이탈하므로 window.map 이 만들어지지 않거나 일부만 남는다.
+	  그 상태로 BoardCallback 이
+	    window.map.biomes[crc32키] = {...}
+	    window.map.nonces[crc32키] = {...}
+	  를 실행하면
+	    TypeError: Cannot set properties of undefined (setting '2TPHPJV')
+	  가 발생한다(2TPHPJV 는 crc32(...).toString(32).toUpperCase() 형식).
+	  이 예외는 biomes.forEach 안에서 터지므로 그 뒤의
+	  players.set / assets.set / setFrameloop 이 전부 실행되지 않고
+	  화면이 갱신을 멈춘다.
+	MapReset 을 쓰지 않는 이유
+	  MapReset 은 open / puzzle / score / reward 등 진행 상태를 전부 비운다.
+	  폴링마다 호출하면 방금 받은 데이터가 사라진다.
+	  여기서는 "없는 것만 만든다".
+*/
+window.MapGuard = function(){
+	if(!window.map){
+		return window.MapReset()
+	}
+	var m = window.map
+	if(!m.nonces){
+		m.nonces = []
+	}
+	var keys = [
+		"biomes", "dissolve", "quest", "score", "open",
+		"item", "thread", "puzzle", "follow", "report",
+		"block", "reward"
+	]
+	for(var i = 0; i < keys.length; i++){
+		if(!m[keys[i]]){
+			m[keys[i]] = {}
+		}
+	}
+	return m
 }
 
 window.CanFreeMove = function(){
 	var cookies = window.cookies
-
 	if(!cookies){
 		return false
 	}
-
-	if(cookies.damage){
+	/*
+		개발 Part 15 (규칙 R3)
+		개발 Part 14 (검수) - G3 의 판정을 원복한다.
+		G3 에서 "!enter 는 자유 이동" 으로 바꿨으나
+		규칙상 그것이 잘못이었다.
+		확정 규칙
+		  레이드 미참가(enter 없음)
+		    보드게임 모드. 링(edge) 위를 주사위로만 전진한다.
+		    클릭/터치 자유 이동은 금지한다.
+		  레이드 참가(enter 있음)
+		    링 밖 내륙 탐색. 자유 이동을 허용한다.
+		  감옥(jail / onJail)
+		    안전지대. 어느 모드든 자유 이동을 허용한다.
+		  사망(damage / dead)
+		    이동 금지.
+		  주사위 진행 중(dice > 0)
+		    자동 이동에 맡기고 수동 이동을 막는다.
+	*/
+	if(cookies.damage || cookies.dead){
 		return false
 	}
-
-	if(!cookies.enter){
+	var _dice = cookies.dice * 1
+	if(!isNaN(_dice) && _dice > 0){
 		return false
 	}
-
 	if(cookies.jail){
 		return true
 	}
-
 	if(cookies.onJail){
 		return true
 	}
-
-	return false
+	if(!cookies.enter){
+		/* 보드게임 모드. 주사위 전용 */
+		return false
+	}
+	return true
+}
+/*
+	개발 Part 15 (규칙 R3)
+	현재 좌표가 링(edge) 위인지 판정한다.
+	window.fields 는 Experience.jsx 의 FieldsSync() 가 채우는
+	해안 링 배열이며, 좌표 키("x:z")로도 접근된다.
+	서버 isEdgeField 와 같은 기준이다.
+*/
+window.IsEdge = function(_x, _z){
+	try{
+		if(!window.fields){
+			return false
+		}
+		return window.fields[(_x * 1) + ":" + (_z * 1)] ? true : false
+	}catch(err){
+		return false
+	}
+}
+/*
+	개발 Part 15 (규칙 R3)
+	주사위를 굴릴 수 있는 상태인가.
+	링 위 + 레이드 미참가 + 미사망 + 진행 중 아님.
+*/
+window.CanRollDice = function(){
+	var cookies = window.cookies
+	if(!cookies){
+		return false
+	}
+	if(cookies.damage || cookies.dead){
+		return false
+	}
+	var _dice = cookies.dice * 1
+	if(!isNaN(_dice) && _dice > 0){
+		return false
+	}
+	var player = null
+	try{
+		player = window.players.self()
+	}catch(err){
+		return false
+	}
+	if(!player){
+		return false
+	}
+	return window.IsEdge(player.x, player.z)
 }
 
 window.BiomeAt = function(_x, _z){
 	try{
 		var b = window.map.biomes[_x+":"+_z]
-
 		if(b){
 			if(b.biome){
 				return "#"+b.biome
 			}
 		}
 	}catch(err){
-
 	}
-
 	return ""
+}
+/*
+	개발 Part 14 (검수) - G2
+	cookies.axis 를 파싱한다.
+	서버는 axis 의 y 에 캐릭터 높이 오프셋(+1)을 더해 저장한다.
+	  state.tile.y   0.010820952412578966   실제 지형 높이
+	  cookies.axis   "-5.5,1.0108209524125789,-39.5"
+	  차이가 정확히 1 이다.
+	프론트는 이 값을 지형 높이로 그대로 써서
+	바이옴 테이블에 좌표가 없는 순간(MapGen 미적용 / 매치 전환 직후)
+	캐릭터가 1 유닛 공중에 떠 보였다.
+	우선순위
+	  1) window.map.biomes 의 실측 높이
+	  2) window.State.tile.y (서버 DTO. 오프셋 없는 원본)
+	  3) axis y - 1 (오프셋 보정)
+	  4) 0
+	반환값 y 는 항상 "지형 표면 높이" 다.
+	카메라/캐릭터 오프셋은 호출부가 더한다.
+*/
+window.AxisParse = function(raw){
+	var out = { x : null, y : 0, z : null, ok : false }
+	if(!raw){
+		return out
+	}
+	var parts = String(raw).split(",")
+	if(parts.length < 3){
+		return out
+	}
+	var x = parts[0] * 1
+	var z = parts[2] * 1
+	if(isNaN(x) || isNaN(z)){
+		return out
+	}
+	out.x = x
+	out.z = z
+	out.ok = true
+	var b = null
+	try{
+		b = (window.map && window.map.biomes) ? window.map.biomes[x + ":" + z] : null
+	}catch(err){
+		b = null
+	}
+	if(b && typeof b.y !== "undefined"){
+		out.y = b.y * 1
+		out.source = "biome"
+		return out
+	}
+	try{
+		if(window.State && window.State.tile){
+			var t = window.State.tile
+			if(t.x === x && t.z === z && typeof t.y !== "undefined"){
+				out.y = t.y * 1
+				out.source = "state"
+				return out
+			}
+		}
+	}catch(err){
+	}
+	var raw_y = parts[1] * 1
+	if(!isNaN(raw_y)){
+		/*
+			서버 오프셋 보정.
+			raw_y 가 1 이상이면 오프셋이 더해진 값으로 본다.
+			섬 최고 표고가 1 을 넘지 않는 현행 지형 스케일을 전제로 한다.
+		*/
+		out.y = raw_y >= 1 ? (raw_y - 1) : raw_y
+		out.source = "axis"
+		return out
+	}
+	out.source = "zero"
+	return out
 }
 
 window.far = {
@@ -324,26 +495,41 @@ function Respawn(){
 		window.MapGen.apply()
 	}
 	var position
-	var fields = window.fields ? window.fields : Fields()
-
+	/*
+		개발 Part 14 (검수) - E11
+		Fields() 를 맨몸으로 호출하면
+		src/fields.js 보다 먼저 실행되는 경로에서 ReferenceError 가 난다.
+		Respawn 은 players.self() 가 부르고, players.self() 는
+		BoardInit 클릭 핸들러 등 이른 시점에도 호출된다.
+		window.Fields 존재를 확인하고, 없으면 빈 배열로 진행한다.
+		(아래 루프가 fields[0] 폴백을 갖고 있어 안전하다)
+	*/
+	var fields = window.fields
+	if(!fields || !fields.length){
+		fields = (typeof window.Fields === "function") ? window.Fields() : []
+	}
 	if(cookies.axis){
-		var _axis = cookies.axis
-			_axis = _axis.split(",")
-
-		var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
-
-		if(b){
+		/*
+			개발 Part 14 (검수) - G2
+			현행은 window.map.biomes 에 좌표가 없으면
+			position 을 아예 만들지 않아 저장된 좌표를 버리고
+			랜덤 스폰으로 빠졌다.
+			매치 전환 직후 / MapGen 미적용 시점에 매번 발생해
+			캐릭터가 엉뚱한 곳에서 시작했다.
+			AxisParse 는 바이옴이 없어도 State DTO 나 오프셋 보정으로
+			항상 좌표를 돌려준다.
+		*/
+		var _ax = window.AxisParse(cookies.axis)
+		if(_ax.ok){
 			position = {
-				x : _axis[0] * 1,
-				y : b.y,
-				z : _axis[2] * 1
+				x : _ax.x,
+				y : _ax.y,
+				z : _ax.z
 			}
 		}
 	}
-
 	if(!position){
 		var r, b
-
 		for(var i = 0; i < fields.length; i++){
 			r = fields[Math.floor(Math.random() * fields.length)]
 			b = window.map.biomes[`${r.x}:${r.z}`]
@@ -482,6 +668,28 @@ window.Subscribe = function(){
 window.listToBiomes = function(){
 	/* MapGen.apply() 가 window.map.biomes 를 채운다.
 	   호출부 호환을 위해 현재 타일 배열만 돌려준다. */
+	/*
+		개발 Part 14 (검수) - E10
+		window.map.biomes 에는 이질적인 두 종류가 섞여 있다.
+		  좌표 키   "-5.5:-39.5"
+		            { biome, elevation, water, ocean, coast, x, y, z }
+		            MapGen.apply() 가 생산. 실제 지형 타일.
+		  crc32 키  "2TPHPJV"
+		            { id, hash, name, value, color, x, y, z }
+		            BoardCallback 장식 블록이 생산. 바이옴 장식 마커.
+		현행은 둘을 구분하지 않고 전부 배열에 담았다.
+		장식 항목은 item.biome 이 없고 item.name 이 "#BEACH" 형식이라
+		렌더 루프의
+		  window.Biomes["#" + b.biome]
+		가 "#undefined" 를 조회해 색상이 undefined 가 되고,
+		Experience.jsx 의 Asset 이 window.Biomes[props.name] 미존재로
+		빈 group 을 렌더해 맵에 구멍이 생겼다.
+		또한 biomes.x / y / z (카메라 기준점)가 장식 항목 좌표로 잡힐 수 있어
+		시야 범위 계산이 어긋났다.
+		여기서는 biome 속성을 가진 좌표 타일만 반환한다.
+		장식은 window.map.biomes 에 그대로 남아
+		BoardCallback 의 isBiome 중복 판정에 계속 쓰인다.
+	*/
 	var biomes = []
 	if(!window.map || !window.map.biomes){
 		return biomes
@@ -490,6 +698,13 @@ window.listToBiomes = function(){
 		if(window.map.biomes.hasOwnProperty(key)){
 			var item = window.map.biomes[key]
 			if(!item || typeof item.x == "undefined"){
+				continue
+			}
+			if(typeof item.z == "undefined"){
+				continue
+			}
+			/* 장식 마커 제외. 지형 타일만 통과시킨다 */
+			if(!item.biome){
 				continue
 			}
 			if(typeof biomes.x == "undefined" && !item.water){
@@ -720,8 +935,127 @@ window.bytes32ToNumString = function(bytes32str) {
 
 window.randomHash = function(){
 	var account = ethers.Wallet.createRandom()
-
 	return account.address.toLowerCase()
+}
+/*
+	개발 Part 14 (검수) - E7
+	blockies.create() 는 시드가 비었거나 형식이 어긋나면 null 을 반환한다.
+	현행은 반환값을 검증하지 않고 바로 .toDataURL() 을 호출해
+	  TypeError: Cannot read properties of null (reading 'toDataURL')
+	로 BoardCallback 이 중단됐다.
+	시드 정규화
+	  0x 접두를 강제로 붙인다. 서버가 내려주는 식별자가
+	  hash(40자) / address(0x+40자) / nonce(0x+40자) 로 섞여 있다.
+	  40자 hex 가 아니면 결정론 폴백 시드를 만들어 최소한 그림은 나오게 한다.
+*/
+window.BlockieSeed = function(seed){
+	var s = (typeof seed === "undefined" || seed === null) ? "" : String(seed)
+	s = s.trim().toLowerCase()
+	if(s.indexOf("0x") === 0){
+		s = s.substr(2)
+	}
+	s = s.replace(/[^0-9a-f]/g, "")
+	if(!s.length){
+		/*
+			개발 Part 14 (검수) - E7'
+			시드를 특정할 수 없어도 null 을 돌려주지 않는다.
+			null 을 돌려주면 호출부가 .toDataURL() 로 다시 터진다.
+			고정 폴백 시드로 회색 계열 아이콘을 만들어 넘긴다.
+		*/
+		return "0x0000000000000000000000000000000000000000"
+	}
+	while(s.length < 40){
+		s += s
+	}
+	return "0x" + s.substr(0, 40)
+}
+/*
+	개발 Part 14 (검수) - E7'
+	blockies 전역을 래핑한다.
+	Part 26-2 에서 헬퍼를 만들고 3 곳을 치환했으나
+	  index.js:2844:91  Cannot read properties of null (reading 'toDataURL')
+	가 계속 발생했다. 치환하지 못한 blockies.create() 직접 호출이
+	BoardCallback 안에 남아 있다는 뜻이다.
+	후보가 #link / #portal / _players 아이콘 루프 / follow 목록 /
+	score_board 랭킹 / capture 아이콘 등 10 곳 이상이고
+	일부는 한 줄 인라인 + .toDataURL() 체인이라
+	호출부를 하나씩 찾는 방식으로는 다음 폴링에서 또 터진다.
+	원본 create 를 감싸 아래를 보장한다.
+	  1) 시드를 BlockieSeed 로 정규화한다.
+	  2) 절대 null 을 반환하지 않는다.
+	     실패 시 toDataURL 을 가진 대체 캔버스를 돌려준다.
+	이렇게 하면 남은 직접 호출도 전부 안전해진다.
+*/
+if(typeof blockies !== "undefined" && blockies && !blockies.__wrapped){
+	var _blockiesCreate = blockies.create
+	var _blockieFallback = null
+	var _blockieFallbackCanvas = function(){
+		if(_blockieFallback){
+			return _blockieFallback
+		}
+		try{
+			var c = document.createElement("canvas")
+			c.width = 8
+			c.height = 8
+			var g = c.getContext("2d")
+			g.fillStyle = "#333"
+			g.fillRect(0, 0, 8, 8)
+			_blockieFallback = c
+		}catch(err){
+			/*
+				canvas 조차 만들 수 없는 환경.
+				toDataURL 을 가진 최소 객체를 돌려준다.
+			*/
+			_blockieFallback = {
+				width : 8,
+				height : 8,
+				toDataURL : function(){ return "" }
+			}
+		}
+		return _blockieFallback
+	}
+	blockies.create = function(opts){
+		var o = opts ? opts : {}
+		var next = {}
+		for(var k in o){
+			if(o.hasOwnProperty(k)){
+				next[k] = o[k]
+			}
+		}
+		next.seed = window.BlockieSeed(o.seed)
+		var out = null
+		try{
+			out = _blockiesCreate.call(blockies, next)
+		}catch(err){
+			out = null
+		}
+		if(!out){
+			return _blockieFallbackCanvas()
+		}
+		if(typeof out.toDataURL !== "function"){
+			return _blockieFallbackCanvas()
+		}
+		return out
+	}
+	blockies.__wrapped = true
+}
+window.Blockie = function(seed){
+	try{
+		return blockies.create({ seed : seed })
+	}catch(err){
+		return null
+	}
+}
+window.BlockieUrl = function(seed){
+	var canvas = window.Blockie(seed)
+	if(!canvas){
+		return ""
+	}
+	try{
+		return canvas.toDataURL()
+	}catch(err){
+		return ""
+	}
 }
 
 window.assets = []
@@ -1095,12 +1429,19 @@ OAuth3.on("ready", function(e){
 
 	if(window.location.hash){
 		$("#nav").prop("checked",false)
-
 		var address = window.location.hash.replace("#","0x")
-
 		$("#intro .title .emoji").html("")
-		$("#intro .title .emoji").append(blockies.create({seed: address}))
-
+		/*
+			개발 Part 14 (검수) - E13
+			location.hash 가 40자 hex 가 아니면(예: "#a")
+			blockies 가 null 을 반환해 append(null) 이 됐다.
+			jQuery append 는 null 을 무시하므로 예외는 없었지만
+			아이콘이 조용히 사라졌다. Blockie 로 통일한다.
+		*/
+		var _introIcon = window.Blockie(address)
+		if(_introIcon){
+			$("#intro .title .emoji").append(_introIcon)
+		}
 		if(host_address.indexOf(address) == -1){
 			$("#intro .coptyright p").html(`<span class="address">
 				<address>
@@ -1441,13 +1782,23 @@ OAuth3.on("ready", function(e){
 
 	function emojiChanged(emoji, local, bomb){
 		var player = window.players.self()
-
 		if(player){
+			/*
+				개발 Part 14 (검수) - E12
+				현행은 이 스코프에 없는 cookies 를 참조했다.
+				OAuth3.on("ready") 스코프에는 cookies 지역 변수가 없고,
+				response() 안의 var cookies 는 다른 함수 스코프다.
+				전역 window.cookies 가 아직 세팅되지 않은 시점에는
+				  ReferenceError: cookies is not defined
+				로 emojiChanged 가 통째로 실패했다.
+				(hashType 클릭 / Report / Feedback 경로가 전부 여기를 통과한다)
+				window.cookies 를 명시적으로 잡아 쓴다.
+			*/
+			var cookies = window.cookies ? window.cookies : {}
 			var _players = window.players
-			var len = players.length
-
+			var len = _players.length
 			var query = {
-				dice : window.cookies.dice ? window.cookies.dice : 0,
+				dice : cookies.dice ? cookies.dice : 0,
 				href : window.location.href,
 				hash : cookies.hash,
 				token : cookies.token,
@@ -1455,9 +1806,19 @@ OAuth3.on("ready", function(e){
 				y : player.y,
 				z : player.z
 			}
-
-			var position = window[player.hash].group.current.position
-
+			/*
+				개발 Part 14 (검수) - E12
+				window[player.hash] 가 아직 없으면(R3F Player 미마운트)
+				.group.current.position 에서 TypeError 가 났다.
+				player 좌표로 폴백한다.
+			*/
+			var position = { x : player.x, y : player.y, z : player.z }
+			try{
+				if(window[player.hash] && window[player.hash].group && window[player.hash].group.current){
+					position = window[player.hash].group.current.position
+				}
+			}catch(err){
+			}
 			for(var i = 0; i < len; i++){
 				if(_players[i].hash == cookies.hash || _players[i].hash == cookies.address){
 					_players[i].self = true
@@ -1467,10 +1828,14 @@ OAuth3.on("ready", function(e){
 					_players[i].z = position.z
 				}
 			}
-
 			if(bomb){
-				var b = window.map.biomes[player.x+":"+player.z]
-
+				/*
+					개발 Part 14 (검수) - E12
+					해당 좌표의 바이옴이 없으면 b.y 에서 TypeError 가 났다.
+					player.y 로 폴백한다.
+				*/
+				var b = window.map && window.map.biomes
+					? window.map.biomes[player.x+":"+player.z] : null
 				plant = {
 					team : "#bomb",
 					follow : false,
@@ -1478,14 +1843,12 @@ OAuth3.on("ready", function(e){
 					hash : ethers.ZeroAddress,
 					dice : 0,
 					x : player.x + "",
-					y : b.y + 0.5,
+					y : (b ? b.y : (player.y ? player.y : 0)) + 0.5,
 					z : player.z + "",
 					emoji : "💣"
 				}
-
 				_players.push(plant)
 			}
-
 			if(emoji.length){
 				delete window.emojis.message
 
@@ -1573,12 +1936,63 @@ OAuth3.on("ready", function(e){
 		window.Roll = function(biomes){
 			try{
 				var dice = window.cookies.dice  * 1
-
 				if(dice > 0){
 					if(typeof OAuth3.interval == "undefined"){
+						/*
+							개발 Part 15 (규칙 R3)
+							링(edge) 순서대로 한 칸 전진한다.
+							현행은 주변 BEACH 타일의 neighbors / corners 를 뒤져
+							다음 칸을 "추정" 했다. 섬 형태에 따라 역주행하거나
+							같은 칸을 반복하는 문제가 있었다.
+							window.fields 는 FieldsCoastRing 이 만든 순서 배열이고
+							각 원소에 index(= ring_index)가 들어 있다.
+							그 index 를 1 증가시키는 것이 곧 정확한 다음 칸이다.
+							아래 레거시 탐색 로직은 window.fields 가 아직 없을 때만
+							폴백으로 실행된다.
+						*/
+						var _ring = window.fields
+						if(_ring && _ring.length){
+							var _cur = null
+							try{
+								_cur = _ring[(window.current.current.position.x) + ":" + (window.current.current.position.z)]
+							}catch(err){
+								_cur = null
+							}
+							if(!_cur){
+								_cur = _ring[(biomes.x) + ":" + (biomes.z)]
+							}
+							if(_cur && typeof _cur.index !== "undefined"){
+								var _nextIdx = (_cur.index * 1) + 1
+								if(_nextIdx >= _ring.length){
+									_nextIdx = 0
+								}
+								var _next = _ring[_nextIdx]
+								if(_next){
+									var _ny = typeof _next.y !== "undefined" ? _next.y : 0
+									try{
+										var _nb = window.map.biomes[_next.x + ":" + _next.z]
+										if(_nb && typeof _nb.y !== "undefined"){
+											_ny = _nb.y
+										}
+									}catch(err){
+									}
+									window.current.current.position.x = window.cursor.current.position.x = biomes.x = _next.x
+									window.current.current.position.y = window.cursor.current.position.y = biomes.y = _ny + 0.01
+									window.current.current.position.z = window.cursor.current.position.z = biomes.z = _next.z
+									var _selfHash = window.cookies.address ? window.cookies.address : window.cookies.hash
+									if(window[_selfHash] && window[_selfHash].position){
+										window[_selfHash].position.x = _next.x
+										window[_selfHash].position.y = _ny + 0.5
+										window[_selfHash].position.z = _next.z
+									}
+								}
+							}
+							window.cookies.dice = dice - 1
+							window.setFrameloop("always")
+							return
+						}
 						var _size = 2
 						var _fields = []
-
 						var reverse = false
 
 						biomes.forEach(function(b, i){
@@ -1905,11 +2319,18 @@ OAuth3.on("ready", function(e){
 			}catch(err){
 				console.log("mapgen err",err);
 			}
-
+			/*
+				개발 Part 14 (검수) - E6
+				MapGen.apply() 가 어떤 경로로 이탈했든
+				이 지점 이후 window.map 하위 컨테이너가 전부 존재함을 보장한다.
+				apply() 뒤에 두어야 biomes 교체 이후 상태를 보정할 수 있다.
+			*/
+			if(window.MapGuard){
+				window.MapGuard()
+			}
 			if(!isNaN(cookies.speed) && cookies.speed){
 				window.speed = 0.1 * (cookies.speed * 1)
 			}
-
 			if(cookies.axis){
 				try{
 					OAuth3.nonces = []
@@ -1985,11 +2406,14 @@ OAuth3.on("ready", function(e){
 					var score_board = []
 
 					var isBiome = false
-
-					var canvas = blockies.create({seed: seed.toLowerCase()})
-
+					/*
+						개발 Part 14 (검수) - E7
+						blockies.create() 직접 호출을 Blockie() 로 바꾼다.
+						seed 는 hash 유무에 따라 "0x..." 또는 해시 조각이 되므로
+						BlockieSeed 가 형식을 정규화한다.
+					*/
+					var canvas = window.Blockie(seed)
 					var self = false
-
 					var diff = false
 
 					var meme = {
@@ -2008,30 +2432,49 @@ OAuth3.on("ready", function(e){
 						x : 0.5,
 						y : 0.5,
 						z : 0.5,
-						emoji : canvas.toDataURL()
+						/*
+							개발 Part 14 (검수) - E7
+							canvas 가 null 이면 여기서 TypeError 로 중단됐다.
+							BlockieUrl 은 실패 시 "" 를 반환하고,
+							Player.jsx 는 emoji 가 "" 면 type="text" 로 렌더하므로
+							화면이 깨지지 않는다.
+						*/
+						emoji : window.BlockieUrl(seed)
 					}
 
 					var progress = []
-
-					var _axis = cookies.axis
-						_axis = _axis.split(",")
-					var b = window.map.biomes[`${_axis[0]}:${_axis[2]}`]
+					/*
+						개발 Part 14 (검수) - G2
+						현행 문제
+						  1) b 가 없으면 y 에 _axis[1] 을 그대로 썼다.
+						     서버가 +1 오프셋을 더해 저장하므로
+						     캐릭터가 1 유닛 공중에 떴다.
+						  2) b 가 없으면 Respawn() 으로 좌표를 통째로 버렸다.
+						     매치 전환 직후 매번 랜덤 스폰이 됐다.
+						  3) cookies.axis 를 덮어쓰면서 오프셋 없는 y 를 넣어
+						     서버와 프론트의 axis 형식이 어긋났다.
+						AxisParse 가 오프셋 보정과 폴백을 담당한다.
+						좌표 자체를 못 읽을 때만 Respawn 으로 넘어간다.
+					*/
+					var _ax = window.AxisParse(cookies.axis)
+					var b = (window.map && window.map.biomes)
+						? window.map.biomes[_ax.x + ":" + _ax.z] : null
 					var axis = {
-						x : _axis[0] * 1,
-						y : b ? b.y : _axis[1] * 1,
-						z : _axis[2] * 1
+						x : _ax.x,
+						y : _ax.y,
+						z : _ax.z
 					}
-
-					if(!b){
+					if(!_ax.ok){
 						var _respawn = Respawn()
-
 						axis.x = _respawn.x
 						axis.y = _respawn.y
 						axis.z = _respawn.z
-
-						cookies.axis = [axis.x, axis.y, axis.z].toString()
+						/*
+							서버 형식과 맞추려면 y 에 오프셋을 다시 더해야 한다.
+							다음 폴링의 query.y 로 그대로 올라가기 때문이다.
+						*/
+						cookies.axis = [axis.x, axis.y + 1, axis.z].toString()
 					}
-
 					if(window.current){
 						var _cur = window.current.current.position
 						var _cur_biome = window.map.biomes[`${_cur.x}:${_cur.z}`]
@@ -2213,7 +2656,16 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					var fields = window.fields ? window.fields : Fields()
+					/*
+						개발 Part 14 (검수) - E11
+						여기도 Fields() 맨몸 호출이었다.
+						window.fields 는 Experience.jsx 의 FieldsSync() 가 채우므로
+						R3F 마운트 전 첫 폴링에서는 비어 있을 수 있다.
+					*/
+					var fields = window.fields
+					if(!fields || !fields.length){
+						fields = (typeof window.Fields === "function") ? window.Fields() : []
+					}
 					if(isDice){
 						if(progress.length){
 							progress.before = progress[1]
@@ -2263,9 +2715,33 @@ OAuth3.on("ready", function(e){
 						$('.emoji_asset[method="notify"]').removeClass("on")
 					}
 					
-					var flags = resp.body.flags ? resp.body.flags : []
+					/*
+						개발 Part 14 (검수) - E15
+						서버는 flags 를 배열로 만들면서 문자열 키(#red / #blue / hash)를 붙인다.
+						JSON.stringify 는 배열의 문자열 키를 버리므로
+						클라이언트에는 빈 배열 [] 로 도착한다.
+						서버가 객체로 바꿔 내려보내면 flags.forEach 가
+						  TypeError: flags.forEach is not a function
+						이 된다. 형태를 배열로 정규화한다.
+					*/
+					var flags = []
+					var _rawFlags = resp.body.flags
+					if(_rawFlags){
+						if(Array.isArray(_rawFlags)){
+							flags = _rawFlags
+						}else if(typeof _rawFlags === "object"){
+							for(var _fk in _rawFlags){
+								if(_rawFlags.hasOwnProperty(_fk)){
+									var _fv = _rawFlags[_fk]
+									/* 카운터(숫자)는 제외하고 행 객체만 담는다 */
+									if(_fv && typeof _fv === "object"){
+										flags.push(_fv)
+									}
+								}
+							}
+						}
+					}
 					flags.temp = 0
-
 					flags[player_hash] = 0
 					flags['#red'] = 0
 					flags['#blue'] = 0
@@ -2304,13 +2780,22 @@ OAuth3.on("ready", function(e){
 							row.dice = position[2] * 1
 
 							var b = biomes[row.x+":"+row.z]
-
+							/*
+								개발 Part 14 (검수) - G2
+								바이옴이 없으면 y 가 0 으로 떨어져
+								플레이어가 지면 아래로 파묻혔다.
+								서버 DTO(state.positions) 에 y 가 있으면 그것을 쓴다.
+								서버 y 는 오프셋(+1)이 더해진 값이므로 보정한다.
+							*/
 							var y = 0
-
-							if(window.map.biomes[row.x+":"+row.z]){
+							if(window.map.biomes && window.map.biomes[row.x+":"+row.z]){
 								y = window.map.biomes[row.x+":"+row.z].y
+							}else if(typeof row.y !== "undefined"){
+								var _ry = row.y * 1
+								if(!isNaN(_ry)){
+									y = _ry >= 1 ? (_ry - 1) : _ry
+								}
 							}
-
 							try{
 								var _nonce = row.Cc.split(` ${hashtag}`)[1]
 									_nonce = _nonce.split("@")[0].trim()
@@ -2347,13 +2832,20 @@ OAuth3.on("ready", function(e){
 										color: "",
 										x : row.x,
 										y : y,
-										z : row.y
+										/*
+											개발 Part 14 (검수) - E9
+											현행은 z 에 row.y 를 넣었다.
+											row 는 서버가 Cc 에서 조립한 행이라 y 속성이 없어
+											z 가 항상 undefined 였다.
+											이 객체는 window.map.biomes[row.Id] 로 들어가고
+											listToBiomes() 가 다시 읽으므로
+											바이옴 장식이 좌표 없는 유령 항목이 됐다.
+										*/
+										z : row.z
 									}
-
 									if(window.map.nonces[row.Id]){
 										delete window.map.nonces[row.Id]
 									}
-
 									window.map.biomes[row.Id] = _asset
 								}
 							}else if(row.Subject == "#position"){
@@ -2671,9 +3163,21 @@ OAuth3.on("ready", function(e){
 						})
 
 						if(window.assets && !isBiome){
+							/*
+								개발 Part 14 (검수) - E6
+								forEach 내부는 try/catch 밖이라 예외가 나면
+								이후 players.set / assets.set 이 전부 건너뛰어진다.
+								MapGuard 로 이미 보장되지만, 이 블록이 예외의
+								실제 발생 지점이었으므로 진입 직전에 한 번 더 확인한다.
+							*/
+							if(!window.map.biomes){
+								window.map.biomes = {}
+							}
+							if(!window.map.nonces){
+								window.map.nonces = []
+							}
 							biomes.forEach(function(b, i){
 								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-
 								if(
 									(biomes.x - size < b.x && biomes.x + size > b.x) &&
 									(biomes.z - size < b.z && biomes.z + size > b.z) &&
@@ -2717,27 +3221,101 @@ OAuth3.on("ready", function(e){
 					if(plant){
 						_players.push(plant)
 					}
-
+					/*
+						개발 Part 14 (검수) - G1
+						React 중복 key 경고를 차단한다.
+						  Warning: Encountered two children with the same key, `42df07...`
+						Experience.jsx 는 <Player key={player.hash} /> 로 렌더하므로
+						_players 안에 같은 hash 가 두 번 들어가면 경고가 난다.
+						중복이 생기는 경로가 여러 개다.
+						  1) 서버가 같은 계정을 #position 과 #start(#nonce) 로 두 행에 담는다.
+						  2) 익명 계정(cookies.address == "")에서는
+						     if(cookies.address){ if(cookies.hash == _from){ continue } }
+						     가 실행되지 않아 자기 자신이 걸러지지 않는다.
+						  3) rows[_from] = true 가드는 _from 이 nonce 로 치환되는 경로에서
+						     서로 다른 키를 쓰게 되어 같은 hash 를 두 번 통과시킨다.
+						  4) plant(폭탄)는 hash 가 ZeroAddress 로 고정이라
+						     두 번 심으면 중복이 된다.
+						개별 분기를 고치면 남은 경로가 또 터지므로
+						set 직전에 해시 기준으로 한 번 정리한다.
+						뒤에 온 항목이 최신이므로 뒤를 남긴다.
+						cnt 는 배열의 커스텀 속성이라 새 배열로 옮겨 준다.
+					*/
+					var _uniq = []
+					var _seenHash = {}
+					for(var _pi = _players.length - 1; _pi >= 0; _pi--){
+						var _p = _players[_pi]
+						if(!_p || typeof _p !== "object"){
+							continue
+						}
+						var _pk = (_p.hash === null || typeof _p.hash === "undefined")
+							? "" : String(_p.hash)
+						if(!_pk){
+							continue
+						}
+						if(_seenHash[_pk]){
+							continue
+						}
+						_seenHash[_pk] = true
+						_uniq.unshift(_p)
+					}
+					_uniq.cnt = _players.cnt ? _players.cnt : 0
+					/* 문자열 키(좌표 조회용)를 새 배열로 옮긴다 */
+					for(var _pkey in _players){
+						if(_players.hasOwnProperty(_pkey) && isNaN(_pkey * 1)){
+							if(_pkey !== "cnt"){
+								_uniq[_pkey] = _players[_pkey]
+							}
+						}
+					}
+					_players = _uniq
 					try{
 						if(window.players){
 							if(!window.players.length){
-								document.querySelector('.map .canvas').src = document.querySelector('.map canvas').toDataURL()
+								/*
+									개발 Part 14 (검수) - E8
+									이것이 "맵이 안 그려지는" 직접 원인이다.
+									현행
+									  document.querySelector('.map .canvas').src =
+									      document.querySelector('.map canvas').toDataURL()
+									문제
+									  1) .map canvas 가 DOM 에 없으면 querySelector 가 null 을 반환하고
+									     .toDataURL() 에서 TypeError 가 난다.
+									     (index.js:2913:91 의 정체. blockies 와 무관하다)
+									  2) MapGen.paint() 는 같은 셀렉터를 찾지 못하면 조용히 return 하므로
+									     캔버스가 없다는 사실이 드러나지 않았다.
+									  3) 조건이 !window.players.length 라 최초 진입에서 항상 참이다.
+									  4) 이 줄이 try 블록의 첫 문장이라 예외가 나면 아래가 전부 건너뛰어진다.
+									       window.players.set(_players)   플레이어/NPC 미렌더
+									       window.assets.set(_assets)     바이옴 타일 미렌더 = 맵 안 그려짐
+									       window.setFrameloop("always")  렌더 루프가 never 로 정지
+									  5) players 가 계속 빈 배열이므로 다음 폴링에서도 조건이 참이 되어
+									     같은 예외가 무한 반복됐다.
+									조치
+									  미니맵 썸네일 갱신은 부가 기능이므로 자체 try/catch 로 격리한다.
+									  이 한 줄의 실패가 3D 렌더 전체를 멈추게 하지 않는다.
+								*/
+								try{
+									var _mapSrc = document.querySelector('.map canvas')
+									var _mapImg = document.querySelector('.map .canvas')
+									if(_mapSrc && _mapImg && typeof _mapSrc.toDataURL === "function"){
+										_mapImg.src = _mapSrc.toDataURL()
+									}
+								}catch(err){
+									console.log("map thumb err", err)
+								}
 							}
-
 							if(JSON.stringify(window.players) != JSON.stringify(_players)){
 								diff = true
-
 								window.players.set(_players)
 							}
 						}
-
 						if(window.assets){
 							if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
 								diff = true
 								window.assets.set(_assets)
 							}
 						}
-
 						window.setFrameloop("always")
 
 						if(bingo_body){
@@ -2945,7 +3523,13 @@ OAuth3.on("ready", function(e){
 							개발 Part 4
 							서버가 rows[] 에 x / z / dice / emoji / __team 을 함께 실어 보낸다.
 							Cc 파싱은 값이 없을 때만 폴백으로 수행한다.
+							개발 Part 14 (검수) - E15
+							  flag 가 null 이거나 Cc 가 없는 항목이 섞일 수 있어
+							  진입 직전에 걸러낸다.
 						*/
+						if(!flag || typeof flag !== "object"){
+							return
+						}
 						var hashtag = getHashtag(flag.Cc)
 						try{
 							if(typeof flag.x == "undefined"){
@@ -3114,20 +3698,45 @@ OAuth3.on("ready", function(e){
 										</li>`
 									}else{
 										var typeDice = false
-
 										if(_players[_player_hash]){
 											typeDice = _players[_player_hash].dice
 										}
-
-										tooltip_body = `<li>
-											<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>
-										</li>
-										<li>
-											<a class="hashType Meta emoji color">${typeDice ? `<i></i>` : ""}</a>
-										</li>
-										<li>
-											<a class="hashType Report">Report</a>\
-										</li>`
+										/*
+											개발 Part 15 (규칙 R4)
+											내가 링(edge) 위에 있으면 상대(플레이어 / NPC)에 대한
+											공격 선택지를 노출하지 않는다.
+											서버도 링에서는 자동 교전과 폭발을 막으므로
+											버튼만 보이고 아무 일도 일어나지 않는 상태를 없앤다.
+											신고(Report)는 전투가 아니므로 항상 노출한다.
+										*/
+										var _meOnEdge = false
+										try{
+											var _me = window.players.self()
+											_meOnEdge = window.IsEdge(_me.x, _me.z)
+										}catch(err){
+											_meOnEdge = false
+										}
+										if(_meOnEdge){
+											tooltip_body = `<li>
+												<a class="hashType"></a>
+											</li>
+											<li>
+												<a class="hashType"></a>
+											</li>
+											<li>
+												<a class="hashType Report">Report</a>\
+											</li>`
+										}else{
+											tooltip_body = `<li>
+												<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>
+											</li>
+											<li>
+												<a class="hashType Meta emoji color">${typeDice ? `<i></i>` : ""}</a>
+											</li>
+											<li>
+												<a class="hashType Report">Report</a>\
+											</li>`
+										}
 									}
 
 									var before_body = $tooltip.html()
@@ -3254,35 +3863,32 @@ OAuth3.on("ready", function(e){
 										}
 
 										var _row = _messages[m-1];
-
 										var _id = ""
-
 										if(_row){
 											var el = $('messages li[id="'+_row.Id+'"]').find('item[id="'+flag+'"]')
-
 											if(el.length){
 												duplication.html("")
-
-												var seed = row.From.indexOf("0x") == 0 ? row.From : "0x"+row.From
-												var canvas = blockies.create({seed: seed})
-
+												/*
+													개발 Part 14 (검수) - E14
+													blockies.create + canvas.toDataURL() 2 회 호출을
+													BlockieUrl 1 회로 바꾼다.
+													row.From 이 "0x" 접두 유무로 갈리던 분기도 흡수된다.
+												*/
+												var _flowUrl = window.BlockieUrl(row.From)
 												if(row.Flag.indexOf(" ") == -1){
 													var _date = new Date(row.Subject)
-
 													if(isNaN(_date)){
-														el.attr("checked","checked").css("background-image", "url("+canvas.toDataURL()+")")
+														el.attr("checked","checked").css("background-image", "url("+_flowUrl+")")
 													}else{
 														var $item = $(document.createElement("item"))
 															$item.css("background","none").attr({
 																"checked":"checked",
 																"disabled" : "disabled"
 															}).text(row.Subject)
-
 														var $bg = $(document.createElement("span"))
-															$bg.css("background-image", "url("+canvas.toDataURL()+")")
+															$bg.css("background-image", "url("+_flowUrl+")")
 														
 														$item.append($bg)
-
 														el.closest("items").html("").append($item)
 													}
 												}
@@ -3319,38 +3925,30 @@ OAuth3.on("ready", function(e){
 							$("notify ol").append(notify_body)
 						}
 
+						/*
+							개발 Part 14 (검수) - E7
+							"0x"+hash 는 hash 가 빈 문자열일 때 "0x" 가 되어
+							blockies 가 null 을 반환했다.
+							BlockieUrl 이 형식 정규화와 null 방어를 함께 처리한다.
+							빈 결과면 배경을 건드리지 않는다.
+						*/
 						var $icons = $("messages li .icon")
-
 						if($icons.length){
 							$icons.each(function(i, el){
-								var hash = el.dataset.from
-
-								var $icon = $icons.eq(i)
-
-								try{
-									var canvas = blockies.create({seed: "0x"+hash})
-									$icon.css("background-image", "url("+canvas.toDataURL()+")")
-								}catch(err){
-
+								var _url = window.BlockieUrl(el.dataset.from)
+								if(_url){
+									$icons.eq(i).css("background-image", "url("+_url+")")
 								}
 							})
 						}
-
 						var $icons = $("talks li .icon")
-
 						if($icons.length){
 							$icons.each(function(i, el){
-								var hash = el.dataset.from
-
-								var $icon = $icons.eq(i)
-
-								try{
-									var canvas = blockies.create({seed: "0x"+hash})
-									$icon.css("background-image", "url("+canvas.toDataURL()+")")
-								}catch(err){
-
+								var _url = window.BlockieUrl(el.dataset.from)
+								if(_url){
+									$icons.eq(i).css("background-image", "url("+_url+")")
 								}
-							})						
+							})
 						}
 
 						if(onMessage){
@@ -3360,13 +3958,29 @@ OAuth3.on("ready", function(e){
 						}
 					}
 
-					if(cookies.damage){
+					if(cookies.damage || cookies.dead){
+						/*
+							개발 Part 15 (규칙 R1 / R2)
+							사망 시 보드 폴링을 멈추되, 마이룸 이동 경로는 열어 둔다.
+							window.onhashchange 가 RoomHashChange 를 호출하며
+							거기서 Poll.ing 을 다시 세팅하므로
+							여기서 멈춘 인터벌이 마이룸 진입을 막지는 않는다.
+							dead 속성은 CSS 가 보드 UI(주사위 / 이모지 덱 / 조이스틱)를
+							숨기는 데 쓴다.
+						*/
 						$body.attr('game',"over")
-
+						$body.attr('dead',"true")
 						clearInterval(window.Poll.ing)
 						delete window.Poll.ing
+						try{
+							if(window.StageSync){
+								window.StageSync(cookies)
+							}
+						}catch(err){
+						}
 					}else{
 						$body.removeAttr('game')
+						$body.removeAttr('dead')
 					}
 
 					var $loading = $('messages ul li.loading, messages ul li[id=""], talks ul li[id=""]')
@@ -3829,9 +4443,18 @@ OAuth3.on("ready", function(e){
 			</ul>`;
 
 			$('#header label[for="nav"] canvas').remove()
-
-			var icon = blockies.create({seed: player_hash.indexOf("0x") > -1 ? player_hash : "0x"+player_hash});
-			document.querySelector('#header label[for="nav"]').appendChild(icon);
+			/*
+				개발 Part 14 (검수) - E13
+				blockies.create() 직접 호출을 Blockie() 로 바꾼다.
+				appendChild 대상이 null 이면 TypeError 로 BoardInit 이 중단되고
+				이후 클릭 핸들러 / joystick / emojis 목록이 전부 바인딩되지 않는다.
+				라벨 엘리먼트 자체가 없을 수도 있어 함께 확인한다.
+			*/
+			var icon = window.Blockie(player_hash)
+			var $navLabel = document.querySelector('#header label[for="nav"]')
+			if(icon && $navLabel){
+				$navLabel.appendChild(icon)
+			}
 			window.addEventListener('focus', function(){
 				window.setFrameloop("always")
 			})
@@ -4286,35 +4909,45 @@ OAuth3.on("ready", function(e){
 
 											if($this.hasClass("Meta")){
 												var _dice = $body.attr("dice") * 1
-
 												if(!isNaN(_dice)){
 													if(_dice > 0){
 														return
 													}
 												}
-
 												window.cookies.dice = 0
 												
-												body.cc = "bomb"
-
-												if(window.Biomes[`#${b.biome}`]){
-													if(b.biome == "BEACH"){
-														query.dice = 10
-														body.cc = "dice"
-													}else{
+												/*
+													개발 Part 15 (규칙 R3 / R5)
+													현행은 b.biome == "BEACH" 일 때만 주사위를 굴렸다.
+													링(edge)이 항상 BEACH 인 것은 아니므로
+													섬 형태에 따라 주사위를 굴릴 수 없는 칸이 생겼다.
+													판정을 링 여부로 바꾼다.
+													  링 위   주사위 이동
+													  링 밖   폭탄 투척
+													또한 규칙 R5 에 따라 링에서는 폭탄을 놓지 않는다.
+												*/
+												var _isEdgeHere = window.IsEdge(player.x, player.z)
+												body.cc = ""
+												if(_isEdgeHere){
+													query.dice = 10
+													body.cc = "dice"
+												}else if(window.Biomes[`#${b.biome}`]){
+													if(window.cookies.enter){
 														isBomb = true
-
+														body.cc = "bomb"
 														if(plant){
 															return
 														}
+													}else{
+														window.Notice("NOT ON PATH", "Return to the board path", 2200)
+														return
 													}
 												}
-											
-
+												if(!body.cc){
+													return
+												}
 												$body.attr(body.cc,query.dice)
-
 												$('#dice ul').playSpin();
-
 											}else if($this.hasClass("Fire")){
 												body.cc = "flag"
 											}else if($this.hasClass("Flag")){
@@ -4678,7 +5311,20 @@ OAuth3.on("ready", function(e){
 											if(plant){
 												return
 											}
-
+											/*
+												개발 Part 15 (규칙 R5)
+												링(edge) 칸에서는 폭탄을 놓을 수 없다.
+												서버가 bombBlocked="edge" 로 거절하므로
+												요청 자체를 보내지 않는다.
+											*/
+											if(window.IsEdge(player.x, player.z)){
+												window.Notice("NO BOMBS", "Bombs do not work on the path", 2200)
+												return
+											}
+											if(!cookies.enter){
+												window.Notice("NOT IN RAID", "Deploy first to use bombs", 2200)
+												return
+											}
 											emojiChanged("🫥", true, true)
 											
 											var query = {
@@ -5033,41 +5679,31 @@ OAuth3.on("ready", function(e){
 							<text>${text}</text>\
 						</div>\
 					</li>`)
-
+					/*
+						개발 Part 14 (검수) - E14
+						개발 Part 26 에서 BoardCallback 쪽만 치환했고
+						BoardChat 에 같은 패턴 2 곳이 남아 있었다.
+						try/catch 로 감싸져 있어 예외는 삼켜지지만
+						아이콘이 조용히 빠졌다. BlockieUrl 로 통일한다.
+					*/
 					var $icons = $("messages li .icon")
-
 					if($icons.length){
 						$icons.each(function(i, el){
-							var hash = el.dataset.from
-
-							var $icon = $icons.eq(i)
-
-							try{
-								var canvas = blockies.create({seed: "0x"+hash})
-								$icon.css("background-image", "url("+canvas.toDataURL()+")")
-							}catch(err){
-
+							var _url = window.BlockieUrl(el.dataset.from)
+							if(_url){
+								$icons.eq(i).css("background-image", "url("+_url+")")
 							}
 						})
 					}
-
 					var $icons = $("talks li .icon")
-
 					if($icons.length){
 						$icons.each(function(i, el){
-							var hash = el.dataset.from
-
-							var $icon = $icons.eq(i)
-
-							try{
-								var canvas = blockies.create({seed: "0x"+hash})
-								$icon.css("background-image", "url("+canvas.toDataURL()+")")
-							}catch(err){
-
+							var _url = window.BlockieUrl(el.dataset.from)
+							if(_url){
+								$icons.eq(i).css("background-image", "url("+_url+")")
 							}
-						})						
+						})
 					}
-
 					$("messages").addClass("on")
 					$("talks."+player.hash).addClass("on")
 
@@ -5262,14 +5898,18 @@ OAuth3.on("ready", function(e){
 				$('form[name="oauth.network"]').removeClass("on")
 
 				$nav.prop("checked",false)
-
 				$('messages ul, #rank ol, #capture>.rank_toggle, talks ul').html("")
-
 				var address = window.location.hash.replace("#","0x")
-
 				if(address.length > 2){
 					$("#intro .title .emoji").html("")
-					$("#intro .title .emoji").append(blockies.create({seed: address}))
+					/*
+						개발 Part 14 (검수) - E13
+						BoardHashChange 의 같은 패턴. Blockie 로 통일한다.
+					*/
+					var _hashIcon = window.Blockie(address)
+					if(_hashIcon){
+						$("#intro .title .emoji").append(_hashIcon)
+					}
 					$("#intro .coptyright p").html(`<span class="address">
 						<address>
 							<span>${address}</span>
