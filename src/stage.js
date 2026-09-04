@@ -17,7 +17,15 @@ window.Stage = {
 	miaTimer : null,
 	/* enter 가 비어 보이는 폴링을 몇 번까지 견딜지 */
 	graceLimit : 5,
-	graceCount : 0
+	graceCount : 0,
+	/*
+		개발 Part 16 (레이드 슬롯)
+		blocked 는 "이번 매치에서는 더 이상 출격할 수 없다" 를 뜻한다.
+		값이 있으면 Lobby() 가 Start Raid 버튼을 감추고
+		사유 문구 + 마이룸 버튼만 남긴다.
+		다음 매치로 슬롯이 회복되면 StageSync 가 비운다.
+	*/
+	blocked : ""
 }
 window.Stage.set = function(name){
 	window.Stage.current = name
@@ -50,18 +58,67 @@ window.Notice = function(head, body, ms){
 
 window.ExitKeys = function(){
 	var cookies = window.cookies
-
 	if(!cookies){
 		return []
 	}
-
 	if(!cookies.exitKeys){
 		return []
 	}
-
 	return cookies.exitKeys.split(",").filter(function(v){
 		return v.length > 0
 	})
+}
+/*
+	개발 Part 16 (레이드 슬롯)
+	서버 index.js 의 #start 분기와 동일한 규칙으로 남은 슬롯을 계산한다.
+	  raidUsed     이번 매치에서 이미 사용한 역할 목록
+	  raidAborted  사망/MIA 로 중단된 적이 있는가
+	서버 규칙
+	  aborted 면 UCAV 만 남는다.
+	  아니면 PMC 우선, PMC 를 썼으면 UCAV.
+	프론트가 같은 판정을 갖고 있어야
+	"눌러도 서버가 거절하는 버튼" 을 애초에 노출하지 않는다.
+*/
+window.RaidSlots = function(){
+	var out = {
+		used : [],
+		aborted : false,
+		pmc : false,
+		ucav : false,
+		any : false
+	}
+	var cookies = window.cookies
+	if(!cookies){
+		return out
+	}
+	out.used = cookies.raidUsed
+		? String(cookies.raidUsed).split(",").filter(function(v){
+			return v.length > 0
+		})
+		: []
+	out.aborted = cookies.raidAborted ? true : false
+	out.ucav = out.used.indexOf("UCAV") == -1
+	out.pmc = out.aborted ? false : (out.used.indexOf("PMC") == -1)
+	out.any = out.pmc || out.ucav
+	return out
+}
+/*
+	개발 Part 16 (레이드 슬롯)
+	지금 출격이 가능한가.
+	사망 / 서버가 내려준 raidBlocked / 슬롯 소진 중 하나라도 걸리면 false.
+*/
+window.CanRaid = function(){
+	var cookies = window.cookies
+	if(!cookies){
+		return false
+	}
+	if(cookies.damage || cookies.dead){
+		return false
+	}
+	if(cookies.raidBlocked){
+		return false
+	}
+	return window.RaidSlots().any
 }
 
 /*
@@ -235,17 +292,56 @@ window.Lobby = function(){
 
 	var keys = window.ExitKeys()
 	var body = ""
-
 	for(var i = 0; i < keys.length; i++){
 		body += '<li><i class="emoji color">' + keys[i] + '</i></li>'
 	}
-
 	if(!body){
 		body = '<li><i class="emoji color">❔</i></li>'
 	}
-
 	$l.find(".keys .list").html(body)
-
+	/*
+		개발 Part 16 (레이드 슬롯)
+		현행 문제
+		  슬롯이 없거나 배치가 실패해도 Lobby 는 .actions 를 손대지 않아
+		  Start Raid 버튼이 그대로 노출됐다.
+		  눌러봐야 서버가 raidBlocked 로 되돌리므로
+		  "DEPLOY FAILED 만 반복" 되는 상태가 됐다.
+		조치
+		  blocked 이면 raid 버튼을 감추고
+		  사유 문구 + 마이룸 이동 버튼만 남긴다.
+		  #lobby 마크업에 .reason / .btn.stash 가 없어도
+		  여기서 만들어 붙이므로 HTML 수정이 필요 없다.
+	*/
+	var $actions = $l.find(".actions")
+	if($actions.length){
+		var $raid = $actions.find(".btn.raid")
+		var $stash = $actions.find(".btn.stash")
+		if(!$stash.length){
+			$actions.append('<a class="btn stash">\
+				<span class="ko">마이룸으로</span>\
+				<span class="en">Go to My Room</span>\
+			</a>')
+			$stash = $actions.find(".btn.stash")
+		}
+		var $reason = $actions.find(".reason")
+		if(!$reason.length){
+			$actions.prepend('<p class="reason"></p>')
+			$reason = $actions.find(".reason")
+		}
+		var blocked = window.Stage.blocked ? window.Stage.blocked : ""
+		if(!blocked && !window.CanRaid()){
+			blocked = "No slots left this match"
+		}
+		if(blocked){
+			$raid.addClass("disabled").hide()
+			$reason.show().html('<strong class="head">DEPLOY FAILED</strong>\
+				<span class="body">' + blocked + '</span>')
+		}else{
+			$raid.removeClass("disabled").show()
+			$reason.hide().html("")
+		}
+		$stash.show()
+	}
 	window.Stage.set("lobby")
 }
 
@@ -346,6 +442,21 @@ window.RaidAbort = function(message){
 	$("#raid .progress .bar").css("width", "0")
 	window.Stage.graceCount = 0
 	window.Stage.set("")
+	/*
+		개발 Part 16 (레이드 슬롯)
+		실패 사유를 두 갈래로 나눈다.
+		  슬롯이 남아 있다  일시적 실패(네트워크 / 타임아웃).
+		                    Start Raid 를 다시 눌러볼 수 있게 둔다.
+		  슬롯이 없다      이번 매치는 끝났다.
+		                    버튼을 감추고 마이룸만 남긴다.
+		판정은 CanRaid() 하나로 통일한다.
+		  raidBlocked 쿠키 / raidUsed 소진 / 사망이 전부 여기 들어온다.
+	*/
+	if(window.CanRaid()){
+		window.Stage.blocked = ""
+	}else{
+		window.Stage.blocked = message ? message : "No slots left this match"
+	}
 	if(message){
 		window.Notice("DEPLOY FAILED", message, 2600)
 	}
@@ -428,7 +539,15 @@ window.StageSync = function(cookies){
 			}
 		}
 	}
-
+	/*
+		개발 Part 16 (레이드 슬롯)
+		매치가 바뀌면 raidUsed 가 비워져 슬롯이 회복된다.
+		그때 blocked 를 풀어 Start Raid 버튼을 되살린다.
+		폴링마다 판정하므로 별도 타이머가 필요 없다.
+	*/
+	if(window.Stage.blocked && window.CanRaid()){
+		window.Stage.blocked = ""
+	}
 	/*
 		개발 Part 15 (규칙 R1 / R2)
 		사망 판정을 최우선으로 둔다.
@@ -576,7 +695,20 @@ window.StageSync = function(cookies){
 
 $(document).on("click", "#lobby .btn.raid", function(e){
 	e.preventDefault()
-
+	/*
+		개발 Part 16 (레이드 슬롯)
+		disabled 상태에서 눌리면 무시한다.
+		CSS 로 감추더라도 이벤트 위임은 살아 있으므로 여기서 한 번 더 막는다.
+	*/
+	if($(this).hasClass("disabled")){
+		return
+	}
+	if(!window.CanRaid()){
+		window.Stage.blocked = "No slots left this match"
+		window.Notice("NO SLOTS", "Wait for the next match", 2600)
+		window.Lobby()
+		return
+	}
 	window.Raid()
 })
 

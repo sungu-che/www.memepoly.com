@@ -3271,39 +3271,31 @@ OAuth3.on("ready", function(e){
 					_players = _uniq
 					try{
 						if(window.players){
-							if(!window.players.length){
-								/*
-									개발 Part 14 (검수) - E8
-									이것이 "맵이 안 그려지는" 직접 원인이다.
-									현행
-									  document.querySelector('.map .canvas').src =
-									      document.querySelector('.map canvas').toDataURL()
-									문제
-									  1) .map canvas 가 DOM 에 없으면 querySelector 가 null 을 반환하고
-									     .toDataURL() 에서 TypeError 가 난다.
-									     (index.js:2913:91 의 정체. blockies 와 무관하다)
-									  2) MapGen.paint() 는 같은 셀렉터를 찾지 못하면 조용히 return 하므로
-									     캔버스가 없다는 사실이 드러나지 않았다.
-									  3) 조건이 !window.players.length 라 최초 진입에서 항상 참이다.
-									  4) 이 줄이 try 블록의 첫 문장이라 예외가 나면 아래가 전부 건너뛰어진다.
-									       window.players.set(_players)   플레이어/NPC 미렌더
-									       window.assets.set(_assets)     바이옴 타일 미렌더 = 맵 안 그려짐
-									       window.setFrameloop("always")  렌더 루프가 never 로 정지
-									  5) players 가 계속 빈 배열이므로 다음 폴링에서도 조건이 참이 되어
-									     같은 예외가 무한 반복됐다.
-									조치
-									  미니맵 썸네일 갱신은 부가 기능이므로 자체 try/catch 로 격리한다.
-									  이 한 줄의 실패가 3D 렌더 전체를 멈추게 하지 않는다.
-								*/
-								try{
-									var _mapSrc = document.querySelector('.map canvas')
-									var _mapImg = document.querySelector('.map .canvas')
-									if(_mapSrc && _mapImg && typeof _mapSrc.toDataURL === "function"){
-										_mapImg.src = _mapSrc.toDataURL()
-									}
-								}catch(err){
-									console.log("map thumb err", err)
+							/*
+								개발 Part 16 (미니맵)
+								현행 문제
+								  1) 조건이 !window.players.length 라
+								     플레이어가 한 명이라도 렌더된 뒤에는
+								     썸네일이 영구히 갱신되지 않았다.
+								     첫 폴링에는 아직 캔버스가 비어 있어
+								     결국 빈 이미지가 고정됐다.
+								  2) canvas.toDataURL() 을 직접 불러
+								     캔버스 부재 시 TypeError 로 아래 전부가 건너뛰어졌다.
+								조치
+								  MapGen.sync() 가
+								    타일 확보 -> 2D 평면화 -> base64 -> #map img[src]
+								  를 한 번에 처리한다.
+								  이미 만들어져 있으면 문자열 비교 1 회로 끝나므로
+								  폴링마다 호출해도 비용이 없다.
+								  실패해도 자체 try/catch 안에서 삼켜
+								  3D 렌더 갱신을 막지 않는다.
+							*/
+							try{
+								if(window.MapGen && window.MapGen.sync){
+									window.MapGen.sync()
 								}
+							}catch(err){
+								console.log("map thumb err", err)
 							}
 							if(JSON.stringify(window.players) != JSON.stringify(_players)){
 								diff = true
@@ -5880,7 +5872,19 @@ OAuth3.on("ready", function(e){
 				window.MapReset()
 				if(window.MapGen){
 					window.MapGen.ready = false
+					/*
+						개발 Part 16 (미니맵)
+						보드가 바뀌면 이전 매치의 base64 는 무효다.
+						캐시를 비워야 apply(true) 이후 sync() 가 새 맵을 그린다.
+					*/
+					window.MapGen.tiles = null
+					window.MapGen.dataURL = ""
+					window.MapGen.paintedKey = ""
+					window.MapGen.colorKey = -1
 					window.MapGen.apply(true)
+					if(window.MapGen.sync){
+						window.MapGen.sync()
+					}
 				}
 				try{
 					delete window.current.axis

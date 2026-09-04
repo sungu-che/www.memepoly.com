@@ -710,10 +710,40 @@ window.RoomTrim = function(rows, key, value){
 			}
 		}
 	}
-
 	return rows.filter(function( row ) {
 		return row !== undefined;
 	})
+}
+/*
+	개발 Part 16 (마이룸 퍼즐)
+	서버 room.js 의 puzzle 분기는 항목을 JSON 문자열로 기대한다.
+	OAuth3.fetch 가 form-encoded 로 보내면
+	객체는 "[object Object]" 로 뭉개져 파싱이 실패한다.
+	여기서 미리 문자열로 만들어 전송 방식과 무관하게 통과시킨다.
+	서버도 객체/문자열 양쪽을 받도록 고쳤으므로 이중 안전장치다.
+	  입력 : [{ id, emoji, hash, x, z }, ...]
+	  출력 : ['{"id":"", ...}', ...]
+*/
+window.RoomPuzzlePayload = function(list){
+	var out = []
+	if(!list || !list.length){
+		return out
+	}
+	for(var i = 0; i < list.length; i++){
+		var item = list[i]
+		if(!item){
+			continue
+		}
+		if(typeof item === "string"){
+			out.push(item)
+			continue
+		}
+		try{
+			out.push(JSON.stringify(item))
+		}catch(err){
+		}
+	}
+	return out
 }
 
 window.RoomEmoji = function(emoji, local){
@@ -823,6 +853,21 @@ window.RoomCallback = async function(resp){
 		if(window.MapGen){ window.MapGen.apply() }
 	}catch(err){
 		console.log("mapgen err",err);
+	}
+	/*
+		개발 Part 16 (미니맵)
+		마이룸도 보드와 동일하게
+		voronoi 타일을 2D 로 평면화한 base64 를 #map img[src] 에 넣는다.
+		룸은 MapGen.target() 이 room:{owner} 키를 돌려주므로
+		소유자 해시로 생성된 섬이 그려진다.
+		이미 만들어져 있으면 문자열 비교 1 회로 끝난다.
+	*/
+	try{
+		if(window.MapGen && window.MapGen.sync){
+			window.MapGen.sync()
+		}
+	}catch(err){
+		console.log("map thumb err", err);
 	}
 	/*
 		개발 Part 14 (검수) - E6
@@ -5629,14 +5674,17 @@ window.RoomInit = function(cookies){
 								}else if($this.hasClass("Mine")){
 									body.emoji = player.emoji
 									body.cc = "puzzle"
-									body.puzzles = [{
+									/*
+										개발 Part 16 (마이룸 퍼즐)
+										서버가 JSON 문자열 항목을 기대하므로 미리 직렬화한다.
+									*/
+									body.puzzles = window.RoomPuzzlePayload([{
 										id : "",
 										emoji : "💣",
 										hash : player.hash,
 										x : player.x,
 										z : player.z
-									}]
-
+									}])
 								}else if($this.hasClass("Chord")){
 									body.cc = "chord"
 								}else if($this.hasClass("Fire")){
@@ -6385,8 +6433,17 @@ window.RoomInit = function(cookies){
 								}
 
 								if(body.puzzles.length){
+									if(typeof piece.emoji == "undefined" && typeof piece.value != "undefined"){
+										/*
+											개발 Part 16 (마이룸 퍼즐)
+											빙고가 성립한 경로에서는 piece 가 value 를 유지한 채였다.
+											아래 프리뷰 타일이 value:undefined 로 그려져
+											조각이 잠깐 비어 보였다.
+										*/
+										piece.emoji = piece.value + ""
+										delete piece.value
+									}
 									var _assets = window.assets;
-
 									_assets.push({
 										id : "",
 										hash : piece.hash,
@@ -6397,17 +6454,22 @@ window.RoomInit = function(cookies){
 										y : 0,
 										z : piece.z
 									})
-
 									// var assets_ = JSON.stringify(_assets)
-
 									window.assets.set(_assets)
 								}else if(body.puzzles.length == 0){
 									piece.emoji = piece.value+""
-
 									delete piece.value
 									
 									body.puzzles = [piece]
 								}
+								/*
+									개발 Part 16 (마이룸 퍼즐)
+									전송 직전에 항목을 JSON 문자열로 직렬화한다.
+									서버 room.js 의 puzzle 분기가 문자열을 파싱하도록 되어 있어
+									객체를 그대로 보내면 파싱 실패로 배열이 통째로 비워졌다.
+									(오픈 타일에서 이모지를 골라도 기록되지 않던 원인)
+								*/
+								body.puzzles = window.RoomPuzzlePayload(body.puzzles)
 
 								if(type == "emoji"){
 									if(emoji == "😎"){													
@@ -7304,7 +7366,19 @@ window.RoomHashChange = function(e){
 	window.MapReset()
 	if(window.MapGen){
 		window.MapGen.ready = false
+		/*
+			개발 Part 16 (미니맵)
+			룸이 바뀌면 이전 섬의 base64 는 무효다.
+			캐시를 비워야 apply(true) 이후 sync() 가 새 섬을 그린다.
+		*/
+		window.MapGen.tiles = null
+		window.MapGen.dataURL = ""
+		window.MapGen.paintedKey = ""
+		window.MapGen.colorKey = -1
 		window.MapGen.apply(true)
+		if(window.MapGen.sync){
+			window.MapGen.sync()
+		}
 	}
 	if(window.FieldsSync){
 		window.FieldsSync(true)

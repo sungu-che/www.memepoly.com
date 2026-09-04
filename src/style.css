@@ -616,6 +616,7 @@ emojis .deck .players ul li{display: inline-block;}
 
 .emoji_asset .metamask img{position: absolute; left: 0; right: 0; top: -0.5em; margin: 0 auto; padding: 0;}
 
+emojis .tab_content .deck>div{display: inline-block;}
 emojis .tab_content .deck .emoji_asset[emoji="notifications"]{display: none;}
 /*.emoji_asset.playing:before{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; border-radius: 50%; width: 10px; height: 10px; background-color: #fff;}*/
 
@@ -2215,8 +2216,12 @@ body[stage="lobby"] form.message{opacity: 0 !important; pointer-events: none !im
 #lobby .keys .list li{display: inline-block; margin: 0.2em; padding: 0.4em; border-radius: 0.6em; background-color: #ffffff1f;}
 #lobby .keys .list li i{font-size: 1.6em;}
 #lobby .actions{}
+#lobby .actions .reason{margin: 0 auto 1.2em; max-width: 340px; text-align: center;}
+#lobby .actions .reason .head{display: block; margin-bottom: 0.5em; font-size: 0.95em; font-weight: 900; letter-spacing: 1px; color: #ff6b6b;}
+#lobby .actions .reason .body{display: block; line-height: 1.5; font-size: 0.8em; color: #ffffff99;}
 #lobby .actions .btn{display: block; margin: 0 auto 0.8em; border-radius: 1em; max-width: 340px; height: 4em; line-height: 4em; font-weight: 900; cursor: pointer;}
 #lobby .actions .btn.raid{background-color: #fde030; color: #000;}
+#lobby .actions .btn.raid.disabled{display: none !important;}
 #lobby .actions .btn.stash{border: 1px solid #ffffff55; color: #fff;}
 body[stage="raid"] #raid{opacity: 1; pointer-events: initial;}
 #raid{position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 11114; background-color: #000; opacity: 0; pointer-events: none; transition-duration: 0.4s; -webkit-transition-duration: 0.4s;}

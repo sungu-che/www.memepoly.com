@@ -83,7 +83,19 @@
 		window.MatchApply()
 		if(window.MapGen){
 			window.MapGen.ready = false
+			/*
+				개발 Part 16 (미니맵)
+				매치가 바뀌면 섬 형태가 바뀐다.
+				평면화 base64 캐시를 비워 새 맵으로 다시 그린다.
+			*/
+			window.MapGen.tiles = null
+			window.MapGen.dataURL = ""
+			window.MapGen.paintedKey = ""
+			window.MapGen.colorKey = -1
 			window.MapGen.apply(true)
+			if(window.MapGen.sync){
+				window.MapGen.sync()
+			}
 		}
 		try{
 			if(window.FieldsCache){
