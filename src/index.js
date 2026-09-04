@@ -4,7 +4,16 @@ var time = {
 	zone : new Date().getTimezoneOffset()
 }
 var offset = -540
-
+/*
+	개발 Part 17 (스폰)
+	최초 진입 / 매치 전환 / 포털 이동 직후에는 좌표가 확정되기 전이라
+	  current 메쉬  (1.5, 0, 1.5)
+	  보드 좌표계    x -49.5 ~ 49.5 / z -99.5 ~ -0.5
+	즉 장외(바다)에서 시작해 Player.jsx 의 lerp 로 목적지까지 기어갔다.
+	Snap 이 0 보다 크면 그 프레임 수만큼 lerp 를 건너뛰고 즉시 붙인다.
+	(카메라는 Experience.jsx, 캐릭터는 Player.jsx 가 읽는다)
+*/
+window.Snap = 0
 if(typeof window.setFrameloop == "undefined"){
 	window.frameloop = "never"
 	window.setFrameloop = function(value){
@@ -167,15 +176,46 @@ window.CanFreeMove = function(){
 	해안 링 배열이며, 좌표 키("x:z")로도 접근된다.
 	서버 isEdgeField 와 같은 기준이다.
 */
-window.IsEdge = function(_x, _z){
+/*
+	개발 Part 18 (Edge 판정)
+	주사위 경로(링) 판정의 단일 원천을 프론트로 확정한다.
+	근거
+	  링 회전(progress splice), 다음 칸 계산(window.Roll), 이동 허용(CanFreeMove),
+	  주사위 노출(CanRollDice) 이 전부 프론트의 window.fields 를 본다.
+	  서버 fields 는 board_tiles(ring_index) 기반이라 같은 값이어야 하지만,
+	  판정 주체가 둘이면 한쪽만 어긋나도 "굴릴 수 있는데 못 굴리는" 상태가 된다.
+	  그래서 프론트가 판정하고, 그 결과를 query.edge 로 서버에 실어 보낸다.
+	EdgeReady()
+	  window.fields 가 진짜 링(coastRing)인지 확인한다.
+	  최초 진입에는 FieldsSerpentine(전 좌표 격자)이 들어오므로
+	  이때 IsEdge 가 true 를 남발하면 "어디서나 주사위" 가 된다.
+	EdgeField()
+	  링 칸 객체를 그대로 돌려준다. gate / jail / item 판정에 쓴다.
+*/
+window.EdgeReady = function(){
 	try{
-		if(!window.fields){
+		var f = window.fields
+		if(!f || !f.length){
 			return false
 		}
-		return window.fields[(_x * 1) + ":" + (_z * 1)] ? true : false
+		return f.ring ? true : false
 	}catch(err){
 		return false
 	}
+}
+window.EdgeField = function(_x, _z){
+	try{
+		if(!window.EdgeReady()){
+			return null
+		}
+		var f = window.fields[(_x * 1) + ":" + (_z * 1)]
+		return f ? f : null
+	}catch(err){
+		return null
+	}
+}
+window.IsEdge = function(_x, _z){
+	return window.EdgeField(_x, _z) ? true : false
 }
 /*
 	개발 Part 15 (규칙 R3)
@@ -217,6 +257,70 @@ window.BiomeAt = function(_x, _z){
 	}catch(err){
 	}
 	return ""
+}
+/*
+	개발 Part 17 (규칙 R6)
+	목표 좌표로 들어갈 수 있는가.
+	CanFreeMove() 는 "지금 자유 이동이 가능한가"(상태 판정)이고
+	CanMoveTo() 는 "그 칸에 들어가도 되는가"(좌표 판정)이다. 둘은 다르다.
+	규칙
+	  UCAV  링(edge) 진입 금지. 내륙 전용 유닛이다.
+	        링은 주사위 경로이자 안전지대이므로 드론이 올라오면
+	        서버가 되돌려 보내 좌표가 튄다. 애초에 못 들어가게 막는다.
+	  그 외 제한 없음.
+*/
+window.CanMoveTo = function(_x, _z){
+	var cookies = window.cookies
+	if(!cookies){
+		return false
+	}
+	if(cookies.role == "UCAV" && cookies.enter){
+		if(window.IsEdge(_x, _z)){
+			return false
+		}
+	}
+	return true
+}
+/*
+	개발 Part 17 (식량)
+	파밍한 음식 / 음료를 먹을 수 있는지 판정한다.
+	장비 소모품(🧪)은 typeof_equipment 가 담당하므로 여기서는 제외한다.
+	회복량은 서버 index.js 의 FOOD_HEAL 과 동일한 표를 쓴다.
+	(프론트는 "먹을 수 있는가 / 만피인가" 만 보고, 실제 회복은 서버가 확정한다)
+*/
+window.FoodSubgroups = [
+	"food-fruit", "food-vegetable", "food-marine",
+	"drink", "food-sweet",
+	"food-prepared", "food-asian"
+]
+window.typeof_food = function(icon){
+	if(!icon){
+		return false
+	}
+	var _items = window.items ? window.items : (typeof items != "undefined" ? items : [])
+	for(var i = 0; i < _items.length; i++){
+		var item = _items[i]
+		if(item.char == icon){
+			if(window.FoodSubgroups.indexOf(item.subgroup) > -1){
+				return item
+			}
+			return false
+		}
+	}
+	return false
+}
+window.FoodHeal = function(icon){
+	var item = window.typeof_food(icon)
+	if(!item){
+		return 0
+	}
+	if(item.subgroup == "food-prepared" || item.subgroup == "food-asian"){
+		return 3
+	}
+	if(item.subgroup == "drink" || item.subgroup == "food-sweet"){
+		return 2
+	}
+	return 1
 }
 /*
 	개발 Part 14 (검수) - G2
@@ -370,9 +474,27 @@ window.Callback = async function(resp){
 		console.log("state apply err", err)
 	}
 	var mode = window.Mode(_cookies)
-
 	$("body").attr("world", mode)
-
+	/*
+		개발 Part 18 (HUD)
+		#flag(레드/블루 깃발 카운터)는 보드게임 전용 지표다.
+		현행 문제
+		  BoardCallback 만 $("#flag ."+team).addClass("on") 을 하고
+		  룸으로 넘어갈 때 해제하는 코드가 어디에도 없었다.
+		  그래서 마이룸에서도 카운터가 그대로 떠 있었다.
+		display 를 빈 문자열로 되돌리는 이유
+		  .show() 는 display:block 을 강제해 CSS 의 flex 레이아웃을 깬다.
+		  인라인 스타일만 지워 원래 CSS 값으로 복귀시킨다.
+	*/
+	try{
+		if(mode == "room"){
+			$("#flag").removeClass("on").css("display", "none")
+			$("#flag .red, #flag .blue").removeClass("on")
+		}else{
+			$("#flag").css("display", "")
+		}
+	}catch(err){
+	}
 	try{
 		if(window.setEffect){
 			if(window.effect != (mode == "room")){
@@ -380,14 +502,11 @@ window.Callback = async function(resp){
 			}
 		}
 	}catch(err){
-
 	}
-
 	if(mode == "room"){
 		if(window.RoomCallback){
 			return await window.RoomCallback(resp)
 		}
-
 		return
 	}
 
@@ -458,15 +577,18 @@ window.Chat = function(flow, date){
 
 window.onhashchange = function(e){
 	var mode = window.Mode()
-
 	$("body").attr("world", mode)
-
+	/*
+		개발 Part 17 (스폰)
+		보드 <-> 마이룸 / 포털 이동은 좌표가 통째로 바뀐다.
+		lerp 로 기어가면 지도를 가로질러 날아가는 연출이 된다.
+	*/
+	window.Snap = 8
 	try{
 		if(window.RolePanel){
 			window.RolePanel.close()
 		}
 	}catch(err){
-
 	}
 
 	$("#myroom").removeClass("on")
@@ -1707,7 +1829,6 @@ OAuth3.on("ready", function(e){
 		}
 
 		var dice = cookies.dice * 1
-
 		var query = {
 			dice : dice != 0 ? dice : 0,
 			href : window.location.href,
@@ -1717,13 +1838,20 @@ OAuth3.on("ready", function(e){
 			y : player.y,
 			z : player.z
 		}
-
 		var _biome = window.BiomeAt(player.x, player.z)
-
 		if(_biome){
 			query.biome = _biome
 		}
-
+		/*
+			개발 Part 18 (Edge 판정)
+			링 판정 주체를 프론트로 통일한다.
+			서버는 본인 좌표(query.x / query.z)와 일치할 때만 이 값을 채택하고,
+			그 외 좌표는 자기 fields(board_tiles ring)로 판정한다.
+			링이 아직 확정되지 않았으면 아예 보내지 않아 서버 판정에 맡긴다.
+		*/
+		if(window.EdgeReady && window.EdgeReady()){
+			query.edge = window.IsEdge(player.x, player.z) ? 1 : 0
+		}
 		if(!body.emoji){
 			body.emoji = window.emojis.self
 		}
@@ -2478,10 +2606,14 @@ OAuth3.on("ready", function(e){
 					if(window.current){
 						var _cur = window.current.current.position
 						var _cur_biome = window.map.biomes[`${_cur.x}:${_cur.z}`]
-
 						if(!window.current.axis || !_cur_biome){
 							window.current.axis = true
-
+							/*
+								개발 Part 17 (스폰)
+								여기가 "서버가 준 좌표를 처음 반영하는 지점" 이다.
+								이 순간 캐릭터와 카메라를 lerp 없이 즉시 붙인다.
+							*/
+							window.Snap = 8
 							biomes.x = window.current.current.position.x = window.cursor.current.position.x = axis.x
 							biomes.z = window.current.current.position.z = window.cursor.current.position.z = axis.z
 
@@ -2541,17 +2673,23 @@ OAuth3.on("ready", function(e){
 							if(typeof_item(asset.emoji)){
 								asset.address = ethers.hashMessage(asset.emoji)
 								asset.address = ethers.computeAddress(asset.address).toLowerCase()
-
 								var amm = cookies[asset.address]
 								
 								asset.balance = amm.x - amm.y
-
 								var type = ""
-
 								var $asset = $(`#${asset.address}`)
-
 								if($asset.length){
 									type = $asset.attr("type")
+								}
+								/*
+									개발 Part 17 (상점)
+									잔액 버튼(a.hashType.Balance)으로 연 경우
+									window.SwapIntent = "sell" 이 설정된다.
+									행이 처음 그려질 때 기본값을 매도로 둔다.
+									(현행은 항상 "" 라 매번 sell 컬럼을 눌러야 했다)
+								*/
+								if(!type && window.SwapIntent){
+									type = window.SwapIntent
 								}
 
 								after_body += `<li class="item" type="${type}" cnt="${asset.count}" emoji="${asset.emoji}" id="${asset.address}">
@@ -2600,7 +2738,16 @@ OAuth3.on("ready", function(e){
 						$("#swap .submit input").val("")
 					}
 
-					$(".voronoi .map").css({top : - ((biomes.z * 2) + 100) , left : - ((biomes.x * 2) + 0) })
+					/*
+						개발 Part 17 (미니맵)
+						하드코딩 오프셋(-100 / -0)을 MapFocus 로 대체한다.
+						MapFocus 는 renderFlat 이 쓴 minX / minZ 와 scale 을 그대로 읽어
+						뷰포트 정중앙에 현재 좌표를 맞춘다.
+						MapGen 이 아직 준비되지 않은 첫 프레임에서는 레거시 식으로 폴백한다.
+					*/
+					if(!(window.MapFocus && window.MapFocus(biomes.x, biomes.z))){
+						$(".voronoi .map").css({top : - ((biomes.z * 2) + 100) , left : - ((biomes.x * 2) + 0) })
+					}
 					$(".xyz").text(`${Math.floor(biomes.x)} : ${Math.floor(biomes.z)}`)
 
 
@@ -3660,11 +3807,17 @@ OAuth3.on("ready", function(e){
 									}else if(player_hash.indexOf(_player_hash) > -1){
 										var _maxHp = window.MaxHp[cookies.role ? cookies.role : ""]
 										var _hp = typeof cookies.hp != "undefined" ? cookies.hp : _maxHp
-
+										/*
+											개발 Part 17 (HUD)
+											HP li 를 툴팁에서 제거하고 #capture .rank_toggle 로 옮긴다.
+											a.hashType.Hp 클래스는 그대로이므로
+											아래 BoardInit 의 $this.hasClass("Hp") 위임 핸들러가
+											위치와 무관하게 계속 동작한다.
+										*/
+										if(window.HpBadge){
+											window.HpBadge(_hp, _maxHp)
+										}
 										tooltip_body = `<li>
-											<a class="hashType Hp"><i class="emoji color">❤️</i><span class="cnt">${_hp}/${_maxHp}</span></a>
-										</li>
-										<li>
 											<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>
 										</li>
 										<li>
@@ -4315,11 +4468,13 @@ OAuth3.on("ready", function(e){
 								y : self_player.y,
 								z : self_player.z
 							}
-
 							var _biome = window.BiomeAt(self_player.x, self_player.z)
-
 							if(_biome){
 								query.biome = _biome
+							}
+							/* 개발 Part 18 (Edge 판정) : 폴링에도 프론트 링 판정을 실어 보낸다 */
+							if(window.EdgeReady && window.EdgeReady()){
+								query.edge = window.IsEdge(self_player.x, self_player.z) ? 1 : 0
 							}
 
 							if(assets.length){
@@ -4581,13 +4736,25 @@ OAuth3.on("ready", function(e){
 							}
 						}
 
-						if($this.hasClass("voronoi")){
-							if($this.hasClass("zoom")){
-								$this.removeClass("zoom")
+						/*
+							개발 Part 17 (미니맵)
+							현행은 e.target 이 정확히 .voronoi 일 때만 토글됐다.
+							실제로는 안쪽 img / flags 가 클릭되므로 대부분 먹지 않았다.
+							closest 로 올려 잡고, 줌 후에는 컨테이너 크기가 바뀌므로
+							다음 프레임에 MapFocus 로 다시 중앙 정렬한다.
+						*/
+						var $voronoi = $this.closest(".voronoi")
+						if($voronoi.length){
+							if($voronoi.hasClass("zoom")){
+								$voronoi.removeClass("zoom")
 							}else{
-								$this.addClass("zoom")
+								$voronoi.addClass("zoom")
 							}
-
+							setTimeout(function(){
+								if(window.MapFocus){
+									window.MapFocus()
+								}
+							}, 0)
 							return
 						}
 
@@ -4813,7 +4980,11 @@ OAuth3.on("ready", function(e){
 											$pool.html("")
 											$("#swap .submit input").val("")
 											$('.emoji_asset').removeClass("on")
-											
+											/*
+												개발 Part 17 (상점)
+												잔액 버튼으로 지정한 기본 매도 의도를 해제한다.
+											*/
+											delete window.SwapIntent
 										}
 										// 인벤토리
 									}
@@ -4864,11 +5035,13 @@ OAuth3.on("ready", function(e){
 												y : player.y,
 												z : player.z
 											}
-
 											var _biome = window.BiomeAt(player.x, player.z)
-
 											if(_biome){
 												query.biome = _biome
+											}
+											/* 개발 Part 18 (Edge 판정) : 주사위 / 폭탄 요청에 링 판정 동봉 */
+											if(window.EdgeReady && window.EdgeReady()){
+												query.edge = window.IsEdge(player.x, player.z) ? 1 : 0
 											}
 
 											if(OAuth3.nonces){
@@ -4906,32 +5079,73 @@ OAuth3.on("ready", function(e){
 														return
 													}
 												}
+												/*
+													개발 Part 18 (주사위 게이트 재작성)
+													개발 Part 17 의 오수정을 되돌린다.
+													Part 17 은 !cookies.enter 를 "아직 출격 안 함" 으로만 보고
+													무조건 RolePick() 을 띄웠다.
+													그런데 이 프로젝트의 확정 규칙(CanFreeMove 주석)은
+													  enter 없음 = 보드게임 모드 = 링 위를 주사위로 전진
+													이다. 즉 !enter 는 "주사위를 굴리는 정상 상태" 다.
+													그래서 링 위에서 주사위를 굴리려는 순간마다
+													UCAV 설명 팝업이 떠 버렸다.
+													확정 판정 순서 (전부 프론트 window.fields 기준)
+													  0) 링이 아직 확정되지 않음 -> 아무 것도 하지 않는다
+													  1) 링 위(EDGE)
+													       UCAV 로 출격 중 -> 주사위 불가 안내
+													       게이트(🚪) + 미출격 -> 역할 선택(출격 진입점)
+													       그 외 -> 주사위
+													  2) 링 밖(내륙)
+													       출격 중 -> 폭탄
+													       미출격 -> 역할 선택
+												*/
+												if(window.EdgeReady && !window.EdgeReady()){
+													window.Notice("MAP LOADING", "Board path is not ready", 1800)
+													return
+												}
+												var _edgeField = window.EdgeField
+													? window.EdgeField(player.x, player.z) : null
+												var _isEdgeHere = _edgeField ? true : false
+												if(_isEdgeHere && window.cookies.enter && window.cookies.role == "UCAV"){
+													window.Notice("UCAV", "Drones fight in the field, not on the path", 2200)
+													return
+												}
+												if(_isEdgeHere && !window.cookies.enter && _edgeField.gate){
+													if(window.RolePick){
+														window.RolePick()
+														return
+													}
+												}
+												if(!_isEdgeHere && !window.cookies.enter){
+													if(window.RolePick){
+														window.RolePick()
+														return
+													}
+													window.Notice("NOT ON PATH", "Return to the board path", 2200)
+													return
+												}
 												window.cookies.dice = 0
 												
 												/*
 													개발 Part 15 (규칙 R3 / R5)
-													현행은 b.biome == "BEACH" 일 때만 주사위를 굴렸다.
-													링(edge)이 항상 BEACH 인 것은 아니므로
-													섬 형태에 따라 주사위를 굴릴 수 없는 칸이 생겼다.
-													판정을 링 여부로 바꾼다.
-													  링 위   주사위 이동
-													  링 밖   폭탄 투척
-													또한 규칙 R5 에 따라 링에서는 폭탄을 놓지 않는다.
+													링 위   주사위 이동
+													링 밖   폭탄 투척
+													규칙 R5 에 따라 링에서는 폭탄을 놓지 않는다.
 												*/
-												var _isEdgeHere = window.IsEdge(player.x, player.z)
 												body.cc = ""
 												if(_isEdgeHere){
 													query.dice = 10
 													body.cc = "dice"
+													/*
+														개발 Part 18 (Edge 판정)
+														프론트 판정을 서버가 그대로 채택하도록 실어 보낸다.
+													*/
+													query.edge = 1
 												}else if(window.Biomes[`#${b.biome}`]){
-													if(window.cookies.enter){
-														isBomb = true
-														body.cc = "bomb"
-														if(plant){
-															return
-														}
-													}else{
-														window.Notice("NOT ON PATH", "Return to the board path", 2200)
+													isBomb = true
+													body.cc = "bomb"
+													query.edge = 0
+													if(plant){
 														return
 													}
 												}
@@ -4968,6 +5182,38 @@ OAuth3.on("ready", function(e){
 
 												return
 											}else if($this.hasClass("Balance")){
+												/*
+													개발 Part 17 (상점)
+													현행은 return 뿐이라 아무 동작도 없었다.
+													AMM 상점(#swap)은 존재하지만
+													"인벤토리 칩을 하나씩 토글" 해야만 열렸다.
+													잔액 버튼을 판매 진입점으로 만든다.
+													  1) 보유 아이템 칩을 전부 선택(on) 한다
+													  2) window.SwapIntent = "sell" 로 기본 매도를 지정한다
+													  3) $body[swap] 을 켜 #swap 패널을 노출한다
+													  4) 다음 폴링의 query.assets 로 AMM 시세가 내려오고
+													     BoardCallback 이 #pool 을 sell 로 그린다
+													  5) submit 하면 window.Swap() 이 체결 요청을 보낸다
+													실제 체결은 서버 economyService.swap() 이 담당한다.
+												*/
+												var $sellables = $('emojis .items .emoji_asset[type="item"]')
+												if(!$sellables.length){
+													window.Notice("NO ITEMS", "Nothing to sell", 2000)
+													return
+												}
+												$('tooltip').removeClass("on")
+												$body.removeAttr("tooltip")
+												window.SwapIntent = "sell"
+												$sellables.addClass("on")
+												$body.attr("swap","")
+												$swap.addClass("loading")
+												$status.innerHTML = `<div class="loading">
+													<strong>Loading...</strong>
+												</div>`
+												if(OAuth3.xhr){
+													OAuth3.xhr.abort()
+													delete OAuth3.xhr
+												}
 												return
 											}else if($this.hasClass("Report")){
 												var $form = document.forms.report
@@ -5109,18 +5355,35 @@ OAuth3.on("ready", function(e){
 											if($this.find(".emoji.color").attr("color") == ""){
 												return
 											}
-
+											/*
+												개발 Part 17 (식량)
+												필드에서 나무 / 돌 / 얼음을 폭파해 파밍한 결과물 중
+												음식 계열은 클릭 즉시 섭취해 체력을 회복한다.
+												상점(스왑) 선택 토글보다 먼저 판정해야 한다.
+												그렇지 않으면 먹으려던 클릭이 매도 선택으로 먹힌다.
+											*/
+											if(window.typeof_food && window.typeof_food(emoji)){
+												var _maxHpFood = window.MaxHp[cookies.role ? cookies.role : ""]
+												var _hpFood = typeof cookies.hp != "undefined" ? cookies.hp * 1 : _maxHpFood
+												if(_hpFood >= _maxHpFood){
+													window.Notice("FULL HP", "No damage to heal", 1800)
+													return
+												}
+												$('tooltip').removeClass("on")
+												$body.removeAttr("tooltip")
+												if(window.Consume){
+													window.Consume(emoji)
+												}
+												return
+											}
 											$('tooltip').removeClass("on")
 											$body.removeAttr("tooltip")
 											$this.toggleClass("on")
 											
 											var $assets = $('.emoji_asset.on')
-
 											if($assets.length){
 												$body.attr("swap","")
-
 												$swap.addClass("loading")
-
 												$status.innerHTML = `<div class="loading">
 													<strong>Loading...</strong>
 												</div>`
@@ -5129,8 +5392,8 @@ OAuth3.on("ready", function(e){
 												$pool.html("")
 												$("#swap .submit input").val("")
 												$status.innerHTML = ""
+												delete window.SwapIntent
 											}
-
 											if(OAuth3.xhr){
 												OAuth3.xhr.abort()
 												delete OAuth3.xhr
@@ -5471,20 +5734,24 @@ OAuth3.on("ready", function(e){
 							}
 
 							window.setFrameloop("always")
-
 							var players = window.players
-
 							var player = window.players.self()
 								player.x = window.current.current.position.x + position.x
 								player.z = window.current.current.position.z + position.z
-
 							var b = window.map.biomes[player.x+":"+player.z]
-
 							if(!b){
 								return
 							}
-
 							if(b.water){
+								return
+							}
+							/*
+								개발 Part 17 (규칙 R6)
+								UCAV 는 링(edge) 위로 올라올 수 없다.
+								조이스틱은 클릭 경로와 별개이므로 여기서도 막는다.
+							*/
+							if(window.CanMoveTo && !window.CanMoveTo(player.x, player.z)){
+								window.Notice("FIELD ONLY", "UCAV cannot enter the board path", 2200)
 								return
 							}
 
@@ -5762,24 +6029,33 @@ OAuth3.on("ready", function(e){
 			
 
 			var li = ""
-
 			var emojis = []
-
 			var assets = []
-
 			var player_hash = cookies.hash
-
+			/*
+				개발 Part 17 (덱)
+				mic / videocam(getUserMedia), cast(getDisplayMedia), recommand 는
+				마이룸 전용 기능이다.
+				현행 문제
+				  src/room.js 는 모듈 로드 시점(모드와 무관)에 checkDeviceSupport() 를 돌려
+				  window.emojis 로 mic / videocam 을 unshift 한다.
+				  window.emojis 는 보드/룸 공용 배열이므로
+				  보드 덱에도 그대로 흘러들어와 빈 버튼 3개가 노출됐다.
+				  recommand 는 skip 처리라 <a> 없이 빈 div 만 남아 더 눈에 띄었다.
+				조치
+				  보드 덱 렌더 루프에서 이 method 들을 건너뛴다.
+				  window.emojis 자체는 건드리지 않으므로 마이룸 덱은 그대로다.
+			*/
+			var roomOnly = ["getUserMedia", "getDisplayMedia", "recommand"]
 			for(var i = 0; i < window.emojis.length; i++){
 				var item = window.emojis[i]
-
 				var type = item.type
-
 				var method = item.method ? item.method : ""
-
 				var icon = item.icon
-
 				var className = "emoji color"
-
+				if(roomOnly.indexOf(method) > -1){
+					continue
+				}
 				if(type == "emoji" && icon == "💣"){
 					li += '<div draggable="false" class="emoji_asset items"></div>'
 				}

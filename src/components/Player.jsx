@@ -53,9 +53,8 @@ export function Player({
 		roleEmoji = "🛩"
 	}
 
-	useFrame((e) => {
+	useFrame((e, delta) => {
 		position = window[props_hash].position
-
 		var mode = window.Mode()
 
 		if(cookies){
@@ -98,16 +97,59 @@ export function Player({
 			}
 		}
 
-		if (group.current.position.distanceTo(position) > 0.1 && window.frameloop == "always") {
+		/*
+			개발 Part 18 (이동 보간 재작성)
+			Part 17 의 오수정 3가지를 되돌리고 고친다.
+			1) _gap > 3 순간이동
+			   클릭 자유 이동은 3칸을 쉽게 넘는다.
+			   그래서 필드에서 움직일 때마다 순간이동이 됐다("종종 튄다").
+			   순간이동은 오직 window.Snap(진입 / 매치 전환 / 포털 / 룸 스폰)에서만 한다.
+			2) 프레임 고정 스텝
+			   multiplyScalar(window.speed) 는 프레임당 고정 거리라
+			   프레임레이트가 흔들리면 속도가 그대로 흔들린다.
+			   delta 를 곱해 초당 이동량을 일정하게 만든다.
+			   기준은 60fps 이므로 speed * 60 * delta 가 기존과 동일 속도다.
+			3) lookAt(position) 의 NaN
+			   position 은 Experience 의 self() 경로에서 THREE.Vector3 가 아니라
+			   { x, y, z } 평범한 객체가 들어올 수 있다.
+			   Object3D.lookAt 은 isVector3 가 아니면 set(x, y, z) 로 처리하므로
+			   객체를 넘기면 회전 행렬이 NaN 이 되어 표시가 튀었다.
+			   반드시 3개 스칼라로 넘긴다.
+			frameloop 게이트를 제거한 이유
+			  보간을 "always" 에서만 돌리면 demand 로 내려가는 순간 이동이 멈춘다.
+			  폴링 주기마다 always/demand 가 오가면 그게 곧 끊김으로 보인다.
+			  프레임이 오는 동안에는 항상 목표를 향해 좁힌다.
+		*/
+		var _gap = group.current.position.distanceTo(position)
+		if (window.Snap > 0) {
+			group.current.position.set(position.x, position.y, position.z);
+			return;
+		}
+		if (_gap <= 0.02) {
+			group.current.position.set(position.x, position.y, position.z);
+			return;
+		}
+		var _dt = (typeof delta === "number" && delta > 0 && delta < 0.25) ? delta : (1 / 60);
+		var _speed = window.speed ? window.speed : 0.1;
+		/*
+			먼 거리일수록 가속한다.
+			고정 속도(0.1/frame = 6칸/초)면 50칸 이동에 8초가 걸려
+			"자연스럽다" 가 아니라 "느리다" 가 된다.
+			최대 6배까지만 올려 가까운 거리의 연출은 그대로 둔다.
+		*/
+		var _boost = 1 + Math.min(_gap / 6, 5);
+		var _step = _speed * 60 * _dt * _boost;
+		if (_step >= _gap) {
+			group.current.position.set(position.x, position.y, position.z);
+		} else {
 			const direction = group.current.position
 				.clone()
 				.sub(position)
 				.normalize()
-				.multiplyScalar(window.speed);
-
+				.multiplyScalar(_step);
 			group.current.position.sub(direction);
-			group.current.lookAt(position);
 		}
+		group.current.lookAt(position.x, position.y, position.z);
 	});
 
 

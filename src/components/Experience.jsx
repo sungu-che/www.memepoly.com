@@ -303,29 +303,56 @@ export const Experience = () => {
 
 			if(position){
 				var fov = 1
-
 				if(window.flutter_inappwebview){
 					if(cookies.address){
 						fov = 0.5
 					}
 				}
-
-				if(window.frameloop == "always"){
-					var vec = new THREE.Vector3(position.x,position.y-fov,position.z)
-					e.camera?.lookAt(vec)
-					e.camera.position.lerp(new THREE.Vector3(position.x+far.x,position.y+far.y,position.z+far.z ), 0.2)
+				/*
+					개발 Part 18 (카메라 보간)
+					Part 17 대비 변경점
+					  1) Snap 감소를 여기서 하지 않는다.
+					     이 블록은 cookies / position 이 모두 있을 때만 실행되므로
+					     조건이 어긋나면 Snap 이 영원히 남아 계속 순간이동한다.
+					     감소는 useFrame 최말단으로 옮겨 무조건 1회씩 줄인다.
+					  2) lerp 계수 0.2 는 프레임 고정이라 프레임레이트가 흔들리면
+					     추적 속도가 함께 흔들린다. delta 로 지수 감쇠를 계산한다.
+					     1 - (1 - 0.2)^(delta * 60) 은 60fps 에서 정확히 0.2 다.
+					  3) frameloop 게이트를 제거해 demand 로 내려간 순간에도
+					     들어온 프레임만큼은 카메라가 따라가게 한다.
+				*/
+				var _camTarget = new THREE.Vector3(position.x+far.x, position.y+far.y, position.z+far.z)
+				var _camLook = new THREE.Vector3(position.x, position.y-fov, position.z)
+				if(window.Snap > 0){
+					e.camera.position.copy(_camTarget)
+					e.camera?.lookAt(_camLook)
+				}else{
+					var _cdt = (typeof delta === "number" && delta > 0 && delta < 0.25) ? delta : (1 / 60)
+					var _ct = 1 - Math.pow(0.8, _cdt * 60)
+					if(_ct > 1){ _ct = 1 }
+					e.camera?.lookAt(_camLook)
+					e.camera.position.lerp(_camTarget, _ct)
 				}
-
 				if(OAuth3.interval){
 					if(!OAuth3.after){
 						if(window.frameloop == "demand"){
 							window.setFrameloop("always")
 						}
 					}
-
 					OAuth3.before = position.x
 				}
 			}
+		}
+		/*
+			개발 Part 18 (스냅 카운터)
+			cookies / position 유무와 무관하게 프레임당 정확히 1 씩 줄인다.
+			Part 17 은 이 감소를 if(position) 안에 두어
+			좌표가 아직 없는 프레임에서는 줄지 않았다.
+			그 결과 Snap 이 남아 이후 정상 이동까지 순간이동으로 처리됐다.
+			(사용자가 본 "필드 이동이 최초 순간이동처럼 종종 움직인다" 의 원인 중 하나)
+		*/
+		if(window.Snap > 0){
+			window.Snap = window.Snap - 1
 		}
 	})
 
@@ -406,6 +433,20 @@ export const Experience = () => {
 									}
 									return
 								}
+								/*
+									개발 Part 17 (규칙 R6)
+									좌표 단위 진입 판정.
+									UCAV 는 링(edge) = 주사위 경로에 올라올 수 없다.
+									서버도 되돌려 보내므로 클라이언트에서 먼저 막아
+									좌표가 튀는 현상을 없앤다.
+								*/
+								if(window.CanMoveTo && !window.CanMoveTo(point.x, point.z)){
+									try{
+										window.Notice("FIELD ONLY", "UCAV cannot enter the board path", 2200)
+									}catch(err){
+									}
+									return
+								}
 								if(cookies.hash && players.length){
 									if(player.x == cursor.current.position.x && player.z == cursor.current.position.z){
 									}else{
@@ -436,7 +477,15 @@ export const Experience = () => {
 										$("#capture>.icon").html('')
 
 										// maker
-										$(".map").css({top : - ((point.z * 2) + 100) , left : - ((point.x * 2) + 0) })
+										/*
+											개발 Part 17 (미니맵)
+											하드코딩 오프셋을 MapFocus 로 대체한다.
+											셀렉터도 ".map" 에서 MapGen.wrap() 으로 좁혀
+											문서에 .map 이 여러 개일 때 엉뚱한 노드를 잡던 문제를 없앤다.
+										*/
+										if(!(window.MapFocus && window.MapFocus(point.x, point.z))){
+											$(".map").css({top : - ((point.z * 2) + 100) , left : - ((point.x * 2) + 0) })
+										}
 										$(".xyz").text(`${Math.floor(point.x)} : ${Math.floor(point.z)}`)
 
 										var url = "https://emption.red"

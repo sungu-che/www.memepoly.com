@@ -19,7 +19,16 @@ window.MapGen = {
 	paintedKey : "",
 	colorKey : -1,
 	side : 100,
-	scale : 2
+	scale : 2,
+	/*
+		개발 Part 17 (미니맵)
+		좌표 -> 픽셀 변환에 쓰는 타일 경계 캐시.
+		tilesOf() 는 1만 항목을 순회하므로 폴링마다 부르면 비싸다.
+		매치(또는 룸) 키가 바뀔 때만 다시 계산한다.
+	*/
+	bounds : null,
+	boundsKey : "",
+	focus : null
 }
 window.MapGen.target = function(){
 	var cookies = window.cookies ? window.cookies : {}
@@ -96,6 +105,13 @@ window.MapGen.apply = function(force){
 	window.MapGen.dataURL = ""
 	window.MapGen.paintedKey = ""
 	window.MapGen.colorKey = -1
+	/*
+		개발 Part 17 (미니맵)
+		섬이 바뀌면 minX / minZ 도 바뀐다. 경계 캐시를 함께 비운다.
+	*/
+	window.MapGen.bounds = null
+	window.MapGen.boundsKey = ""
+	window.MapGen.focus = null
 	window.MapGen.__noCanvasWarned = false
 	/*
 		개발 Part 14 (검수) - E8
@@ -337,6 +353,102 @@ window.MapGen.paint = function(list){
 	}
 }
 /*
+	개발 Part 17 (미니맵)
+	평면화 이미지의 타일 경계를 구한다.
+	renderFlat 은 minX / minZ 를 원점으로 잡고 그리므로
+	  픽셀 = ((x - minX) * scale, (z - minZ) * scale)
+	가 된다. 이 값을 모르면 좌표 -> 화면 변환이 불가능하다.
+	현행 문제
+	  index.js 가 top : -((z*2)+100), left : -((x*2)+0) 이라는
+	  하드코딩 상수를 썼다. 섬 크기 / side / scale 이 바뀌면 즉시 어긋난다.
+*/
+window.MapGen.boundsOf = function(){
+	var key = window.MapGen.paintedKey ? window.MapGen.paintedKey : window.MapGen.key
+	if(window.MapGen.bounds && window.MapGen.boundsKey === key){
+		return window.MapGen.bounds
+	}
+	var tiles = window.MapGen.tilesOf()
+	if(!tiles || !tiles.length){
+		return null
+	}
+	var minX = Infinity
+	var minZ = Infinity
+	var maxX = -Infinity
+	var maxZ = -Infinity
+	for(var i = 0; i < tiles.length; i++){
+		var t = tiles[i]
+		if(t.x < minX){ minX = t.x }
+		if(t.x > maxX){ maxX = t.x }
+		if(t.z < minZ){ minZ = t.z }
+		if(t.z > maxZ){ maxZ = t.z }
+	}
+	if(minX === Infinity){
+		return null
+	}
+	var out = {
+		minX : minX,
+		minZ : minZ,
+		maxX : maxX,
+		maxZ : maxZ,
+		width : (maxX - minX + 1) * window.MapGen.scale,
+		height : (maxZ - minZ + 1) * window.MapGen.scale
+	}
+	window.MapGen.bounds = out
+	window.MapGen.boundsKey = key
+	return out
+}
+/*
+	개발 Part 17 (미니맵)
+	현재 좌표가 미니맵 뷰포트 정중앙에 오도록 .map 을 이동시킨다.
+	인자를 생략하면 players.self() 좌표를 쓴다.
+	보드 / 마이룸 양쪽에서 동일하게 쓴다.
+	  보드   BoardCallback 이 폴링마다 호출
+	  마이룸 RoomCallback 이 폴링마다 호출 (현행은 한 번도 호출하지 않았다)
+	  클릭   Experience.onClick / RoomClick
+	  줌     .voronoi 토글 직후 (컨테이너 크기가 바뀌므로 재계산)
+*/
+window.MapFocus = function(x, z){
+	try{
+		var wrap = window.MapGen.wrap()
+		if(!wrap){
+			return false
+		}
+		var bounds = window.MapGen.boundsOf()
+		if(!bounds){
+			return false
+		}
+		var _x = x
+		var _z = z
+		if(typeof _x == "undefined" || typeof _z == "undefined" || isNaN(_x) || isNaN(_z)){
+			try{
+				var p = window.players.self()
+				_x = p.x
+				_z = p.z
+			}catch(err){
+				return false
+			}
+		}
+		_x = _x * 1
+		_z = _z * 1
+		if(isNaN(_x) || isNaN(_z)){
+			return false
+		}
+		var scale = window.MapGen.scale
+		var view = wrap.parentNode ? wrap.parentNode : wrap
+		var vw = view.clientWidth ? view.clientWidth : 200
+		var vh = view.clientHeight ? view.clientHeight : 200
+		var left = Math.round((vw / 2) - ((_x - bounds.minX) * scale))
+		var top = Math.round((vh / 2) - ((_z - bounds.minZ) * scale))
+		wrap.style.left = left + "px"
+		wrap.style.top = top + "px"
+		window.MapGen.focus = { x : _x, z : _z, left : left, top : top }
+		return true
+	}catch(err){
+		console.log("[mapgen] focus err", err)
+		return false
+	}
+}
+/*
 	개발 Part 16 (미니맵)
 	폴링마다 호출해도 안전한 동기화 진입점.
 	  1) 이미 같은 키 / 같은 색상표로 만든 base64 가 있으면 문자열 비교만 하고 끝낸다.
@@ -371,6 +483,15 @@ window.MapGen.sync = function(){
 		var img = window.MapGen.image()
 		if(img && img.src !== window.MapGen.dataURL){
 			img.src = window.MapGen.dataURL
+		}
+		/*
+			개발 Part 17 (미니맵)
+			이미지가 새로 붙은 직후에는 위치가 초기값(0,0)이다.
+			최초 진입 시 "지도가 현재 위치와 맞지 않는" 원인이 여기였다.
+			base64 를 넣은 그 자리에서 바로 현재 좌표로 맞춘다.
+		*/
+		if(window.MapFocus){
+			window.MapFocus()
 		}
 		return window.MapGen.dataURL
 	}catch(err){

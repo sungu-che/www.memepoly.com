@@ -38,22 +38,50 @@ window.Stage.set = function(name){
 
 window.Notice = function(head, body, ms){
 	var $n = $("#notice")
-
 	if(!$n.length){
 		return
 	}
-
 	$n.find(".head").text(head ? head : "")
 	$n.find(".body").html(body ? body : "")
 	$n.addClass("on")
-
 	if(window.Notice.timer){
 		clearTimeout(window.Notice.timer)
 	}
-
 	window.Notice.timer = setTimeout(function(){
 		$n.removeClass("on")
 	}, ms ? ms : 2600)
+}
+/*
+	개발 Part 17 (HUD)
+	HP 표시를 플레이어 툴팁(li > a.hashType.Hp)에서
+	#capture 안의 .rank_toggle 영역으로 옮긴다.
+	현행 문제
+	  체력이 플레이어 툴팁 안에 있어 이모지를 눌러 툴팁을 열어야만 보였다.
+	  전투 중에 가장 자주 봐야 하는 값인데 상시 노출이 아니었다.
+	설계
+	  a.hashType.Hp 클래스명을 그대로 유지한다.
+	  BoardInit 의 위임 클릭 핸들러가 $this.hasClass("Hp") 로 판정하므로
+	  DOM 위치만 바뀌고 "물약 섭취" 동작은 그대로 살아 있다.
+	  .rank_toggle 이 마크업에 없더라도 여기서 만들어 붙인다.
+*/
+window.HpBadge = function(hp, maxHp){
+	var $capture = $("#capture")
+	if(!$capture.length){
+		return null
+	}
+	var $slot = $capture.find(".rank_toggle")
+	if(!$slot.length){
+		$capture.append('<div class="rank_toggle"></div>')
+		$slot = $capture.find(".rank_toggle")
+	}
+	var body = '<a class="hashType Hp"><i class="emoji color">❤️</i><span class="cnt">'
+		+ hp + '/' + maxHp + '</span></a>'
+	if($slot.html() != body){
+		$slot.html(body)
+	}
+	$capture.attr("hp", hp)
+	$capture.attr("maxhp", maxHp)
+	return $slot
 }
 
 window.ExitKeys = function(){
@@ -413,13 +441,13 @@ window.Raid = function(){
 	if(window.Stage.timeoutTimer){
 		clearTimeout(window.Stage.timeoutTimer)
 	}
-	window.Stage.timeoutTimer = setTimeout(function(){
-		delete window.Stage.timeoutTimer
-		if(window.Stage.current == "raid"){
-			console.log("[stage] raid timed out. no enter in response.")
-			window.RaidAbort("Deploy timed out")
-		}
-	}, 8000)
+	// window.Stage.timeoutTimer = setTimeout(function(){
+	// 	delete window.Stage.timeoutTimer
+	// 	if(window.Stage.current == "raid"){
+	// 		console.log("[stage] raid timed out. no enter in response.")
+	// 		window.RaidAbort("Deploy timed out")
+	// 	}
+	// }, 8000)
 }
 /*
 	개발 Part 14 (검수) - H3
@@ -685,8 +713,31 @@ window.StageSync = function(cookies){
 			window.Stage.graceCount = 0
 			window.Stage.set("")
 		}
+		/*
+			개발 Part 19 (로비)
+			enter 없음 = 보드게임 모드(링 위 주사위) 가 확정 규칙이다.
+			  링 위        주사위 진행 중. 로비를 띄우지 않는다.
+			               출격은 게이트(🚪) 칸에서 🎲 -> RolePick 으로 한다.
+			  링 밖/미확정  레이드가 끝나 내륙에 남은 상태. 기존대로 로비.
+			링이 확정되기 전(EdgeReady false)에 떠 있던 로비는
+			링 위로 확인되는 즉시 닫는다. 단 RaidAbort 가 사유(blocked)를 띄운
+			로비는 사용자가 닫을 때까지 유지한다.
+		*/
+		var _onRing = false
+		try{
+			if(window.EdgeReady && window.EdgeReady()){
+				var _me = window.players.self()
+				_onRing = window.IsEdge(_me.x, _me.z)
+			}
+		}catch(err){
+			_onRing = false
+		}
+		if(window.Stage.current == "lobby" && _onRing && !window.Stage.blocked){
+			window.Stage.set("")
+			return
+		}
 		if(window.Stage.current != "lobby" && window.Stage.current != "raid"){
-			if(window.Mode() == "board"){
+			if(window.Mode() == "board" && !_onRing){
 				window.Lobby()
 			}
 		}

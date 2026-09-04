@@ -866,6 +866,15 @@ window.RoomCallback = async function(resp){
 		if(window.MapGen && window.MapGen.sync){
 			window.MapGen.sync()
 		}
+		/*
+			개발 Part 17 (미니맵)
+			현행 마이룸은 .voronoi .map 의 위치를 한 번도 갱신하지 않았다.
+			(BoardCallback 에만 css 이동이 있었다)
+			인자를 생략하면 players.self() 좌표를 쓴다.
+		*/
+		if(window.MapFocus){
+			window.MapFocus()
+		}
 	}catch(err){
 		console.log("map thumb err", err);
 	}
@@ -894,6 +903,12 @@ window.RoomCallback = async function(resp){
 				}
 				if(_sr && _sb){
 					var _sh = cookies.address ? cookies.address : cookies.hash
+					/*
+						개발 Part 18 (스폰)
+						물 위 / 좌표 미확정 상태에서 육지로 재배치하는 지점이다.
+						보간으로 기어가면 룸 전체를 가로지르는 연출이 된다.
+					*/
+					window.Snap = 8
 					window.current.current.position.x = window.cursor.current.position.x = _sr.x
 					window.current.current.position.y = window.cursor.current.position.y = _sb.y + 0.01
 					window.current.current.position.z = window.cursor.current.position.z = _sr.z
@@ -4925,8 +4940,27 @@ window.RoomInit = function(cookies){
 			if(window.Mode() != "room"){
 				return
 			}
-
 			var $this = $(e.target)
+			/*
+				개발 Part 17 (미니맵)
+				마이룸에는 .voronoi 줌 토글 분기 자체가 없었다.
+				(BoardInit 에만 있었고 그마저 e.target 정확 일치라 잘 먹지 않았다)
+				players 유무와 무관한 UI 동작이므로 최상단에서 처리한다.
+			*/
+			var $voronoi = $this.closest(".voronoi")
+			if($voronoi.length){
+				if($voronoi.hasClass("zoom")){
+					$voronoi.removeClass("zoom")
+				}else{
+					$voronoi.addClass("zoom")
+				}
+				setTimeout(function(){
+					if(window.MapFocus){
+						window.MapFocus()
+					}
+				}, 0)
+				return
+			}
 			if(window.players){
 				if(window.players.length){
 					if(cookies.address || cookies.hash){
@@ -7528,6 +7562,11 @@ window.RoomHashChange = function(e){
 		}])
 		window.assets.set([])
 		window.setFrameloop("always")
+		/*
+			개발 Part 18 (스폰)
+			룸이 바뀌면 좌표계가 통째로 갈린다. 즉시 배치한다.
+		*/
+		window.Snap = 8
 		try{
 			window.current.current.position.x = window.cursor.current.position.x = _rp.x
 			window.current.current.position.y = window.cursor.current.position.y = _rp.y + 0.01
