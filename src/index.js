@@ -453,6 +453,14 @@ window.Zoom = function(){
 }
 
 window.Callback = async function(resp){
+	/*
+		개발 Part 22 (룩어헤드 격리)
+		window.response 가 더 이상 저장되지 않으므로
+		null/undefined 가 들어올 수 있다.
+	*/
+	if(!resp || !resp.body || !resp.body.cookies){
+		return
+	}
 	var _cookies
 	try{
 		_cookies = JSON.parse(resp.body.cookies)
@@ -2063,359 +2071,107 @@ OAuth3.on("ready", function(e){
 
 		window.Roll = function(biomes){
 			try{
-				var dice = window.cookies.dice  * 1
+				var dice = window.cookies.dice * 1
 				if(dice > 0){
 					if(typeof OAuth3.interval == "undefined"){
 						/*
-							개발 Part 15 (규칙 R3)
-							링(edge) 순서대로 한 칸 전진한다.
-							현행은 주변 BEACH 타일의 neighbors / corners 를 뒤져
-							다음 칸을 "추정" 했다. 섬 형태에 따라 역주행하거나
-							같은 칸을 반복하는 문제가 있었다.
-							window.fields 는 FieldsCoastRing 이 만든 순서 배열이고
-							각 원소에 index(= ring_index)가 들어 있다.
-							그 index 를 1 증가시키는 것이 곧 정확한 다음 칸이다.
-							아래 레거시 탐색 로직은 window.fields 가 아직 없을 때만
-							폴백으로 실행된다.
+							개발 Part 22 (룩어헤드 격리)
+							스냅샷이 없으면 주사위를 즉시 소진하고 폴링 재개.
+							(링 미확정 / FieldsSerpentine 폴백 상태)
 						*/
-						var _ring = window.fields
-						if(_ring && _ring.length){
-							var _cur = null
-							try{
-								_cur = _ring[(window.current.current.position.x) + ":" + (window.current.current.position.z)]
-							}catch(err){
-								_cur = null
-							}
-							if(!_cur){
-								_cur = _ring[(biomes.x) + ":" + (biomes.z)]
-							}
-							if(_cur && typeof _cur.index !== "undefined"){
-								var _nextIdx = (_cur.index * 1) + 1
-								if(_nextIdx >= _ring.length){
-									_nextIdx = 0
-								}
-								var _next = _ring[_nextIdx]
-								if(_next){
-									var _ny = typeof _next.y !== "undefined" ? _next.y : 0
-									try{
-										var _nb = window.map.biomes[_next.x + ":" + _next.z]
-										if(_nb && typeof _nb.y !== "undefined"){
-											_ny = _nb.y
-										}
-									}catch(err){
-									}
-									window.current.current.position.x = window.cursor.current.position.x = biomes.x = _next.x
-									window.current.current.position.y = window.cursor.current.position.y = biomes.y = _ny + 0.01
-									window.current.current.position.z = window.cursor.current.position.z = biomes.z = _next.z
-									var _selfHash = window.cookies.address ? window.cookies.address : window.cookies.hash
-									if(window[_selfHash] && window[_selfHash].position){
-										window[_selfHash].position.x = _next.x
-										window[_selfHash].position.y = _ny + 0.5
-										window[_selfHash].position.z = _next.z
-									}
-								}
-							}
-							window.cookies.dice = dice - 1
+						if(!window.Roll.snap || !window.Roll.snap.length || !window.Roll.snap.ring){
+							window.cookies.dice = 0
+							clearInterval(window.Roll.ing)
+							delete window.Roll.ing
+							window.Roll.snap = null
+							window.Roll.snapKeys = null
+							window.Roll.prevX = null
+							window.Roll.prevZ = null
 							window.setFrameloop("always")
+							if(typeof window.Poll.ing == "undefined"){
+								window.Poll.ing = setInterval(window.Poll, 600)
+							}
 							return
 						}
-						var _size = 2
-						var _fields = []
-						var reverse = false
 
-						biomes.forEach(function(b, i){
-							if(
-								(biomes.x - _size < b.x && biomes.x + _size > b.x) &&
-								(biomes.z - _size < b.z && biomes.z + _size > b.z)
-							){
-								if(b.biome == "BEACH"){
-									_fields.push(b)
+						var _cx = window.current.current.position.x * 1
+						var _cz = window.current.current.position.z * 1
 
-									if(biomes.x == b.x && biomes.z == b.z){
-										_fields.current = b
-									}
+						/*
+							부동소수점 오차 흡수: 0.5 그리드 스냅.
+							좌표가 항상 x.5 단위이므로 *2 후 round 후 /2.
+						*/
+						_cx = Math.round(_cx * 2) / 2
+						_cz = Math.round(_cz * 2) / 2
+
+						var _px = window.Roll.prevX
+						var _pz = window.Roll.prevZ
+
+						/*
+							룩어헤드 기반으로 다음 칸 결정.
+							window.RollNext 는 Part 1 에서 정의됨.
+							파라미터로 이전 위치를 전달해 전역 오염 방지.
+						*/
+						var _next = window.RollNext(_cx, _cz, _px, _pz)
+
+						if(_next){
+							var _ny = _next.y
+							try{
+								var _nb = window.map.biomes[_next.x + ":" + _next.z]
+								if(_nb && typeof _nb.y !== "undefined"){
+									_ny = _nb.y * 1
 								}
+							}catch(err){}
+
+							/* 이전 위치 갱신 (전역이 아니라 window.Roll 하위) */
+							window.Roll.prevX = _cx
+							window.Roll.prevZ = _cz
+
+							window.current.current.position.x = window.cursor.current.position.x = biomes.x = _next.x
+							window.current.current.position.y = window.cursor.current.position.y = biomes.y = _ny + 0.01
+							window.current.current.position.z = window.cursor.current.position.z = biomes.z = _next.z
+
+							var _selfHash = window.cookies.address ? window.cookies.address : window.cookies.hash
+							if(window[_selfHash] && window[_selfHash].position){
+								window[_selfHash].position.x = _next.x
+								window[_selfHash].position.y = _ny + 0.5
+								window[_selfHash].position.z = _next.z
 							}
-						})
-
-						_fields.sort(function (a, b) {
-							return b.x - a.x || a.z - b.z;
-						});
-
-						if(_fields.current){
-							_fields.forEach(function(b,i){
-								if(_fields.current.x == b.x && _fields.current.z == b.z){
-									_fields.index = i
-								}
-							})
-
-							_fields.next = _fields[_fields.index+1]
-
-							if(!_fields.next){
-								_fields.next = _fields[_fields.index-1]
-							}
-
-							if(_fields.next){
-								var corners_coast_left = false
-								var corners_coast_right = false
-								var corners_coast = 0
-								var next_coast = 0
-
-								var current_ocean = 0
-								var next_ocean = 0
-
-								var currentIdx, nextIdx = 0
-
-								_fields.next.neighbors.forEach(function(field, i){
-									if(field.ocean){
-										next_ocean++
-									}
-									
-									if(field.index == _fields.current.index){
-										currentIdx = i
-									}
-								})
-
-
-
-								_fields.next.corners.forEach(function(field, i){
-									if(field.coast){
-										next_coast++
-									}
-								})
-
-								_fields.current.neighbors.forEach(function(field, i){
-									if(field.ocean){
-										current_ocean++
-									}
-									if(field.index == _fields.next.index){
-										nextIdx = i
-									}
-								})
-
-								if(_fields.current.corners[0].coast){
-									corners_coast_left = true
-								}
-
-								if(_fields.current.corners[1].coast){
-									corners_coast_right = true
-								}
-
-								_fields.current.corners.forEach(function(field, i){
-									if(field.coast){
-										corners_coast++
-									}
-								})
-
-								if(typeof currentIdx != "undefined" || typeof nextIdx != "undefined"){
-									var diff = currentIdx - nextIdx
-
-									if(diff == 1){
-										if(_fields.next.neighbors[nextIdx]){
-											if(_fields.next.neighbors[nextIdx+1]){
-												if(_fields.next.neighbors[nextIdx+1].ocean){
-													reverse = true
-												}
-											}
-										}
-
-										if(_fields.current.neighbors[currentIdx]){
-											if(_fields.current.neighbors[currentIdx+1]){
-												if(_fields.current.neighbors[currentIdx+1].ocean){
-													reverse = true
-												}
-											}
-										}
-									}else{
-										var _idx = Math.sqrt(Math.pow(diff, 2))
-
-										if(_fields.next.neighbors[_idx]){
-											if(_fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean){
-												reverse = true
-											}else if(!_fields.next.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean){
-												reverse = true
-											}else if(!_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){
-												reverse = true
-											}
-										}
-
-										if(_fields.current.neighbors[_idx]){
-											if((_fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && _fields.current.neighbors[_idx].ocean) || (_fields.next.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && _fields.current.neighbors[_idx].ocean)){
-												reverse = true
-
-											}else{
-												if(next_ocean == current_ocean){
-													reverse = false
-												}else if((corners_coast < 2 && _fields.length <= 3) || (corners_coast >= 2 && _fields.length > 3)){
-													reverse = false
-												}
-
-												if(current_ocean >= 2 && next_ocean >= 2){
-													if((corners_coast >= _fields.length || _fields.current.x > 0) && _fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && !_fields.current.neighbors[_idx].ocean){
-														reverse = true
-													}else{
-														reverse = false
-													}
-												}else if(corners_coast < 2 && _fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && !_fields.current.neighbors[_idx].ocean){
-													reverse = false
-												}
-												if(!_fields.next.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].coast && !_fields.current.neighbors[_idx].ocean){
-													if(_fields.current.z < 0){
-														reverse = false
-													}
-												}else if(_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){
-													if(corners_coast == current_ocean){
-														if(corners_coast_left && corners_coast_right){
-															reverse = false
-														}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
-															reverse = true
-														}
-													}else if(corners_coast > current_ocean){
-														if(corners_coast_left && corners_coast_right){
-															reverse = false
-															var last = _fields.splice(_fields.length - 1, 1)
-															_fields.splice(_fields.index + 1, 0, last[0])
-														}
-													}
-													
-												}else if(!_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){
-													if(corners_coast_left && corners_coast_right){
-														reverse = false
-													}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
-														reverse = true
-													}else{
-														reverse = false
-													}
-												}
-
-												if(corners_coast == current_ocean && _fields.next.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && !_fields.current.neighbors[_idx].ocean){
-													if(corners_coast_left && corners_coast_right){
-														reverse = false
-													}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
-														reverse = true
-													}else{
-														reverse = false
-													}
-												}
-											}
-										}
-
-									}
-								}else{
-									reverse = true
-								}
-							}else{
-								reverse = true
-							}
-
-							_fields.forEach(function(b,i){
-								if(biomes.x == b.x && biomes.z == b.z){
-									_fields.index = i
-								}
-								
-							})
-
-							if(_fields.index == 0){
-								if((_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean)){
-									if(current_ocean >= 2){
-										reverse = true
-									}else{
-										reverse = false
-									}
-								}else if(reverse && _fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && _fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){
-									reverse = false
-								}
-
-								if(corners_coast_left && corners_coast_right){
-									reverse = true
-								}else if(corners_coast_right || (!corners_coast_left && !corners_coast_right)){
-									reverse = true
-								}
-
-								_fields.splice(_fields.index, 0, _fields.current)
-								_fields.splice(0, 1)
-								var last = _fields.splice(_fields.index - 1, 1)
-								_fields.unshift(last[0])
-							}else if(_fields.index == (_fields.length - 1)){
-								if(_fields.next){
-									if(!_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean){	
-										reverse = true
-									}
-
-									_fields.splice(_fields.index - 1, 0, _fields.current)
-									_fields.splice((_fields.length - 1), 1)
-								}else{
-									_fields.splice(_fields.index - 2, 0, _fields.current)
-									_fields.splice((_fields.length - 2), 1)
-								}
-
-							}else if(reverse){
-								try{
-									if(corners_coast < next_coast && _fields.next.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && _fields.current.neighbors[_idx].coast && _fields.current.neighbors[_idx].ocean){
-										var last = _fields.splice(_fields.index - 1, 1)
-										_fields.splice(_fields.index + 1, 0, last[0])
-									}
-								}catch(err){
-
-								}
-							}
-						}
-
-						if(reverse){
-							_fields = _fields.reverse()	
-						}
-
-						_fields.forEach(function(b,i){
-							if(biomes.x == b.x && biomes.z == b.z){
-								_fields.index = i
-							}
-						})
-
-						if(typeof _fields.index != "undefined"){
-							var field = _fields[_fields.index+1]
-
-							if(!field){
-								var field = _fields[_fields.index]
-
-								if(_fields.index == 0){
-									if(current_ocean >= 2 && (_fields.next.neighbors[_idx].coast && _fields.current.neighbors[_idx].coast && !_fields.next.neighbors[_idx].ocean && !_fields.current.neighbors[_idx].ocean)){
-										reverse = true
-									}
-									_fields.splice(_fields.index, 0, _fields.current)
-									_fields.splice(0, 1)
-									var last = _fields.splice(_fields.index - 1, 1)
-									_fields.splice(0, 0, last[0])
-								}else if(_fields.index == (_fields.length - 1)){
-									if(_fields.next){
-										_fields.splice(1, 1, _fields.current)
-										_fields.splice((_fields.length + 1), 1)
-									}else{
-										_fields.splice(_fields.index - 1, 0, _fields.current)
-										_fields.splice((_fields.length - 1), 1)
-									}
-
-									_fields.forEach(function(b,i){
-										if(biomes.x == b.x && biomes.z == b.z){
-											_fields.index = i
-										}
-									})
-
-									field = _fields[_fields.index+1]
-								}
-							}
-							
-							window.current.current.position.x = window.cursor.current.position.x = biomes.x = field.x
-							window.current.current.position.y = window.cursor.current.position.y = biomes.y = field.y + 0.01
-							window.current.current.position.z = window.cursor.current.position.z = biomes.z = field.z
 						}
 
 						window.cookies.dice = dice - 1
+						window.setFrameloop("always")
+						return
 					}
 				}else{
-					window.Callback(window.response)
+					/*
+						개발 Part 22 (룩어헤드 격리)
+						주사위 소진 시:
+						1) 인터벌 정리
+						2) 스냅샷 해제
+						3) window.Callback(window.response) 재호출 금지
+						4) 폴링 재개 → 서버 확정 좌표 수신
+					*/
+					clearInterval(window.Roll.ing)
+					delete window.Roll.ing
+					window.Roll.snap = null
+					window.Roll.snapKeys = null
+					window.Roll.prevX = null
+					window.Roll.prevZ = null
+					window.cookies.dice = 0
+					window.setFrameloop("always")
+					if(typeof window.Poll.ing == "undefined"){
+						window.Poll.ing = setInterval(window.Poll, 600)
+					}
 				}
 			}catch(err){
-				console.log("err",err);
+				console.log("Roll err",err);
+				clearInterval(window.Roll.ing)
+				delete window.Roll.ing
+				window.Roll.snap = null
+				window.Roll.snapKeys = null
+				window.Roll.prevX = null
+				window.Roll.prevZ = null
 			}
 		}
 
@@ -4241,22 +3997,184 @@ OAuth3.on("ready", function(e){
 							window.location.href = OAuth3.host+"/logout"
 						}
 					}else if(dice > 0 && typeof window.Roll.ing == "undefined"){
-						window.response = resp
-
 						clearInterval(window.Poll.ing)
 						delete window.Poll.ing
-
-						window.response = resp
-
+						/*
+							개발 Part 22 (룩어헤드 격리)
+							이전 주사위 인터벌이 남아 있으면 정리한다.
+							window.response 에 원본 응답을 저장하지 않는다.
+							저장하면 dice 소진 후 재처리 경로에서
+							원본 cookies.dice 가 복원되어 링 회전이 반복된다.
+						*/
+						if(typeof window.Roll.ing !== "undefined"){
+							clearInterval(window.Roll.ing)
+							delete window.Roll.ing
+							window.Roll.snap = null
+							window.Roll.prevX = null
+							window.Roll.prevZ = null
+						}
 						if(window.Roll.back){
 							window.Roll.back.options.endNum = dice
 							window.Roll.back.loopCount = 6
 						}
-
 						setTimeout(function(){
 							$('#root player tooltip .slotwrapper ul').removeAttr("style")
 							$('#root player tooltip #dice .num').text(dice)
 
+							/*
+								개발 Part 22 (룩어헤드 격리)
+								주사위 시작 시점에 window.fields 를 통째로 복사한다.
+								요소는 얕은 복사가 아니라 좌표만 복사한 새 객체다.
+								BoardCallback 이 원본을 회전시키거나 좌표 키를 지워도
+								window.Roll.snap 은 변하지 않는다.
+								좌표 키를 문자열로 다시 부여한다.
+							*/
+							var _src = window.fields
+							var _snap = []
+							var _snapKeys = {}
+							if(_src && _src.length){
+								for(var _si = 0; _si < _src.length; _si++){
+									var _orig = _src[_si]
+									if(!_orig){ continue }
+									var _copy = {
+										x : _orig.x * 1,
+										z : _orig.z * 1,
+										y : typeof _orig.y !== "undefined" ? _orig.y * 1 : 0,
+										i : _si
+									}
+									_snap.push(_copy)
+									_snapKeys[_copy.x + ":" + _copy.z] = _si
+								}
+								_snap.ring = true
+							}
+							window.Roll.snap = _snap
+							window.Roll.snapKeys = _snapKeys
+
+							/*
+								개발 Part 22 (룩어헤드 격리)
+								window.RollNext 를 스냅샷 기반으로 재정의한다.
+								파라미터: (현재x, 현재z, 이전x, 이전z)
+								이전 위치를 전역 변수가 아니라 파라미터로 받아
+								인터벌 겹침/예외 시 오염을 차단한다.
+
+								알고리즘:
+								1) 이전→현재 방향 벡터 계산 (정규화)
+								2) 8방향 후보 중 스냅샷에 존재하는 것만 수집
+								   (이전 칸은 제외)
+								3) 각 후보에 대해 최대 LOOKAHEAD 칸까지
+								   가상 시뮬레이션:
+								   - 현재 시뮬레이션 방향과의 코사인 유사도 최대인
+								     다음 칸을 고르고 점수에 감쇠 가중으로 합산
+								   - 막히면 중단
+								4) 총점 최대인 첫 번째 칸을 반환
+								5) 후보가 없으면 스냅샷 순서 index+1 로 폴백
+							*/
+							window.RollNext = function(_cx, _cz, _px, _pz){
+								var LOOKAHEAD = (typeof window.RollLookahead === "number" && window.RollLookahead > 0)
+									? window.RollLookahead : 5
+								var dirs8 = [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]]
+								var _keys = window.Roll.snapKeys
+								var _snapArr = window.Roll.snap
+
+								/* 방향 벡터 */
+								var dirX, dirZ
+								if(_px !== null && _pz !== null && (_px !== _cx || _pz !== _cz)){
+									dirX = (_cx * 1) - (_px * 1)
+									dirZ = (_cz * 1) - (_pz * 1)
+								}else{
+									dirX = 1
+									dirZ = 0
+								}
+								var mag = Math.sqrt(dirX * dirX + dirZ * dirZ)
+								if(mag > 0){ dirX /= mag; dirZ /= mag }
+								else{ dirX = 1; dirZ = 0 }
+
+								var best = null
+								var bestTotal = -Infinity
+
+								/* 8방향 후보 평가 */
+								for(var d = 0; d < dirs8.length; d++){
+									var nx = (_cx * 1) + dirs8[d][0]
+									var nz = (_cz * 1) + dirs8[d][1]
+
+									/* 이전 칸 제외 */
+									if(_px !== null && nx === (_px * 1) && nz === (_pz * 1)){ continue }
+
+									var nKey = nx + ":" + nz
+									if(typeof _keys[nKey] === "undefined"){ continue }
+									var nIdx = _keys[nKey]
+									var nf = _snapArr[nIdx]
+									if(!nf){ continue }
+
+									/* 첫 스텝 방향 */
+									var ndx = dirs8[d][0]
+									var ndz = dirs8[d][1]
+									var nmag = Math.sqrt(ndx * ndx + ndz * ndz)
+									ndx /= nmag
+									ndz /= nmag
+
+									var total = dirX * ndx + dirZ * ndz
+
+									/* 룩어헤드 시뮬레이션 */
+									var sx = nx, sz = nz
+									var spx = _cx, spz = _cz
+									var sdx = ndx, sdz = ndz
+
+									for(var st = 0; st < LOOKAHEAD; st++){
+										var bcos = -Infinity
+										var bdx = 0, bdz = 0, bx = sx, bz = sz
+										for(var dd = 0; dd < dirs8.length; dd++){
+											var tnx = sx + dirs8[dd][0]
+											var tnz = sz + dirs8[dd][1]
+											if(tnx === spx && tnz === spz){ continue }
+											var tk = tnx + ":" + tnz
+											if(typeof _keys[tk] === "undefined"){ continue }
+
+											var tdx = dirs8[dd][0]
+											var tdz = dirs8[dd][1]
+											var tmag = Math.sqrt(tdx * tdx + tdz * tdz)
+											tdx /= tmag
+											tdz /= tmag
+
+											var tcos = sdx * tdx + sdz * tdz
+											if(tcos > bcos){
+												bcos = tcos
+												bdx = tdx
+												bdz = tdz
+												bx = tnx
+												bz = tnz
+											}
+										}
+										if(bcos === -Infinity){ break }
+
+										total += bcos * Math.pow(0.85, st + 1)
+										spx = sx; spz = sz
+										sx = bx; sz = bz
+										sdx = bdx; sdz = bdz
+									}
+
+									if(total > bestTotal){
+										bestTotal = total
+										best = nf
+									}
+								}
+
+								/* 폴백: 스냅샷 순서 */
+								if(!best){
+									var ck = (_cx * 1) + ":" + (_cz * 1)
+									if(typeof _keys[ck] !== "undefined"){
+										var ci = _keys[ck]
+										var ni = ci + 1
+										if(ni >= _snapArr.length){ ni = 0 }
+										best = _snapArr[ni]
+									}
+								}
+
+								return best
+							}
+
+							window.Roll.prevX = null
+							window.Roll.prevZ = null
 							window.Roll.ing = setInterval(window.Roll, 500, biomes)
 						}, 500)
 					}
