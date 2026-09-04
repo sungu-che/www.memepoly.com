@@ -4072,9 +4072,28 @@ OAuth3.on("ready", function(e){
 							window.RollNext = function(_cx, _cz, _px, _pz){
 								var LOOKAHEAD = (typeof window.RollLookahead === "number" && window.RollLookahead > 0)
 									? window.RollLookahead : 5
+								/*
+									개발 Part 23 (후보 확장)
+									코사인 다음 후보 리스트를 최대 10개로 늘린다.
+									기존은 매 스텝 최고 코사인 1개만 채택해서
+									1) 그 후보가 막다른 칸이면 체인이 끊기고
+									2) 4칸 밀집 시 동점이라 방향 갈피를 못 잡았다.
+									10개 수집 → 링 순서 보너스로 동점 해소 →
+									체인 끊기면 다음 후보로 진행한다.
+								*/
+								var MAX_CANDIDATES = (typeof window.RollMaxCand === "number" && window.RollMaxCand > 0)
+									? window.RollMaxCand : 10
 								var dirs8 = [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]]
 								var _keys = window.Roll.snapKeys
 								var _snapArr = window.Roll.snap
+								var _snapLen = _snapArr ? _snapArr.length : 0
+
+								/* 현재 칸의 스냅샷 인덱스 (링 순서 연속성 판정용) */
+								var _curIdx = -1
+								var _ck = (_cx * 1) + ":" + (_cz * 1)
+								if(typeof _keys[_ck] !== "undefined"){
+									_curIdx = _keys[_ck]
+								}
 
 								/* 방향 벡터 */
 								var dirX, dirZ
@@ -4089,8 +4108,95 @@ OAuth3.on("ready", function(e){
 								if(mag > 0){ dirX /= mag; dirZ /= mag }
 								else{ dirX = 1; dirZ = 0 }
 
+								/*
+									후보 수집 헬퍼.
+									(sx, sz)에서 유효한 다음 칸을 최대 MAX_CANDIDATES개 수집한다.
+									코사인 + 링 순서 연속성 보너스를 합산한 score 내림차순 정렬.
+
+									링 순서 보너스 (밀집 동점 해소)
+									코사인 차이가 0.05 이내인 후보가 3~4개 붙어 있으면
+									코사인만으로는 방향을 못 잡는다.
+									스냅샷 인덱스가 refIdx+1, +2, +3 인 칸에
+									0.09 / 0.06 / 0.03 보너스를 더해
+									"링 진행 방향" 후보를 자연스럽게 밀어 올린다.
+									역방향(+997 등)은 보너스 0이라 밀려난다.
+
+									반환: [{x, z, dx, dz, cos, idx, score}]
+								*/
+								var collectCandidates = function(sx, sz, sdx, sdz, spx, spz, refIdx){
+									var cands = []
+									for(var dd = 0; dd < dirs8.length; dd++){
+										var tnx = sx + dirs8[dd][0]
+										var tnz = sz + dirs8[dd][1]
+										if(tnx === spx && tnz === spz){ continue }
+										var tk = tnx + ":" + tnz
+										if(typeof _keys[tk] === "undefined"){ continue }
+										var tIdx = _keys[tk]
+
+										var tdx = dirs8[dd][0]
+										var tdz = dirs8[dd][1]
+										var tmag = Math.sqrt(tdx * tdx + tdz * tdz)
+										tdx /= tmag
+										tdz /= tmag
+
+										var tcos = sdx * tdx + sdz * tdz
+
+										/* 링 순서 연속성 보너스 */
+										var orderBonus = 0
+										if(refIdx >= 0 && _snapLen > 0){
+											var fwd = (tIdx - refIdx + _snapLen) % _snapLen
+											if(fwd <= 3){
+												orderBonus = 0.03 * (4 - fwd)
+											}
+										}
+
+										cands.push({
+											x : tnx,
+											z : tnz,
+											dx : tdx,
+											dz : tdz,
+											cos : tcos,
+											idx : tIdx,
+											score : tcos + orderBonus
+										})
+									}
+									/*
+										score 내림차순 정렬.
+										score 차이가 0.001 이내면 순수 코사인으로 재판정.
+									*/
+									cands.sort(function(a, b){
+										if(Math.abs(a.score - b.score) > 0.001){
+											return b.score - a.score
+										}
+										return b.cos - a.cos
+									})
+									if(cands.length > MAX_CANDIDATES){
+										cands = cands.slice(0, MAX_CANDIDATES)
+									}
+									return cands
+								}
+
+								/*
+									체인 끊김 방지 헬퍼.
+									(cx, cz)에서 (cpx, cpz)를 제외한 유효한 다음 칸이
+									최소 1개 있으면 true.
+									이게 false 인 후보를 건너뛰면
+									"코사인은 높은데 2스텝 뒤에 막다른" 경로를 피한다.
+								*/
+								var hasContinuation = function(cx, cz, cpx, cpz){
+									for(var dd = 0; dd < dirs8.length; dd++){
+										var tnx = cx + dirs8[dd][0]
+										var tnz = cz + dirs8[dd][1]
+										if(tnx === cpx && tnz === cpz){ continue }
+										var tk = tnx + ":" + tnz
+										if(typeof _keys[tk] !== "undefined"){ return true }
+									}
+									return false
+								}
+
 								var best = null
 								var bestTotal = -Infinity
+								var bestIdx = -1
 
 								/* 8방향 후보 평가 */
 								for(var d = 0; d < dirs8.length; d++){
@@ -4115,57 +4221,91 @@ OAuth3.on("ready", function(e){
 
 									var total = dirX * ndx + dirZ * ndz
 
-									/* 룩어헤드 시뮬레이션 */
+									/*
+										룩어헤드 시뮬레이션 (개선).
+										각 스텝에서 최대 MAX_CANDIDATES개 후보를 수집하고
+										체인이 끊기지 않는 첫 번째 후보를 채택한다.
+										전부 끊기면 최고 점수 후보를 그대로 쓴다.
+									*/
 									var sx = nx, sz = nz
 									var spx = _cx, spz = _cz
 									var sdx = ndx, sdz = ndz
+									var sIdx = nIdx
 
 									for(var st = 0; st < LOOKAHEAD; st++){
-										var bcos = -Infinity
-										var bdx = 0, bdz = 0, bx = sx, bz = sz
-										for(var dd = 0; dd < dirs8.length; dd++){
-											var tnx = sx + dirs8[dd][0]
-											var tnz = sz + dirs8[dd][1]
-											if(tnx === spx && tnz === spz){ continue }
-											var tk = tnx + ":" + tnz
-											if(typeof _keys[tk] === "undefined"){ continue }
+										var cands = collectCandidates(sx, sz, sdx, sdz, spx, spz, sIdx)
+										if(!cands.length){ break }
 
-											var tdx = dirs8[dd][0]
-											var tdz = dirs8[dd][1]
-											var tmag = Math.sqrt(tdx * tdx + tdz * tdz)
-											tdx /= tmag
-											tdz /= tmag
-
-											var tcos = sdx * tdx + sdz * tdz
-											if(tcos > bcos){
-												bcos = tcos
-												bdx = tdx
-												bdz = tdz
-												bx = tnx
-												bz = tnz
+										/*
+											후보 리스트를 순서대로 시도.
+											마지막 룩어헤드 스텝이 아니면
+											"다음 스텝이 존재하는" 첫 후보를 고른다.
+											이것이 체인 끊김 방지 핵심이다.
+										*/
+										var chosen = null
+										for(var ci = 0; ci < cands.length; ci++){
+											var c = cands[ci]
+											if(st < LOOKAHEAD - 1){
+												if(hasContinuation(c.x, c.z, sx, sz)){
+													chosen = c
+													break
+												}
+											}else{
+												chosen = c
+												break
 											}
 										}
-										if(bcos === -Infinity){ break }
+										/* 전부 끊기면 최고 점수 후보를 그대로 채택 */
+										if(!chosen){
+											chosen = cands[0]
+										}
 
-										total += bcos * Math.pow(0.85, st + 1)
+										total += chosen.cos * Math.pow(0.85, st + 1)
 										spx = sx; spz = sz
-										sx = bx; sz = bz
-										sdx = bdx; sdz = bdz
+										sx = chosen.x; sz = chosen.z
+										sdx = chosen.dx; sdz = chosen.dz
+										sIdx = chosen.idx
 									}
 
-									if(total > bestTotal){
+									/*
+										첫 스텝 링 순서 보너스.
+										4칸 밀집지에서 코사인이 거의 같을 때
+										링 진행 방향(index+1) 후보를 밀어 올린다.
+									*/
+									var firstOrderBonus = 0
+									if(_curIdx >= 0 && _snapLen > 0){
+										var fwd0 = (nIdx - _curIdx + _snapLen) % _snapLen
+										if(fwd0 <= 3){
+											firstOrderBonus = 0.03 * (4 - fwd0)
+										}
+									}
+									total += firstOrderBonus
+
+									/*
+										총점 비교.
+										0.001 초과 차이: 높은 쪽 채택.
+										0.001 이내 동점: 링 순서가 더 가까운 쪽 채택.
+									*/
+									if(total > bestTotal + 0.001){
 										bestTotal = total
 										best = nf
+										bestIdx = nIdx
+									}else if(best && Math.abs(total - bestTotal) <= 0.001){
+										var bFwd = (bestIdx - _curIdx + _snapLen) % _snapLen
+										var nFwd = (nIdx - _curIdx + _snapLen) % _snapLen
+										if(nFwd < bFwd){
+											bestTotal = total
+											best = nf
+											bestIdx = nIdx
+										}
 									}
 								}
 
 								/* 폴백: 스냅샷 순서 */
 								if(!best){
-									var ck = (_cx * 1) + ":" + (_cz * 1)
-									if(typeof _keys[ck] !== "undefined"){
-										var ci = _keys[ck]
-										var ni = ci + 1
-										if(ni >= _snapArr.length){ ni = 0 }
+									if(_curIdx >= 0 && _snapLen > 0){
+										var ni = _curIdx + 1
+										if(ni >= _snapLen){ ni = 0 }
 										best = _snapArr[ni]
 									}
 								}
