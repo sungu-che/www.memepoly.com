@@ -199,6 +199,39 @@ window.RolePick = function(){
 		<span class="ko">현재 위치 : ' + (onEdge ? "주사위 경로(EDGE)" : "내륙 필드") + '</span>\
 		<span class="en">You are on : ' + (onEdge ? "the dice path (EDGE)" : "the inland field") + '</span>\
 	</p>'
+	/*
+		개발 Part 29 (선택 결과 고지)
+		현행 문제
+		  버튼이 잠긴 이유를 어디에도 표시하지 않았다.
+		  서버는 PMC 슬롯이 없으면 말없이 UCAV 를 배정했는데,
+		  팝업은 PMC 를 정상 버튼으로 그리고 있었다.
+		  사용자는 PMC 를 눌렀다고 기억하는데 UCAV 로 출격된다.
+		조치
+		  잠긴 이유를 버튼에 직접 붙인다.
+		  PMC 가 "그 자리에서 출격" 인지 "게이트로 이동" 인지도 명시한다.
+		  (서버 개발 Part 29 의 제자리 출격과 문구를 맞춘다)
+	*/
+	var pmcWhy = ""
+	if(!pmcOk){
+		if(blocked){
+			pmcWhy = { ko : "서버가 출격을 거절했습니다.", en : "Server refused the deploy." }
+		}else if(slots.aborted){
+			pmcWhy = { ko : "이번 매치에서 전사했습니다. PMC 는 다음 매치부터.", en : "You went down this match. PMC returns next match." }
+		}else{
+			pmcWhy = { ko : "이번 매치에서 PMC 를 이미 사용했습니다.", en : "PMC already used this match." }
+		}
+	}
+	var ucavWhy = ""
+	if(!ucavOk){
+		if(blocked){
+			ucavWhy = { ko : "서버가 출격을 거절했습니다.", en : "Server refused the deploy." }
+		}else{
+			ucavWhy = { ko : "이번 매치에서 UCAV 를 이미 사용했습니다.", en : "UCAV already used this match." }
+		}
+	}
+	var pmcDesc = onEdge
+		? { ko : "지금 서 있는 칸에서 그대로 출격합니다. 주사위로 계속 전진합니다.", en : "Deploys right where you stand. Keeps moving by dice." }
+		: { ko : "주사위 경로(EDGE)의 게이트로 이동해 배치됩니다.", en : "Moves to a gate on the dice path." }
 	var body = '<div class="role_pick_head">\
 		<strong class="title">\
 			<span class="ko">출격 역할 선택</span>\
@@ -210,20 +243,22 @@ window.RolePick = function(){
 		<a class="btn role ' + (pmcOk ? "" : "disabled") + '" data-role="PMC">\
 			<i class="emoji color">⚔</i>\
 			<strong>PMC</strong>\
-			<span class="ko">주사위 경로(EDGE)에 배치됩니다. 주사위로 전진합니다.</span>\
-			<span class="en">Deploys on the dice path. Moves by dice.</span>\
+			<span class="ko">' + pmcDesc.ko + '</span>\
+			<span class="en">' + pmcDesc.en + '</span>\
+			' + (pmcWhy ? '<em class="why"><span class="ko">' + pmcWhy.ko + '</span><span class="en">' + pmcWhy.en + '</span></em>' : '') + '\
 		</a>\
 		<a class="btn role ' + (ucavOk ? "" : "disabled") + '" data-role="UCAV">\
 			<i class="emoji color">🛩</i>\
 			<strong>UCAV</strong>\
-			<span class="ko">내륙 필드에 배치됩니다. 전투와 파밍 전용이며 주사위는 PMC 전용입니다.</span>\
-			<span class="en">Deploys inland. Combat and farming only. Dice is PMC only.</span>\
+			<span class="ko">내륙 필드로 이동해 배치됩니다. 전투와 파밍 전용이며 주사위는 PMC 전용입니다.</span>\
+			<span class="en">Moves inland. Combat and farming only. Dice is PMC only.</span>\
+			' + (ucavWhy ? '<em class="why"><span class="ko">' + ucavWhy.ko + '</span><span class="en">' + ucavWhy.en + '</span></em>' : '') + '\
 		</a>\
 	</div>'
 	if(!pmcOk && !ucavOk){
 		body += '<p class="reason">\
-			<span class="ko">이번 매치의 출격 슬롯을 모두 사용했습니다.</span>\
-			<span class="en">No deploy slot left this match.</span>\
+			<span class="ko">이번 매치의 출격 슬롯을 모두 사용했습니다. 계속 주사위를 굴리세요.</span>\
+			<span class="en">No deploy slot left this match. Keep rolling the dice.</span>\
 		</p>'
 	}
 	var $form = $('form[name="RolePick"]')
@@ -236,7 +271,8 @@ window.RolePick = function(){
 		머리말에 위치 안내(.role_pick_where)가 추가되었으므로
 		재렌더 시 함께 지운다. 남겨두면 팝업을 열 때마다 누적된다.
 	*/
-	$form.find(".role_pick_head, .role_pick_body, .role_pick_where, .reason").remove()
+	/* 개발 Part 29 : .why 도 함께 지운다. 남기면 열 때마다 누적된다 */
+	$form.find(".role_pick_head, .role_pick_body, .role_pick_where, .reason, .why").remove()
 	$form.prepend(body)
 	$(".layer").addClass("on")
 	$form.addClass("on")
@@ -255,7 +291,8 @@ $(document).on("click", 'form[name="RolePick"] .btn.role', function(e){
 		읽은 뒤 즉시 지우므로 다음 출격에 새지 않는다.
 	*/
 	try{
-		sessionStorage.raidRole = role
+		/* 개발 Part 29 : stage.js Raid() 가 getItem / removeItem 으로 읽는다 */
+		sessionStorage.setItem("raidRole", role)
 	}catch(err){
 	}
 	$(".layer, .layer form.popup").removeClass("on")

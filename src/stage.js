@@ -119,11 +119,35 @@ window.RaidSlots = function(){
 	if(!cookies){
 		return out
 	}
-	out.used = cookies.raidUsed
-		? String(cookies.raidUsed).split(",").filter(function(v){
-			return v.length > 0
-		})
-		: []
+	/*
+		개발 Part 29 (슬롯 파싱)
+		participation 은 raids_used 를 JSON 배열로 저장한다(개발 Part 19).
+		경로에 따라 '["PMC"]' 형식으로 내려올 수 있어
+		split(",") 만으로는 PMC 를 찾지 못한다.
+		그러면 팝업은 PMC 를 활성으로 그리는데 서버는 슬롯이 없다고 판단해
+		"눌렀더니 다른 역할이 배정" 되는 불일치가 생긴다.
+		서버 #start 와 동일하게 두 형식을 모두 받아들인다.
+	*/
+	out.used = []
+	try{
+		var _raw = cookies.raidUsed
+		if(Array.isArray(_raw)){
+			out.used = _raw
+		}else if(_raw){
+			var _str = String(_raw).trim()
+			out.used = (_str.indexOf("[") === 0) ? JSON.parse(_str) : _str.split(",")
+		}
+	}catch(err){
+		out.used = []
+	}
+	if(!Array.isArray(out.used)){
+		out.used = []
+	}
+	out.used = out.used.filter(function(v){
+		return v && String(v).length > 0
+	}).map(function(v){
+		return String(v).toUpperCase()
+	})
 	out.aborted = cookies.raidAborted ? true : false
 	out.ucav = out.used.indexOf("UCAV") == -1
 	out.pmc = out.aborted ? false : (out.used.indexOf("PMC") == -1)
@@ -406,10 +430,20 @@ window.Raid = function(){
 	}, 120)
 	var _role = ""
 	try{
-		_role = sessionStorage.raidRole ? sessionStorage.raidRole : ""
-		delete sessionStorage.raidRole
+		/*
+			개발 Part 29 (역할 전달)
+			delete sessionStorage.raidRole 은 브라우저에 따라 항목을 지우지 못한다.
+			남아 있으면 다음 출격에 이전 선택(예: UCAV)이 그대로 새어 나가
+			"PMC 를 골랐는데 UCAV 로 출격" 이 된다.
+			removeItem 으로 확실히 지운다.
+		*/
+		_role = sessionStorage.getItem("raidRole")
+		_role = _role ? _role : ""
+		sessionStorage.removeItem("raidRole")
 	}catch(err){
+		_role = ""
 	}
+	window.Stage.wanted = _role
 	/*
 		개발 Part 14 (검수) - H3
 		window.Action 은 players.self() 가 없으면 조용히 return 한다.
@@ -617,8 +651,20 @@ window.StageSync = function(cookies){
 			Raid() 가 띄운 진행바(raidTimer)가 계속 돌고 있어
 			로비가 다시 떠도 진행바가 겹쳐 보였다.
 			RaidAbort 로 타이머까지 정리한다.
+			개발 Part 29 (거절 사유)
+			서버가 raidDeny 로 사유를 명시한다.
+			"슬롯 없음" 하나로 뭉뚱그리면
+			왜 PMC 가 안 되는지 사용자가 알 수 없다.
 		*/
-		window.RaidAbort("No slots left this match")
+		var _denyBody = "No slots left this match"
+		if(cookies.raidDeny == "pmc_used"){
+			_denyBody = "PMC already deployed this match"
+		}else if(cookies.raidDeny == "ucav_used"){
+			_denyBody = "UCAV already deployed this match"
+		}else if(cookies.raidDeny == "aborted"){
+			_denyBody = "You went down. Only UCAV is left this match"
+		}
+		window.RaidAbort(_denyBody)
 		return
 	}
 	if(cookies.exitBlocked){

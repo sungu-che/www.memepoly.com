@@ -149,15 +149,51 @@ window.CanFreeMove = function(){
 	if(!isNaN(_dice) && _dice > 0){
 		return false
 	}
-	if(cookies.jail){
-		return true
-	}
+	/*
+		개발 Part 30 (역할별 이동)
+		현행 문제 두 가지.
+		1) cookies.jail 을 무조건 통과시켰다.
+		   jail 은 participation 의 is_jailed 이며 #start / 탈출 / MIA 전까지
+		   꺼지지 않는 영구 플래그다.
+		   감옥 칸을 한 번 밟으면 그 판 내내 어디서든 자유 이동이 되어
+		   "링은 주사위 전용" 규칙이 무너졌다.
+		   위치 판정은 onJail(지금 서 있는 칸이 감옥) 하나로 충분하다.
+		   jail 은 "이번 판에 감옥을 거쳤다" 는 기록으로만 남긴다.
+		2) 마지막 판정 근거가 enter 였다.
+		   enter 는 UCAV 를 위해 붙인 조건인데 PMC 에도 그대로 적용되어
+		   출격한 PMC 가 링 위에서 조이스틱으로 걸어 다녔다.
+		확정 규칙
+		  onJail   감옥 칸. 안전지대이자 필드 진입점. 자유 이동 허용.
+		  UCAV     내륙 전용 유닛. 출격 중이면 자유 이동.
+		  PMC      링 위면 주사위 전용. 내륙이면 자유 이동.
+		  그 외    미출격이면 보드게임 모드(주사위 전용).
+	*/
 	if(cookies.onJail){
 		return true
+	}
+	var _role = cookies.role ? cookies.role : ""
+	if(_role == "UCAV"){
+		return cookies.enter ? true : false
 	}
 	if(!cookies.enter){
 		/* 보드게임 모드. 주사위 전용 */
 		return false
+	}
+	if(_role == "PMC"){
+		/*
+			링이 확정되기 전에는 판정할 수 없다.
+			이때 허용하면 로딩 중 자유 이동으로 링을 벗어나
+			서버가 좌표를 되돌리며 캐릭터가 튄다. 보수적으로 막는다.
+		*/
+		if(!window.EdgeReady || !window.EdgeReady()){
+			return false
+		}
+		try{
+			var _me = window.players.self()
+			return window.IsEdge(_me.x, _me.z) ? false : true
+		}catch(err){
+			return false
+		}
 	}
 	return true
 }
@@ -233,6 +269,16 @@ window.CanRollDice = function(){
 		return false
 	}
 	if(!player){
+		return false
+	}
+	/*
+		개발 Part 30 (역할)
+		UCAV 는 어떤 칸에서도 주사위를 굴리지 않는다.
+		서버 index.js 의 diceBlocked="UCAV" 와 같은 판정이다.
+		(이 함수는 현재 호출부가 없지만, 판정 기준이 갈리면
+		 나중에 붙일 때 그대로 버그가 된다)
+	*/
+	if(cookies.role == "UCAV" && cookies.enter){
 		return false
 	}
 	return window.IsEdge(player.x, player.z)
@@ -2368,7 +2414,55 @@ OAuth3.on("ready", function(e){
 					if(window.current){
 						var _cur = window.current.current.position
 						var _cur_biome = window.map.biomes[`${_cur.x}:${_cur.z}`]
-						if(!window.current.axis || !_cur_biome){
+						/*
+							개발 Part 29 (서버 텔레포트 반영)
+							현행 문제
+							  window.current.axis 는 한 번 true 가 되면
+							  BoardHashChange 전까지 절대 꺼지지 않는다.
+							  그래서 두 번째 폴링부터는 언제나 else 로 들어가
+							    axis.x = _cur.x
+							  즉 클라이언트 좌표가 서버 좌표를 덮어쓴다.
+							  서버가 확정한 좌표 이동이 화면에 한 번도 반영되지 않았다.
+							    출격 스폰(#start 커밋)  게이트에서 역할을 골라도 제자리
+							    부활 / 감옥
+							    UCAV 링 반출(edgeBlocked)
+							  게다가 다음 폴링에서 프론트가 다시 옛 좌표를 보고하므로
+							  서버가 또 되돌리려 하는 핑퐁이 끝나지 않는다.
+							조치
+							  서버가 "내가 좌표를 옮겼다" 고 명시한 경우에만 강제 반영한다.
+							  추측이 아니라 서버가 내려준 플래그로 판정한다.
+							    spawned      #start 가 스폰을 확정했다
+							    edgeBlocked  UCAV 가 링에서 내륙으로 반출됐다
+							  일반 폴링에서는 기존대로 클라이언트 좌표를 유지한다.
+							  (주사위 애니메이션 / 조이스틱 이동이 서버 지연에 끊기지 않게)
+						*/
+						var _teleport = ""
+						try{
+							/*
+								개발 Part 30 (판 전환)
+								서버는 판이 넘어가면 axis 를 버리고 리스폰시킨 뒤
+								matchRolled 로 알린다.
+								이 신호가 없으면 current.axis 잠금 때문에
+								새 판 스폰 좌표가 화면에 반영되지 않고
+								캐릭터가 옛 판 좌표에 남는다.
+							*/
+							if(cookies.spawned || cookies.edgeBlocked || cookies.matchRolled){
+								_teleport = cookies.matchRolled ? "match"
+									: (cookies.spawned ? "spawn" : "edge")
+								if(_cur.x === axis.x && _cur.z === axis.z){
+									/* 이미 같은 칸이면 스냅이 필요 없다 */
+									_teleport = ""
+								}else{
+									var _tb = window.map.biomes[axis.x + ":" + axis.z]
+									if(_tb && typeof _tb.y !== "undefined"){
+										axis.y = _tb.y * 1
+									}
+								}
+							}
+						}catch(err){
+							_teleport = ""
+						}
+						if(!window.current.axis || !_cur_biome || _teleport){
 							window.current.axis = true
 							/*
 								개발 Part 17 (스폰)
@@ -3595,8 +3689,25 @@ OAuth3.on("ready", function(e){
 										if(window.HpBadge){
 											window.HpBadge(_hp, _maxHp)
 										}
+										/*
+											개발 Part 29 (게이트 출격)
+											게이트 칸 + 미출격일 때만 첫 슬롯을 출격 버튼으로 바꾼다.
+											슬롯 수가 3개로 고정이므로 Fire 자리를 빌린다.
+											(보드게임 모드에서는 깃발이 의미가 없다)
+											그 외에는 기존 Fire 버튼 그대로다.
+										*/
+										var _slotBody = `<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>`
+										try{
+											if(!cookies.enter && window.EdgeField){
+												var _gf = window.EdgeField(self_player.x, self_player.z)
+												if(_gf && _gf.gate){
+													_slotBody = `<a class="hashType Deploy emoji color"><i class="emoji color">🚪</i></a>`
+												}
+											}
+										}catch(err){
+										}
 										tooltip_body = `<li>
-											<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>
+											${_slotBody}
 										</li>
 										<li>
 											<a class="hashType Meta emoji color">
@@ -3984,13 +4095,20 @@ OAuth3.on("ready", function(e){
 					try{
 						if(cookies.onJail && !window.BoardCallback.jailed){
 							window.BoardCallback.jailed = true
-
-							window.Notice("SAFE ZONE", "You can move freely here", 2600)
+							/*
+								개발 Part 30 (감옥 = 필드 진입점)
+								감옥 칸은 안전지대이자 링을 벗어나는 유일한 지점이다.
+								기존 문구 "You can move freely here" 는
+								"이 칸 안에서 자유롭다" 로 읽혀 진입점이라는 사실이 전달되지 않았다.
+								칸을 벗어나면 다시 주사위 전용으로 돌아간다는 것도 함께 알린다.
+							*/
+							window.Notice("SAFE ZONE",
+								"Step off the path into the field. Leave this tile and it's dice only again",
+								3200)
 						}else if(!cookies.onJail){
 							delete window.BoardCallback.jailed
 						}
 					}catch(err){
-
 					}
 
 					// $root.scrollTop(0)
@@ -5201,7 +5319,35 @@ OAuth3.on("ready", function(e){
 												cc_address = window.location.hash.replace("#", "0x")
 											}
 
-											if($this.hasClass("Meta")){
+											if($this.hasClass("Deploy")){
+												/*
+													개발 Part 29 (게이트 출격)
+													게이트(🚪) 칸 전용 출격 진입점.
+													주사위(🎲)와 완전히 분리한다.
+													여기서만 RolePick 이 뜬다.
+												*/
+												if(window.cookies.enter){
+													return
+												}
+												if(window.EdgeReady && !window.EdgeReady()){
+													window.Notice("MAP LOADING", "Board path is not ready", 1800)
+													return
+												}
+												var _gateField = window.EdgeField
+													? window.EdgeField(player.x, player.z) : null
+												if(!_gateField || !_gateField.gate){
+													window.Notice("NO GATE", "Deploy only from a gate tile", 2000)
+													return
+												}
+												if(window.CanRaid && !window.CanRaid()){
+													window.Notice("NO SLOTS", "Wait for the next match", 2200)
+													return
+												}
+												if(window.RolePick){
+													window.RolePick()
+												}
+												return
+											}else if($this.hasClass("Meta")){
 												var _dice = $body.attr("dice") * 1
 												if(!isNaN(_dice)){
 													if(_dice > 0){
@@ -5239,12 +5385,21 @@ OAuth3.on("ready", function(e){
 													window.Notice("UCAV", "Drones fight in the field, not on the path", 2200)
 													return
 												}
-												if(_isEdgeHere && !window.cookies.enter && _edgeField.gate){
-													if(window.RolePick){
-														window.RolePick()
-														return
-													}
-												}
+												/*
+													개발 Part 29 (게이트)
+													현행 문제
+													  게이트 칸에서는 !enter 인 동안 무조건 RolePick 을 띄우고
+													  return 했다. 그래서 주사위가 영원히 굴러가지 않았다.
+													  링 393칸 중 index % 9 == 0 이 게이트이므로
+													  9칸에 한 번은 반드시 멈춘다.
+													확정 규칙
+													  게이트는 "출격할 수 있는 칸" 일 뿐
+													  "출격해야 하는 칸" 이 아니다.
+													  주사위 버튼은 언제나 주사위다.
+													  출격은 a.hashType.Deploy 로만 한다.
+													링 밖(내륙) + 미출격은 정상 상태가 아니므로
+													복구 경로로 RolePick 을 유지한다.
+												*/
 												if(!_isEdgeHere && !window.cookies.enter){
 													if(window.RolePick){
 														window.RolePick()
