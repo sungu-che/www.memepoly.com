@@ -901,6 +901,64 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			shapeSeed: shapeSeed % INT32_MAX
 		};
 	}
+	function renderFlat(tiles, options) {
+		options = options || {};
+		var scale = def(options.scale, 2);
+		var colors = options.colors || {};
+		var waterColor = def(options.waterColor, "#2a2a4a");
+		var landColor = def(options.landColor, "#6a6a6a");
+
+		if (!tiles || !tiles.length) {
+			return "";
+		}
+
+		try {
+			var minX = Infinity, minZ = Infinity;
+			var maxX = -Infinity, maxZ = -Infinity;
+			var m, t;
+
+			for (m = 0; m < tiles.length; m++) {
+				t = tiles[m];
+				if (!t || typeof t.x === "undefined" || typeof t.z === "undefined") { continue; }
+				if (!t.biome) { continue; }
+				if (t.x < minX) { minX = t.x; }
+				if (t.x > maxX) { maxX = t.x; }
+				if (t.z < minZ) { minZ = t.z; }
+				if (t.z > maxZ) { maxZ = t.z; }
+			}
+
+			if (minX === Infinity) { return ""; }
+
+			var w = (maxX - minX + 1) * scale;
+			var h = (maxZ - minZ + 1) * scale;
+			var canvas = document.createElement("canvas");
+			canvas.width = w;
+			canvas.height = h;
+
+			var ctx = canvas.getContext("2d");
+			ctx.clearRect(0, 0, w, h);
+
+			var filled = 0;
+			for (m = 0; m < tiles.length; m++) {
+				t = tiles[m];
+				if (!t || typeof t.x === "undefined" || typeof t.z === "undefined") { continue; }
+				if (!t.biome) { continue; }
+
+				var color = colors["#" + t.biome] || colors[t.biome];
+				if (!color) {
+					color = t.water ? waterColor : landColor;
+				}
+				ctx.fillStyle = color;
+				ctx.fillRect((t.x - minX) * scale, (t.z - minZ) * scale, scale, scale);
+				filled++;
+			}
+
+			if (!filled) { return ""; }
+			return canvas.toDataURL("image/png");
+		} catch (err) {
+			return "";
+		}
+	}
 	/* ------------------------------------------------------------------- build */
 	function build(opts) {
 		opts = opts || {};
@@ -988,6 +1046,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		getBiome: getBiome,
 		hashToSeeds: hashToSeeds,
 		build: build,
+		renderFlat: renderFlat,
 		DEFAULT_LAKE_THRESHOLD: DEFAULT_LAKE_THRESHOLD
 	};
 });

@@ -320,44 +320,17 @@ window.MapGen.paint = function(list){
 		if(!tiles || !tiles.length){
 			return ""
 		}
-		var canvas = window.MapGen.ensureCanvas()
-		if(!canvas){
-			if(!window.MapGen.__noCanvasWarned){
-				window.MapGen.__noCanvasWarned = true
-				console.log("[mapgen] '#map .map' not found. minimap disabled.")
-			}
+		if(typeof window.VoronoiCore === "undefined" || !window.VoronoiCore){
 			return ""
 		}
 		var colors = window.Biomes ? window.Biomes : {}
 		var scale = window.MapGen.scale
-		var ctx = canvas.getContext("2d")
-		ctx.clearRect(0, 0, canvas.width, canvas.height)
-		var minX = Infinity, minZ = Infinity
-		var m
-		for(m = 0; m < tiles.length; m++){
-			if(tiles[m].x < minX){ minX = tiles[m].x }
-			if(tiles[m].z < minZ){ minZ = tiles[m].z }
-		}
-		var filled = 0
-		for(m = 0; m < tiles.length; m++){
-			var b = tiles[m]
-			var color = colors["#" + b.biome]
-			if(!color){
-				/*
-					룰셋(window.Biomes)이 아직 없거나 신규 바이옴이다.
-					바다/물은 어둡게, 육지는 회색으로 최소 표기해
-					"완전히 빈 이미지" 가 나오지 않게 한다.
-				*/
-				color = b.water ? "#2a2a4a" : "#6a6a6a"
-			}
-			ctx.fillStyle = color
-			ctx.fillRect((b.x - minX) * scale, (b.z - minZ) * scale, scale, scale)
-			filled++
-		}
-		if(!filled){
-			return ""
-		}
-		return canvas.toDataURL("image/png")
+		return window.VoronoiCore.renderFlat(tiles, {
+			scale : scale,
+			colors : colors,
+			waterColor : "#2a2a4a",
+			landColor : "#6a6a6a"
+		})
 	}catch(err){
 		console.log("[mapgen] paint err", err)
 		return ""
