@@ -4,15 +4,7 @@ var time = {
 	zone : new Date().getTimezoneOffset()
 }
 var offset = -540
-/*
-	개발 Part 17 (스폰)
-	최초 진입 / 매치 전환 / 포털 이동 직후에는 좌표가 확정되기 전이라
-	  current 메쉬  (1.5, 0, 1.5)
-	  보드 좌표계    x -49.5 ~ 49.5 / z -99.5 ~ -0.5
-	즉 장외(바다)에서 시작해 Player.jsx 의 lerp 로 목적지까지 기어갔다.
-	Snap 이 0 보다 크면 그 프레임 수만큼 lerp 를 건너뛰고 즉시 붙인다.
-	(카메라는 Experience.jsx, 캐릭터는 Player.jsx 가 읽는다)
-*/
+
 window.Snap = 0
 if(typeof window.setFrameloop == "undefined"){
 	window.frameloop = "never"
@@ -2069,6 +2061,24 @@ OAuth3.on("ready", function(e){
 			}
 		}
 
+		/*
+			개발 Part 28 (주사위 상태 정리)
+			snap / snapKeys / prevX / prevZ 에 더해
+			path / pathKeys / pathIdx 까지 한 곳에서 비운다.
+			정리 지점이 4곳으로 흩어져 있어 한 곳만 빠져도
+			이전 매치의 경로 커서가 남아 첫 스텝이 엉뚱한 칸으로 튀었다.
+		*/
+		window.RollReset = function(){
+			clearInterval(window.Roll.ing)
+			delete window.Roll.ing
+			window.Roll.snap = null
+			window.Roll.snapKeys = null
+			window.Roll.path = null
+			window.Roll.pathKeys = null
+			window.Roll.pathIdx = -1
+			window.Roll.prevX = null
+			window.Roll.prevZ = null
+		}
 		window.Roll = function(biomes){
 			try{
 				var dice = window.cookies.dice * 1
@@ -2081,12 +2091,7 @@ OAuth3.on("ready", function(e){
 						*/
 						if(!window.Roll.snap || !window.Roll.snap.length || !window.Roll.snap.ring){
 							window.cookies.dice = 0
-							clearInterval(window.Roll.ing)
-							delete window.Roll.ing
-							window.Roll.snap = null
-							window.Roll.snapKeys = null
-							window.Roll.prevX = null
-							window.Roll.prevZ = null
+							window.RollReset()
 							window.setFrameloop("always")
 							if(typeof window.Poll.ing == "undefined"){
 								window.Poll.ing = setInterval(window.Poll, 600)
@@ -2115,7 +2120,18 @@ OAuth3.on("ready", function(e){
 						var _next = window.RollNext(_cx, _cz, _px, _pz)
 
 						if(_next){
-							var _ny = _next.y
+							/*
+								개발 Part 28 (높이 폴백)
+								경로 스냅샷 항목에는 y 가 없다.
+								바이옴 조회까지 실패하면 undefined 가 그대로 좌표에 들어가
+								캐릭터가 NaN 위치로 사라졌다.
+								현재 지형 높이를 기준값으로 둔다.
+								(window.current.position.y 에는 이미 +0.01 이 더해져 있다)
+							*/
+							var _ny = (window.current.current.position.y * 1) - 0.01
+							if(typeof _next.y !== "undefined" && !isNaN(_next.y * 1)){
+								_ny = _next.y * 1
+							}
 							try{
 								var _nb = window.map.biomes[_next.x + ":" + _next.z]
 								if(_nb && typeof _nb.y !== "undefined"){
@@ -2151,13 +2167,9 @@ OAuth3.on("ready", function(e){
 						2) 스냅샷 해제
 						3) window.Callback(window.response) 재호출 금지
 						4) 폴링 재개 → 서버 확정 좌표 수신
+						개발 Part 28 : 경로 커서까지 함께 비운다.
 					*/
-					clearInterval(window.Roll.ing)
-					delete window.Roll.ing
-					window.Roll.snap = null
-					window.Roll.snapKeys = null
-					window.Roll.prevX = null
-					window.Roll.prevZ = null
+					window.RollReset()
 					window.cookies.dice = 0
 					window.setFrameloop("always")
 					if(typeof window.Poll.ing == "undefined"){
@@ -2166,15 +2178,9 @@ OAuth3.on("ready", function(e){
 				}
 			}catch(err){
 				console.log("Roll err",err);
-				clearInterval(window.Roll.ing)
-				delete window.Roll.ing
-				window.Roll.snap = null
-				window.Roll.snapKeys = null
-				window.Roll.prevX = null
-				window.Roll.prevZ = null
+				window.RollReset()
 			}
 		}
-
 		window.BoardCallback = async function(resp){
 			var url = new URL(window.location.href)
 			var _dice = window.cookies.dice * 1
@@ -2574,38 +2580,54 @@ OAuth3.on("ready", function(e){
 							progress.before = progress[1]
 							progress.start = progress[progress.length - 1]
 							progress.end = progress[0]
-
 							var div = fields[`${progress.start.x}:${progress.start.z}`]
-
-							if(div){
-								var _fields = fields.splice(div.index, fields.length)
-
-								if(_fields.length){
-									fields = _fields.concat(fields)
-
-									var start
-									var end
-
-									fields.forEach(function(field, index){
-										if(progress.start.x == field.x && progress.start.z == field.z){
-											start = true
+							if(div && typeof div.index !== "undefined" && fields.length){
+								/*
+									개발 Part 28 (링 회전 비파괴화)
+									현행 문제
+									  fields 는 window.fields 를 그대로 가리킨다.
+									  splice 는 원본을 잘라내므로
+									    div.index 가 0 이면 window.fields.length 가 0 이 되고
+									    EdgeReady() 가 false 로 떨어져 주사위를 굴릴 수 없다.
+									  concat 결과에는 좌표 문자열 키가 복사되지 않아
+									  바로 아래의 fields["x:z"] 조회가 전부 undefined 가 된다.
+									  delete fields["x:z"] 도 원본 키를 지워
+									  다음 폴링의 IsEdge 판정을 망가뜨렸다.
+									조치
+									  회전본을 새 배열로 만들고 문자열 키만 얕게 옮긴다.
+									  window.fields 는 손대지 않는다.
+								*/
+								var _len = fields.length
+								var _rot = []
+								for(var _fi = 0; _fi < _len; _fi++){
+									_rot.push(fields[(div.index + _fi) % _len])
+								}
+								for(var _fk in fields){
+									if(fields.hasOwnProperty(_fk)){
+										if(isNaN(_fk * 1)){
+											_rot[_fk] = fields[_fk]
 										}
-
-										if(biomes.x == field.x && biomes.z == field.z){
-											end = true
-										}
-
-										if(start && !end){
-											progress[`${field.x}:${field.z}`] = true
-										}
-									})
-
-									if(progress.before){
-										if(progress.before.index > progress.end.index){
-											fields.forEach(function(field, index){
-												delete fields[`${field.x}:${field.z}`]
-											})
-										}
+									}
+								}
+								fields = _rot
+								var start
+								var end
+								fields.forEach(function(field, index){
+									if(progress.start.x == field.x && progress.start.z == field.z){
+										start = true
+									}
+									if(biomes.x == field.x && biomes.z == field.z){
+										end = true
+									}
+									if(start && !end){
+										progress[`${field.x}:${field.z}`] = true
+									}
+								})
+								if(progress.before){
+									if(progress.before.index > progress.end.index){
+										fields.forEach(function(field, index){
+											delete fields[`${field.x}:${field.z}`]
+										})
 									}
 								}
 							}
@@ -4049,268 +4071,317 @@ OAuth3.on("ready", function(e){
 							}
 							window.Roll.snap = _snap
 							window.Roll.snapKeys = _snapKeys
+							/*
+								개발 Part 28 (순회 경로 스냅샷)
+								ring 스냅샷과 별개로 "왕복이 살아 있는 경로" 를 복사한다.
+								두 배열의 역할이 다르다.
+								  snap / snapKeys  좌표 -> 링 인덱스 1:1. Edge 판정과 폴백용.
+								  path / pathKeys  좌표 -> 경로 인덱스 1:N. 실제 전진용.
+								                   스퍼 왕복 칸은 같은 좌표가 2회 이상 등장하므로
+								                   값이 배열이다.
+								pathIdx 는 현재 경로 커서다. -1 은 미확정을 뜻하며
+								RollNext 가 좌표로 복원한다.
+							*/
+							var _pathSrc = (typeof window.RollPath === "function") ? window.RollPath() : null
+							var _path = []
+							var _pathKeys = {}
+							if(_pathSrc && _pathSrc.length){
+								for(var _pi = 0; _pi < _pathSrc.length; _pi++){
+									var _porig = _pathSrc[_pi]
+									if(!_porig){ continue }
+									var _pcopy = {
+										x : _porig.x * 1,
+										z : _porig.z * 1,
+										i : _path.length
+									}
+									var _pkey = _pcopy.x + ":" + _pcopy.z
+									if(!_pathKeys[_pkey]){
+										_pathKeys[_pkey] = []
+									}
+									_pathKeys[_pkey].push(_pcopy.i)
+									_path.push(_pcopy)
+								}
+								_path.closed = _pathSrc.closed ? true : false
+							}
+							window.Roll.path = _path.length ? _path : null
+							window.Roll.pathKeys = _pathKeys
+							window.Roll.pathIdx = -1
 
 							/*
-								개발 Part 22 (룩어헤드 격리)
-								window.RollNext 를 스냅샷 기반으로 재정의한다.
-								파라미터: (현재x, 현재z, 이전x, 이전z)
-								이전 위치를 전역 변수가 아니라 파라미터로 받아
-								인터벌 겹침/예외 시 오염을 차단한다.
-
-								알고리즘:
-								1) 이전→현재 방향 벡터 계산 (정규화)
-								2) 8방향 후보 중 스냅샷에 존재하는 것만 수집
-								   (이전 칸은 제외)
-								3) 각 후보에 대해 최대 LOOKAHEAD 칸까지
-								   가상 시뮬레이션:
-								   - 현재 시뮬레이션 방향과의 코사인 유사도 최대인
-								     다음 칸을 고르고 점수에 감쇠 가중으로 합산
-								   - 막히면 중단
-								4) 총점 최대인 첫 번째 칸을 반환
-								5) 후보가 없으면 스냅샷 순서 index+1 로 폴백
+								개발 Part 28 (다층 전진 결정)
+								계층 구조. 위층이 성공하면 아래층은 실행되지 않는다.
+								  1층 경로 커서
+								      path[i] -> path[i+1].
+								      Moore 경계추적 결과라 항상 8방향 인접이며
+								      스퍼(머리카락)는 실제로 되돌아 나온다.
+								      각도 계산이 개입하지 않으므로 뒤로 회귀할 수 없다.
+								  2층 좌표 -> 경로 인덱스 복원
+								      서버 좌표 동기화 등으로 커서를 잃었을 때만 동작.
+								      왕복 구간은 같은 좌표가 2회 이상 등장하므로
+								      (a) 직전 칸 일치 (b) 진행 방향 코사인
+								      (c) 마지막 커서와의 전방 근접도 로 후보를 가른다.
+								  3층 인접 + 룩어헤드 벡터 유사도
+								      경로 자체를 확보하지 못한 경우(Serpentine 폴백)만 동작.
+								      막다른 칸에서는 강제 점프가 아니라 U턴을 돌려준다.
+								      Part 23 / 25 / 27 의 점프 보너스는 전부 제거한다.
+								      그것이 스퍼 끝에서 좌표를 멀리 던지고
+								      직후 prev 를 오염시켜 "뒤로 회귀" 를 만든 원인이다.
+								  4층 링 순서
+								      마지막 안전장치.
+								반환값은 { x, z, y } 이며 y 는 조회 실패 시 undefined 다.
+								호출부(window.Roll)가 현재 높이로 폴백한다.
 							*/
 							window.RollNext = function(_cx, _cz, _px, _pz){
-								var LOOKAHEAD = (typeof window.RollLookahead === "number" && window.RollLookahead > 0)
-									? window.RollLookahead : 5
-								/*
-									개발 Part 23 (후보 확장)
-									코사인 다음 후보 리스트를 최대 10개로 늘린다.
-									기존은 매 스텝 최고 코사인 1개만 채택해서
-									1) 그 후보가 막다른 칸이면 체인이 끊기고
-									2) 4칸 밀집 시 동점이라 방향 갈피를 못 잡았다.
-									10개 수집 → 링 순서 보너스로 동점 해소 →
-									체인 끊기면 다음 후보로 진행한다.
-								*/
-								var MAX_CANDIDATES = (typeof window.RollMaxCand === "number" && window.RollMaxCand > 0)
-									? window.RollMaxCand : 10
 								var dirs8 = [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]]
-								var _keys = window.Roll.snapKeys
 								var _snapArr = window.Roll.snap
+								var _keys = window.Roll.snapKeys ? window.Roll.snapKeys : {}
 								var _snapLen = _snapArr ? _snapArr.length : 0
-
-								/* 현재 칸의 스냅샷 인덱스 (링 순서 연속성 판정용) */
-								var _curIdx = -1
-								var _ck = (_cx * 1) + ":" + (_cz * 1)
-								if(typeof _keys[_ck] !== "undefined"){
-									_curIdx = _keys[_ck]
+								var _path = window.Roll.path
+								var _pathKeys = window.Roll.pathKeys ? window.Roll.pathKeys : {}
+								var _pathLen = _path ? _path.length : 0
+								_cx = _cx * 1
+								_cz = _cz * 1
+								if(isNaN(_cx) || isNaN(_cz)){
+									return null
 								}
-
-								/* 방향 벡터 */
-								var dirX, dirZ
-								if(_px !== null && _pz !== null && (_px !== _cx || _pz !== _cz)){
-									dirX = (_cx * 1) - (_px * 1)
-									dirZ = (_cz * 1) - (_pz * 1)
-								}else{
-									dirX = 1
-									dirZ = 0
+								var _hasPrev = false
+								if(_px !== null && typeof _px !== "undefined" && _pz !== null && typeof _pz !== "undefined"){
+									_px = _px * 1
+									_pz = _pz * 1
+									_hasPrev = (!isNaN(_px) && !isNaN(_pz))
 								}
-								var mag = Math.sqrt(dirX * dirX + dirZ * dirZ)
-								if(mag > 0){ dirX /= mag; dirZ /= mag }
-								else{ dirX = 1; dirZ = 0 }
-
-								/*
-									후보 수집 헬퍼.
-									(sx, sz)에서 유효한 다음 칸을 최대 MAX_CANDIDATES개 수집한다.
-									코사인 + 링 순서 연속성 보너스를 합산한 score 내림차순 정렬.
-
-									링 순서 보너스 (밀집 동점 해소)
-									코사인 차이가 0.05 이내인 후보가 3~4개 붙어 있으면
-									코사인만으로는 방향을 못 잡는다.
-									스냅샷 인덱스가 refIdx+1, +2, +3 인 칸에
-									0.09 / 0.06 / 0.03 보너스를 더해
-									"링 진행 방향" 후보를 자연스럽게 밀어 올린다.
-									역방향(+997 등)은 보너스 0이라 밀려난다.
-
-									반환: [{x, z, dx, dz, cos, idx, score}]
-								*/
-								var collectCandidates = function(sx, sz, sdx, sdz, spx, spz, refIdx){
-									var cands = []
-									for(var dd = 0; dd < dirs8.length; dd++){
-										var tnx = sx + dirs8[dd][0]
-										var tnz = sz + dirs8[dd][1]
-										if(tnx === spx && tnz === spz){ continue }
-										var tk = tnx + ":" + tnz
-										if(typeof _keys[tk] === "undefined"){ continue }
-										var tIdx = _keys[tk]
-
-										var tdx = dirs8[dd][0]
-										var tdz = dirs8[dd][1]
-										var tmag = Math.sqrt(tdx * tdx + tdz * tdz)
-										tdx /= tmag
-										tdz /= tmag
-
-										var tcos = sdx * tdx + sdz * tdz
-
-										/* 링 순서 연속성 보너스 */
-										var orderBonus = 0
-										if(refIdx >= 0 && _snapLen > 0){
-											var fwd = (tIdx - refIdx + _snapLen) % _snapLen
-											if(fwd <= 3){
-												orderBonus = 0.03 * (4 - fwd)
-											}
+								var _ck = _cx + ":" + _cz
+								/* 진행 방향. 이전 좌표가 없으면 +x 를 기준으로 둔다 */
+								var dirX = 1
+								var dirZ = 0
+								if(_hasPrev && (_px !== _cx || _pz !== _cz)){
+									var _vx = _cx - _px
+									var _vz = _cz - _pz
+									var _vm = Math.sqrt((_vx * _vx) + (_vz * _vz))
+									if(_vm > 0){
+										dirX = _vx / _vm
+										dirZ = _vz / _vm
+									}
+								}
+								var _tileY = function(x, z){
+									var k = x + ":" + z
+									try{
+										var b = window.map.biomes[k]
+										if(b && typeof b.y !== "undefined"){
+											return b.y * 1
 										}
-
-										cands.push({
-											x : tnx,
-											z : tnz,
-											dx : tdx,
-											dz : tdz,
-											cos : tcos,
-											idx : tIdx,
-											score : tcos + orderBonus
-										})
+									}catch(err){
 									}
-									/*
-										score 내림차순 정렬.
-										score 차이가 0.001 이내면 순수 코사인으로 재판정.
-									*/
-									cands.sort(function(a, b){
-										if(Math.abs(a.score - b.score) > 0.001){
-											return b.score - a.score
+									var i = _keys[k]
+									if(typeof i !== "undefined" && _snapArr && _snapArr[i]){
+										if(typeof _snapArr[i].y !== "undefined"){
+											return _snapArr[i].y * 1
 										}
-										return b.cos - a.cos
-									})
-									if(cands.length > MAX_CANDIDATES){
-										cands = cands.slice(0, MAX_CANDIDATES)
 									}
-									return cands
+									return undefined
 								}
-
-								/*
-									체인 끊김 방지 헬퍼.
-									(cx, cz)에서 (cpx, cpz)를 제외한 유효한 다음 칸이
-									최소 1개 있으면 true.
-									이게 false 인 후보를 건너뛰면
-									"코사인은 높은데 2스텝 뒤에 막다른" 경로를 피한다.
-								*/
-								var hasContinuation = function(cx, cz, cpx, cpz){
-									for(var dd = 0; dd < dirs8.length; dd++){
-										var tnx = cx + dirs8[dd][0]
-										var tnz = cz + dirs8[dd][1]
-										if(tnx === cpx && tnz === cpz){ continue }
-										var tk = tnx + ":" + tnz
-										if(typeof _keys[tk] !== "undefined"){ return true }
+								var _out = function(x, z){
+									return {
+										x : x,
+										z : z,
+										y : _tileY(x, z)
 									}
-									return false
 								}
-
-								var best = null
-								var bestTotal = -Infinity
-								var bestIdx = -1
-
-								/* 8방향 후보 평가 */
-								for(var d = 0; d < dirs8.length; d++){
-									var nx = (_cx * 1) + dirs8[d][0]
-									var nz = (_cz * 1) + dirs8[d][1]
-
-									/* 이전 칸 제외 */
-									if(_px !== null && nx === (_px * 1) && nz === (_pz * 1)){ continue }
-
-									var nKey = nx + ":" + nz
-									if(typeof _keys[nKey] === "undefined"){ continue }
-									var nIdx = _keys[nKey]
-									var nf = _snapArr[nIdx]
-									if(!nf){ continue }
-
-									/* 첫 스텝 방향 */
-									var ndx = dirs8[d][0]
-									var ndz = dirs8[d][1]
-									var nmag = Math.sqrt(ndx * ndx + ndz * ndz)
-									ndx /= nmag
-									ndz /= nmag
-
-									var total = dirX * ndx + dirZ * ndz
-
-									/*
-										룩어헤드 시뮬레이션 (개선).
-										각 스텝에서 최대 MAX_CANDIDATES개 후보를 수집하고
-										체인이 끊기지 않는 첫 번째 후보를 채택한다.
-										전부 끊기면 최고 점수 후보를 그대로 쓴다.
-									*/
-									var sx = nx, sz = nz
-									var spx = _cx, spz = _cz
-									var sdx = ndx, sdz = ndz
-									var sIdx = nIdx
-
-									for(var st = 0; st < LOOKAHEAD; st++){
-										var cands = collectCandidates(sx, sz, sdx, sdz, spx, spz, sIdx)
-										if(!cands.length){ break }
-
-										/*
-											후보 리스트를 순서대로 시도.
-											마지막 룩어헤드 스텝이 아니면
-											"다음 스텝이 존재하는" 첫 후보를 고른다.
-											이것이 체인 끊김 방지 핵심이다.
-										*/
-										var chosen = null
-										for(var ci = 0; ci < cands.length; ci++){
-											var c = cands[ci]
-											if(st < LOOKAHEAD - 1){
-												if(hasContinuation(c.x, c.z, sx, sz)){
-													chosen = c
-													break
-												}
+								var _adj = function(ax, az, bx, bz){
+									var dx = Math.abs(ax - bx)
+									var dz = Math.abs(az - bz)
+									if(dx > 1 || dz > 1){
+										return false
+									}
+									return (dx + dz) > 0
+								}
+								/* ---------- 1층 / 2층 : 순회 경로 커서 ---------- */
+								if(_pathLen >= 3){
+									var _ci = -1
+									var _cur = -1
+									if(typeof window.Roll.pathIdx === "number"){
+										if(window.Roll.pathIdx >= 0 && window.Roll.pathIdx < _pathLen){
+											_cur = window.Roll.pathIdx
+										}
+									}
+									if(_cur >= 0 && _path[_cur].x === _cx && _path[_cur].z === _cz){
+										/* 1층 : 커서가 현재 좌표와 일치한다 */
+										_ci = _cur
+									}else{
+										/* 2층 : 좌표로 커서를 복원한다 */
+										var _cand = _pathKeys[_ck]
+										if(_cand && _cand.length){
+											if(_cand.length === 1){
+												_ci = _cand[0]
 											}else{
-												chosen = c
-												break
+												var _bestScore = -Infinity
+												for(var _q = 0; _q < _cand.length; _q++){
+													var _idx = _cand[_q]
+													var _score = 0
+													var _pv = _path[(_idx - 1 + _pathLen) % _pathLen]
+													var _nt = _path[(_idx + 1) % _pathLen]
+													/* (a) 직전 칸 일치. 가장 강한 근거다 */
+													if(_hasPrev && _pv.x === _px && _pv.z === _pz){
+														_score += 100
+													}
+													/* (b) 진행 방향 코사인 */
+													var _ddx = _nt.x - _cx
+													var _ddz = _nt.z - _cz
+													var _dm = Math.sqrt((_ddx * _ddx) + (_ddz * _ddz))
+													if(_dm > 0){
+														_score += ((dirX * (_ddx / _dm)) + (dirZ * (_ddz / _dm))) * 10
+													}
+													/* (c) 마지막 커서와의 전방 근접도 */
+													if(_cur >= 0){
+														var _fwd = (_idx - _cur + _pathLen) % _pathLen
+														if(_fwd === 0){
+															_fwd = _pathLen
+														}
+														if(_fwd < 20){
+															_score += (20 - _fwd)
+														}
+													}
+													if(_score > _bestScore){
+														_bestScore = _score
+														_ci = _idx
+													}
+												}
 											}
 										}
-										/* 전부 끊기면 최고 점수 후보를 그대로 채택 */
-										if(!chosen){
-											chosen = cands[0]
-										}
-
-										total += chosen.cos * Math.pow(0.85, st + 1)
-										spx = sx; spz = sz
-										sx = chosen.x; sz = chosen.z
-										sdx = chosen.dx; sdz = chosen.dz
-										sIdx = chosen.idx
 									}
-
+									if(_ci >= 0){
+										var _ni = _ci + 1
+										if(_ni >= _pathLen){
+											_ni = 0
+										}
+										var _nx = _path[_ni]
+										/*
+											폐합되지 않은 경로에서 끝 -> 처음 으로 감을 때만
+											인접이 깨진다. 그때는 커서를 버리고 아래 계층으로 내려간다.
+										*/
+										if(_nx && _adj(_cx, _cz, _nx.x, _nx.z)){
+											window.Roll.pathIdx = _ni
+											return _out(_nx.x, _nx.z)
+										}
+									}
+									window.Roll.pathIdx = -1
+								}
+								/* ---------- 3층 : 인접 + 룩어헤드 벡터 유사도 ---------- */
+								var LOOKAHEAD = (typeof window.RollLookahead === "number" && window.RollLookahead > 0)
+									? window.RollLookahead : 4
+								var _curIdx = (typeof _keys[_ck] !== "undefined") ? _keys[_ck] : -1
+								var _step = function(sx, sz, sdx, sdz, spx, spz){
+									var pick = null
+									var pickCos = -Infinity
+									for(var d = 0; d < dirs8.length; d++){
+										var tx = sx + dirs8[d][0]
+										var tz = sz + dirs8[d][1]
+										if(tx === spx && tz === spz){
+											continue
+										}
+										if(typeof _keys[tx + ":" + tz] === "undefined"){
+											continue
+										}
+										var m = Math.sqrt((dirs8[d][0] * dirs8[d][0]) + (dirs8[d][1] * dirs8[d][1]))
+										var ux = dirs8[d][0] / m
+										var uz = dirs8[d][1] / m
+										var cos = (sdx * ux) + (sdz * uz)
+										if(cos > pickCos){
+											pickCos = cos
+											pick = {
+												x : tx,
+												z : tz,
+												dx : ux,
+												dz : uz,
+												cos : cos
+											}
+										}
+									}
+									return pick
+								}
+								var _best = null
+								var _bestTotal = -Infinity
+								var _hasNeighbor = false
+								for(var d0 = 0; d0 < dirs8.length; d0++){
+									var fx = _cx + dirs8[d0][0]
+									var fz = _cz + dirs8[d0][1]
+									var fk = fx + ":" + fz
+									if(typeof _keys[fk] === "undefined"){
+										continue
+									}
+									_hasNeighbor = true
+									if(_hasPrev && fx === _px && fz === _pz){
+										continue
+									}
+									var fm = Math.sqrt((dirs8[d0][0] * dirs8[d0][0]) + (dirs8[d0][1] * dirs8[d0][1]))
+									var fdx = dirs8[d0][0] / fm
+									var fdz = dirs8[d0][1] / fm
+									var total = (dirX * fdx) + (dirZ * fdz)
 									/*
-										첫 스텝 링 순서 보너스.
-										4칸 밀집지에서 코사인이 거의 같을 때
-										링 진행 방향(index+1) 후보를 밀어 올린다.
+										링 순서 전방 보너스.
+										동점 해소용이므로 코사인 항(최대 1.0)을 넘지 않는 크기로 둔다.
+										값을 키우면 링 순서가 각도를 이겨 순간이동이 된다.
 									*/
-									var firstOrderBonus = 0
 									if(_curIdx >= 0 && _snapLen > 0){
-										var fwd0 = (nIdx - _curIdx + _snapLen) % _snapLen
-										if(fwd0 <= 3){
-											firstOrderBonus = 0.03 * (4 - fwd0)
+										var fwd0 = (_keys[fk] - _curIdx + _snapLen) % _snapLen
+										if(fwd0 === 1){
+											total += 0.30
+										}else if(fwd0 === 2){
+											total += 0.15
 										}
 									}
-									total += firstOrderBonus
-
-									/*
-										총점 비교.
-										0.001 초과 차이: 높은 쪽 채택.
-										0.001 이내 동점: 링 순서가 더 가까운 쪽 채택.
-									*/
-									if(total > bestTotal + 0.001){
-										bestTotal = total
-										best = nf
-										bestIdx = nIdx
-									}else if(best && Math.abs(total - bestTotal) <= 0.001){
-										var bFwd = (bestIdx - _curIdx + _snapLen) % _snapLen
-										var nFwd = (nIdx - _curIdx + _snapLen) % _snapLen
-										if(nFwd < bFwd){
-											bestTotal = total
-											best = nf
-											bestIdx = nIdx
+									var sx = fx
+									var sz = fz
+									var spx = _cx
+									var spz = _cz
+									var sdx = fdx
+									var sdz = fdz
+									for(var st = 0; st < LOOKAHEAD; st++){
+										var nxt = _step(sx, sz, sdx, sdz, spx, spz)
+										if(!nxt){
+											break
+										}
+										total += nxt.cos * Math.pow(0.8, st + 1)
+										spx = sx
+										spz = sz
+										sx = nxt.x
+										sz = nxt.z
+										sdx = nxt.dx
+										sdz = nxt.dz
+									}
+									if(total > _bestTotal){
+										_bestTotal = total
+										_best = { x : fx, z : fz }
+									}
+								}
+								if(_best){
+									return _out(_best.x, _best.z)
+								}
+								/*
+									전진 후보가 하나도 없다.
+									스퍼 끝(머리카락 끝)이라는 뜻이므로 되돌아 나오는 것이 정상이다.
+									여기서 링 인덱스로 점프하면 좌표가 멀리 튀고
+									다음 스텝의 방향벡터가 뒤집혀 회귀가 시작된다.
+								*/
+								if(_hasPrev && _hasNeighbor){
+									if(typeof _keys[_px + ":" + _pz] !== "undefined"){
+										if(_adj(_cx, _cz, _px, _pz)){
+											return _out(_px, _pz)
 										}
 									}
 								}
-
-								/* 폴백: 스냅샷 순서 */
-								if(!best){
-									if(_curIdx >= 0 && _snapLen > 0){
-										var ni = _curIdx + 1
-										if(ni >= _snapLen){ ni = 0 }
-										best = _snapArr[ni]
+								/* ---------- 4층 : 링 순서 ---------- */
+								if(_curIdx >= 0 && _snapLen > 0){
+									var li = _curIdx + 1
+									if(li >= _snapLen){
+										li = 0
+									}
+									var lt = _snapArr[li]
+									if(lt){
+										return _out(lt.x, lt.z)
 									}
 								}
-
-								return best
+								return null
 							}
 
 							window.Roll.prevX = null
@@ -5240,20 +5311,6 @@ OAuth3.on("ready", function(e){
 
 												return
 											}else if($this.hasClass("Balance")){
-												/*
-													개발 Part 17 (상점)
-													현행은 return 뿐이라 아무 동작도 없었다.
-													AMM 상점(#swap)은 존재하지만
-													"인벤토리 칩을 하나씩 토글" 해야만 열렸다.
-													잔액 버튼을 판매 진입점으로 만든다.
-													  1) 보유 아이템 칩을 전부 선택(on) 한다
-													  2) window.SwapIntent = "sell" 로 기본 매도를 지정한다
-													  3) $body[swap] 을 켜 #swap 패널을 노출한다
-													  4) 다음 폴링의 query.assets 로 AMM 시세가 내려오고
-													     BoardCallback 이 #pool 을 sell 로 그린다
-													  5) submit 하면 window.Swap() 이 체결 요청을 보낸다
-													실제 체결은 서버 economyService.swap() 이 담당한다.
-												*/
 												var $sellables = $('emojis .items .emoji_asset[type="item"]')
 												if(!$sellables.length){
 													window.Notice("NO ITEMS", "Nothing to sell", 2000)
