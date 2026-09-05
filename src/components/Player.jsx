@@ -44,13 +44,21 @@ export function Player({
 	}
 
 	var roleEmoji = ""
-
-	if(props.role == "PMC"){
-		roleEmoji = "⚔"
-	}else if(props.role == "SCAV"){
-		roleEmoji = "🗡"
-	}else if(props.role == "UCAV"){
-		roleEmoji = "🛩"
+	try{
+		var _isSelf = (self == "true")
+		if(!_isSelf && self_hash && props_hash){
+			if(String(self_hash).toLowerCase() === String(props_hash).toLowerCase()){
+				_isSelf = true
+			}
+		}
+		if(!_isSelf){
+			var _myRole = (cookies && cookies.role) ? cookies.role : ""
+			if(_myRole == "UCAV" && props.role == "UCAV"){
+				roleEmoji = "⚔"
+			}
+		}
+	}catch(err){
+		roleEmoji = ""
 	}
 
 	useFrame((e, delta) => {
@@ -75,9 +83,13 @@ export function Player({
 						b = window.map.biomes[`${group.current.position.x}:${group.current.position.z}`]
 					}
 					if(b){
+						var _lift = window.TileLift ? window.TileLift * 1 : 0.02
+						if(isNaN(_lift)){
+							_lift = 0.02
+						}
 						var _cy = window.current.current.position.y
-						if(typeof _cy === "undefined" || Math.abs(_cy - b.y) > 0.05){
-							window.current.current.position.y = window.cursor.current.position.y = b.y
+						if(typeof _cy === "undefined" || Math.abs(_cy - (b.y + _lift)) > 0.05){
+							window.current.current.position.y = b.y + _lift
 						}
 					}
 				}catch(err){
@@ -97,29 +109,6 @@ export function Player({
 			}
 		}
 
-		/*
-			개발 Part 18 (이동 보간 재작성)
-			Part 17 의 오수정 3가지를 되돌리고 고친다.
-			1) _gap > 3 순간이동
-			   클릭 자유 이동은 3칸을 쉽게 넘는다.
-			   그래서 필드에서 움직일 때마다 순간이동이 됐다("종종 튄다").
-			   순간이동은 오직 window.Snap(진입 / 매치 전환 / 포털 / 룸 스폰)에서만 한다.
-			2) 프레임 고정 스텝
-			   multiplyScalar(window.speed) 는 프레임당 고정 거리라
-			   프레임레이트가 흔들리면 속도가 그대로 흔들린다.
-			   delta 를 곱해 초당 이동량을 일정하게 만든다.
-			   기준은 60fps 이므로 speed * 60 * delta 가 기존과 동일 속도다.
-			3) lookAt(position) 의 NaN
-			   position 은 Experience 의 self() 경로에서 THREE.Vector3 가 아니라
-			   { x, y, z } 평범한 객체가 들어올 수 있다.
-			   Object3D.lookAt 은 isVector3 가 아니면 set(x, y, z) 로 처리하므로
-			   객체를 넘기면 회전 행렬이 NaN 이 되어 표시가 튀었다.
-			   반드시 3개 스칼라로 넘긴다.
-			frameloop 게이트를 제거한 이유
-			  보간을 "always" 에서만 돌리면 demand 로 내려가는 순간 이동이 멈춘다.
-			  폴링 주기마다 always/demand 가 오가면 그게 곧 끊김으로 보인다.
-			  프레임이 오는 동안에는 항상 목표를 향해 좁힌다.
-		*/
 		var _gap = group.current.position.distanceTo(position)
 		if (window.Snap > 0) {
 			group.current.position.set(position.x, position.y, position.z);
@@ -130,26 +119,42 @@ export function Player({
 			return;
 		}
 		var _dt = (typeof delta === "number" && delta > 0 && delta < 0.25) ? delta : (1 / 60);
-		var _speed = window.speed ? window.speed : 0.1;
-		/*
-			먼 거리일수록 가속한다.
-			고정 속도(0.1/frame = 6칸/초)면 50칸 이동에 8초가 걸려
-			"자연스럽다" 가 아니라 "느리다" 가 된다.
-			최대 6배까지만 올려 가까운 거리의 연출은 그대로 둔다.
-		*/
-		var _boost = 1 + Math.min(_gap / 6, 5);
-		var _step = _speed * 60 * _dt * _boost;
-		if (_step >= _gap) {
-			group.current.position.set(position.x, position.y, position.z);
-		} else {
-			const direction = group.current.position
-				.clone()
-				.sub(position)
-				.normalize()
-				.multiplyScalar(_step);
-			group.current.position.sub(direction);
+		var _rolling = false;
+		try {
+			_rolling = (typeof window.Roll.ing !== "undefined");
+		} catch (err) {
+			_rolling = false;
 		}
-		group.current.lookAt(position.x, position.y, position.z);
+		if (_gap <= 1.6) {
+			var _tau = _rolling
+				? (window.MoveTau ? window.MoveTau * 1 : 0.25)
+				: (window.MoveTauFree ? window.MoveTauFree * 1 : 0.25);
+			if (isNaN(_tau) || _tau <= 0) {
+				_tau = 0.15;
+			}
+			var _k = 1 - Math.exp(-_dt / _tau);
+			if (_k > 1) {
+				_k = 1;
+			}
+			group.current.position.lerp(position, _k);
+		} else {
+			var _speed = window.speed ? window.speed : 0.1;
+			var _boost = 1 + Math.min(_gap / 6, 5);
+			var _step = _speed * 60 * _dt * _boost;
+			if (_step >= _gap) {
+				group.current.position.set(position.x, position.y, position.z);
+			} else {
+				const direction = group.current.position
+					.clone()
+					.sub(position)
+					.normalize()
+					.multiplyScalar(_step);
+				group.current.position.sub(direction);
+			}
+		}
+		if (_gap > 0.15) {
+			group.current.lookAt(position.x, position.y, position.z);
+		}
 	});
 
 
@@ -217,16 +222,10 @@ export function Player({
 		alt = "player"
 	}else{
 		alt = "player"
-
-		var _animated = ["🔥", "🎃", "👻", "🛩", "⚔", "🗡"]
-
-		if(props.emoji == "💣"){
-
-		}else if(window.typeof_emoji(props.emoji) || _animated.indexOf(props.emoji) > -1){
+		var _imgSrc = window.EmojiSrc ? window.EmojiSrc(props.emoji) : ""
+		if(_imgSrc){
 			type = "image"
-			hex = window.emojiUnicode(props.emoji)
-			
-			src = `/src/fonts/emoji/animated/${hex}.webp`
+			src = _imgSrc
 		}
 	}
 
@@ -239,7 +238,15 @@ export function Player({
 							<div className="emoji color">
 								<div data-plyr-provider={provider} data-plyr-embed-id={embed}></div>
 								<picture>
-									<img draggable="false" src={src} alt={alt} width="32" height="32" />
+									<img draggable="false" src={src} alt={alt} width="32" height="32"
+										onError={function(e){
+											if(!e || !e.target || !e.target.getAttribute("src")){
+												return
+											}
+											if(window.EmojiSrcError){
+												window.EmojiSrcError(e.target)
+											}
+										}} />
 								</picture>
 								<i>{emoji}</i>
 								{roleEmoji ? <i className="role-emoji">{roleEmoji}</i> : null}

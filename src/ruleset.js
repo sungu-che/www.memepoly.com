@@ -1,13 +1,3 @@
-/*
-	MEMEPOLY - src/ruleset.js
-	개발 Part 3 - 클라이언트 룰셋 로더
-
-	서버 /ruleset 엔드포인트에서 룰셋을 받아
-	window.items / window.emojis / window.Recipes / window.PropertyCost 등을 채운다.
-
-	기존 src/items.js / src/recipe.js / src/emojis.js 정적 정의를 대체한다.
-	로드 실패 시 정적 정의가 남아 있으면 그대로 사용한다(폴백).
-*/
 window.RulesetState = {
 	loaded : false,
 	version : "",
@@ -50,22 +40,58 @@ window.RulesetApply = function(payload){
 		if(payload.emojis && payload.emojis.length){
 			var keepSelf = window.emojis && window.emojis.self ? window.emojis.self : "😀"
 			var methods = []
+			var serverIcons = {}
+			for(var s = 0; s < payload.emojis.length; s++){
+				if(payload.emojis[s] && payload.emojis[s].icon){
+					serverIcons[payload.emojis[s].icon] = true
+				}
+			}
+			var localOnly = []
 			if(window.emojis && window.emojis.length){
 				for(var m = 0; m < window.emojis.length; m++){
-					if(window.emojis[m].method){
-						methods.push(window.emojis[m])
+					var cur = window.emojis[m]
+					if(!cur){
+						continue
 					}
+					if(cur.method){
+						methods.push(cur)
+						continue
+					}
+					if(!cur.icon){
+						continue
+					}
+					if(serverIcons[cur.icon]){
+						continue
+					}
+					/* index 는 로컬 배열에서의 원래 위치다 */
+					localOnly.push({ index : m, item : cur })
 				}
 			}
 			var next = []
 			for(var e = 0; e < payload.emojis.length; e++){
 				next.push(payload.emojis[e])
 			}
+			var offset = 0
+			for(var lo = 0; lo < localOnly.length; lo++){
+				var at = localOnly[lo].index - methods.length
+				if(at < 0){
+					at = 0
+				}
+				if(at > next.length){
+					at = next.length
+				}
+				next.splice(at, 0, localOnly[lo].item)
+				offset++
+			}
 			for(var mm = methods.length - 1; mm >= 0; mm--){
 				next.unshift(methods[mm])
 			}
 			next.self = keepSelf
 			window.emojis = next
+			if(offset > 0){
+				console.log("[ruleset] kept " + offset +
+					" local-only emoji(s). add them to server emojis.js and reseed")
+			}
 		}
 
 		/* recipes */

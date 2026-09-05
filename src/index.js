@@ -76,28 +76,6 @@ window.MapReset = function(){
 	}
 	return window.map
 }
-/*
-	개발 Part 14 (검수) - E6
-	window.map 하위 컨테이너를 보장한다.
-	현행 문제
-	  MapGen.apply() 는 window.map 이 없을 때만 MapReset() 을 호출하고
-	  그 뒤 biomes / dissolve 만 새 객체로 교체한다.
-	  타깃 없음 / Fields 실패 / 이미 ready 인 경로에서는 return false 로
-	  조기 이탈하므로 window.map 이 만들어지지 않거나 일부만 남는다.
-	  그 상태로 BoardCallback 이
-	    window.map.biomes[crc32키] = {...}
-	    window.map.nonces[crc32키] = {...}
-	  를 실행하면
-	    TypeError: Cannot set properties of undefined (setting '2TPHPJV')
-	  가 발생한다(2TPHPJV 는 crc32(...).toString(32).toUpperCase() 형식).
-	  이 예외는 biomes.forEach 안에서 터지므로 그 뒤의
-	  players.set / assets.set / setFrameloop 이 전부 실행되지 않고
-	  화면이 갱신을 멈춘다.
-	MapReset 을 쓰지 않는 이유
-	  MapReset 은 open / puzzle / score / reward 등 진행 상태를 전부 비운다.
-	  폴링마다 호출하면 방금 받은 데이터가 사라진다.
-	  여기서는 "없는 것만 만든다".
-*/
 window.MapGuard = function(){
 	if(!window.map){
 		return window.MapReset()
@@ -124,24 +102,6 @@ window.CanFreeMove = function(){
 	if(!cookies){
 		return false
 	}
-	/*
-		개발 Part 15 (규칙 R3)
-		개발 Part 14 (검수) - G3 의 판정을 원복한다.
-		G3 에서 "!enter 는 자유 이동" 으로 바꿨으나
-		규칙상 그것이 잘못이었다.
-		확정 규칙
-		  레이드 미참가(enter 없음)
-		    보드게임 모드. 링(edge) 위를 주사위로만 전진한다.
-		    클릭/터치 자유 이동은 금지한다.
-		  레이드 참가(enter 있음)
-		    링 밖 내륙 탐색. 자유 이동을 허용한다.
-		  감옥(jail / onJail)
-		    안전지대. 어느 모드든 자유 이동을 허용한다.
-		  사망(damage / dead)
-		    이동 금지.
-		  주사위 진행 중(dice > 0)
-		    자동 이동에 맡기고 수동 이동을 막는다.
-	*/
 	if(cookies.damage || cookies.dead){
 		return false
 	}
@@ -149,25 +109,6 @@ window.CanFreeMove = function(){
 	if(!isNaN(_dice) && _dice > 0){
 		return false
 	}
-	/*
-		개발 Part 30 (역할별 이동)
-		현행 문제 두 가지.
-		1) cookies.jail 을 무조건 통과시켰다.
-		   jail 은 participation 의 is_jailed 이며 #start / 탈출 / MIA 전까지
-		   꺼지지 않는 영구 플래그다.
-		   감옥 칸을 한 번 밟으면 그 판 내내 어디서든 자유 이동이 되어
-		   "링은 주사위 전용" 규칙이 무너졌다.
-		   위치 판정은 onJail(지금 서 있는 칸이 감옥) 하나로 충분하다.
-		   jail 은 "이번 판에 감옥을 거쳤다" 는 기록으로만 남긴다.
-		2) 마지막 판정 근거가 enter 였다.
-		   enter 는 UCAV 를 위해 붙인 조건인데 PMC 에도 그대로 적용되어
-		   출격한 PMC 가 링 위에서 조이스틱으로 걸어 다녔다.
-		확정 규칙
-		  onJail   감옥 칸. 안전지대이자 필드 진입점. 자유 이동 허용.
-		  UCAV     내륙 전용 유닛. 출격 중이면 자유 이동.
-		  PMC      링 위면 주사위 전용. 내륙이면 자유 이동.
-		  그 외    미출격이면 보드게임 모드(주사위 전용).
-	*/
 	if(cookies.onJail){
 		return true
 	}
@@ -176,6 +117,26 @@ window.CanFreeMove = function(){
 		return cookies.enter ? true : false
 	}
 	if(!cookies.enter){
+		if(cookies.jail){
+			if(!window.EdgeReady || !window.EdgeReady()){
+				return false
+			}
+			try{
+				var _me = window.players.self()
+				if(!window.IsEdge(_me.x, _me.z)){
+					return true
+				}
+				var _anc = window.RingAnchor ? window.RingAnchor() : null
+				if(!_anc){
+					return false
+				}
+				var _mgx = window.Grid(_me.x)
+				var _mgz = window.Grid(_me.z)
+				return !(_anc.x === _mgx && _anc.z === _mgz)
+			}catch(err){
+				return false
+			}
+		}
 		/* 보드게임 모드. 주사위 전용 */
 		return false
 	}
@@ -197,29 +158,6 @@ window.CanFreeMove = function(){
 	}
 	return true
 }
-/*
-	개발 Part 15 (규칙 R3)
-	현재 좌표가 링(edge) 위인지 판정한다.
-	window.fields 는 Experience.jsx 의 FieldsSync() 가 채우는
-	해안 링 배열이며, 좌표 키("x:z")로도 접근된다.
-	서버 isEdgeField 와 같은 기준이다.
-*/
-/*
-	개발 Part 18 (Edge 판정)
-	주사위 경로(링) 판정의 단일 원천을 프론트로 확정한다.
-	근거
-	  링 회전(progress splice), 다음 칸 계산(window.Roll), 이동 허용(CanFreeMove),
-	  주사위 노출(CanRollDice) 이 전부 프론트의 window.fields 를 본다.
-	  서버 fields 는 board_tiles(ring_index) 기반이라 같은 값이어야 하지만,
-	  판정 주체가 둘이면 한쪽만 어긋나도 "굴릴 수 있는데 못 굴리는" 상태가 된다.
-	  그래서 프론트가 판정하고, 그 결과를 query.edge 로 서버에 실어 보낸다.
-	EdgeReady()
-	  window.fields 가 진짜 링(coastRing)인지 확인한다.
-	  최초 진입에는 FieldsSerpentine(전 좌표 격자)이 들어오므로
-	  이때 IsEdge 가 true 를 남발하면 "어디서나 주사위" 가 된다.
-	EdgeField()
-	  링 칸 객체를 그대로 돌려준다. gate / jail / item 판정에 쓴다.
-*/
 window.EdgeReady = function(){
 	try{
 		var f = window.fields
@@ -236,7 +174,12 @@ window.EdgeField = function(_x, _z){
 		if(!window.EdgeReady()){
 			return null
 		}
-		var f = window.fields[(_x * 1) + ":" + (_z * 1)]
+		var _gx = window.Grid ? window.Grid(_x) : (_x * 1)
+		var _gz = window.Grid ? window.Grid(_z) : (_z * 1)
+		if(isNaN(_gx) || isNaN(_gz)){
+			return null
+		}
+		var f = window.fields[_gx + ":" + _gz]
 		return f ? f : null
 	}catch(err){
 		return null
@@ -245,20 +188,153 @@ window.EdgeField = function(_x, _z){
 window.IsEdge = function(_x, _z){
 	return window.EdgeField(_x, _z) ? true : false
 }
-/*
-	개발 Part 37 (예약 칸)
-	링 칸 중 건설할 수 없는 칸을 판정한다.
-	  jail  감옥. 안전지대이자 필드 진입점
-	  gate  출격구. 막으면 남의 출격을 봉쇄할 수 있다
-	  item  파밍 칸. 사유화하면 아이템 공급이 끊긴다
-	판정 순서
-	  1) cookies.tile.reserved
-	     서버가 axis 좌표로 확정해 내려준 값. 가장 정확하다
-	  2) window.fields[].jail / gate / item
-	     PropertyInit 이 붙인 값. 폴링 사이 지연이 있을 수 있다
-	빈 문자열이면 건설 가능한 일반 칸이다.
-	반환값은 사유 문자열이라 그대로 안내 문구에 쓸 수 있다.
-*/
+window.EdgeSelf = function(){
+	try{
+		var p = window.players.self()
+		return window.EdgeField(p.x, p.z)
+	}catch(err){
+		return null
+	}
+}
+window.TrailMap = function(){
+	var out = {}
+	var cookies = window.cookies
+	if(!cookies){
+		return out
+	}
+	try{
+		var s = window.State
+		if(s && s.trail && s.trail.length &&
+			String(s.trailMatch) === String(cookies.match)){
+			for(var i = 0; i < s.trail.length; i++){
+				if(s.trail[i]){
+					out[s.trail[i]] = true
+				}
+			}
+		}
+	}catch(err){
+	}
+	try{
+		if(window.Roll.trail && String(window.Roll.trailMatch) === String(cookies.match)){
+			for(var k in window.Roll.trail){
+				if(window.Roll.trail.hasOwnProperty(k)){
+					out[k] = true
+				}
+			}
+		}
+	}catch(err){
+	}
+	return out
+}
+window.TrailFill = function(cx, cz, size, seen, push){
+	var trail = window.TrailMap()
+	var keys = Object.keys(trail)
+	if(!keys.length){
+		return 0
+	}
+	var n = 0
+	for(var i = 0; i < keys.length; i++){
+		var key = keys[i]
+		if(seen[key]){
+			continue
+		}
+		var p = key.split(":")
+		var tx = p[0] * 1
+		var tz = p[1] * 1
+		if(isNaN(tx) || isNaN(tz)){
+			continue
+		}
+		/* 창 안이면 본 루프가 이미 담았다 */
+		if((cx - size < tx && cx + size > tx) && (cz - size < tz && cz + size > tz)){
+			continue
+		}
+		try{
+			if(window.ReservedTile && window.ReservedTile(tx, tz)){
+				continue
+			}
+		}catch(err){
+		}
+		var b = window.map.biomes[key]
+		if(!b || !b.biome){
+			continue
+		}
+		seen[key] = true
+		push({
+			key : key,
+			x : tx,
+			z : tz,
+			y : b.y,
+			water : b.water ? true : false,
+			biome : b.biome
+		})
+		n++
+	}
+	return n
+}
+window.CanDiceNow = function(){
+	var cookies = window.cookies
+	if(!cookies){
+		return false
+	}
+	if(cookies.damage || cookies.dead){
+		return false
+	}
+	var _d = cookies.dice * 1
+	if(!isNaN(_d) && _d > 0){
+		return false
+	}
+	if(cookies.role == "UCAV" && cookies.enter){
+		return false
+	}
+	if(!window.EdgeReady || !window.EdgeReady()){
+		return false
+	}
+	if(!(window.EdgeSelf && window.EdgeSelf())){
+		return false
+	}
+	var _anc = window.RingAnchor ? window.RingAnchor() : null
+	if(!_anc){
+		/* 이번 판 첫 굴림. 이 칸이 첫 앵커가 된다 */
+		return true
+	}
+	try{
+		var _p = window.players.self()
+		return (_anc.x === window.Grid(_p.x) && _anc.z === window.Grid(_p.z))
+	}catch(err){
+		return false
+	}
+}
+window.DiceHome = function(){
+	var cookies = window.cookies
+	if(!cookies || cookies.enter){
+		return null
+	}
+	if(cookies.damage || cookies.dead){
+		return null
+	}
+	try{
+		var _d = cookies.dice * 1
+		if(!isNaN(_d) && _d > 0){
+			return null
+		}
+	}catch(err){
+	}
+	var _anc = window.RingAnchor ? window.RingAnchor() : null
+	if(!_anc){
+		return null
+	}
+	try{
+		var _p = window.players.self()
+		var _gx = window.Grid(_p.x)
+		var _gz = window.Grid(_p.z)
+		if(_anc.x === _gx && _anc.z === _gz){
+			return null
+		}
+	}catch(err){
+		return null
+	}
+	return _anc
+}
 window.ReservedTile = function(_x, _z){
 	try{
 		var c = window.cookies
@@ -337,36 +413,9 @@ window.CanRollDice = function(){
 	}
 	return window.IsEdge(player.x, player.z)
 }
-
-/*
-	개발 Part 36 (국가 주소)
-	현행 문제
-	  BoardCallback 의 #property 분기가 bare 식별자 NATION 을 참조한다.
-	    propertyField.property.owner = NATION
-	  NATION 은 서버 index.js 에만 있는 지역 변수라 프론트에는 없다.
-	  row.__nation 이 true 인 행, 즉 누군가 처음 죽거나 파산해
-	  국유 부동산이 생기는 순간 ReferenceError 가 난다.
-	  그 for 루프에는 자체 try/catch 가 없어 예외가 바깥까지 튀고
-	    players.set / assets.set / setFrameloop
-	    스티커 / 툴팁 / #flag HUD
-	    Poll.ing 재설정
-	  이 전부 건너뛰어져 화면이 통째로 멈춘다.
-	window 프로퍼티로 두면 bare NATION 도 그대로 해석되므로
-	호출부를 고치지 않아도 된다.
-	서버 index.js 의 NATION 과 반드시 같은 값이어야 한다.
-*/
 window.NATION = "0x0000000000000000000000000000000000000000"
-/*
-	개발 Part 36 (그리드 스냅)
-	보드 좌표는 항상 0.5 단위다.
-	그런데 window.current.current.position 은 lerp 잔차로
-	-5.500000001 같은 값이 될 수 있다.
-	앵커 비교(===)나 fields["x:z"] 조회에 그대로 쓰면
-	  같은 칸인데 다르다고 판정
-	  링 칸인데 EdgeField 가 null
-	이 된다. window.Roll 이 이미 같은 보정을 하고 있다.
-	비교와 키 조회 앞에서는 반드시 이 함수를 통과시킨다.
-*/
+window.TileLift = 0.02
+window.CursorLift = 0.06
 window.Grid = function(v){
 	var n = v * 1
 	if(isNaN(n)){
@@ -374,13 +423,6 @@ window.Grid = function(v){
 	}
 	return Math.round(n * 2) / 2
 }
-/*
-	개발 Part 31 (링 앵커)
-	서버가 cookies.anchor 로 "주사위로 확정된 마지막 링 좌표" 를 내려준다.
-	주사위는 언제나 이 좌표에서 출발한다.
-	감옥(SAFE ZONE)에서 내륙으로 나갔다가 돌아와도
-	여기서부터 이어서 진행된다.
-*/
 window.RingAnchor = function(){
 	try{
 		var raw = window.cookies ? window.cookies.anchor : ""
@@ -406,12 +448,6 @@ window.RingAnchor = function(){
 		return null
 	}
 }
-/*
-	개발 Part 31 (링 앵커)
-	캐릭터를 앵커로 즉시 되돌린다.
-	lerp 로 기어가면 내륙에서 링까지 지형을 가로지르는 연출이 되므로
-	Snap 으로 붙인다.
-*/
 window.RingReturn = function(anchor){
 	if(!anchor){
 		return false
@@ -422,9 +458,15 @@ window.RingReturn = function(anchor){
 		if(b && typeof b.y !== "undefined"){
 			_y = b.y * 1
 		}
+		/* 개발 Part 63 (표시 높이 통일) */
+		var _aTile = window.TileLift ? window.TileLift * 1 : 0.02
+		var _aCur = window.CursorLift ? window.CursorLift * 1 : 0.06
+		if(isNaN(_aTile)){ _aTile = 0.02 }
+		if(isNaN(_aCur)){ _aCur = 0.06 }
 		window.Snap = 8
 		window.current.current.position.x = window.cursor.current.position.x = anchor.x
-		window.current.current.position.y = window.cursor.current.position.y = _y + 0.01
+		window.current.current.position.y = _y + _aTile
+		window.cursor.current.position.y = _y + _aCur
 		window.current.current.position.z = window.cursor.current.position.z = anchor.z
 		var _h = window.cookies.address ? window.cookies.address : window.cookies.hash
 		if(window[_h] && window[_h].position){
@@ -450,36 +492,133 @@ window.BiomeAt = function(_x, _z){
 	}
 	return ""
 }
-/*
-	개발 Part 17 (규칙 R6)
-	목표 좌표로 들어갈 수 있는가.
-	CanFreeMove() 는 "지금 자유 이동이 가능한가"(상태 판정)이고
-	CanMoveTo() 는 "그 칸에 들어가도 되는가"(좌표 판정)이다. 둘은 다르다.
-	규칙
-	  UCAV  링(edge) 진입 금지. 내륙 전용 유닛이다.
-	        링은 주사위 경로이자 안전지대이므로 드론이 올라오면
-	        서버가 되돌려 보내 좌표가 튄다. 애초에 못 들어가게 막는다.
-	  그 외 제한 없음.
-*/
+window.FieldView = function(_x, _z){
+	try{
+		if(!window.assets || !window.assets.set){
+			return false
+		}
+		if(!window.map || !window.map.biomes){
+			return false
+		}
+		var size = 4
+		var cx = window.Grid ? window.Grid(_x) : (_x * 1)
+		var cz = window.Grid ? window.Grid(_z) : (_z * 1)
+		if(isNaN(cx) || isNaN(cz)){
+			return false
+		}
+		var _url = new URL(window.location.href)
+		var cc = ethers.hashMessage(_url.href.replace(window.location.protocol+"//",""))
+			cc = ethers.computeAddress(cc).toLowerCase().replace("0x","")
+		if(window.location.hash){
+			cc = window.location.hash.replace("#","")
+		}
+		var trail = window.TrailMap ? window.TrailMap() : {}
+		var seen = {}
+		var out = []
+		for(var dx = -size + 1; dx < size; dx++){
+			for(var dz = -size + 1; dz < size; dz++){
+				var bx = cx + dx
+				var bz = cz + dz
+				var key = bx + ":" + bz
+				var b = window.map.biomes[key]
+				if(!b || !b.biome){
+					continue
+				}
+				var color = window.Biomes["#" + b.biome]
+				if(trail[key]){
+					var _reserved = ""
+					try{
+						_reserved = window.ReservedTile ? window.ReservedTile(bx, bz) : ""
+					}catch(err){
+						_reserved = ""
+					}
+					if(!_reserved){
+						color = "black"
+					}
+				}
+				seen[key] = true
+				out.push({
+					id : crc32(cc + "#" + b.biome + bx + bz).toString(32).toUpperCase(),
+					hash : cc,
+					name : "#" + b.biome,
+					value : color,
+					color : color,
+					x : bx,
+					y : b.y - (b.water ? 0.8 : 0.5),
+					z : bz
+				})
+			}
+		}
+		try{
+			if(window.TrailFill){
+				window.TrailFill(cx, cz, size, seen, function(t){
+					out.push({
+						id : crc32(cc + "#" + t.biome + t.x + t.z).toString(32).toUpperCase(),
+						hash : cc,
+						name : "#" + t.biome,
+						value : "black",
+						color : "black",
+						x : t.x,
+						y : t.y - (t.water ? 0.8 : 0.5),
+						z : t.z
+					})
+				})
+			}
+		}catch(err){
+		}
+		if(!out.length){
+			return false
+		}
+		var sig = ""
+		for(var s = 0; s < out.length; s++){
+			sig += out[s].id + out[s].color + "|"
+		}
+		if(window.FieldView.sig === sig){
+			return false
+		}
+		window.FieldView.sig = sig
+		window.assets.set(out)
+		window.setFrameloop("always")
+		return true
+	}catch(err){
+		return false
+	}
+}
+window.FieldView.sig = ""
 window.CanMoveTo = function(_x, _z){
 	var cookies = window.cookies
 	if(!cookies){
+		window.CanMoveTo.reason = ""
 		return false
 	}
 	if(cookies.role == "UCAV" && cookies.enter){
 		if(window.IsEdge(_x, _z)){
+			window.CanMoveTo.reason = "ucav"
 			return false
 		}
 	}
+	if(!cookies.enter && cookies.jail){
+		try{
+			if(window.EdgeReady && window.EdgeReady() && window.IsEdge(_x, _z)){
+				var _a = window.RingAnchor ? window.RingAnchor() : null
+				if(!_a){
+					window.CanMoveTo.reason = "noanchor"
+					return false
+				}
+				var _tx = window.Grid(_x)
+				var _tz = window.Grid(_z)
+				if(_a.x !== _tx || _a.z !== _tz){
+					window.CanMoveTo.reason = "anchor"
+					return false
+				}
+			}
+		}catch(err){
+		}
+	}
+	window.CanMoveTo.reason = ""
 	return true
 }
-/*
-	개발 Part 17 (식량)
-	파밍한 음식 / 음료를 먹을 수 있는지 판정한다.
-	장비 소모품(🧪)은 typeof_equipment 가 담당하므로 여기서는 제외한다.
-	회복량은 서버 index.js 의 FOOD_HEAL 과 동일한 표를 쓴다.
-	(프론트는 "먹을 수 있는가 / 만피인가" 만 보고, 실제 회복은 서버가 확정한다)
-*/
+window.CanMoveTo.reason = ""
 window.FoodSubgroups = [
 	"food-fruit", "food-vegetable", "food-marine",
 	"drink", "food-sweet",
@@ -514,24 +653,6 @@ window.FoodHeal = function(icon){
 	}
 	return 1
 }
-/*
-	개발 Part 14 (검수) - G2
-	cookies.axis 를 파싱한다.
-	서버는 axis 의 y 에 캐릭터 높이 오프셋(+1)을 더해 저장한다.
-	  state.tile.y   0.010820952412578966   실제 지형 높이
-	  cookies.axis   "-5.5,1.0108209524125789,-39.5"
-	  차이가 정확히 1 이다.
-	프론트는 이 값을 지형 높이로 그대로 써서
-	바이옴 테이블에 좌표가 없는 순간(MapGen 미적용 / 매치 전환 직후)
-	캐릭터가 1 유닛 공중에 떠 보였다.
-	우선순위
-	  1) window.map.biomes 의 실측 높이
-	  2) window.State.tile.y (서버 DTO. 오프셋 없는 원본)
-	  3) axis y - 1 (오프셋 보정)
-	  4) 0
-	반환값 y 는 항상 "지형 표면 높이" 다.
-	카메라/캐릭터 오프셋은 호출부가 더한다.
-*/
 window.AxisParse = function(raw){
 	var out = { x : null, y : 0, z : null, ok : false }
 	if(!raw){
@@ -573,11 +694,6 @@ window.AxisParse = function(raw){
 	}
 	var raw_y = parts[1] * 1
 	if(!isNaN(raw_y)){
-		/*
-			서버 오프셋 보정.
-			raw_y 가 1 이상이면 오프셋이 더해진 값으로 본다.
-			섬 최고 표고가 1 을 넘지 않는 현행 지형 스케일을 전제로 한다.
-		*/
 		out.y = raw_y >= 1 ? (raw_y - 1) : raw_y
 		out.source = "axis"
 		return out
@@ -645,11 +761,6 @@ window.Zoom = function(){
 }
 
 window.Callback = async function(resp){
-	/*
-		개발 Part 22 (룩어헤드 격리)
-		window.response 가 더 이상 저장되지 않으므로
-		null/undefined 가 들어올 수 있다.
-	*/
 	if(!resp || !resp.body || !resp.body.cookies){
 		return
 	}
@@ -659,13 +770,6 @@ window.Callback = async function(resp){
 	}catch(err){
 		_cookies = window.cookies
 	}
-	/*
-		개발 Part 12
-		서버가 rows[] 와 함께 도메인 DTO(state)를 보낸다.
-		여기서 흡수해 window.State 에 보관한다.
-		화면 로직은 아직 rows[] 를 쓰지만, 전환된 부분부터
-		window.State 를 읽는다.
-	*/
 	try{
 		if(window.StateApply){
 			window.StateApply(resp)
@@ -675,17 +779,6 @@ window.Callback = async function(resp){
 	}
 	var mode = window.Mode(_cookies)
 	$("body").attr("world", mode)
-	/*
-		개발 Part 18 (HUD)
-		#flag(레드/블루 깃발 카운터)는 보드게임 전용 지표다.
-		현행 문제
-		  BoardCallback 만 $("#flag ."+team).addClass("on") 을 하고
-		  룸으로 넘어갈 때 해제하는 코드가 어디에도 없었다.
-		  그래서 마이룸에서도 카운터가 그대로 떠 있었다.
-		display 를 빈 문자열로 되돌리는 이유
-		  .show() 는 display:block 을 강제해 CSS 의 flex 레이아웃을 깬다.
-		  인라인 스타일만 지워 원래 CSS 값으로 복귀시킨다.
-	*/
 	try{
 		if(mode == "room"){
 			$("#flag").removeClass("on").css("display", "none")
@@ -843,10 +936,31 @@ function Respawn(){
 		*/
 		var _ax = window.AxisParse(cookies.axis)
 		if(_ax.ok){
-			position = {
-				x : _ax.x,
-				y : _ax.y,
-				z : _ax.z
+			/*
+				개발 Part 45 (바다 스폰)
+				저장된 axis 가 바다면 쓰지 않는다.
+				판 전환 직후에는 섬이 통째로 바뀌므로
+				이전 판의 육지 좌표가 이번 판에서는 바다일 수 있다.
+				position 을 만들지 않으면 아래 랜덤 스폰 루프가
+				물이 아닌 칸을 골라 준다.
+				바이옴 테이블이 아직 비어 있는 프레임에서는
+				판정 근거가 없으므로 그대로 채택한다(기존 동작 유지).
+			*/
+			var _axWater = false
+			try{
+				var _axBiome = window.map.biomes[_ax.x + ":" + _ax.z]
+				if(_axBiome && _axBiome.water){
+					_axWater = true
+				}
+			}catch(err){
+				_axWater = false
+			}
+			if(!_axWater){
+				position = {
+					x : _ax.x,
+					y : _ax.y,
+					z : _ax.z
+				}
 			}
 		}
 	}
@@ -1170,7 +1284,6 @@ window.oembed = function(url){
 window.typeof_emoji = function(icon){
 	for(var i = 0; i < window.emojis.length; i++){
 		var emoji = window.emojis[i];
-
 		if(emoji.icon == icon){
 			if(emoji.webp){
 				return emoji.type
@@ -1179,8 +1292,175 @@ window.typeof_emoji = function(icon){
 			}
 		}
 	}
-
 	return false
+}
+/*
+	개발 Part 50 (애니메이션 이모지)
+	현행 문제
+	  Player.jsx 가 판정과 경로 조립을 직접 했다.
+	    var _animated = ["🔥", "🎃", "👻", "🛩", "⚔", "🗡"]
+	    if(props.emoji == "💣"){
+	    }else if(window.typeof_emoji(props.emoji) || _animated.indexOf(...) > -1){
+	        type = "image"
+	        hex = window.emojiUnicode(props.emoji)
+	        src = `/src/fonts/emoji/animated/${hex}.webp`
+	  세 가지가 걸린다.
+	    1) _animated 하드코딩이 이미 "emojis 에 없지만 webp 는 있는" 것을
+	       메우는 임시방편이다. 🫥 / 🤯 도 같은 처지인데 빠져 있었다.
+	    2) webp 파일이 없으면 img 가 404 로 깨지는데
+	       #root player[type="image"] i{display: none;} 때문에
+	       텍스트 폴백도 감춰져 캐릭터가 화면에서 통째로 사라진다.
+	    3) 같은 판정이 RoomAsset / 스티커 등 다른 곳에도 흩어져 있다.
+	조치
+	  판정과 경로를 한 곳으로 모으고, 실패한 파일을 기억해 재시도를 막는다.
+	반환
+	  webp 경로 문자열, 또는 "" (텍스트로 그려야 함)
+*/
+/*
+	개발 Part 62 (이모지 이미지 3단계 폴백)
+	현행 문제
+	  애니메이션 webp 만 시도하고 없으면 곧장 텍스트로 떨어뜨렸다.
+	  그런데 애니메이션 세트(Noto Animated Emoji)는
+	  얼굴 / 손짓 / 하트 / 일부 사물 약 200여 개뿐이고 무기류가 없다.
+	    🔥 1f525  있음
+	    🎃 1f383  있음
+	    👻 1f47b  있음
+	    ⚔  2694   없음
+	    🗡 1f5e1  없음
+	    🛩 1f6e9  없음
+	  그래서 NPC 세 종류(PMC ⚔ / SCAV 🗡 / UCAV 🛩)가 전부
+	  OS 폰트 글리프로 그려졌다.
+	    <player type="text"><picture><img src=""></picture><i>⚔</i>
+	  운영체제마다 모양이 달라지고 색도 없다.
+	조치
+	  정적 PNG 세트로 한 단계 더 떨어뜨린다.
+	  프로젝트가 3D 타일 텍스처로 이미 전체 Noto PNG 를 쓴다.
+	    map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${...}.png`)}
+	  즉 /src/fonts/emoji/emoji_u2694.png 는 존재한다.
+	폴백 순서
+	  1) /src/fonts/emoji/animated/{hex}.webp   움직인다
+	  2) /src/fonts/emoji/emoji_u{hex}.png      정지 이미지. 색과 모양이 일정하다
+	  3) 텍스트                                  둘 다 없을 때만
+	크기
+	  #root .emoji picture * 가 width 18vh 를 주므로
+	  webp 든 png 든 같은 크기로 그려진다. CSS 수정이 필요 없다.
+	실패 기억
+	  파일이 없는 것은 세션 내내 변하지 않는다.
+	  한 번 404 가 나면 기록해 두고 다시 요청하지 않는다.
+*/
+window.EmojiFail = { webp : {}, png : {} }
+window.EmojiSrc = function(icon){
+	if(!icon){
+		return ""
+	}
+	/*
+		💣 는 의도적으로 제외한다.
+		폭탄은 3D 자산 / 마커로 따로 그리며 플레이어 본체로는 쓰지 않는다.
+		(Player.jsx 의 기존 예외를 그대로 유지한다)
+	*/
+	if(icon === "💣"){
+		return ""
+	}
+	/*
+		이미지로 그릴 대상인지 판정한다.
+		  typeof_emoji  window.emojis 에 있는 것(룰셋 이모지 덱)
+		  typeof_item   window.items 에 있는 것(⚔ 🗡 🛩 등 장비 / 사물)
+		  _extra        어느 쪽에도 없지만 게임이 쓰는 것(🎃 👻 등 NPC)
+		셋 중 하나라도 맞으면 Noto PNG 가 존재한다고 본다.
+		없으면 onError 가 텍스트로 되돌린다.
+	*/
+	var _extra = ["🔥", "🎃", "👻", "🛩", "⚔", "🗡", "🫥", "🤯"]
+	var known = false
+	try{
+		known = window.typeof_emoji(icon) ? true : false
+	}catch(err){
+		known = false
+	}
+	if(!known){
+		try{
+			known = window.typeof_item(icon) ? true : false
+		}catch(err){
+			known = false
+		}
+	}
+	if(!known && _extra.indexOf(icon) === -1){
+		return ""
+	}
+	var hex = ""
+	try{
+		hex = window.emojiUnicode(icon)
+	}catch(err){
+		return ""
+	}
+	if(!hex){
+		return ""
+	}
+	if(!window.EmojiFail.webp[hex]){
+		return "/src/fonts/emoji/animated/" + hex + ".webp"
+	}
+	if(!window.EmojiFail.png[hex]){
+		return "/src/fonts/emoji/emoji_u" + hex + ".png"
+	}
+	return ""
+}
+/*
+	개발 Part 62 (폴백 진행)
+	img 로드가 실패하면 다음 단계로 넘긴다.
+	  webp 실패  같은 자리에서 png 로 즉시 교체한다.
+	             React 재렌더를 기다리면 한 프레임 캐릭터가 사라진다.
+	  png 실패   src 를 지우고 type 을 text 로 되돌린다.
+	재렌더 안전성
+	  EmojiSrc 가 EmojiFail 을 먼저 보므로
+	  React 가 다시 그려도 같은 단계로 돌아오지 않는다.
+	호출부는 Player.jsx 의 <img onError> 다.
+*/
+window.EmojiSrcError = function(el){
+	if(!el){
+		return
+	}
+	try{
+		var src = el.getAttribute("src")
+		if(!src){
+			return
+		}
+		var file = String(src).split("/").pop()
+		if(src.indexOf("/animated/") > -1){
+			var whex = file.replace(".webp", "")
+			if(whex){
+				window.EmojiFail.webp[whex] = true
+				/* 같은 자리에서 정적 PNG 로 갈아탄다 */
+				el.setAttribute("src", "/src/fonts/emoji/emoji_u" + whex + ".png")
+				return
+			}
+		}
+		if(file.indexOf("emoji_u") === 0){
+			var phex = file.replace("emoji_u", "").replace(".png", "")
+			if(phex){
+				window.EmojiFail.png[phex] = true
+				console.log("[emoji] no image for " + phex + ". falling back to text")
+			}
+		}
+		el.removeAttribute("src")
+		var _emoji = el.closest ? el.closest("emoji") : null
+		if(_emoji){
+			_emoji.setAttribute("type", "text")
+		}
+		var _player = el.closest ? el.closest("player") : null
+		if(_player){
+			_player.setAttribute("type", "text")
+		}
+	}catch(err){
+	}
+}
+/*
+	개발 Part 50 호환.
+	기존 호출부가 남아 있어도 동작하도록 이름만 이어 둔다.
+*/
+window.AnimatedEmoji = function(icon){
+	return window.EmojiSrc(icon)
+}
+window.EmojiWebpError = function(el){
+	return window.EmojiSrcError(el)
 }
 
 window.typeof_shield = function(icon){
@@ -1224,6 +1504,74 @@ window.typeof_role = function(icon, role){
 		return "UCAV"
 	}
 	return role ? role : ""
+}
+/*
+	개발 Part 64 (NPC 얼굴)
+	현행 문제
+	  NPC 의 본체 이모지가 무기였다.
+	    <player team="#pmc"><i>⚔</i>
+	  플레이어는 얼굴(😀)인데 NPC 만 칼이라 사람으로 보이지 않는다.
+	  게다가 역할을 본체 이모지에서 역추론하고 있어
+	    role : window.typeof_role(player.emoji, ...)
+	  얼굴로 바꾸면 역할 정보를 잃는다.
+	조치
+	  역할은 행의 해시태그에서 가져온다.
+	    Cc: "5.5,-40.5,0 #pmc {주소} @⚔"  ->  hashtag "#pmc"
+	  이미 team 으로 화면까지 전달되고 있으므로 서버 수정이 필요 없다.
+	  본체는 역할별 얼굴 풀에서 고른다.
+	사람 팀과의 구분
+	  teams = ["#red", "#blue", "#black", "#white"] 는 사람 플레이어 팀이다.
+	  #pmc / #scav / #ucav 만 NPC 로 본다.
+*/
+window.NpcRole = function(tag){
+	if(!tag){
+		return ""
+	}
+	var t = String(tag).replace("#", "").toUpperCase()
+	if(t === "PMC" || t === "SCAV" || t === "UCAV"){
+		return t
+	}
+	return ""
+}
+/*
+	개발 Part 64 (NPC 얼굴)
+	역할별 얼굴 풀.
+	전부 src/emojis.js 에 webp:true 로 등록돼 있어
+	애니메이션 webp 가 존재한다(개발 Part 62 의 1단계에서 잡힌다).
+	성격을 나눠 역할이 한눈에 읽히게 한다.
+	  PMC   적대 전투     화난 얼굴
+	  SCAV  은밀 파밍     엿보는 얼굴
+	  UCAV  기계 드론     무표정
+*/
+window.NpcFace = {
+	PMC : ["😠", "😡", "🤬", "😤", "😬"],
+	SCAV : ["😏", "🤫", "🫣", "🧐", "😶"],
+	UCAV : ["🫡", "😐", "😑", "🤨"],
+	"" : ["🙂", "😐"]
+}
+/*
+	개발 Part 64 (NPC 얼굴)
+	주소로 얼굴을 결정론적으로 고른다.
+	랜덤을 쓰면 폴링마다 얼굴이 바뀌어
+	  1) 같은 NPC 가 다른 개체처럼 보이고
+	  2) Player.jsx 의 props 가 매번 달라져 불필요한 재렌더가 난다
+	NPC 주소는 서버가 매치 시드로 만들므로 판 안에서 고정이다.
+*/
+window.NpcEmoji = function(hash, role){
+	var pool = window.NpcFace[role] ? window.NpcFace[role] : window.NpcFace[""]
+	if(!pool || !pool.length){
+		return "🙂"
+	}
+	var seed = 0
+	try{
+		var s = String(hash ? hash : "")
+		for(var i = 0; i < s.length; i++){
+			seed = (seed + s.charCodeAt(i) * (i + 1)) % 100003
+		}
+	}catch(err){
+		seed = 0
+	}
+	return pool[seed % pool.length]
 }
 window.isItem = function(icon){
 	for(var i = 0; i < window.items.length; i++){
@@ -1498,6 +1846,209 @@ $.fn.stopSpin = function () {
 		}
 	}
 };
+/*
+	개발 Part 52 (주사위 스핀 수명 관리)
+	현행 문제
+	  1) 툴팁은 폴링마다 템플릿에서 통째로 다시 그려진다.
+	       if(before_body != after_body){ $tooltip.html(after_body) }
+	     스핀 중 DOM 은 템플릿과 반드시 다르다.
+	       data-playslot 속성 / style="top:..." / 클론된 7번째 li / .num 값
+	     그래서 응답이 오는 즉시 <ul> 노드가 교체된다.
+	     jQuery .animate() 는 떨어져 나간 옛 노드를 계속 돌리므로
+	     화면에서는 애니메이션이 통째로 사라진다.
+	     연타하면 클릭마다 응답이 오므로 그만큼 자주 끊긴다.
+	  2) playSpin 의 재진입 가드가 무력하다.
+	       if ($(this).is(':animated')) return;
+	     $(this) 는 클릭할 때 새로 조회한 노드다.
+	     교체된 새 노드는 애니메이션 중이 아니라 그냥 통과한다.
+	  3) 정지 경로가 BoardCallback 의 dice > 0 분기 안에만 있다.
+	       window.Roll.back.loopCount = 6
+	     loopCount 는 플러그인이 증가시키지 않으므로
+	     이 대입이 없으면 릴이 영원히 돈다.
+	     서버가 굴림을 거절하면(diceBlocked) dice 가 0 이라
+	     그 분기를 타지 않아 멈출 방법이 없었다.
+	  4) window.Roll.back 이 전역 단일 참조다.
+	     노드가 교체되면 detached 슬롯을 가리켜
+	     endNum 주입이 화면에 반영되지 않는다.
+	조치
+	  스핀의 수명을 하나의 상태로 관리한다.
+	    busy    스핀이 살아 있는가
+	    at      시작 시각. 응답이 영영 안 와도 강제 종료한다
+	    result  착지할 눈
+	  이 상태를 툴팁 재렌더 가드와 클릭 재진입 차단에 함께 쓴다.
+*/
+window.DiceSpin = {
+	busy : false,
+	at : 0,
+	result : 0,
+	/*
+		강제 종료 한계.
+		서버 응답이 끊기거나 요청이 abort 되면 정지 신호가 오지 않는다.
+		(window.Action 은 새 요청 전에 이전 xhr 를 abort 한다)
+		릴이 영원히 도는 것을 막는다.
+	*/
+	max : 6000
+}
+/*
+	현재 화면의 릴 노드.
+	본인 툴팁을 우선 찾는다. #dice 는 본인에게만 렌더되지만
+	재렌더 직후 프레임에서 중복 매칭을 피하려고 self 로 좁힌다.
+*/
+window.DiceSpinNode = function(){
+	var $ul = $('#root player[self="true"] tooltip #dice ul')
+	if(!$ul.length){
+		$ul = $('#root player tooltip #dice ul')
+	}
+	if(!$ul.length){
+		$ul = $('#dice ul')
+	}
+	return $ul
+}
+/*
+	window.Roll.back 이 아직 살아 있는 노드를 가리키는지 확인한다.
+	document 에서 떨어져 나갔으면 그 스핀은 이미 무효다.
+*/
+window.DiceSpinLive = function(){
+	try{
+		var slot = window.Roll ? window.Roll.back : null
+		if(!slot || !slot.$el || !slot.$el.length){
+			return null
+		}
+		var el = slot.$el[0]
+		if(!el || !document.body.contains(el)){
+			return null
+		}
+		return slot
+	}catch(err){
+		return null
+	}
+}
+window.DiceSpinBusy = function(){
+	if(!window.DiceSpin.busy){
+		return false
+	}
+	if(!window.DiceSpinLive()){
+		/* 노드가 이미 교체됐다면 그 스핀은 없는 것으로 본다 */
+		window.DiceSpin.busy = false
+		return false
+	}
+	if(Date.now() - window.DiceSpin.at > window.DiceSpin.max){
+		window.DiceSpin.busy = false
+		try{
+			window.DiceSpinNode().stop(true, false).removeAttr("style")
+		}catch(err){
+		}
+		console.log("[dice] spin timed out. releasing")
+		return false
+	}
+	return true
+}
+/*
+	릴을 초기 상태로 되돌린다.
+	클론 정리가 필요한 이유
+	  setup() 이 매번 li 를 하나 복제해 붙이고
+	    $li.clone().appendTo(slot.$el)
+	  endSpin() 완료 콜백에서만 제거한다.
+	    slot.$el.find('li').last().remove()
+	  스핀이 중간에 끊기면 클론이 남아 liCount 가 7, 8 로 늘어난다.
+	  그러면 listHeight 와 finalPos 계산이 어긋나 착지 위치가 틀어진다.
+*/
+window.DiceSpinReset = function($ul){
+	if(!$ul || !$ul.length){
+		return
+	}
+	try{
+		var $li = $ul.children("li")
+		if($li.length > 6){
+			$li.slice(6).remove()
+		}
+		$ul.stop(true, false).removeAttr("style").removeAttr("data-playslot")
+	}catch(err){
+	}
+}
+/*
+	스핀 시작. 이미 돌고 있으면 false 를 돌려준다.
+	호출부는 이 반환값으로 요청 전송 여부를 정한다.
+*/
+window.DiceSpinStart = function(){
+	if(window.DiceSpinBusy()){
+		return false
+	}
+	var $ul = window.DiceSpinNode()
+	if(!$ul.length){
+		return false
+	}
+	window.DiceSpinReset($ul)
+	window.DiceSpin.busy = true
+	window.DiceSpin.at = Date.now()
+	window.DiceSpin.result = 0
+	$ul.playSpin({
+		onFinish : function(){
+			/*
+				착지 완료.
+				여기서 style 을 지워 릴을 감추고 .num 으로 넘긴다.
+				CSS 가 ul[style] 유무로 릴과 .num 을 맞바꾸므로
+				이 순서를 지켜야 깜빡이지 않는다.
+				  body[edge="true"] ... ul[style]{opacity: 1}
+				  body[edge="true"] ... ul[style]+.num{opacity: 0}
+				현행은 이 정리를 스핀이 도는 도중에 했다.
+			*/
+			window.DiceSpin.busy = false
+			try{
+				window.DiceSpinNode().removeAttr("style")
+				$('#root player tooltip #dice .num').text(window.DiceSpin.result)
+			}catch(err){
+			}
+		}
+	})
+	return true
+}
+/*
+	착지 지시.
+	loopCount 를 loops 까지 올리면 다음 루프 끝에서 endSpin 으로 넘어간다.
+	busy 는 여기서 내리지 않는다.
+	  착지 애니메이션이 500ms 더 남아 있고,
+	  그 동안 툴팁이 재렌더되면 착지가 다시 끊긴다.
+	  onFinish 가 내린다.
+*/
+window.DiceSpinStop = function(dice){
+	var slot = window.DiceSpinLive()
+	if(!slot){
+		window.DiceSpin.busy = false
+		return false
+	}
+	var n = Math.ceil(Math.sqrt(Math.pow(dice * 1, 2)))
+	if(isNaN(n) || n < 0){
+		n = 0
+	}
+	if(n > 6){
+		n = 6
+	}
+	window.DiceSpin.result = n
+	/* endNum 0 이면 slotMachine 이 무작위 눈으로 착지한다 */
+	slot.options.endNum = n
+	slot.loopCount = slot.options.loops
+	return true
+}
+/*
+	응답이 도착했을 때 호출한다.
+	250ms 유예를 두는 이유
+	  굴림 요청을 보내기 직전에 이미 나가 있던 폴링 응답이
+	  먼저 도착해 방금 시작한 스핀을 즉시 멈추는 경우가 있다.
+	  그 창을 넘긴 응답만 정지 신호로 받아들인다.
+	dice 가 0 이어도 멈춘다.
+	  서버가 거절(diceBlocked)했거나 굴릴 수 없는 상태다.
+	  현행은 이 경로가 없어 릴이 계속 돌았다.
+*/
+window.DiceSpinSync = function(dice){
+	if(!window.DiceSpin.busy){
+		return false
+	}
+	if(Date.now() - window.DiceSpin.at < 250){
+		return false
+	}
+	return window.DiceSpinStop(dice)
+}
 
 var slotMachine = function (el, options, track) {
 	var slot = this;
@@ -1753,13 +2304,6 @@ OAuth3.on("ready", function(e){
 		$("#nav").prop("checked",false)
 		var address = window.location.hash.replace("#","0x")
 		$("#intro .title .emoji").html("")
-		/*
-			개발 Part 14 (검수) - E13
-			location.hash 가 40자 hex 가 아니면(예: "#a")
-			blockies 가 null 을 반환해 append(null) 이 됐다.
-			jQuery append 는 null 을 무시하므로 예외는 없었지만
-			아이콘이 조용히 사라졌다. Blockie 로 통일한다.
-		*/
 		var _introIcon = window.Blockie(address)
 		if(_introIcon){
 			$("#intro .title .emoji").append(_introIcon)
@@ -2343,8 +2887,19 @@ OAuth3.on("ready", function(e){
 							window.Roll.prevX = _cx
 							window.Roll.prevZ = _cz
 
+							/*
+								개발 Part 63 (표시 높이 통일)
+								주사위 이동 중에는 커서도 플레이어를 따라간다.
+								다만 두 판이 겹치지 않도록 띄움 값을 나눈다.
+								0.01 하나로 통일하면 커서가 current 에 묻혀 보이지 않는다.
+							*/
+							var _rTile = window.TileLift ? window.TileLift * 1 : 0.02
+							var _rCur = window.CursorLift ? window.CursorLift * 1 : 0.06
+							if(isNaN(_rTile)){ _rTile = 0.02 }
+							if(isNaN(_rCur)){ _rCur = 0.06 }
 							window.current.current.position.x = window.cursor.current.position.x = biomes.x = _next.x
-							window.current.current.position.y = window.cursor.current.position.y = biomes.y = _ny + 0.01
+							window.current.current.position.y = biomes.y = _ny + _rTile
+							window.cursor.current.position.y = _ny + _rCur
 							window.current.current.position.z = window.cursor.current.position.z = biomes.z = _next.z
 
 							var _selfHash = window.cookies.address ? window.cookies.address : window.cookies.hash
@@ -2363,6 +2918,30 @@ OAuth3.on("ready", function(e){
 						*/
 						if(_next && window.Sfx){
 							window.Sfx.play("step")
+						}
+						/*
+							개발 Part 47 (전장의 안개 / 이동 궤적)
+							한 칸 전진할 때마다
+							  1) 밟은 칸을 궤적에 기록한다
+							  2) 새 좌표 기준으로 시야를 다시 만든다
+							_next 가 없으면(경로 끝 / 스냅샷 실패) 좌표가 안 바뀌었으므로
+							아무것도 하지 않는다.
+						*/
+						if(_next){
+							try{
+								if(!window.Roll.trail){
+									window.Roll.trail = {}
+								}
+								window.Roll.trail[_next.x + ":" + _next.z] = true
+								window.Roll.trailMatch = window.cookies.match
+							}catch(err){
+							}
+							try{
+								if(window.FieldView){
+									window.FieldView(_next.x, _next.z)
+								}
+							}catch(err){
+							}
 						}
 						window.cookies.dice = dice - 1
 						window.setFrameloop("always")
@@ -2542,19 +3121,6 @@ OAuth3.on("ready", function(e){
 					}
 
 					var progress = []
-					/*
-						개발 Part 14 (검수) - G2
-						현행 문제
-						  1) b 가 없으면 y 에 _axis[1] 을 그대로 썼다.
-						     서버가 +1 오프셋을 더해 저장하므로
-						     캐릭터가 1 유닛 공중에 떴다.
-						  2) b 가 없으면 Respawn() 으로 좌표를 통째로 버렸다.
-						     매치 전환 직후 매번 랜덤 스폰이 됐다.
-						  3) cookies.axis 를 덮어쓰면서 오프셋 없는 y 를 넣어
-						     서버와 프론트의 axis 형식이 어긋났다.
-						AxisParse 가 오프셋 보정과 폴백을 담당한다.
-						좌표 자체를 못 읽을 때만 Respawn 으로 넘어간다.
-					*/
 					var _ax = window.AxisParse(cookies.axis)
 					var b = (window.map && window.map.biomes)
 						? window.map.biomes[_ax.x + ":" + _ax.z] : null
@@ -2568,64 +3134,16 @@ OAuth3.on("ready", function(e){
 						axis.x = _respawn.x
 						axis.y = _respawn.y
 						axis.z = _respawn.z
-						/*
-							서버 형식과 맞추려면 y 에 오프셋을 다시 더해야 한다.
-							다음 폴링의 query.y 로 그대로 올라가기 때문이다.
-						*/
 						cookies.axis = [axis.x, axis.y + 1, axis.z].toString()
 					}
 					if(window.current){
 						var _cur = window.current.current.position
 						var _cur_biome = window.map.biomes[`${_cur.x}:${_cur.z}`]
-						/*
-							개발 Part 29 (서버 텔레포트 반영)
-							현행 문제
-							  window.current.axis 는 한 번 true 가 되면
-							  BoardHashChange 전까지 절대 꺼지지 않는다.
-							  그래서 두 번째 폴링부터는 언제나 else 로 들어가
-							    axis.x = _cur.x
-							  즉 클라이언트 좌표가 서버 좌표를 덮어쓴다.
-							  서버가 확정한 좌표 이동이 화면에 한 번도 반영되지 않았다.
-							    출격 스폰(#start 커밋)  게이트에서 역할을 골라도 제자리
-							    부활 / 감옥
-							    UCAV 링 반출(edgeBlocked)
-							  게다가 다음 폴링에서 프론트가 다시 옛 좌표를 보고하므로
-							  서버가 또 되돌리려 하는 핑퐁이 끝나지 않는다.
-							조치
-							  서버가 "내가 좌표를 옮겼다" 고 명시한 경우에만 강제 반영한다.
-							  추측이 아니라 서버가 내려준 플래그로 판정한다.
-							    spawned      #start 가 스폰을 확정했다
-							    edgeBlocked  UCAV 가 링에서 내륙으로 반출됐다
-							  일반 폴링에서는 기존대로 클라이언트 좌표를 유지한다.
-							  (주사위 애니메이션 / 조이스틱 이동이 서버 지연에 끊기지 않게)
-						*/
+						if(_cur_biome && _cur_biome.water){
+							_cur_biome = null
+						}
 						var _teleport = ""
 						try{
-							/*
-								개발 Part 30 (판 전환)
-								서버는 판이 넘어가면 axis 를 버리고 리스폰시킨 뒤
-								matchRolled 로 알린다.
-								이 신호가 없으면 current.axis 잠금 때문에
-								새 판 스폰 좌표가 화면에 반영되지 않고
-								캐릭터가 옛 판 좌표에 남는다.
-							*/
-							/*
-								개발 Part 36 (앵커 되감기)
-								현행 문제
-								  서버 개발 Part 31 은 앵커가 아닌 칸에서 굴리면
-								  x/z 를 앵커로 되감고 cookies.anchorReturn 을 내려준다.
-								  프론트가 스스로 되감지 못한 경우가 있다.
-								    EdgeReady() 가 false 인 프레임에서 굴림
-								    다른 탭 / 구버전 캐시
-								  그런데 이 트리거 목록에 anchorReturn 이 없어
-								  window.current.axis 잠금 때문에 else 로 빠지고
-								    axis.x = _cur.x
-								  즉 클라이언트 좌표가 서버 좌표를 덮어썼다.
-								  다음 폴링에 옛 좌표를 또 보고하므로
-								  서버가 또 되감는 핑퐁이 끝나지 않고,
-								  그동안 서버는 앵커에서 클라이언트는 원래 자리에서
-								  주사위를 굴려 도착 칸이 갈렸다.
-							*/
 							if(cookies.spawned || cookies.edgeBlocked || cookies.matchRolled || cookies.anchorReturn){
 								_teleport = cookies.matchRolled ? "match"
 									: (cookies.spawned ? "spawn"
@@ -2645,11 +3163,6 @@ OAuth3.on("ready", function(e){
 						}
 						if(!window.current.axis || !_cur_biome || _teleport){
 							window.current.axis = true
-							/*
-								개발 Part 17 (스폰)
-								여기가 "서버가 준 좌표를 처음 반영하는 지점" 이다.
-								이 순간 캐릭터와 카메라를 lerp 없이 즉시 붙인다.
-							*/
 							window.Snap = 8
 							biomes.x = window.current.current.position.x = window.cursor.current.position.x = axis.x
 							biomes.z = window.current.current.position.z = window.cursor.current.position.z = axis.z
@@ -3106,19 +3619,20 @@ OAuth3.on("ready", function(e){
 										if(!typeof_emoji && window.map.biomes[row.Id]){
 											delete window.map.biomes[row.Id]
 										}
-
 										player.x = row.x
 										player.y = y
 										player.z = row.z
 										player.emoji = emoji
+										var _npcRole = window.NpcRole ? window.NpcRole(hashtag) : ""
+										if(_npcRole){
+											player.npc = _npcRole
+											player.emoji = window.NpcEmoji
+												? window.NpcEmoji(_from, _npcRole)
+												: player.emoji
+										}
 									}
 
 									if(!row.Flag){
-										/*
-											개발 Part 12
-											신고/차단 판정을 window.State 로 전환한다.
-											DTO 가 없으면 기존 window.map.report 로 폴백한다.
-										*/
 										var _hidden = window.StateReady()
 											? window.StateHidden(_from)
 											: (window.map.report[_from] ? true : false)
@@ -3136,7 +3650,10 @@ OAuth3.on("ready", function(e){
 													y : player.y + 0.5,
 													z : player.z,
 													emoji : player.emoji,
-													role : window.typeof_role(player.emoji, player.self ? cookies.role : "")
+													role : player.npc
+														? player.npc
+														: window.typeof_role(player.emoji, player.self ? cookies.role : ""),
+													npc : player.npc ? true : false
 												})
 											}
 
@@ -3171,11 +3688,6 @@ OAuth3.on("ready", function(e){
 									}
 								}
 							}else if(row.Subject == "#property"){
-								/*
-									개발 Part 12
-									서버가 __propertyId / __level / __toll 을 실어 보낸다.
-									DTO 가 있으면 그쪽을 우선 쓴다.
-								*/
 								var propertyField = window.fields ? window.fields[`${row.x}:${row.z}`] : null
 								if(propertyField && propertyField.property){
 									var _dtoProp = window.StateReady()
@@ -3195,14 +3707,6 @@ OAuth3.on("ready", function(e){
 											? row.__toll
 											: (propertyField.property.tollTable ? propertyField.property.tollTable[row.dice] : 0)
 									}
-									/*
-										개발 Part 33 (국가 소유)
-										applyToFields 가 채운 nation / treasury 를
-										이 루프가 덮어써 지우지 않도록 함께 반영한다.
-										국가 부동산은 owner 가 빈 문자열로 들어오므로
-										(owner_id 가 NULL 이라 hashMap 조회가 실패한다)
-										ZERO 로 정규화해야 프론트 판정이 깨지지 않는다.
-									*/
 									if(typeof row.__nation != "undefined"){
 										propertyField.property.nation = row.__nation ? true : false
 									}
@@ -3327,27 +3831,8 @@ OAuth3.on("ready", function(e){
 						}else{
 							$body.attr("field", "")
 						}
-						/*
-							개발 Part 41 (주사위 UI 게이트)
-							현행 문제
-							  CSS 가 body[biome="BEACH"] 를 "링 위" 의 대용으로 썼다.
-							    #root player tooltip .slot-machine{display:none}
-							    body[biome="BEACH"] ... .slot-machine{display:block}
-							  그런데 링과 BEACH 는 같은 집합이 아니다.
-							    coastRing   8방향 외곽선 추적
-							    getBiome    coast 는 voronoi 그래프의 4방향 이웃으로 판정
-							  바다가 대각선으로만 닿거나 내륙 호수에 접한 링 칸은
-							  coast=false 가 되어 GRASSLAND 등으로 나온다.
-							  그 칸에서는 굴릴 수는 있는데(핸들러는 IsEdge 로 판정)
-							  아이콘이 💣 로 남고 슬롯머신이 뜨지 않는다.
-							조치
-							  개발 Part 18 에서 확정한 IsEdge 를 그대로 body 에 싣는다.
-							  CSS 는 body[edge="true"] 로 판정하면 된다.
-							  링이 아직 확정되지 않았으면(EdgeReady false) 속성을 지운다.
-							  그 상태에서 true 를 넣으면 로딩 중 주사위 UI 가 잘못 뜬다.
-						*/
 						try{
-							if(window.EdgeReady && window.EdgeReady() && window.IsEdge(x, z)){
+							if(window.EdgeSelf && window.EdgeSelf()){
 								$body.attr("edge", "true")
 							}else{
 								$body.removeAttr("edge")
@@ -3355,50 +3840,102 @@ OAuth3.on("ready", function(e){
 						}catch(err){
 							$body.removeAttr("edge")
 						}
+						try{
+							if(window.CanDiceNow && window.CanDiceNow()){
+								$body.attr("diceable", "true")
+							}else{
+								$body.removeAttr("diceable")
+							}
+							if(window.DiceHome && window.DiceHome()){
+								$body.attr("dicehome", "true")
+							}else{
+								$body.removeAttr("dicehome")
+							}
+							if(window.EdgeReady && window.EdgeReady() &&
+								!(window.EdgeSelf && window.EdgeSelf()) &&
+								!(window.RingAnchor && window.RingAnchor()) &&
+								!cookies.enter){
+								if(!window.BoardCallback.offRingWarned){
+									window.BoardCallback.offRingWarned = true
+									console.log("[board] off-ring while board mode :: " +
+										x + "," + z +
+										" ring=" + (window.fields ? window.fields.length : 0) +
+										" match=" + cookies.match)
+								}
+							}
+						}catch(err){
+							$body.removeAttr("diceable")
+						}
 
 						var type = window.typeof_emoji(self_player.emoji)
 
 						if(type == "emoji"){
 							$body.attr("emoji",self_player.emoji)
 						}
-
-						if(bombs.length){
-							for(var i = 0; i < bombs.length; i++){
-								var bomb = bombs[i]
-
-								if(bomb){
-									for(var _x = -2; _x < 3; _x++){
-										for(var _z = -2; _z < 3; _z++){
-											if(window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`]){
-												if(bomb.Flag){
-													delete window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb
-												}else{
-													window.map.biomes[`${bomb.x+_x}:${bomb.z+_z}`].bomb = true
-												}
-											}
-										}
-									}	
+						try{
+							if(!window.map.bombMarks){
+								window.map.bombMarks = []
+							}
+							for(var _bm = 0; _bm < window.map.bombMarks.length; _bm++){
+								var _bk = window.map.bombMarks[_bm]
+								if(window.map.biomes[_bk]){
+									delete window.map.biomes[_bk].bomb
 								}
 							}
+							window.map.bombMarks = []
+							if(bombs.length){
+								for(var i = 0; i < bombs.length; i++){
+									var bomb = bombs[i]
+									if(!bomb){
+										continue
+									}
+									/* 이미 해소된 폭탄은 칠하지 않는다 */
+									if(bomb.Flag){
+										continue
+									}
+									for(var _x = -2; _x < 3; _x++){
+										for(var _z = -2; _z < 3; _z++){
+											var _key = (bomb.x + _x) + ":" + (bomb.z + _z)
+											if(!window.map.biomes[_key]){
+												continue
+											}
+											window.map.biomes[_key].bomb = true
+											window.map.bombMarks.push(_key)
+										}
+									}
+								}
+							}
+						}catch(err){
+							console.log("[board] bomb mark err", err)
 						}
-
+						var _trail = window.TrailMap ? window.TrailMap() : {}
+						var _seen = {}
+						var _trailPaint = function(bx, bz){
+							if(!progress[bx + ":" + bz] && !_trail[bx + ":" + bz]){
+								return false
+							}
+							try{
+								if(window.ReservedTile && window.ReservedTile(bx, bz)){
+									return false
+								}
+							}catch(err){
+							}
+							return true
+						}
 						biomes.forEach(function(b, i){
 							if(
 								(biomes.x - size < b.x && biomes.x + size > b.x) &&
 								(biomes.z - size < b.z && biomes.z + size > b.z)
 							){
 								var color = window.Biomes["#"+b.biome]
-
 								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-
 								if(window.map.biomes[_id]){
 									isBiome = true
 								}
-
-								if(progress[`${b.x}:${b.z}`]){
+								if(_trailPaint(b.x, b.z)){
 									color = "black"
 								}
-
+								_seen[b.x + ":" + b.z] = true
 								_assets.push({
 									id : _id,
 									hash : cc_address,
@@ -3411,15 +3948,24 @@ OAuth3.on("ready", function(e){
 								})	
 							}
 						})
-
+						try{
+							if(window.TrailFill){
+								window.TrailFill(biomes.x, biomes.z, size, _seen, function(t){
+									_assets.push({
+										id : crc32(cc_address+"#"+t.biome+t.x+t.z).toString(32).toUpperCase(),
+										hash : cc_address,
+										name : "#"+t.biome,
+										value : "black",
+										color : "black",
+										x : t.x,
+										y : t.y - (t.water ? 0.8 : 0.5),
+										z : t.z
+									})
+								})
+							}
+						}catch(err){
+						}
 						if(window.assets && !isBiome){
-							/*
-								개발 Part 14 (검수) - E6
-								forEach 내부는 try/catch 밖이라 예외가 나면
-								이후 players.set / assets.set 이 전부 건너뛰어진다.
-								MapGuard 로 이미 보장되지만, 이 블록이 예외의
-								실제 발생 지점이었으므로 진입 직전에 한 번 더 확인한다.
-							*/
 							if(!window.map.biomes){
 								window.map.biomes = {}
 							}
@@ -3659,12 +4205,31 @@ OAuth3.on("ready", function(e){
 		
 								var cnt = stickers[emoji].length
 								var len = cnt - 1
-
 								var _el = $('[id="'+row.Id+'"]')
-
 								if(!window.sticker[row.Id]){
 									window.sticker[row.Id] = true
-									stickers[len].new = true
+									/*
+										개발 Part 47 (new 플래그 인덱싱)
+										현행 문제
+										  stickers[len].new = true
+										  len 은 이모지 그룹 안의 마지막 인덱스인데
+										  stickers 는 전체 아이템 평면 배열이다.
+										  같은 이모지만 먹을 때는 우연히 맞았지만
+										  이모지 두 종류를 동시에 먹으면
+										    i=0 (A)  stickers[0].new = true  -> A
+										    i=1 (B)  stickers[0].new = true  -> 또 A
+										  가 되어 B 에는 new 가 서지 않고
+										  아래 if(row.new) 를 통과하지 못해
+										  B 의 획득 애니메이션이 아예 뜨지 않았다.
+										  (gatherRate 2 이상, 게이트 드랍 동시 획득 등)
+										조치
+										  자기 자신에게 표시한다.
+										  실제 애니메이션 대상은 아래
+										    if(len == row.index)
+										  이 걸러 그룹당 마지막 1개만 남기므로
+										  결과 개수는 달라지지 않는다.
+									*/
+									row.new = true
 								}
 
 								var isToggle = false
@@ -3898,88 +4463,34 @@ OAuth3.on("ready", function(e){
 									var src = `/src/fonts/emoji/animated/${hex}.webp`
 
 									if(_player.emoji == "🔥"){
-										// tooltip_body = `<li>
-										// 	<a class="hashType"></a>
-										// </li>
-										// <li>
-										// 	<a class="hashType">🏗</a>
-										// </li>
-										// <li>
-										// 	<a class="hashType"></a>
-										// </li>`
 									}else if(player_hash.indexOf(_player_hash) > -1){
 										var _maxHp = window.MaxHp[cookies.role ? cookies.role : ""]
 										var _hp = typeof cookies.hp != "undefined" ? cookies.hp : _maxHp
-										/*
-											개발 Part 17 (HUD)
-											HP li 를 툴팁에서 제거하고 #capture .rank_toggle 로 옮긴다.
-											a.hashType.Hp 클래스는 그대로이므로
-											아래 BoardInit 의 $this.hasClass("Hp") 위임 핸들러가
-											위치와 무관하게 계속 동작한다.
-										*/
 										if(window.HpBadge){
 											window.HpBadge(_hp, _maxHp)
 										}
-										/*
-											개발 Part 32 (첫 슬롯 재배치)
-											슬롯이 3개로 고정이라 첫 칸의 용도를 위치에 따라 나눈다.
-											현행 문제
-											  첫 칸이 언제나 Fire(팀 깃발)였다.
-											  깃발은 내륙 점령용인데 링 위에서도 계속 떠 있었고,
-											  정작 링의 핵심인 부동산 건설은 덱에 숨어 있었다.
-											  게다가 서버 #property 분기는
-											    var field = fields[`${x}:${z}`]
-											    if (field && field.property && worldId && accountId)
-											  이고 fields 는 해안 링만 담은 배열이다.
-											  내륙 좌표는 undefined 라 블록이 통째로 건너뛰어졌다.
-											  즉 덱의 건설 버튼은 링 밖에서 눌러도 무반응이었고
-											  오류조차 남지 않았다.
-											확정 배치
-											  게이트(🚪) + 미출격  Deploy  출격 진입점 (개발 Part 29)
-											  링 위                Build   부동산 건설. 실제로 동작하는 유일한 곳
-											  내륙                 Fire    팀 깃발. 레이드 점령 수단
-											  게이트도 링 칸이라 둘이 겹친다.
-											  출격은 놓치면 안 되는 진입점이므로 게이트를 우선한다.
-											Build 라벨
-											  PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
-											  레벨 0 은 빈 문자열이라 아이콘이 사라진다.
-											  🏗(공사)로 대체해 "지을 수 있는 빈 땅" 을 표현한다.
-											  cnt 에는 통행료를 넣어 그 칸의 가치를 바로 보이게 한다.
-											  own 속성으로 내 땅 / 남의 땅 / 빈 땅을 CSS 에서 구분할 수 있다.
-										*/
-										var _slotBody = `<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>`
+										var _slotBody = cookies.enter
+											? `<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>`
+											: `<a class="hashType"></a>`
 										try{
-											var _sf = window.EdgeField
-												? window.EdgeField(self_player.x, self_player.z) : null
+											var _sf = window.EdgeSelf ? window.EdgeSelf() : null
 											var _rk = (_sf && window.ReservedTile)
-												? window.ReservedTile(self_player.x, self_player.z) : ""
-											if(_sf && _sf.gate && !cookies.enter){
-												_slotBody = `<a class="hashType Deploy emoji color"><i class="emoji color">🚪</i></a>`
-											}else if(_sf && _rk){
-												/*
-													개발 Part 37 (예약 칸)
-													감옥 / 게이트 / 아이템 칸에서는 건설 버튼을 감춘다.
-													현행은 게이트에 이미 출격한 상태이거나
-													감옥 / 아이템 칸이면 그대로 Build 가 떴다.
-													눌러도 서버가 거절하므로 "눌러도 안 되는 버튼" 이 된다.
-													대신 그 칸이 무슨 칸인지 아이콘으로 알린다.
-													클릭하면 사유를 안내한다(아래 Reserved 핸들러).
-												*/
-												var _rIcon = "🔒"
-												if(_rk === "gate"){
-													_rIcon = _sf.drop ? _sf.drop : "🚪"
-												}else if(_rk === "item"){
-													_rIcon = _sf.item ? _sf.item : "❔"
+												? window.ReservedTile(_sf.x, _sf.z) : ""
+											if(_sf && (_sf.gate || _sf.drop)){
+												if(!cookies.enter){
+													_slotBody = `<a class="hashType Deploy emoji color"><i class="emoji color">🚪</i></a>`
+												}else{
+													var _exitOk = cookies.exitable ? true : false
+													var _exitHold = cookies.exitHold ? cookies.exitHold : ""
+													_slotBody = `<a class="hashType Exit emoji color" ready="${_exitOk ? "1" : "0"}"><i class="emoji color">🚪</i><span class="cnt">${_exitHold}</span></a>`
 												}
-												_slotBody = `<a class="hashType Reserved emoji color" tile="${_rk}"><i class="emoji color">${_rIcon}</i></a>`
+											}else if(_sf && _rk){
+												if(_rk === "item"){
+													_slotBody = `<a class="hashType"></a>`
+												}else{
+													_slotBody = `<a class="hashType Reserved emoji color" tile="${_rk}"><i class="emoji color">🔒</i></a>`
+												}
 											}else if(_sf){
-												/*
-													부동산 정보 조회 우선순위
-													  1) cookies.tile
-													     서버가 axis 좌표로 확정해 내려준 값이라 가장 정확하다
-													  2) fields[].property
-													     #property 행이 갱신한 값. 폴링 사이 지연이 있을 수 있다
-												*/
 												var _prop = null
 												try{
 													if(cookies.tile &&
@@ -4019,18 +4530,6 @@ OAuth3.on("ready", function(e){
 													}
 												}catch(err){
 												}
-												/*
-													개발 Part 33 (국가 소유)
-													own 값을 넷으로 나눈다.
-													  ""       빈 땅. 지을 수 있다
-													  self     내 땅. 통행료를 받는다
-													  other    남의 땅. 밟으면 통행료를 낸다
-													  nation   국가 땅. 주사위면 국고에 내고
-													           걸어서 오면 국고를 턴다
-													국가 땅은 아이콘을 🏛 으로 바꿔 한눈에 구분되게 하고
-													cnt 에는 통행료 대신 국고 잔액을 보여 준다.
-													밟기 전에 "털 값이 있는지" 가 판단 기준이기 때문이다.
-												*/
 												var _own = ""
 												var _cnt = _prop.toll > 0 ? _prop.toll : ""
 												var _nation = false
@@ -4093,14 +4592,6 @@ OAuth3.on("ready", function(e){
 										if(_players[_player_hash]){
 											typeDice = _players[_player_hash].dice
 										}
-										/*
-											개발 Part 15 (규칙 R4)
-											내가 링(edge) 위에 있으면 상대(플레이어 / NPC)에 대한
-											공격 선택지를 노출하지 않는다.
-											서버도 링에서는 자동 교전과 폭발을 막으므로
-											버튼만 보이고 아무 일도 일어나지 않는 상태를 없앤다.
-											신고(Report)는 전투가 아니므로 항상 노출한다.
-										*/
 										var _meOnEdge = false
 										try{
 											var _me = window.players.self()
@@ -4130,15 +4621,19 @@ OAuth3.on("ready", function(e){
 											</li>`
 										}
 									}
-
+									var _spinning = false
+									try{
+										_spinning = (window.DiceSpinBusy && window.DiceSpinBusy() &&
+											$tooltip.find("#dice ul").length) ? true : false
+									}catch(err){
+										_spinning = false
+									}
 									var before_body = $tooltip.html()
 									if(before_body){
 										before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 									}
-
 									var after_body = tooltip_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-
-									if(before_body != after_body){
+									if(!_spinning && before_body != after_body){
 										$tooltip.html(after_body)
 									}
 								}catch(err){
@@ -4528,13 +5023,6 @@ OAuth3.on("ready", function(e){
 					}else if(dice > 0 && typeof window.Roll.ing == "undefined"){
 						clearInterval(window.Poll.ing)
 						delete window.Poll.ing
-						/*
-							개발 Part 22 (룩어헤드 격리)
-							이전 주사위 인터벌이 남아 있으면 정리한다.
-							window.response 에 원본 응답을 저장하지 않는다.
-							저장하면 dice 소진 후 재처리 경로에서
-							원본 cookies.dice 가 복원되어 링 회전이 반복된다.
-						*/
 						if(typeof window.Roll.ing !== "undefined"){
 							clearInterval(window.Roll.ing)
 							delete window.Roll.ing
@@ -4542,22 +5030,17 @@ OAuth3.on("ready", function(e){
 							window.Roll.prevX = null
 							window.Roll.prevZ = null
 						}
-						if(window.Roll.back){
+						if(window.DiceSpinSync){
+							window.DiceSpinSync(dice)
+						}else if(window.Roll.back){
 							window.Roll.back.options.endNum = dice
 							window.Roll.back.loopCount = 6
 						}
 						setTimeout(function(){
-							$('#root player tooltip .slotwrapper ul').removeAttr("style")
-							$('#root player tooltip #dice .num').text(dice)
-
-							/*
-								개발 Part 22 (룩어헤드 격리)
-								주사위 시작 시점에 window.fields 를 통째로 복사한다.
-								요소는 얕은 복사가 아니라 좌표만 복사한 새 객체다.
-								BoardCallback 이 원본을 회전시키거나 좌표 키를 지워도
-								window.Roll.snap 은 변하지 않는다.
-								좌표 키를 문자열로 다시 부여한다.
-							*/
+							if(!(window.DiceSpinBusy && window.DiceSpinBusy())){
+								$('#root player tooltip .slotwrapper ul').removeAttr("style")
+								$('#root player tooltip #dice .num').text(dice)
+							}
 							var _src = window.fields
 							var _snap = []
 							var _snapKeys = {}
@@ -4578,17 +5061,6 @@ OAuth3.on("ready", function(e){
 							}
 							window.Roll.snap = _snap
 							window.Roll.snapKeys = _snapKeys
-							/*
-								개발 Part 28 (순회 경로 스냅샷)
-								ring 스냅샷과 별개로 "왕복이 살아 있는 경로" 를 복사한다.
-								두 배열의 역할이 다르다.
-								  snap / snapKeys  좌표 -> 링 인덱스 1:1. Edge 판정과 폴백용.
-								  path / pathKeys  좌표 -> 경로 인덱스 1:N. 실제 전진용.
-								                   스퍼 왕복 칸은 같은 좌표가 2회 이상 등장하므로
-								                   값이 배열이다.
-								pathIdx 는 현재 경로 커서다. -1 은 미확정을 뜻하며
-								RollNext 가 좌표로 복원한다.
-							*/
 							var _pathSrc = (typeof window.RollPath === "function") ? window.RollPath() : null
 							var _path = []
 							var _pathKeys = {}
@@ -4613,31 +5085,6 @@ OAuth3.on("ready", function(e){
 							window.Roll.path = _path.length ? _path : null
 							window.Roll.pathKeys = _pathKeys
 							window.Roll.pathIdx = -1
-
-							/*
-								개발 Part 28 (다층 전진 결정)
-								계층 구조. 위층이 성공하면 아래층은 실행되지 않는다.
-								  1층 경로 커서
-								      path[i] -> path[i+1].
-								      Moore 경계추적 결과라 항상 8방향 인접이며
-								      스퍼(머리카락)는 실제로 되돌아 나온다.
-								      각도 계산이 개입하지 않으므로 뒤로 회귀할 수 없다.
-								  2층 좌표 -> 경로 인덱스 복원
-								      서버 좌표 동기화 등으로 커서를 잃었을 때만 동작.
-								      왕복 구간은 같은 좌표가 2회 이상 등장하므로
-								      (a) 직전 칸 일치 (b) 진행 방향 코사인
-								      (c) 마지막 커서와의 전방 근접도 로 후보를 가른다.
-								  3층 인접 + 룩어헤드 벡터 유사도
-								      경로 자체를 확보하지 못한 경우(Serpentine 폴백)만 동작.
-								      막다른 칸에서는 강제 점프가 아니라 U턴을 돌려준다.
-								      Part 23 / 25 / 27 의 점프 보너스는 전부 제거한다.
-								      그것이 스퍼 끝에서 좌표를 멀리 던지고
-								      직후 prev 를 오염시켜 "뒤로 회귀" 를 만든 원인이다.
-								  4층 링 순서
-								      마지막 안전장치.
-								반환값은 { x, z, y } 이며 y 는 조회 실패 시 undefined 다.
-								호출부(window.Roll)가 현재 높이로 폴백한다.
-							*/
 							window.RollNext = function(_cx, _cz, _px, _pz){
 								var dirs8 = [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]]
 								var _snapArr = window.Roll.snap
@@ -4893,6 +5340,38 @@ OAuth3.on("ready", function(e){
 
 							window.Roll.prevX = null
 							window.Roll.prevZ = null
+							/*
+								개발 Part 47 (이동 궤적)
+								새 롤이 시작되면 이전 궤적을 버리고 출발 칸을 기록한다.
+								도착 후에도 궤적을 남겨 "어디서 어디까지 왔는지" 를 보여준다.
+								RollReset 에서 지우지 않는 이유
+								  RollReset 은 주사위가 0 이 되는 순간 호출된다.
+								  거기서 지우면 도착하자마자 궤적이 사라져
+								  사용자가 경로를 확인할 시간이 없다.
+								판 전환 안전장치
+								  trailMatch 를 함께 저장한다.
+								  섬이 바뀌면 좌표 의미가 달라지므로
+								  렌더 쪽에서 match 가 다르면 궤적을 무시한다.
+							*/
+							/*
+								개발 Part 58 (이동 궤적)
+								로컬 예측만 초기화한다.
+								서버 궤적(window.State.trail)은 건드리지 않는다.
+								그것은 이미 커밋된 지난 턴들이며 계속 보여야 한다.
+								판 전체 누적이 궤적의 정의이기 때문이다.
+								개발 Part 56 이 여기서 cookies.trail 을 지웠던 것은
+								쿠키 방식의 겹침을 땜질하려던 것이라 이제 필요 없다.
+							*/
+							window.Roll.trail = {}
+							window.Roll.trailMatch = window.cookies.match
+							try{
+								var _t0x = window.Grid(window.current.current.position.x)
+								var _t0z = window.Grid(window.current.current.position.z)
+								if(!isNaN(_t0x) && !isNaN(_t0z)){
+									window.Roll.trail[_t0x + ":" + _t0z] = true
+								}
+							}catch(err){
+							}
 							window.Roll.ing = setInterval(window.Roll, 500, biomes)
 						}, 500)
 					}
@@ -5708,7 +6187,32 @@ OAuth3.on("ready", function(e){
 												cc_address = window.location.hash.replace("#", "0x")
 											}
 
-											if($this.hasClass("Deploy")){
+											if($this.hasClass("Exit")){
+												/*
+													개발 Part 59 (탈출)
+													게이트에서 나간다.
+													서버가 exitable 로 최종 판정하지만,
+													여기서 먼저 걸러 왕복을 아끼고 사유를 즉시 알린다.
+													키가 없을 때 아무 반응도 없으면
+													"눌러도 안 되는 버튼" 이 되므로 반드시 안내한다.
+												*/
+												if(!window.cookies.enter){
+													return
+												}
+												if(!window.cookies.exitable){
+													var _needs = window.ExitKeys ? window.ExitKeys() : []
+													window.Notice("NO EXIT KEY",
+														_needs.length
+															? ("Carry one of " + _needs.join(" ") + " to extract")
+															: "You need an extraction key",
+														3200)
+													return
+												}
+												if(window.Exit){
+													window.Exit()
+												}
+												return
+											}else if($this.hasClass("Deploy")){
 												/*
 													개발 Part 29 (게이트 출격)
 													게이트(🚪) 칸 전용 출격 진입점.
@@ -5763,12 +6267,36 @@ OAuth3.on("ready", function(e){
 													       출격 중 -> 폭탄
 													       미출격 -> 역할 선택
 												*/
+												/*
+													개발 Part 52 (연타 차단)
+													현행 문제
+													  재진입 가드가 playSpin 안에만 있었다.
+													    if ($(this).is(':animated')) return;
+													  $(this) 는 클릭 시점에 새로 조회한 노드다.
+													  스핀 도중 툴팁이 재렌더되면 노드가 교체되고
+													  새 노드는 애니메이션 중이 아니라 그냥 통과한다.
+													  그 결과 연타할 때마다 POST 가 나가고
+													  응답마다 다시 재렌더가 일어나 악순환이 된다.
+													조치
+													  DOM 이 아니라 스핀 상태로 판정한다.
+													  노드가 교체돼도 상태는 남아 있다.
+													  요청 자체를 보내지 않으므로 재렌더도 유발하지 않는다.
+												*/
+												if(window.DiceSpinBusy && window.DiceSpinBusy()){
+													return
+												}
 												if(window.EdgeReady && !window.EdgeReady()){
 													window.Notice("MAP LOADING", "Board path is not ready", 1800)
 													return
 												}
-												var _edgeField = window.EdgeField
-													? window.EdgeField(player.x, player.z) : null
+												/*
+													개발 Part 46 (판정 단일화)
+													슬롯 렌더 / body[edge] 와 같은 EdgeSelf 를 쓴다.
+													이전에는 여기만 원본 좌표로 EdgeField 를 호출해
+													"아이콘은 폭탄인데 눌렀더니 주사위" 가 생겼다.
+												*/
+												var _edgeField = window.EdgeSelf
+													? window.EdgeSelf() : null
 												var _isEdgeHere = _edgeField ? true : false
 												if(_isEdgeHere && window.cookies.enter && window.cookies.role == "UCAV"){
 													window.Notice("UCAV", "Drones fight in the field, not on the path", 2200)
@@ -5819,43 +6347,89 @@ OAuth3.on("ready", function(e){
 													전진 거리가 늘지 않는다.
 												*/
 												body.cc = ""
-												var _anchor = window.RingAnchor ? window.RingAnchor() : null
-												var _canDice = _isEdgeHere || _anchor
-												if(_canDice){
+												var _anc = window.RingAnchor ? window.RingAnchor() : null
+												/*
+													개발 Part 54 (앵커 복귀 재정리)
+													개발 Part 47 은 앵커 칸이 아니면 무조건 거절했다.
+													그런데 앵커는 서버 커밋에서만 갱신되므로
+													커밋이 어긋나면 링 위에서도 영영 굴릴 수 없게 된다.
+													확정 규칙
+													  링 위      굴린다. 앵커와 다르면 먼저 앵커로 되돌린다
+													             (개발 Part 31 의 원래 규칙)
+													  링 밖      앵커가 있으면 걸어서 돌아가라고 안내한다
+													             앵커가 없으면 굴릴 수 없다
+													되돌리는 것이 이득이 아닌 이유
+													  앵커는 이미 밟았던 칸이다. 전진 거리가 늘지 않는다.
+													  게다가 서버도 스테이징 시점에 같은 되감기를 한다.
+													    var _anc = RingAnchor()
+													    if(_anc){ ... x = _anc.x; z = _anc.z ... }
+													  프론트가 안 되감아도 서버가 되감으므로,
+													  프론트가 함께 되감아야 화면과 서버가 일치한다.
+													  (개발 Part 47 처럼 프론트만 거절하면
+													   서버 anchorReturn 이 발동해 화면이 한 번 튄다)
+													좌표 비교
+													  개발 Part 36 대로 0.5 그리드로 맞춘 뒤 한다.
+													  lerp 잔차로 같은 칸이 다르다고 판정되는 것을 막는다.
+												*/
+												var _pgx = window.Grid ? window.Grid(player.x) : player.x
+												var _pgz = window.Grid ? window.Grid(player.z) : player.z
+												if(_isEdgeHere){
 													/*
-														개발 Part 36 (그리드 스냅)
-														현행은 lerp 잔차가 섞인 player 좌표를 앵커와
-														=== 로 비교했다.
-														-5.5 vs -5.500000001 이 다르다고 판정되어
-														같은 칸인데도 매 굴림마다 스냅이 돌고
-														"BACK ON PATH" 알림이 반복해서 떴다.
-														비교 전에 0.5 그리드로 맞춘다.
+														개발 Part 56 (복귀 전용 클릭)
+														앵커와 다른 링 칸이면 이번 클릭은 "복귀" 다.
+														되돌리기만 하고 굴리지 않는다.
+														현행(개발 Part 54)은 되돌린 뒤 같은 클릭으로 굴렸다.
+														그러면 사용자는 자기가 어디서 굴렸는지 알 수 없고,
+														"마지막 굴린 칸에서만 굴린다" 규칙이 체감되지 않는다.
+														한 번 더 눌러야 굴러가게 해서 규칙을 드러낸다.
+														(아이콘도 📍 에서 🎲 로 바뀌므로 상태가 보인다)
 													*/
-													var _pgx = window.Grid ? window.Grid(player.x) : player.x
-													var _pgz = window.Grid ? window.Grid(player.z) : player.z
-													if(_anchor && (_anchor.x !== _pgx || _anchor.z !== _pgz)){
-														window.RingReturn(_anchor)
-														query.x = player.x = _anchor.x
-														query.z = player.z = _anchor.z
+													if(_anc && (_anc.x !== _pgx || _anc.z !== _pgz)){
+														window.RingReturn(_anc)
 														try{
-															var _ab = window.map.biomes[_anchor.x + ":" + _anchor.z]
-															if(_ab && typeof _ab.y !== "undefined"){
-																query.y = player.y = _ab.y * 1
+															if(window.Sfx){
+																window.Sfx.play("step")
 															}
 														}catch(err){
 														}
 														window.Notice("BACK ON PATH",
 															"Returned to your last board tile", 1800)
+														return
 													}
 													query.dice = 10
 													body.cc = "dice"
 													/*
 														개발 Part 18 (Edge 판정)
 														프론트 판정을 서버가 그대로 채택하도록 실어 보낸다.
-														앵커로 되돌아온 뒤이므로 좌표는 반드시 링이다.
+														링 위이거나 앵커로 되돌아온 뒤이므로 좌표는 반드시 링이다.
 													*/
 													query.edge = 1
+												}else if(_anc){
+													/*
+														링 밖 + 앵커 있음.
+														감옥에서 걸어 나온 상태다. 걸어서 돌아가야 한다.
+														여기서 되감으면 감옥 외출의 위험 부담이 사라진다.
+													*/
+													window.Notice("BACK ON PATH",
+														"Walk back to " +
+														Math.floor(_anc.x) + ", " + Math.floor(_anc.z) +
+														" to roll again", 2600)
+													return
 												}else if(window.Biomes[`#${b.biome}`]){
+													/*
+														개발 Part 47 (폭탄 자격)
+														현행은 enter 확인 없이 폭탄으로 빠졌다.
+														감옥 외출 중인 미출격 플레이어가
+														Meta 버튼으로 폭탄을 던질 수 있었다.
+														덱의 💣 는 이미 같은 확인을 한다.
+															if(!cookies.enter){
+																window.Notice("NOT IN RAID", ...)
+													*/
+													if(!cookies.enter){
+														window.Notice("NOT ON PATH",
+															"Return to the board path", 2200)
+														return
+													}
 													isBomb = true
 													body.cc = "bomb"
 													query.edge = 0
@@ -5867,7 +6441,35 @@ OAuth3.on("ready", function(e){
 													return
 												}
 												$body.attr(body.cc,query.dice)
-												$('#dice ul').playSpin();
+												/*
+													개발 Part 44 (주사위 소리)
+													슬롯 애니메이션이 실제로 시작되는 유일한 지점이다.
+													playSpin 은
+													  if ($(this).is(':animated')) return
+													로 이미 돌고 있으면 그냥 빠져나가므로
+													같은 판정을 먼저 해 소리와 화면이 어긋나지 않게 한다.
+													개발 Part 46 (폭탄 오인)
+													현행 문제
+													  playSpin() 이 body.cc 와 무관하게 실행됐다.
+													  폭탄을 던져도 주사위 슬롯이 돌아
+													  "주사위 요청이 나갔다" 로 오인됐다.
+													  $body.attr("bomb", undefined) 도 무의미하다.
+													  jQuery attr 는 값이 undefined 면 게터로 동작해
+													  속성을 만들지 않는다.
+													조치
+													  주사위일 때만 소리와 애니메이션을 돌린다.
+													  폭탄은 SfxSync 가 결과(bomb / damage)를 받아 울린다.
+												*/
+												if(body.cc == "dice"){
+													if(window.DiceSpinStart && window.DiceSpinStart()){
+														try{
+															if(window.Sfx){
+																window.Sfx.play("dice")
+															}
+														}catch(err){
+														}
+													}
+												}
 											}else if($this.hasClass("Reserved")){
 												/*
 													개발 Part 37 (예약 칸)
@@ -6502,7 +7104,18 @@ OAuth3.on("ready", function(e){
 								조이스틱은 클릭 경로와 별개이므로 여기서도 막는다.
 							*/
 							if(window.CanMoveTo && !window.CanMoveTo(player.x, player.z)){
-								window.Notice("FIELD ONLY", "UCAV cannot enter the board path", 2200)
+								/* 개발 Part 47 (거부 사유 분기) */
+								var _jr = window.CanMoveTo.reason
+								if(_jr === "anchor" || _jr === "noanchor"){
+									var _ja = window.RingAnchor ? window.RingAnchor() : null
+									window.Notice("BOARD PATH",
+										_ja
+											? ("Return through " + Math.floor(_ja.x) + ", " + Math.floor(_ja.z))
+											: "You cannot step onto the board path here",
+										2600)
+								}else{
+									window.Notice("FIELD ONLY", "UCAV cannot enter the board path", 2200)
+								}
 								return
 							}
 

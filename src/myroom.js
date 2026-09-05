@@ -1,23 +1,4 @@
 window.MyRoomEnter = function(cookies){
-	/*
-		개발 Part 42 (슬롯 판정 통일)
-		현행 문제
-		  cookies.raidUsed.split(",") 로 직접 파싱했다.
-		  participation 은 raids_used 를 JSON 배열로 저장하므로
-		  '["PMC"]' 형식이 오면 split(",") 이 ['["PMC"]'] 를 만들고
-		  indexOf("PMC") 가 -1 이 된다.
-		  PMC 를 이미 썼는데 버튼이 활성으로 보이고,
-		  눌러도 서버가 raidBlocked 로 거절한다.
-		  개발 Part 29 에서 stage.js 의 RaidSlots() 는 두 형식을 모두
-		  받아들이도록 고쳤는데 여기만 남아 규칙이 두 벌이 됐다.
-		  raidBlocked / 사망 판정도 빠져 있었다.
-		조치
-		  RaidSlots() 하나로 통일한다.
-		  CanRaid() 는 사망 / raidBlocked / 슬롯 소진을 한 번에 본다.
-		stage.js 는 index.html 에서 myroom.js 보다 뒤에 로드되지만
-		이 함수는 런타임에 호출되므로 그때는 이미 준비돼 있다.
-		그래도 폴백을 둔다.
-	*/
 	var slots = window.RaidSlots ? window.RaidSlots() : null
 	if(!slots){
 		var _used = []
@@ -55,11 +36,6 @@ window.MyRoomEnter = function(cookies){
 		<span class="en">'+(ucavOk ? "Deploy UCAV" : "UCAV used")+'</span>\
 	</a>'
 	if(!pmcOk && !ucavOk){
-		/*
-			개발 Part 42 (사유 구분)
-			"세션 종료" 하나로 뭉뚱그리면 왜 못 나가는지 알 수 없다.
-			사망 중이면 다음 매치가 아니라 부활이 먼저다.
-		*/
 		var tip = { ko : "이번 세션은 종료되었습니다. 다음 매치를 기다리세요.",
 			en : "This session is over. Wait for the next match." }
 		if(cookies.damage || cookies.dead){
@@ -78,11 +54,24 @@ window.MyRoomEnter = function(cookies){
 }
 window.MyRoom = function(resp){
 	var cookies = window.cookies
-
 	if(!cookies || !cookies.hash){
 		return
 	}
-
+	if(window.MyRoom.busy){
+		try{
+			var _echo = (resp && resp.body) ? resp.body.body : null
+			if(_echo && _echo.cc === "deposit"){
+				window.MyRoom.busy = false
+			}
+		}catch(err){
+		}
+		if(window.MyRoom.busy && window.MyRoom.busyAt){
+			if(Date.now() - window.MyRoom.busyAt > 12000){
+				window.MyRoom.busy = false
+				console.log("[myroom] deposit timed out. releasing lock")
+			}
+		}
+	}
 	var player_hash = cookies.address ? cookies.address : cookies.hash
 
 	var hash = window.location.hash.replace("#","").toLowerCase()
@@ -103,23 +92,6 @@ window.MyRoom = function(resp){
 	}catch(err){
 		rows = []
 	}
-
-	/*
-		개발 Part 42 (보관품 판정)
-		현행 문제
-		  row.Subject != "#myroom" 하나로만 걸렀다.
-		  개발 Part 5 에서 보관품이 stash_items 로 이관되면서
-		  inventoryService.toLegacyRows 가 __state / __kind 를 실어 보낸다.
-		  Subject 표기가 조금이라도 달라지면 목록이 통째로 비어
-		  "보관된 아이템이 없습니다" 만 뜬다.
-		  실제로 전리품이 DB 에 있는데 화면에는 없는 상태가 된다.
-		조치
-		  세 가지 신호 중 하나라도 맞으면 보관품으로 본다.
-		    __state === "stash"      개발 Part 5 이후 정식 경로
-		    __kind === "stash"       어댑터가 kind 로 표기하는 경우
-		    Subject === "#myroom"    레거시
-		이모지도 컬럼을 우선 쓰고 없을 때만 Cc 를 파싱한다.
-	*/
 	var emojiOf = function(row){
 		if(row.emoji){
 			return row.emoji
@@ -142,15 +114,6 @@ window.MyRoom = function(resp){
 		}
 		return row.Subject === "#myroom"
 	}
-	/*
-		소지품(held)도 함께 모은다.
-		현행은 보관품만 그려서 "꺼내기" 만 가능했고,
-		넣는 방향은 .hashType.Deposit 핸들러만 있고
-		그 클래스를 만드는 곳이 없어 도달 불가였다.
-		즉 소지품을 창고에 넣을 수단이 아예 없었다.
-		판정 기준은 room.js 의 sticker 수집과 같다.
-		  #asset 이고 수신자가 나이며 Flag 가 비어 있다
-	*/
 	var stored = []
 	var held = []
 	for(var r = 0; r < rows.length; r++){
@@ -192,15 +155,14 @@ window.MyRoom = function(resp){
 		var group = stored[emoji]
 		var equip = window.typeof_equipment(emoji)
 		var label = equip ? equip.name : (window.typeof_item(emoji) ? window.typeof_item(emoji) : "")
-
-		items_body += '<li class="item" emoji="'+emoji+'" cnt="'+group.length+'" type="'+(equip ? equip.subgroup : "material")+'">\
+		items_body += '<li class="item locked" emoji="'+emoji+'" cnt="'+group.length+'" type="'+(equip ? equip.subgroup : "material")+'">\
 			<a class="emoji color">'+emoji+'</a>\
 			<span class="cnt">'+group.length+'</span>\
 			<span class="name">'+label+'</span>\
-			<a class="btn withdraw">\
-				<span class="ko">꺼내기</span>\
-				<span class="en">Take</span>\
-			</a>\
+			<span class="state">\
+				<span class="ko">보관 중</span>\
+				<span class="en">Secured</span>\
+			</span>\
 		</li>'
 	}
 
@@ -212,27 +174,25 @@ window.MyRoom = function(resp){
 			</p>\
 		</li>'
 	}
-	/*
-		개발 Part 42 (넣기)
-		소지품을 창고로 넣는 목록.
-		버튼 클래스를 hashType Deposit 으로 두어
-		이 파일 하단의 기존 위임 핸들러가 그대로 받게 한다.
-		(핸들러는 있었으나 이 클래스를 만드는 곳이 없어 죽어 있었다)
-	*/
 	var held_body = ""
 	for(var h = 0; h < held.length; h++){
 		var _he = held[h]
 		var _hg = held[_he]
 		var _heq = window.typeof_equipment(_he)
 		var _hlabel = _heq ? _heq.name : (window.typeof_item(_he) ? window.typeof_item(_he) : "")
-		held_body += '<li class="item" emoji="' + _he + '" cnt="' + _hg.length + '">\
+		held_body += '<li class="item pick" emoji="' + _he + '" cnt="' + _hg.length + '">\
+			<label class="check">\
+				<input type="checkbox" class="sel">\
+				<span class="box"></span>\
+			</label>\
 			<a class="emoji color">' + _he + '</a>\
 			<span class="cnt">' + _hg.length + '</span>\
 			<span class="name">' + _hlabel + '</span>\
-			<a class="btn hashType Deposit" emoji="' + _he + '">\
-				<span class="ko">넣기</span>\
-				<span class="en">Store</span>\
-			</a>\
+			<span class="qty">\
+				<a class="step minus">-</a>\
+				<input type="number" class="num" value="1" min="1" max="' + _hg.length + '" step="1">\
+				<a class="step plus">+</a>\
+			</span>\
 		</li>'
 	}
 	if(!held_body){
@@ -273,12 +233,38 @@ window.MyRoom = function(resp){
 			<span class="ko">마이룸 보관함</span>\
 			<span class="en">Stash</span>\
 		</strong>\
+		<p class="hint">\
+			<span class="ko">전사해도 사라지지 않습니다. 다음 매치가 시작되면 소지품으로 자동 반환됩니다.</span>\
+			<span class="en">Safe from death. Returns to your carried items when the next match begins.</span>\
+		</p>\
 		<ul class="stash">'+items_body+'</ul>\
 		<strong class="label">\
 			<span class="ko">소지품</span>\
 			<span class="en">Carried</span>\
 		</strong>\
+		<p class="hint">\
+			<span class="ko">탈출에 실패하면 마지막에 얻은 3개만 남습니다. 전사하면 전부 잃습니다.</span>\
+			<span class="en">On MIA only your last 3 pickups survive. On death you lose everything.</span>\
+		</p>\
 		<ul class="stash carried">'+held_body+'</ul>\
+		'+(held.length ? '<div class="bulk">\
+			<label class="check all">\
+				<input type="checkbox" class="sel-all">\
+				<span class="box"></span>\
+				<span class="ko">전체 선택</span>\
+				<span class="en">Select all</span>\
+			</label>\
+			<a class="btn deposit-all disabled">\
+				<span class="label">\
+					<span class="ko">선택 <b class="n">0</b>개 넣기</span>\
+					<span class="en">Store <b class="n">0</b></span>\
+				</span>\
+				<span class="loading-label">\
+					<span class="ko">처리 중...</span>\
+					<span class="en">Loading...</span>\
+				</span>\
+			</a>\
+		</div>' : '')+'\
 	</section>\
 	<footer class="myroom_foot">'+window.MyRoomEnter(cookies)+'</footer>'
 
@@ -291,23 +277,19 @@ window.MyRoom = function(resp){
 	}
 
 	var $tc = $panel.find(".tc")
-
+	if(window.MyRoom.busy){
+		$panel.addClass("on")
+		$("body").attr("myroom", "on")
+		return $panel
+	}
 	var before_body = $tc.html()
-
 	if(before_body){
 		before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 	}
-
 	var after_body = body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-
 	if(before_body != after_body){
 		$tc.html(after_body)
 		try{
-			/*
-				개발 Part 14 (검수) - E7'
-				"0x"+owner 는 owner 가 빈 문자열일 때 "0x" 가 된다.
-				Blockie 가 시드를 정규화하고 null 대신 폴백 캔버스를 돌려준다.
-			*/
 			var canvas = window.Blockie(owner)
 			if(canvas){
 				$panel.find(".myroom_head .icon").html("").append(canvas)
@@ -318,26 +300,55 @@ window.MyRoom = function(resp){
 
 	$panel.addClass("on")
 	$("body").attr("myroom", "on")
-
 	return $panel
 }
-
-$(document).on("click", "#myroom .stash .item .btn.withdraw", function(e){
-	e.preventDefault()
-
-	var emoji = $(this).closest(".item").attr("emoji")
-
-	if(!emoji || !window.Action){
-		return
+window.MyRoom.busy = false
+window.MyRoom.busyAt = 0
+window.MyRoomSync = function(){
+	var $list = $("#myroom .stash.carried")
+	var $bulk = $("#myroom .myroom_body .bulk")
+	if(!$list.length || !$bulk.length){
+		return 0
 	}
-
-	window.Action({
-		cc : "deposit",
-		direction : "withdraw",
-		item : emoji
+	var total = 0
+	var picked = 0
+	$list.find("li.item.pick").each(function(){
+		var $li = $(this)
+		var max = $li.attr("cnt") * 1
+		if(isNaN(max) || max < 1){
+			max = 1
+		}
+		var $num = $li.find(".qty .num")
+		var n = $num.val() * 1
+		if(isNaN(n) || n < 1){
+			n = 1
+		}
+		if(n > max){
+			n = max
+		}
+		$num.val(n)
+		if($li.find(".check .sel").prop("checked")){
+			$li.addClass("on")
+			total += n
+			picked++
+		}else{
+			$li.removeClass("on")
+		}
 	})
-})
-
+	$bulk.find(".n").text(total)
+	var $btn = $bulk.find(".btn.deposit-all")
+	if($btn.hasClass("loading")){
+		return total
+	}
+	if(total > 0){
+		$btn.removeClass("disabled")
+	}else{
+		$btn.addClass("disabled")
+	}
+	var all = $list.find("li.item.pick").length
+	$bulk.find(".sel-all").prop("checked", all > 0 && picked === all)
+	return total
+}
 $(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
 	e.preventDefault()
 	var $t = $(this)
@@ -365,18 +376,93 @@ $(document).on("click", "#myroom .myroom_close", function(e){
 	$("body").removeAttr("myroom")
 })
 
-$(document).on("click", ".hashType.Deposit", function(e){
+$(document).on("change", "#myroom .stash.carried li.item .check .sel", function(){
+	window.MyRoomSync()
+})
+$(document).on("change", "#myroom .myroom_body .bulk .sel-all", function(){
+	var on = $(this).prop("checked") ? true : false
+	$("#myroom .stash.carried li.item.pick .check .sel").prop("checked", on)
+	window.MyRoomSync()
+})
+$(document).on("click", "#myroom .stash.carried li.item .qty .step", function(e){
 	e.preventDefault()
-
+	var $li = $(this).closest("li.item")
+	var $num = $li.find(".qty .num")
+	var max = $li.attr("cnt") * 1
+	if(isNaN(max) || max < 1){
+		max = 1
+	}
+	var n = $num.val() * 1
+	if(isNaN(n)){
+		n = 1
+	}
+	n = $(this).hasClass("plus") ? (n + 1) : (n - 1)
+	if(n < 1){
+		n = 1
+	}
+	if(n > max){
+		n = max
+	}
+	$num.val(n)
+	$li.find(".check .sel").prop("checked", true)
+	window.MyRoomSync()
+})
+$(document).on("input change", "#myroom .stash.carried li.item .qty .num", function(){
+	window.MyRoomSync()
+})
+$(document).on("click", "#myroom .myroom_body .bulk .btn.deposit-all", function(e){
+	e.preventDefault()
+	var $btn = $(this)
+	if($btn.hasClass("disabled") || $btn.hasClass("loading")){
+		return
+	}
+	if(window.MyRoom.busy){
+		return
+	}
 	if(!window.Action){
 		return
 	}
-
-	var emoji = $(this).attr("emoji")
-
+	var items = []
+	$("#myroom .stash.carried li.item.pick").each(function(){
+		var $li = $(this)
+		if(!$li.find(".check .sel").prop("checked")){
+			return
+		}
+		var emoji = $li.attr("emoji")
+		if(!emoji){
+			return
+		}
+		var max = $li.attr("cnt") * 1
+		if(isNaN(max) || max < 1){
+			max = 1
+		}
+		var n = $li.find(".qty .num").val() * 1
+		if(isNaN(n) || n < 1){
+			n = 1
+		}
+		if(n > max){
+			n = max
+		}
+		items.push({ emoji : emoji, count : n })
+	})
+	if(!items.length){
+		return
+	}
+	window.MyRoom.busy = true
+	window.MyRoom.busyAt = Date.now()
+	$btn.addClass("loading").removeClass("disabled")
+	$("#myroom .stash.carried li.item .check .sel").prop("disabled", true)
+	$("#myroom .stash.carried li.item .qty .num").prop("disabled", true)
+	try{
+		if(window.Sfx){
+			window.Sfx.play("click")
+		}
+	}catch(err){
+	}
 	window.Action({
 		cc : "deposit",
 		direction : "deposit",
-		item : emoji ? emoji : ""
+		items : JSON.stringify(items),
+		item : items[0].emoji
 	})
 })

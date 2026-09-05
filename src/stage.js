@@ -1,30 +1,9 @@
-/*
-	개발 Part 14 (검수) - H1
-	현행 상태는 "" / "lobby" / "raid" 3 가지뿐이고
-	"" 가 "아직 로비를 안 띄웠음" 과 "레이드 진행 중" 을 동시에 뜻했다.
-	StageSync 의 else 분기가
-	  if(current != "lobby" && current != "raid") -> Lobby()
-	이므로, RaidDone 이 Stage.set("") 을 한 직후
-	cookies.enter 가 한 번이라도 비면 즉시 로비가 다시 떴다.
-	("Start Raid 를 눌러 맵이 보였는데 다시 Start Raid 가 나온다" 의 정체)
-	playing 상태를 추가해 "레이드에 들어갔다" 를 명시적으로 표현한다.
-	body[stage] 는 화면 전환용이므로 playing 일 때는 속성을 붙이지 않는다
-	(현행 CSS 가 stage 속성 부재를 게임 화면으로 취급한다).
-*/
 window.Stage = {
 	current : "",
 	raidTimer : null,
 	miaTimer : null,
-	/* enter 가 비어 보이는 폴링을 몇 번까지 견딜지 */
 	graceLimit : 5,
 	graceCount : 0,
-	/*
-		개발 Part 16 (레이드 슬롯)
-		blocked 는 "이번 매치에서는 더 이상 출격할 수 없다" 를 뜻한다.
-		값이 있으면 Lobby() 가 Start Raid 버튼을 감추고
-		사유 문구 + 마이룸 버튼만 남긴다.
-		다음 매치로 슬롯이 회복되면 StageSync 가 비운다.
-	*/
 	blocked : ""
 }
 window.Stage.set = function(name){
@@ -41,16 +20,6 @@ window.Notice = function(head, body, ms){
 	if(!$n.length){
 		return
 	}
-	/*
-		개발 Part 43 (효과음)
-		Notice 호출부가 25 곳이 넘는다.
-		개별로 소리를 붙이는 대신 여기 한 곳에서 처리한다.
-		머리말로 성격을 가른다.
-		  거절 계열  낮은 두 음 (deny)
-		  그 외      짧은 알림음 (blip)
-		SfxSync 가 이미 울린 신호(통행료 / 수금 / 파산)는
-		여기서 blip 이 겹치면 지저분하므로 건너뛴다.
-	*/
 	try{
 		if(window.Sfx){
 			var h = String(head ? head : "").toUpperCase()
@@ -81,19 +50,91 @@ window.Notice = function(head, body, ms){
 		$n.removeClass("on")
 	}, ms ? ms : 2600)
 }
-/*
-	개발 Part 17 (HUD)
-	HP 표시를 플레이어 툴팁(li > a.hashType.Hp)에서
-	#capture 안의 .rank_toggle 영역으로 옮긴다.
-	현행 문제
-	  체력이 플레이어 툴팁 안에 있어 이모지를 눌러 툴팁을 열어야만 보였다.
-	  전투 중에 가장 자주 봐야 하는 값인데 상시 노출이 아니었다.
-	설계
-	  a.hashType.Hp 클래스명을 그대로 유지한다.
-	  BoardInit 의 위임 클릭 핸들러가 $this.hasClass("Hp") 로 판정하므로
-	  DOM 위치만 바뀌고 "물약 섭취" 동작은 그대로 살아 있다.
-	  .rank_toggle 이 마크업에 없더라도 여기서 만들어 붙인다.
-*/
+
+window.MatchLeft = function(){
+	var expired = 0
+	try{
+		if(window.match && window.match.expired){
+			expired = window.match.expired * 1
+		}
+		var cookies = window.cookies
+		if((!expired || isNaN(expired)) && cookies && cookies.expired){
+			expired = cookies.expired * 1
+		}
+		if((!expired || isNaN(expired)) && cookies && cookies.started && cookies.raidLimit){
+			expired = (cookies.started * 1) + (cookies.raidLimit * 1)
+		}
+	}catch(err){
+		return -1
+	}
+	if(!expired || isNaN(expired)){
+		return -1
+	}
+	var offset = 0
+	try{
+		offset = window.MatchOffset ? window.MatchOffset() : 0
+	}catch(err){
+		offset = 0
+	}
+	var ms = expired - (Date.now() + offset)
+	if(ms < 0){
+		ms = 0
+	}
+	return ms
+}
+
+window.MatchClockText = function(ms){
+	if(typeof ms == "undefined"){
+		ms = window.MatchLeft()
+	}
+	if(ms < 0){
+		return ""
+	}
+	var total = Math.floor(ms / 1000)
+	var m = Math.floor(total / 60)
+	var s = total % 60
+	return m + ":" + (s < 10 ? ("0" + s) : s)
+}
+
+window.MatchClock = function(){
+	var $left = $("#capture .rank_toggle a.hashType.Hp .cnt .left")
+	if(!$left.length){
+		return ""
+	}
+	var ms = window.MatchLeft()
+	var text = window.MatchClockText(ms)
+	if(!text){
+		if($left.text() !== ""){
+			$left.text("").removeClass("soon").removeClass("warn")
+		}
+		return ""
+	}
+	var body = "(" + text + ")"
+	if($left.text() !== body){
+		$left.text(body)
+	}
+	if(ms <= 10000){
+		$left.addClass("soon").addClass("warn")
+	}else if(ms <= 60000){
+		$left.addClass("soon").removeClass("warn")
+	}else{
+		$left.removeClass("soon").removeClass("warn")
+	}
+	return body
+}
+
+window.MatchClockStart = function(){
+	if(window.MatchClock.timer){
+		return window.MatchClock.timer
+	}
+	window.MatchClock.timer = setInterval(function(){
+		try{
+			window.MatchClock()
+		}catch(err){
+		}
+	}, 1000)
+	return window.MatchClock.timer
+}
 window.HpBadge = function(hp, maxHp){
 	var $capture = $("#capture")
 	if(!$capture.length){
@@ -104,13 +145,20 @@ window.HpBadge = function(hp, maxHp){
 		$capture.append('<div class="rank_toggle"></div>')
 		$slot = $capture.find(".rank_toggle")
 	}
-	var body = '<a class="hashType Hp"><i class="emoji color">❤️</i><span class="cnt">'
-		+ hp + '/' + maxHp + '</span></a>'
-	if($slot.html() != body){
+	var sig = hp + "/" + maxHp
+	var body = '<a class="hashType Hp"><i class="emoji color">❤️</i>'
+		+ '<span class="cnt"><b class="hp">' + sig + '</b><b class="left"></b></span></a>'
+	if($slot.attr("data-hp") !== sig || !$slot.find("a.hashType.Hp .cnt .left").length){
 		$slot.html(body)
+		$slot.attr("data-hp", sig)
 	}
 	$capture.attr("hp", hp)
 	$capture.attr("maxhp", maxHp)
+	try{
+		window.MatchClock()
+		window.MatchClockStart()
+	}catch(err){
+	}
 	return $slot
 }
 
@@ -126,17 +174,7 @@ window.ExitKeys = function(){
 		return v.length > 0
 	})
 }
-/*
-	개발 Part 16 (레이드 슬롯)
-	서버 index.js 의 #start 분기와 동일한 규칙으로 남은 슬롯을 계산한다.
-	  raidUsed     이번 매치에서 이미 사용한 역할 목록
-	  raidAborted  사망/MIA 로 중단된 적이 있는가
-	서버 규칙
-	  aborted 면 UCAV 만 남는다.
-	  아니면 PMC 우선, PMC 를 썼으면 UCAV.
-	프론트가 같은 판정을 갖고 있어야
-	"눌러도 서버가 거절하는 버튼" 을 애초에 노출하지 않는다.
-*/
+
 window.RaidSlots = function(){
 	var out = {
 		used : [],
@@ -149,15 +187,7 @@ window.RaidSlots = function(){
 	if(!cookies){
 		return out
 	}
-	/*
-		개발 Part 29 (슬롯 파싱)
-		participation 은 raids_used 를 JSON 배열로 저장한다(개발 Part 19).
-		경로에 따라 '["PMC"]' 형식으로 내려올 수 있어
-		split(",") 만으로는 PMC 를 찾지 못한다.
-		그러면 팝업은 PMC 를 활성으로 그리는데 서버는 슬롯이 없다고 판단해
-		"눌렀더니 다른 역할이 배정" 되는 불일치가 생긴다.
-		서버 #start 와 동일하게 두 형식을 모두 받아들인다.
-	*/
+
 	out.used = []
 	try{
 		var _raw = cookies.raidUsed
@@ -184,11 +214,7 @@ window.RaidSlots = function(){
 	out.any = out.pmc || out.ucav
 	return out
 }
-/*
-	개발 Part 16 (레이드 슬롯)
-	지금 출격이 가능한가.
-	사망 / 서버가 내려준 raidBlocked / 슬롯 소진 중 하나라도 걸리면 false.
-*/
+
 window.CanRaid = function(){
 	var cookies = window.cookies
 	if(!cookies){
@@ -203,20 +229,6 @@ window.CanRaid = function(){
 	return window.RaidSlots().any
 }
 
-/*
-	개발 Part 15 (규칙 R1 / R2)
-	사망 패널.
-	현행은 cookies.damage 가 오면 BoardCallback 이
-	  $body.attr('game', "over")
-	만 하고 폴링을 멈췄다. 화면에 아무 안내가 없어
-	"멈춘 건지 죽은 건지" 구분되지 않았다.
-	규칙
-	  R1  폭탄 등으로 HP 가 0 이 되면 dead 표시를 띄운다.
-	  R2  선택지는 마이룸 하나만 노출한다.
-	      부활(Start Raid)은 마이룸에서 다시 출격하는 흐름으로 통일한다.
-	#dead 패널은 #lobby 와 별도 엘리먼트다.
-	없으면 body 에 직접 만든다(HTML 수정 없이 동작하게 한다).
-*/
 window.Dead = function(){
 	var cookies = window.cookies
 	if(!cookies){
@@ -314,23 +326,13 @@ window.Lobby = function(){
 	if(!cookies){
 		return
 	}
-	/*
-		개발 Part 15 (규칙 R2)
-		사망 중에는 로비를 띄우지 않는다.
-		Start Raid 가 노출되면 규칙 R2("마이룸만") 를 위반한다.
-	*/
+
 	if(cookies.damage || cookies.dead){
 		return window.Dead()
 	}
 	var hash = cookies.address ? cookies.address : cookies.hash
 	var role = cookies.role ? cookies.role : "PLAYER"
-	/*
-		개발 Part 14 (검수) - H6
-		window.MaxHp 는 룰셋(src/ruleset.js) 또는 src/recipe.js 가 채운다.
-		/ruleset 이 503 이고 recipe.js 로드보다 먼저 이 함수가 불리면
-		window.MaxHp 가 undefined 라 인덱스 접근에서 TypeError 가 났다.
-		그러면 Lobby 가 중단되어 Start Raid 버튼 자체가 렌더되지 않는다.
-	*/
+
 	var _maxHpTable = window.MaxHp ? window.MaxHp : {}
 	var maxHp = _maxHpTable[cookies.role ? cookies.role : ""]
 	if(typeof maxHp == "undefined" || isNaN(maxHp)){
@@ -359,11 +361,6 @@ window.Lobby = function(){
 
 	if(!$l.find(".profile .icon canvas").length){
 		try{
-			/*
-				개발 Part 14 (검수) - H6
-				개발 Part 27 의 Blockie 헬퍼로 통일한다.
-				hash 가 비어 있으면 "0x" 가 시드가 되어 null 이 반환됐다.
-			*/
 			var _icon = window.Blockie ? window.Blockie(hash) : null
 			if(_icon){
 				$l.find(".profile .icon").append(_icon)
@@ -381,19 +378,6 @@ window.Lobby = function(){
 		body = '<li><i class="emoji color">❔</i></li>'
 	}
 	$l.find(".keys .list").html(body)
-	/*
-		개발 Part 16 (레이드 슬롯)
-		현행 문제
-		  슬롯이 없거나 배치가 실패해도 Lobby 는 .actions 를 손대지 않아
-		  Start Raid 버튼이 그대로 노출됐다.
-		  눌러봐야 서버가 raidBlocked 로 되돌리므로
-		  "DEPLOY FAILED 만 반복" 되는 상태가 됐다.
-		조치
-		  blocked 이면 raid 버튼을 감추고
-		  사유 문구 + 마이룸 이동 버튼만 남긴다.
-		  #lobby 마크업에 .reason / .btn.stash 가 없어도
-		  여기서 만들어 붙이므로 HTML 수정이 필요 없다.
-	*/
 	var $actions = $l.find(".actions")
 	if($actions.length){
 		var $raid = $actions.find(".btn.raid")
@@ -428,12 +412,6 @@ window.Lobby = function(){
 }
 
 window.Raid = function(){
-	/*
-		개발 Part 14 (검수) - H3
-		중복 클릭 방지.
-		진행 중에 다시 누르면 raidTimer 만 갈아끼워지고
-		cc:"start" 가 한 번 더 나가 raidUsed 슬롯을 낭비했다.
-	*/
 	if(window.Stage.current == "raid" || window.Stage.current == "raid_done"){
 		return
 	}
@@ -460,13 +438,6 @@ window.Raid = function(){
 	}, 120)
 	var _role = ""
 	try{
-		/*
-			개발 Part 29 (역할 전달)
-			delete sessionStorage.raidRole 은 브라우저에 따라 항목을 지우지 못한다.
-			남아 있으면 다음 출격에 이전 선택(예: UCAV)이 그대로 새어 나가
-			"PMC 를 골랐는데 UCAV 로 출격" 이 된다.
-			removeItem 으로 확실히 지운다.
-		*/
 		_role = sessionStorage.getItem("raidRole")
 		_role = _role ? _role : ""
 		sessionStorage.removeItem("raidRole")
@@ -474,15 +445,6 @@ window.Raid = function(){
 		_role = ""
 	}
 	window.Stage.wanted = _role
-	/*
-		개발 Part 14 (검수) - H3
-		window.Action 은 players.self() 가 없으면 조용히 return 한다.
-		그 경우 Stage 가 "raid" 로 고정되고 진행바가 92% 에서 멈춘다.
-		StageSync 는 current == "raid" 라 Lobby() 도 띄우지 않아
-		화면이 완전히 정지했다.
-		Action 이 없거나 요청이 나가지 않으면 즉시 되돌린다.
-		요청이 나갔더라도 응답이 오지 않으면 타임아웃으로 복구한다.
-	*/
 	if(!window.Action){
 		console.log("[stage] window.Action missing. abort raid.")
 		window.RaidAbort("Cannot reach the server")
@@ -505,19 +467,7 @@ window.Raid = function(){
 	if(window.Stage.timeoutTimer){
 		clearTimeout(window.Stage.timeoutTimer)
 	}
-	// window.Stage.timeoutTimer = setTimeout(function(){
-	// 	delete window.Stage.timeoutTimer
-	// 	if(window.Stage.current == "raid"){
-	// 		console.log("[stage] raid timed out. no enter in response.")
-	// 		window.RaidAbort("Deploy timed out")
-	// 	}
-	// }, 8000)
 }
-/*
-	개발 Part 14 (검수) - H3
-	레이드 진입 실패를 되돌린다.
-	진행바를 접고 로비를 다시 띄운다.
-*/
 window.RaidAbort = function(message){
 	if(window.Stage.raidTimer){
 		clearInterval(window.Stage.raidTimer)
@@ -534,16 +484,6 @@ window.RaidAbort = function(message){
 	$("#raid .progress .bar").css("width", "0")
 	window.Stage.graceCount = 0
 	window.Stage.set("")
-	/*
-		개발 Part 16 (레이드 슬롯)
-		실패 사유를 두 갈래로 나눈다.
-		  슬롯이 남아 있다  일시적 실패(네트워크 / 타임아웃).
-		                    Start Raid 를 다시 눌러볼 수 있게 둔다.
-		  슬롯이 없다      이번 매치는 끝났다.
-		                    버튼을 감추고 마이룸만 남긴다.
-		판정은 CanRaid() 하나로 통일한다.
-		  raidBlocked 쿠키 / raidUsed 소진 / 사망이 전부 여기 들어온다.
-	*/
 	if(window.CanRaid()){
 		window.Stage.blocked = ""
 	}else{
@@ -560,19 +500,6 @@ window.RaidDone = function(){
 	if(window.Stage.current != "raid"){
 		return
 	}
-	/*
-		개발 Part 14 (검수) - H2
-		현행은 setTimeout(400) 안에서 Stage.set("") 을 했다.
-		그 400ms 동안 Stage.current 가 여전히 "raid" 라
-		폴링마다 RaidDone 이 다시 호출되어 타이머가 쌓였다.
-		localhost 는 time.balance 가 0 이라
-		  setInterval(window.Poll, 0)
-		으로 폴링이 연속 발생한다. 400ms 사이에 수십 회가 들어와
-		Notice("RAID START") 가 그만큼 예약되고
-		Stage.set("") 도 반복 실행됐다.
-		상태를 즉시 playing 으로 넘겨 재진입을 원천 차단한다.
-		연출(진행바 / 알림)만 지연시킨다.
-	*/
 	if(window.Stage.raidTimer){
 		clearInterval(window.Stage.raidTimer)
 		delete window.Stage.raidTimer
@@ -604,12 +531,6 @@ window.StageSync = function(cookies){
 		return
 	}
 
-	/*
-		개발 Part 3
-		룰셋은 서버 DB 가 단일 원천이며 src/ruleset.js 가 /ruleset 으로 받아온다.
-		서명 불일치는 "정적 파일 폴백 중" 또는 "룰셋 캐시가 낡음" 을 의미하므로
-		경고 후 룰셋을 재로드한다.
-	*/
 	if(cookies.recipeSignature && window.RecipeSignature){
 		if(cookies.recipeSignature != window.RecipeSignature && !window.StageSync.warned){
 			window.StageSync.warned = true
@@ -631,22 +552,9 @@ window.StageSync = function(cookies){
 			}
 		}
 	}
-	/*
-		개발 Part 16 (레이드 슬롯)
-		매치가 바뀌면 raidUsed 가 비워져 슬롯이 회복된다.
-		그때 blocked 를 풀어 Start Raid 버튼을 되살린다.
-		폴링마다 판정하므로 별도 타이머가 필요 없다.
-	*/
 	if(window.Stage.blocked && window.CanRaid()){
 		window.Stage.blocked = ""
 	}
-	/*
-		개발 Part 15 (규칙 R1 / R2)
-		사망 판정을 최우선으로 둔다.
-		이 아래의 raidBlocked / exitBlocked / enter 판정보다 앞서야
-		죽은 뒤에 Start Raid 나 탈출 안내가 겹쳐 뜨지 않는다.
-		서버는 damage(레거시) 와 dead(개발 Part 15) 를 함께 내려보낸다.
-	*/
 	if(cookies.damage || cookies.dead){
 		if(window.Stage.raidTimer){
 			clearInterval(window.Stage.raidTimer)
@@ -675,17 +583,6 @@ window.StageSync = function(cookies){
 		$("body").removeAttr("jail")
 	}
 	if(cookies.raidBlocked){
-		/*
-			개발 Part 14 (검수) - H4
-			현행은 Stage.set("") 만 했다.
-			Raid() 가 띄운 진행바(raidTimer)가 계속 돌고 있어
-			로비가 다시 떠도 진행바가 겹쳐 보였다.
-			RaidAbort 로 타이머까지 정리한다.
-			개발 Part 29 (거절 사유)
-			서버가 raidDeny 로 사유를 명시한다.
-			"슬롯 없음" 하나로 뭉뚱그리면
-			왜 PMC 가 안 되는지 사용자가 알 수 없다.
-		*/
 		var _denyBody = "No slots left this match"
 		if(cookies.raidDeny == "pmc_used"){
 			_denyBody = "PMC already deployed this match"
@@ -703,17 +600,74 @@ window.StageSync = function(cookies){
 	}
 	if(cookies.exited){
 		window.Notice("EXTRACTED", "Loot moved to My Room", 2600)
-		/*
-			개발 Part 14 (검수) - H4
-			현행은 return 만 해서 Stage 가 정리되지 않았다.
-			마이룸으로 이동한 뒤 보드로 돌아오면
-			playing 상태가 남아 로비가 뜨지 않았다.
-		*/
 		window.Stage.graceCount = 0
 		window.Stage.set("")
 		setTimeout(function(){
 			window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
 		}, 1200)
+		return
+	}
+	if(cookies.exited && !window.StageSync.exited){
+		window.StageSync.exited = true
+		var _exBody = "You made it out"
+		if(cookies.exitKey){
+			_exBody = "Extracted with " + cookies.exitKey
+		}
+		if(cookies.extracted){
+			_exBody += ". " + cookies.extracted + " item(s) secured"
+		}
+		window.Notice("EXTRACTED", _exBody, 3200)
+		try{
+			if(window.Sfx){
+				window.Sfx.play("extract")
+			}
+		}catch(err){
+		}
+		window.Stage.graceCount = 0
+		window.Stage.blocked = ""
+		window.Stage.set("")
+	}else if(!cookies.exited){
+		delete window.StageSync.exited
+	}
+	if(cookies.exitBlocked && !window.StageSync.exitWarned){
+		window.StageSync.exitWarned = cookies.exitBlocked
+		var _exTip = { head : "EXIT", body : "You cannot extract here" }
+		if(cookies.exitBlocked === "nokey"){
+			var _k = window.ExitKeys ? window.ExitKeys() : []
+			_exTip = {
+				head : "NO EXIT KEY",
+				body : _k.length
+					? ("Carry one of " + _k.join(" ") + " to extract")
+					: "You need an extraction key"
+			}
+		}else if(cookies.exitBlocked === "nogate"){
+			_exTip = { head : "NO GATE", body : "Extract only from a gate tile" }
+		}else if(cookies.exitBlocked === "notdeployed"){
+			_exTip = { head : "EXIT", body : "You are not deployed" }
+		}
+		window.Notice(_exTip.head, _exTip.body, 2800)
+	}else if(!cookies.exitBlocked){
+		delete window.StageSync.exitWarned
+	}
+	if(cookies.miaRolled){
+		var _saved = cookies.miaSaved ? cookies.miaSaved * 1 : 0
+		var _burned = cookies.miaBurned ? cookies.miaBurned * 1 : 0
+		var _miaBody = "The match ended while you were deployed."
+		if(_saved > 0){
+			_miaBody += " " + _saved + " kept in your stash"
+			if(_burned > 0){
+				_miaBody += ", " + _burned + " lost"
+			}
+		}else if(_burned > 0){
+			_miaBody += " " + _burned + " lost"
+		}
+		window.Notice("MIA", _miaBody, 3200)
+		window.Stage.graceCount = 0
+		window.Stage.blocked = ""
+		window.Stage.set("")
+		setTimeout(function(){
+			window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
+		}, 1600)
 		return
 	}
 	if(cookies.mia){
@@ -755,30 +709,9 @@ window.StageSync = function(cookies){
 		if(window.Stage.current == "raid"){
 			window.RaidDone()
 		}else if(window.Stage.current == "lobby" || window.Stage.current == ""){
-			/*
-				개발 Part 14 (검수) - H1
-				이미 참가 중인데 로비가 떠 있거나 상태가 비어 있으면
-				곧바로 playing 으로 넘긴다.
-				새로고침 후 첫 폴링에서 로비가 한 번 깜빡이던 문제를 없앤다.
-			*/
 			window.Stage.set("playing")
 		}
 	}else{
-		/*
-			개발 Part 14 (검수) - H1
-			현행은 enter 가 없으면 조건 없이 Lobby() 를 띄웠다.
-			문제
-			  1) #start 는 staged_writes 에 스테이징만 되고
-			     커밋 분기가 죽어 있어(개발 Part 30 대상)
-			     참가 상태가 영속되지 않는다.
-			     Start Raid 를 누른 그 응답에만 enter 가 실리고
-			     다음 폴링부터 사라져 로비로 되돌아갔다.
-			  2) 커밋을 고쳐도 요청 실패 / 매치 전환 경계에서
-			     enter 가 한 프레임 비는 순간이 생긴다.
-			     그때마다 화면이 로비로 튀면 조작이 끊긴다.
-			playing 상태에서는 graceLimit 회까지 견딘다.
-			그 이상 비면 레이드가 실제로 끝난 것으로 보고 로비로 돌린다.
-		*/
 		if(window.Stage.current == "playing"){
 			window.Stage.graceCount++
 			if(window.Stage.graceCount <= window.Stage.graceLimit){
@@ -789,16 +722,6 @@ window.StageSync = function(cookies){
 			window.Stage.graceCount = 0
 			window.Stage.set("")
 		}
-		/*
-			개발 Part 19 (로비)
-			enter 없음 = 보드게임 모드(링 위 주사위) 가 확정 규칙이다.
-			  링 위        주사위 진행 중. 로비를 띄우지 않는다.
-			               출격은 게이트(🚪) 칸에서 🎲 -> RolePick 으로 한다.
-			  링 밖/미확정  레이드가 끝나 내륙에 남은 상태. 기존대로 로비.
-			링이 확정되기 전(EdgeReady false)에 떠 있던 로비는
-			링 위로 확인되는 즉시 닫는다. 단 RaidAbort 가 사유(blocked)를 띄운
-			로비는 사용자가 닫을 때까지 유지한다.
-		*/
 		var _onRing = false
 		try{
 			if(window.EdgeReady && window.EdgeReady()){
@@ -808,12 +731,23 @@ window.StageSync = function(cookies){
 		}catch(err){
 			_onRing = false
 		}
-		if(window.Stage.current == "lobby" && _onRing && !window.Stage.blocked){
+		var _onBoard = _onRing
+		if(!_onBoard){
+			try{
+				if(cookies.onJail){
+					_onBoard = true
+				}else if(window.RingAnchor && window.RingAnchor()){
+					_onBoard = true
+				}
+			}catch(err){
+			}
+		}
+		if(window.Stage.current == "lobby" && _onBoard && !window.Stage.blocked){
 			window.Stage.set("")
 			return
 		}
 		if(window.Stage.current != "lobby" && window.Stage.current != "raid"){
-			if(window.Mode() == "board" && !_onRing){
+			if(window.Mode() == "board" && !_onBoard){
 				window.Lobby()
 			}
 		}
@@ -822,11 +756,6 @@ window.StageSync = function(cookies){
 
 $(document).on("click", "#lobby .btn.raid", function(e){
 	e.preventDefault()
-	/*
-		개발 Part 16 (레이드 슬롯)
-		disabled 상태에서 눌리면 무시한다.
-		CSS 로 감추더라도 이벤트 위임은 살아 있으므로 여기서 한 번 더 막는다.
-	*/
 	if($(this).hasClass("disabled")){
 		return
 	}
@@ -849,16 +778,6 @@ $(document).on("click", "#lobby .btn.stash", function(e){
 	window.Stage.set("")
 	window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
 })
-/*
-	개발 Part 14 (검수) - H5
-	보드 <-> 마이룸 전환 시 Stage 를 초기화한다.
-	현행은 상태가 남아
-	  마이룸 -> 보드 : playing 이 남아 로비가 뜨지 않음
-	  보드   -> 마이룸 : lobby 가 남아 룸 화면 위에 로비가 겹침
-	가 발생했다.
-	src/index.js 의 window.onhashchange 가 RolePanel / myroom 을 닫는 것과
-	같은 시점에 동작하도록 hashchange 이벤트에 직접 붙인다.
-*/
 window.addEventListener("hashchange", function(){
 	if(window.Stage.raidTimer){
 		clearInterval(window.Stage.raidTimer)

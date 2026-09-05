@@ -383,16 +383,6 @@ window.SfxSync = function(cookies){
 	}catch(err){
 	}
 }
-/*
-	제스처 해제 + 클릭 사운드.
-	개별 핸들러를 건드리지 않고 위임으로 처리한다.
-	  .hashType     플레이어 툴팁 슬롯 (주사위 / 건설 / 출격 / HP)
-	  .btn          로비 / 패널 / 팝업 버튼
-	  .emoji_asset  덱 아이템
-	  .row          #panel 행
-	capture 단계에 붙여 각 핸들러의 preventDefault / stopPropagation 보다
-	먼저 실행되게 한다. 그래야 팝업을 닫는 버튼에서도 소리가 난다.
-*/
 ;(function(){
 	var unlocked = false
 	var onGesture = function(){
@@ -417,15 +407,6 @@ window.SfxSync = function(cookies){
 		}
 		if(t.closest(".sfx_toggle")){
 			window.Sfx.mute()
-			return
-		}
-		/*
-			주사위 / 건설 / 출격은 SfxSync 가 결과를 받아 울리므로
-			여기서는 누른 느낌만 준다.
-			.hashType.Meta 는 주사위 굴림이라 딸깍을 따로 준다.
-		*/
-		if(t.closest(".hashType.Meta")){
-			window.Sfx.play("dice")
 			return
 		}
 		if(t.closest(".hashType.Fire")){

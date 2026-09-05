@@ -24,17 +24,10 @@ const textures = {
 	// log : new THREE.TextureLoader().load(logImg),
 	black : new THREE.TextureLoader().load(blackImg)
 }
-
-// textures.dirt.magFilter = THREE.NearestFilter
-// textures.dirt.minFilter = THREE.LinearMipMapLinearFilter
 textures.grass.magFilter = THREE.NearestFilter
 textures.grass.minFilter = THREE.LinearMipMapLinearFilter
 textures.glass.magFilter = THREE.NearestFilter
 textures.glass.minFilter = THREE.LinearMipMapLinearFilter
-// textures.wood.magFilter = THREE.NearestFilter
-// textures.wood.minFilter = THREE.LinearMipMapLinearFilter
-// textures.log.magFilter = THREE.NearestFilter
-// textures.log.minFilter = THREE.LinearMipMapLinearFilter
 textures.black.magFilter = THREE.NearestFilter
 textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
@@ -55,28 +48,6 @@ window.FieldsSync = function(force){
 	}catch(err){
 	}
 	var next = window.Fields(hash)
-	/*
-		개발 Part 38 (폴백 오염)
-		현행 문제
-		  이 함수는 모듈 로드 시점에 한 번 실행된다.
-		  그때는 MapGen 이 없어 hash 가 "" 이고,
-		  window.Fields("") 는 Serpentine 폴백(10000칸 격자)을 돌려준다.
-		  그런데 아래 순번 규칙이 그 격자에도 그대로 적용됐다.
-		    jail 222칸 / gate 1111칸 / item 3333칸
-		  EdgeReady() 가 ring === false 로 막으므로
-		  IsEdge / EdgeField 판정은 안전하다.
-		  하지만 Asset 컴포넌트는 window.fields["x:z"] 를 직접 조회해
-		  최초 로드와 해시 변경 직후에 주변 칸에 ❔ / 🚪 를 뿌렸다.
-		  실제 링과 무관한 좌표이며, 그 사이 클릭하면
-		  ReservedTile 이 이 가짜 값을 읽는다.
-		조치
-		  링이 확정된 경우에만 순번 규칙을 적용한다.
-		  Serpentine 은 좌표 집합일 뿐 보드 경로가 아니므로
-		  감옥 / 게이트 / 아이템이라는 개념 자체가 성립하지 않는다.
-		좌표 키와 index 는 그대로 부여한다.
-		Respawn() 이 fields[i].x 로 접근하고,
-		좌표 키가 없으면 클릭 판정이 전부 실패한다.
-	*/
 	var _isRing = next.ring ? true : false
 	next.forEach(function(field, index){
 		if(_isRing){
@@ -305,6 +276,36 @@ export const Experience = () => {
 				cursor.current.position.y = -0.001
 			}catch(err){
 			}
+		}else{
+			/*
+				개발 Part 63 (커서 높이 유지)
+				커서는 자기가 놓인 칸의 높이를 따라야 한다.
+				클릭 순간에만 맞추면 그 뒤로 어긋난다.
+				  MapGen 이 섬을 다시 만들면 같은 좌표의 고도가 바뀐다
+				  판이 전환되면 지형이 통째로 달라진다
+				  개발 Part 63 이전에는 Player.jsx 가 매 프레임 덮어써
+				  플레이어 발밑 높이로 끌려갔다
+				여기서 자기 칸 기준으로만 유지한다.
+				좌표는 0.5 그리드이므로 그대로 키로 쓴다.
+				차이가 미세하면 건드리지 않아 불필요한 행렬 갱신을 피한다.
+			*/
+			try{
+				var _cu = cursor.current
+				if(_cu){
+					var _cb = window.map.biomes[_cu.position.x + ":" + _cu.position.z]
+					if(_cb && typeof _cb.y !== "undefined"){
+						var _cl = window.CursorLift ? window.CursorLift * 1 : 0.06
+						if(isNaN(_cl)){
+							_cl = 0.06
+						}
+						var _want = (_cb.y * 1) + _cl
+						if(Math.abs(_cu.position.y - _want) > 0.005){
+							_cu.position.y = _want
+						}
+					}
+				}
+			}catch(err){
+			}
 		}
 		
 		if(cookies){
@@ -333,30 +334,28 @@ export const Experience = () => {
 						fov = 0.5
 					}
 				}
-				/*
-					개발 Part 18 (카메라 보간)
-					Part 17 대비 변경점
-					  1) Snap 감소를 여기서 하지 않는다.
-					     이 블록은 cookies / position 이 모두 있을 때만 실행되므로
-					     조건이 어긋나면 Snap 이 영원히 남아 계속 순간이동한다.
-					     감소는 useFrame 최말단으로 옮겨 무조건 1회씩 줄인다.
-					  2) lerp 계수 0.2 는 프레임 고정이라 프레임레이트가 흔들리면
-					     추적 속도가 함께 흔들린다. delta 로 지수 감쇠를 계산한다.
-					     1 - (1 - 0.2)^(delta * 60) 은 60fps 에서 정확히 0.2 다.
-					  3) frameloop 게이트를 제거해 demand 로 내려간 순간에도
-					     들어온 프레임만큼은 카메라가 따라가게 한다.
-				*/
-				var _camTarget = new THREE.Vector3(position.x+far.x, position.y+far.y, position.z+far.z)
-				var _camLook = new THREE.Vector3(position.x, position.y-fov, position.z)
+				var _cv = window.__camVec
+				if(!_cv){
+					_cv = window.__camVec = {
+						target : new THREE.Vector3(),
+						look : new THREE.Vector3()
+					}
+				}
+				var _camTarget = _cv.target.set(position.x+far.x, position.y+far.y, position.z+far.z)
+				var _camLook = _cv.look.set(position.x, position.y-fov, position.z)
 				if(window.Snap > 0){
 					e.camera.position.copy(_camTarget)
 					e.camera?.lookAt(_camLook)
 				}else{
 					var _cdt = (typeof delta === "number" && delta > 0 && delta < 0.25) ? delta : (1 / 60)
-					var _ct = 1 - Math.pow(0.8, _cdt * 60)
+					var _ctau = window.CamTau ? window.CamTau * 1 : 0.12
+					if(isNaN(_ctau) || _ctau <= 0){
+						_ctau = 0.12
+					}
+					var _ct = 1 - Math.exp(-_cdt / _ctau)
 					if(_ct > 1){ _ct = 1 }
-					e.camera?.lookAt(_camLook)
 					e.camera.position.lerp(_camTarget, _ct)
+					e.camera?.lookAt(_camLook)
 				}
 				if(OAuth3.interval){
 					if(!OAuth3.after){
@@ -368,14 +367,6 @@ export const Experience = () => {
 				}
 			}
 		}
-		/*
-			개발 Part 18 (스냅 카운터)
-			cookies / position 유무와 무관하게 프레임당 정확히 1 씩 줄인다.
-			Part 17 은 이 감소를 if(position) 안에 두어
-			좌표가 아직 없는 프레임에서는 줄지 않았다.
-			그 결과 Snap 이 남아 이후 정상 이동까지 순간이동으로 처리됐다.
-			(사용자가 본 "필드 이동이 최초 순간이동처럼 종종 움직인다" 의 원인 중 하나)
-		*/
 		if(window.Snap > 0){
 			window.Snap = window.Snap - 1
 		}
@@ -389,12 +380,6 @@ export const Experience = () => {
 			}
 			return
 		}
-		/*
-			개발 Part 14 (검수) - G3
-			MapGen 이 준비되지 않았으면 window.map.biomes 가 비어 있어
-			아래 biome 조회가 전부 실패하고 조용히 return 한다.
-			그 상태가 "클릭이 안 먹는다" 로 보이므로 여기서 한 번 시도한다.
-		*/
 		if(window.MapGen && !window.MapGen.ready){
 			try{
 				window.MapGen.apply()
@@ -405,16 +390,6 @@ export const Experience = () => {
 		try{
 			if(cookies){
 				var _isRoom = window.Mode() == "room"
-				/*
-					개발 Part 14 (검수) - G3
-					현행은 CanFreeMove() 가 false 면 함수 최상단에서 return 했다.
-					그래서 커서(1차 클릭) 조차 움직이지 않아
-					"클릭이 아예 먹지 않는다" 로 보였다.
-					여기서는 게이트를 옮긴다.
-					  커서 이동(e.point)  항상 허용. 지형 확인 / 조준 용도다.
-					  실제 이동(2차 클릭) CanFreeMove() 통과 시에만 허용.
-					이렇게 하면 주사위 이동 중에도 타일을 눌러 정보를 볼 수 있다.
-				*/
 				var _canMove = _isRoom
 					? true
 					: (window.CanFreeMove ? window.CanFreeMove() : true)
@@ -438,13 +413,6 @@ export const Experience = () => {
 							}
 							point.y = biome.y
 							if(cursor.current.position.x == point.x && cursor.current.position.z == point.z){
-								/*
-									개발 Part 14 (검수) - G3
-									2차 클릭(확정 이동)에서만 이동 권한을 본다.
-									개발 Part 15 (규칙 R3)
-									  이동이 막힌 이유를 알려준다.
-									  아무 반응이 없으면 조작 불능으로 오인된다.
-								*/
 								if(!_canMove){
 									try{
 										if(cookies.damage || cookies.dead){
@@ -458,16 +426,22 @@ export const Experience = () => {
 									}
 									return
 								}
-								/*
-									개발 Part 17 (규칙 R6)
-									좌표 단위 진입 판정.
-									UCAV 는 링(edge) = 주사위 경로에 올라올 수 없다.
-									서버도 되돌려 보내므로 클라이언트에서 먼저 막아
-									좌표가 튀는 현상을 없앤다.
-								*/
 								if(window.CanMoveTo && !window.CanMoveTo(point.x, point.z)){
 									try{
-										window.Notice("FIELD ONLY", "UCAV cannot enter the board path", 2200)
+										var _mr = window.CanMoveTo.reason
+										if(_mr === "anchor"){
+											var _ma = window.RingAnchor ? window.RingAnchor() : null
+											window.Notice("BOARD PATH",
+												_ma
+													? ("Return through " + Math.floor(_ma.x) + ", " + Math.floor(_ma.z))
+													: "You cannot step onto the board path here",
+												2600)
+										}else if(_mr === "noanchor"){
+											window.Notice("BOARD PATH",
+												"You cannot step onto the board path here", 2200)
+										}else{
+											window.Notice("FIELD ONLY", "UCAV cannot enter the board path", 2200)
+										}
 									}catch(err){
 									}
 									return
@@ -483,9 +457,11 @@ export const Experience = () => {
 											}
 										}
 										window[player.hash].position.y = point.y + 0.5
-										
-										current.current.position.y = point.y + 0.01
-
+										var _tlift = window.TileLift ? window.TileLift * 1 : 0.02
+										if(isNaN(_tlift)){
+											_tlift = 0.02
+										}
+										current.current.position.y = point.y + _tlift
 										window[player.hash].position.x = current.current.position.x = point.x
 										window[player.hash].position.z = current.current.position.z = point.z
 
@@ -500,14 +476,6 @@ export const Experience = () => {
 										$("emojis").removeClass("on");
 										$("tooltip").removeClass("on");
 										$("#capture>.icon").html('')
-
-										// maker
-										/*
-											개발 Part 17 (미니맵)
-											하드코딩 오프셋을 MapFocus 로 대체한다.
-											셀렉터도 ".map" 에서 MapGen.wrap() 으로 좁혀
-											문서에 .map 이 여러 개일 때 엉뚱한 노드를 잡던 문제를 없앤다.
-										*/
 										if(!(window.MapFocus && window.MapFocus(point.x, point.z))){
 											$(".map").css({top : - ((point.z * 2) + 100) , left : - ((point.x * 2) + 0) })
 										}
@@ -596,8 +564,12 @@ export const Experience = () => {
 									}
 								}
 							}else{
+								var _clift = window.CursorLift ? window.CursorLift * 1 : 0.06
+								if(isNaN(_clift)){
+									_clift = 0.06
+								}
 								cursor.current.position.x = point.x
-								cursor.current.position.y = point.y + 0.01
+								cursor.current.position.y = point.y + _clift
 								cursor.current.position.z = point.z
 							}
 						}
@@ -759,14 +731,9 @@ export const Experience = () => {
 			if(window.map.biomes[props.uid]){
 				emoji = window.Biomes[color]
 			}
-
-			if(props.name == "#BEACH"){
-				if(props.color == "black"){
-					color = props.color
-
-
-					opacity = 0.5
-				}
+			if(props.color == "black"){
+				color = props.color
+				opacity = 0.5
 			}
 
 			if(biome){
@@ -774,15 +741,6 @@ export const Experience = () => {
 					texture = color = "black"
 				}
 			}
-
-			/*
-				개발 Part 38 (폴백 오염)
-				링이 확정되기 전에는 window.fields 가 Serpentine 격자다.
-				그 상태에서 좌표 키를 조회하면 보드 밖 칸이 잡혀
-				감옥 색 / 게이트 문 / 아이템 아이콘이 잘못 그려진다.
-				EdgeReady() 는 window.fields.ring 을 확인하므로
-				이 한 줄로 폴백 프레임을 통째로 걸러낸다.
-			*/
 			var field = null
 			if(window.Mode() != "room"){
 				if(window.EdgeReady && window.EdgeReady()){
@@ -1043,15 +1001,33 @@ export const Experience = () => {
 			<Suspense>
 				<Environment files="warehouse.hdr" />
 			</Suspense>
-
-			<mesh ref={cursor} rotation-x={-Math.PI / 2} position={[1.5, -0.001, 1.5]}>
+			<mesh ref={cursor} rotation-x={-Math.PI / 2} position={[1.5, -0.001, 1.5]} renderOrder={10}>
 				<planeGeometry attach="geometry" args={[0.6, 0.6]} />
-				<meshStandardMaterial attach="material" color={cursor.color} />
+				<meshBasicMaterial
+					attach="material"
+					color={cursor.color}
+					transparent
+					opacity={0.85}
+					toneMapped={false}
+					depthWrite={false}
+					polygonOffset
+					polygonOffsetFactor={-4}
+					polygonOffsetUnits={-4}
+				/>
 			</mesh>
-
-			<mesh ref={current} rotation-x={-Math.PI / 2} position={[1.5, 0, 1.5]}>
+			<mesh ref={current} rotation-x={-Math.PI / 2} position={[1.5, 0, 1.5]} renderOrder={9}>
 				<planeGeometry attach="geometry" args={[0.9, 0.9]} />
-				<meshStandardMaterial attach="material" color={current.color} />
+				<meshBasicMaterial
+					attach="material"
+					color={current.color}
+					transparent
+					opacity={0.45}
+					toneMapped={false}
+					depthWrite={false}
+					polygonOffset
+					polygonOffsetFactor={-3}
+					polygonOffsetUnits={-3}
+				/>
 			</mesh>
 
 			{(mode == "room" && !(window.MapGen && window.MapGen.ready)) ? <RoomGrid onClick={onClick} /> : null}
