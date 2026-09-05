@@ -4445,6 +4445,28 @@ window.RoomCallback = async function(resp){
 			}
 		}
 
+		/*
+			개발 Part 42 (마이룸 스태시)
+			현행 문제
+			  window.MyRoom() 을 부르는 곳이 어디에도 없었다.
+			  src/index.js 는 $("#myroom").removeClass("on") 으로 닫기만 하고,
+			  RoomCallback / stage.js 어느 쪽도 열지 않는다.
+			  그래서
+			    탈출 시 "Loot moved to My Room" 알림이 떠도 전리품을 볼 수 없고
+			    사망 패널의 Go to My Room 이 빈 화면으로 간다
+			  MyRoom() 자체가 hash != owner 이면 패널을 닫고 반환하므로
+			  룸 모드에서 무조건 불러도 남의 룸에서는 뜨지 않는다.
+			resp 를 넘기는 이유
+			  MyRoom 은 rows 에서 보관품을 직접 골라낸다.
+			  window.State 로 옮기는 것은 개발 Part 12 전환이 끝난 뒤에 한다.
+		*/
+		try{
+			if(window.MyRoom){
+				window.MyRoom(resp)
+			}
+		}catch(err){
+			console.log("[room] myroom render err", err)
+		}
 		if(!window.Init.done["room"]){
 			window.Init(cookies)
 		}

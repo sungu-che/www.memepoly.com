@@ -246,6 +246,60 @@ window.IsEdge = function(_x, _z){
 	return window.EdgeField(_x, _z) ? true : false
 }
 /*
+	개발 Part 37 (예약 칸)
+	링 칸 중 건설할 수 없는 칸을 판정한다.
+	  jail  감옥. 안전지대이자 필드 진입점
+	  gate  출격구. 막으면 남의 출격을 봉쇄할 수 있다
+	  item  파밍 칸. 사유화하면 아이템 공급이 끊긴다
+	판정 순서
+	  1) cookies.tile.reserved
+	     서버가 axis 좌표로 확정해 내려준 값. 가장 정확하다
+	  2) window.fields[].jail / gate / item
+	     PropertyInit 이 붙인 값. 폴링 사이 지연이 있을 수 있다
+	빈 문자열이면 건설 가능한 일반 칸이다.
+	반환값은 사유 문자열이라 그대로 안내 문구에 쓸 수 있다.
+*/
+window.ReservedTile = function(_x, _z){
+	try{
+		var c = window.cookies
+		if(c && c.tile){
+			var t = c.tile
+			if((t.x * 1) === (_x * 1) && (t.z * 1) === (_z * 1)){
+				if(typeof t.reserved !== "undefined"){
+					return t.reserved ? t.reserved : ""
+				}
+			}
+		}
+	}catch(err){
+	}
+	var f = window.EdgeField ? window.EdgeField(_x, _z) : null
+	if(!f){
+		return ""
+	}
+	if(f.jail){
+		return "jail"
+	}
+	if(f.gate || f.drop){
+		return "gate"
+	}
+	if(f.item){
+		return "item"
+	}
+	return ""
+}
+window.ReservedNotice = function(kind){
+	if(kind === "jail"){
+		return { head : "SAFE ZONE", body : "You cannot build on a safe zone tile" }
+	}
+	if(kind === "gate"){
+		return { head : "GATE", body : "Deploy gates stay open. No building here" }
+	}
+	if(kind === "item"){
+		return { head : "SUPPLY TILE", body : "This tile drops items. No building here" }
+	}
+	return { head : "RESERVED", body : "You cannot build here" }
+}
+/*
 	개발 Part 15 (규칙 R3)
 	주사위를 굴릴 수 있는 상태인가.
 	링 위 + 레이드 미참가 + 미사망 + 진행 중 아님.
@@ -284,6 +338,106 @@ window.CanRollDice = function(){
 	return window.IsEdge(player.x, player.z)
 }
 
+/*
+	개발 Part 36 (국가 주소)
+	현행 문제
+	  BoardCallback 의 #property 분기가 bare 식별자 NATION 을 참조한다.
+	    propertyField.property.owner = NATION
+	  NATION 은 서버 index.js 에만 있는 지역 변수라 프론트에는 없다.
+	  row.__nation 이 true 인 행, 즉 누군가 처음 죽거나 파산해
+	  국유 부동산이 생기는 순간 ReferenceError 가 난다.
+	  그 for 루프에는 자체 try/catch 가 없어 예외가 바깥까지 튀고
+	    players.set / assets.set / setFrameloop
+	    스티커 / 툴팁 / #flag HUD
+	    Poll.ing 재설정
+	  이 전부 건너뛰어져 화면이 통째로 멈춘다.
+	window 프로퍼티로 두면 bare NATION 도 그대로 해석되므로
+	호출부를 고치지 않아도 된다.
+	서버 index.js 의 NATION 과 반드시 같은 값이어야 한다.
+*/
+window.NATION = "0x0000000000000000000000000000000000000000"
+/*
+	개발 Part 36 (그리드 스냅)
+	보드 좌표는 항상 0.5 단위다.
+	그런데 window.current.current.position 은 lerp 잔차로
+	-5.500000001 같은 값이 될 수 있다.
+	앵커 비교(===)나 fields["x:z"] 조회에 그대로 쓰면
+	  같은 칸인데 다르다고 판정
+	  링 칸인데 EdgeField 가 null
+	이 된다. window.Roll 이 이미 같은 보정을 하고 있다.
+	비교와 키 조회 앞에서는 반드시 이 함수를 통과시킨다.
+*/
+window.Grid = function(v){
+	var n = v * 1
+	if(isNaN(n)){
+		return n
+	}
+	return Math.round(n * 2) / 2
+}
+/*
+	개발 Part 31 (링 앵커)
+	서버가 cookies.anchor 로 "주사위로 확정된 마지막 링 좌표" 를 내려준다.
+	주사위는 언제나 이 좌표에서 출발한다.
+	감옥(SAFE ZONE)에서 내륙으로 나갔다가 돌아와도
+	여기서부터 이어서 진행된다.
+*/
+window.RingAnchor = function(){
+	try{
+		var raw = window.cookies ? window.cookies.anchor : ""
+		if(!raw){
+			return null
+		}
+		var p = String(raw).split(",")
+		if(p.length < 2){
+			return null
+		}
+		var ax = p[0] * 1
+		var az = p[1] * 1
+		if(isNaN(ax) || isNaN(az)){
+			return null
+		}
+		if(window.EdgeReady && window.EdgeReady()){
+			if(!window.IsEdge(ax, az)){
+				return null
+			}
+		}
+		return { x : ax, z : az }
+	}catch(err){
+		return null
+	}
+}
+/*
+	개발 Part 31 (링 앵커)
+	캐릭터를 앵커로 즉시 되돌린다.
+	lerp 로 기어가면 내륙에서 링까지 지형을 가로지르는 연출이 되므로
+	Snap 으로 붙인다.
+*/
+window.RingReturn = function(anchor){
+	if(!anchor){
+		return false
+	}
+	try{
+		var _y = 0
+		var b = window.map.biomes[anchor.x + ":" + anchor.z]
+		if(b && typeof b.y !== "undefined"){
+			_y = b.y * 1
+		}
+		window.Snap = 8
+		window.current.current.position.x = window.cursor.current.position.x = anchor.x
+		window.current.current.position.y = window.cursor.current.position.y = _y + 0.01
+		window.current.current.position.z = window.cursor.current.position.z = anchor.z
+		var _h = window.cookies.address ? window.cookies.address : window.cookies.hash
+		if(window[_h] && window[_h].position){
+			window[_h].position.x = anchor.x
+			window[_h].position.y = _y + 0.5
+			window[_h].position.z = anchor.z
+		}
+		window.setFrameloop("always")
+		return true
+	}catch(err){
+		return false
+	}
+}
 window.BiomeAt = function(_x, _z){
 	try{
 		var b = window.map.biomes[_x+":"+_z]
@@ -2201,6 +2355,15 @@ OAuth3.on("ready", function(e){
 							}
 						}
 
+						/*
+							개발 Part 43 (효과음)
+							한 칸 전진할 때마다 발소리를 낸다.
+							_next 가 없으면(경로 끝 / 스냅샷 실패) 소리도 내지 않는다.
+							Roll 은 500ms 간격이라 겹치지 않는다.
+						*/
+						if(_next && window.Sfx){
+							window.Sfx.play("step")
+						}
 						window.cookies.dice = dice - 1
 						window.setFrameloop("always")
 						return
@@ -2446,9 +2609,27 @@ OAuth3.on("ready", function(e){
 								새 판 스폰 좌표가 화면에 반영되지 않고
 								캐릭터가 옛 판 좌표에 남는다.
 							*/
-							if(cookies.spawned || cookies.edgeBlocked || cookies.matchRolled){
+							/*
+								개발 Part 36 (앵커 되감기)
+								현행 문제
+								  서버 개발 Part 31 은 앵커가 아닌 칸에서 굴리면
+								  x/z 를 앵커로 되감고 cookies.anchorReturn 을 내려준다.
+								  프론트가 스스로 되감지 못한 경우가 있다.
+								    EdgeReady() 가 false 인 프레임에서 굴림
+								    다른 탭 / 구버전 캐시
+								  그런데 이 트리거 목록에 anchorReturn 이 없어
+								  window.current.axis 잠금 때문에 else 로 빠지고
+								    axis.x = _cur.x
+								  즉 클라이언트 좌표가 서버 좌표를 덮어썼다.
+								  다음 폴링에 옛 좌표를 또 보고하므로
+								  서버가 또 되감는 핑퐁이 끝나지 않고,
+								  그동안 서버는 앵커에서 클라이언트는 원래 자리에서
+								  주사위를 굴려 도착 칸이 갈렸다.
+							*/
+							if(cookies.spawned || cookies.edgeBlocked || cookies.matchRolled || cookies.anchorReturn){
 								_teleport = cookies.matchRolled ? "match"
-									: (cookies.spawned ? "spawn" : "edge")
+									: (cookies.spawned ? "spawn"
+									: (cookies.anchorReturn ? "anchor" : "edge"))
 								if(_cur.x === axis.x && _cur.z === axis.z){
 									/* 이미 같은 칸이면 스냅이 필요 없다 */
 									_teleport = ""
@@ -3008,9 +3189,32 @@ OAuth3.on("ready", function(e){
 										propertyField.property.level = typeof row.__level != "undefined"
 											? row.__level : row.dice
 										propertyField.property.owner = row.Flag ? row.Flag : row.From
+										propertyField.property.ownerId = typeof row.__ownerId != "undefined"
+											? row.__ownerId : propertyField.property.ownerId
 										propertyField.property.toll = typeof row.__toll != "undefined"
 											? row.__toll
 											: (propertyField.property.tollTable ? propertyField.property.tollTable[row.dice] : 0)
+									}
+									/*
+										개발 Part 33 (국가 소유)
+										applyToFields 가 채운 nation / treasury 를
+										이 루프가 덮어써 지우지 않도록 함께 반영한다.
+										국가 부동산은 owner 가 빈 문자열로 들어오므로
+										(owner_id 가 NULL 이라 hashMap 조회가 실패한다)
+										ZERO 로 정규화해야 프론트 판정이 깨지지 않는다.
+									*/
+									if(typeof row.__nation != "undefined"){
+										propertyField.property.nation = row.__nation ? true : false
+									}
+									if(typeof row.__treasury != "undefined"){
+										propertyField.property.treasury = row.__treasury * 1
+										if(isNaN(propertyField.property.treasury)){
+											propertyField.property.treasury = 0
+										}
+									}
+									if(propertyField.property.nation){
+										propertyField.property.ownerId = null
+										propertyField.property.owner = NATION
 									}
 								}
 							}else if(row.Cc.indexOf("#message") > -1){
@@ -3118,11 +3322,38 @@ OAuth3.on("ready", function(e){
 						}
 
 						var field = fields[`${x}:${z}`]
-
 						if(field){
 							$body.attr("field", (field.item || field.drop) ? (field.item || field.drop) : "")	
 						}else{
 							$body.attr("field", "")
+						}
+						/*
+							개발 Part 41 (주사위 UI 게이트)
+							현행 문제
+							  CSS 가 body[biome="BEACH"] 를 "링 위" 의 대용으로 썼다.
+							    #root player tooltip .slot-machine{display:none}
+							    body[biome="BEACH"] ... .slot-machine{display:block}
+							  그런데 링과 BEACH 는 같은 집합이 아니다.
+							    coastRing   8방향 외곽선 추적
+							    getBiome    coast 는 voronoi 그래프의 4방향 이웃으로 판정
+							  바다가 대각선으로만 닿거나 내륙 호수에 접한 링 칸은
+							  coast=false 가 되어 GRASSLAND 등으로 나온다.
+							  그 칸에서는 굴릴 수는 있는데(핸들러는 IsEdge 로 판정)
+							  아이콘이 💣 로 남고 슬롯머신이 뜨지 않는다.
+							조치
+							  개발 Part 18 에서 확정한 IsEdge 를 그대로 body 에 싣는다.
+							  CSS 는 body[edge="true"] 로 판정하면 된다.
+							  링이 아직 확정되지 않았으면(EdgeReady false) 속성을 지운다.
+							  그 상태에서 true 를 넣으면 로딩 중 주사위 UI 가 잘못 뜬다.
+						*/
+						try{
+							if(window.EdgeReady && window.EdgeReady() && window.IsEdge(x, z)){
+								$body.attr("edge", "true")
+							}else{
+								$body.removeAttr("edge")
+							}
+						}catch(err){
+							$body.removeAttr("edge")
 						}
 
 						var type = window.typeof_emoji(self_player.emoji)
@@ -3690,19 +3921,146 @@ OAuth3.on("ready", function(e){
 											window.HpBadge(_hp, _maxHp)
 										}
 										/*
-											개발 Part 29 (게이트 출격)
-											게이트 칸 + 미출격일 때만 첫 슬롯을 출격 버튼으로 바꾼다.
-											슬롯 수가 3개로 고정이므로 Fire 자리를 빌린다.
-											(보드게임 모드에서는 깃발이 의미가 없다)
-											그 외에는 기존 Fire 버튼 그대로다.
+											개발 Part 32 (첫 슬롯 재배치)
+											슬롯이 3개로 고정이라 첫 칸의 용도를 위치에 따라 나눈다.
+											현행 문제
+											  첫 칸이 언제나 Fire(팀 깃발)였다.
+											  깃발은 내륙 점령용인데 링 위에서도 계속 떠 있었고,
+											  정작 링의 핵심인 부동산 건설은 덱에 숨어 있었다.
+											  게다가 서버 #property 분기는
+											    var field = fields[`${x}:${z}`]
+											    if (field && field.property && worldId && accountId)
+											  이고 fields 는 해안 링만 담은 배열이다.
+											  내륙 좌표는 undefined 라 블록이 통째로 건너뛰어졌다.
+											  즉 덱의 건설 버튼은 링 밖에서 눌러도 무반응이었고
+											  오류조차 남지 않았다.
+											확정 배치
+											  게이트(🚪) + 미출격  Deploy  출격 진입점 (개발 Part 29)
+											  링 위                Build   부동산 건설. 실제로 동작하는 유일한 곳
+											  내륙                 Fire    팀 깃발. 레이드 점령 수단
+											  게이트도 링 칸이라 둘이 겹친다.
+											  출격은 놓치면 안 되는 진입점이므로 게이트를 우선한다.
+											Build 라벨
+											  PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
+											  레벨 0 은 빈 문자열이라 아이콘이 사라진다.
+											  🏗(공사)로 대체해 "지을 수 있는 빈 땅" 을 표현한다.
+											  cnt 에는 통행료를 넣어 그 칸의 가치를 바로 보이게 한다.
+											  own 속성으로 내 땅 / 남의 땅 / 빈 땅을 CSS 에서 구분할 수 있다.
 										*/
 										var _slotBody = `<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>`
 										try{
-											if(!cookies.enter && window.EdgeField){
-												var _gf = window.EdgeField(self_player.x, self_player.z)
-												if(_gf && _gf.gate){
-													_slotBody = `<a class="hashType Deploy emoji color"><i class="emoji color">🚪</i></a>`
+											var _sf = window.EdgeField
+												? window.EdgeField(self_player.x, self_player.z) : null
+											var _rk = (_sf && window.ReservedTile)
+												? window.ReservedTile(self_player.x, self_player.z) : ""
+											if(_sf && _sf.gate && !cookies.enter){
+												_slotBody = `<a class="hashType Deploy emoji color"><i class="emoji color">🚪</i></a>`
+											}else if(_sf && _rk){
+												/*
+													개발 Part 37 (예약 칸)
+													감옥 / 게이트 / 아이템 칸에서는 건설 버튼을 감춘다.
+													현행은 게이트에 이미 출격한 상태이거나
+													감옥 / 아이템 칸이면 그대로 Build 가 떴다.
+													눌러도 서버가 거절하므로 "눌러도 안 되는 버튼" 이 된다.
+													대신 그 칸이 무슨 칸인지 아이콘으로 알린다.
+													클릭하면 사유를 안내한다(아래 Reserved 핸들러).
+												*/
+												var _rIcon = "🔒"
+												if(_rk === "gate"){
+													_rIcon = _sf.drop ? _sf.drop : "🚪"
+												}else if(_rk === "item"){
+													_rIcon = _sf.item ? _sf.item : "❔"
 												}
+												_slotBody = `<a class="hashType Reserved emoji color" tile="${_rk}"><i class="emoji color">${_rIcon}</i></a>`
+											}else if(_sf){
+												/*
+													부동산 정보 조회 우선순위
+													  1) cookies.tile
+													     서버가 axis 좌표로 확정해 내려준 값이라 가장 정확하다
+													  2) fields[].property
+													     #property 행이 갱신한 값. 폴링 사이 지연이 있을 수 있다
+												*/
+												var _prop = null
+												try{
+													if(cookies.tile &&
+														(cookies.tile.x * 1) === (self_player.x * 1) &&
+														(cookies.tile.z * 1) === (self_player.z * 1)){
+														_prop = {
+															level : cookies.tile.level * 1,
+															owner : cookies.tile.owner ? cookies.tile.owner : "",
+															toll : cookies.tile.toll ? cookies.tile.toll * 1 : 0
+														}
+													}
+												}catch(err){
+													_prop = null
+												}
+												if(!_prop && _sf.property){
+													_prop = {
+														level : _sf.property.level * 1,
+														owner : _sf.property.owner ? _sf.property.owner : "",
+														toll : _sf.property.toll ? _sf.property.toll * 1 : 0
+													}
+												}
+												if(!_prop){
+													_prop = { level : 0, owner : "", toll : 0 }
+												}
+												if(isNaN(_prop.level)){
+													_prop.level = 0
+												}
+												if(isNaN(_prop.toll)){
+													_prop.toll = 0
+												}
+												var _lvEmoji = "🏗"
+												try{
+													if(_prop.level > 0 && window.PropertyLevelEmoji){
+														if(window.PropertyLevelEmoji[_prop.level]){
+															_lvEmoji = window.PropertyLevelEmoji[_prop.level]
+														}
+													}
+												}catch(err){
+												}
+												/*
+													개발 Part 33 (국가 소유)
+													own 값을 넷으로 나눈다.
+													  ""       빈 땅. 지을 수 있다
+													  self     내 땅. 통행료를 받는다
+													  other    남의 땅. 밟으면 통행료를 낸다
+													  nation   국가 땅. 주사위면 국고에 내고
+													           걸어서 오면 국고를 턴다
+													국가 땅은 아이콘을 🏛 으로 바꿔 한눈에 구분되게 하고
+													cnt 에는 통행료 대신 국고 잔액을 보여 준다.
+													밟기 전에 "털 값이 있는지" 가 판단 기준이기 때문이다.
+												*/
+												var _own = ""
+												var _cnt = _prop.toll > 0 ? _prop.toll : ""
+												var _nation = false
+												try{
+													if(cookies.tile &&
+														(cookies.tile.x * 1) === (self_player.x * 1) &&
+														(cookies.tile.z * 1) === (self_player.z * 1)){
+														_nation = cookies.tile.nation ? true : false
+														if(_nation){
+															var _pot = cookies.tile.treasury ? cookies.tile.treasury * 1 : 0
+															_cnt = (isNaN(_pot) || _pot <= 0) ? "" : _pot
+														}
+													}
+												}catch(err){
+													_nation = false
+												}
+												if(_nation){
+													_own = "nation"
+													_lvEmoji = "🏛"
+												}else if(_prop.owner){
+													var _oa = String(_prop.owner).replace("0x","").toLowerCase()
+													var _ma = String(player_hash).replace("0x","").toLowerCase()
+													var _zero = "0000000000000000000000000000000000000000"
+													if(_oa === _zero){
+														_own = ""
+													}else{
+														_own = (_oa === _ma) ? "self" : "other"
+													}
+												}
+												_slotBody = `<a class="hashType Build emoji color" lv="${_prop.level}" own="${_own}"><i class="emoji color">${_lvEmoji}</i><span class="cnt">${_cnt}</span></a>`
 											}
 										}catch(err){
 										}
@@ -4090,6 +4448,37 @@ OAuth3.on("ready", function(e){
 						}
 					}catch(err){
 
+					}
+
+					/*
+						개발 Part 43 (효과음)
+						서버가 내려준 결과 신호를 소리로 바꾼다.
+						Notice 보다 먼저 부르는 이유
+						  Notice 는 2 초 넘게 떠 있지만 소리는 즉발이다.
+						  화면보다 소리가 먼저 나야 반응이 빨라 보인다.
+						SfxSync 내부에서 서명 비교로 중복을 막으므로
+						폴링마다 불러도 같은 소리가 반복되지 않는다.
+					*/
+					try{
+						if(window.SfxSync){
+							window.SfxSync(cookies)
+						}
+					}catch(err){
+					}
+					try{
+						if(cookies.treasuryLoot){
+							window.Notice("TREASURY RAID",
+								"Looted " + cookies.treasuryLoot + " 🪙 from the state", 2600)
+						}else if(cookies.tollNation){
+							window.Notice("STATE TOLL",
+								"Paid " + cookies.tollPaid + " 🪙 into the treasury", 2400)
+						}else if(cookies.tollPaid){
+							window.Notice("TOLL", "Paid " + cookies.tollPaid + " 🪙", 2200)
+						}else if(cookies.tollFailed){
+							window.Notice("BANKRUPT",
+								"You could not pay " + cookies.tollFailed + " 🪙. Properties seized", 3200)
+						}
+					}catch(err){
 					}
 
 					try{
@@ -5415,14 +5804,55 @@ OAuth3.on("ready", function(e){
 													링 위   주사위 이동
 													링 밖   폭탄 투척
 													규칙 R5 에 따라 링에서는 폭탄을 놓지 않는다.
+													개발 Part 31 (링 앵커)
+													현행 문제
+													  "지금 서 있는 칸이 링이면 굴린다" 였다.
+													  감옥에서 자유 이동이 열린 뒤 링을 따라
+													  앞으로 걸어가 거기서 굴리면 그만큼 공짜 전진이고,
+													  통행료 칸 직전까지 뒤로 걸어가면 회피가 됐다.
+													확정 규칙
+													  주사위는 언제나 앵커에서 출발한다.
+													  앵커와 다른 칸에 서 있으면 먼저 앵커로 되돌린다.
+													  앵커가 없고 링 위면 그 칸이 첫 앵커가 된다.
+													  앵커도 없고 링 밖이면 굴릴 수 없다.
+													앵커 복귀는 이미 밟은 칸으로 돌아가는 것이라
+													전진 거리가 늘지 않는다.
 												*/
 												body.cc = ""
-												if(_isEdgeHere){
+												var _anchor = window.RingAnchor ? window.RingAnchor() : null
+												var _canDice = _isEdgeHere || _anchor
+												if(_canDice){
+													/*
+														개발 Part 36 (그리드 스냅)
+														현행은 lerp 잔차가 섞인 player 좌표를 앵커와
+														=== 로 비교했다.
+														-5.5 vs -5.500000001 이 다르다고 판정되어
+														같은 칸인데도 매 굴림마다 스냅이 돌고
+														"BACK ON PATH" 알림이 반복해서 떴다.
+														비교 전에 0.5 그리드로 맞춘다.
+													*/
+													var _pgx = window.Grid ? window.Grid(player.x) : player.x
+													var _pgz = window.Grid ? window.Grid(player.z) : player.z
+													if(_anchor && (_anchor.x !== _pgx || _anchor.z !== _pgz)){
+														window.RingReturn(_anchor)
+														query.x = player.x = _anchor.x
+														query.z = player.z = _anchor.z
+														try{
+															var _ab = window.map.biomes[_anchor.x + ":" + _anchor.z]
+															if(_ab && typeof _ab.y !== "undefined"){
+																query.y = player.y = _ab.y * 1
+															}
+														}catch(err){
+														}
+														window.Notice("BACK ON PATH",
+															"Returned to your last board tile", 1800)
+													}
 													query.dice = 10
 													body.cc = "dice"
 													/*
 														개발 Part 18 (Edge 판정)
 														프론트 판정을 서버가 그대로 채택하도록 실어 보낸다.
+														앵커로 되돌아온 뒤이므로 좌표는 반드시 링이다.
 													*/
 													query.edge = 1
 												}else if(window.Biomes[`#${b.biome}`]){
@@ -5438,6 +5868,59 @@ OAuth3.on("ready", function(e){
 												}
 												$body.attr(body.cc,query.dice)
 												$('#dice ul').playSpin();
+											}else if($this.hasClass("Reserved")){
+												/*
+													개발 Part 37 (예약 칸)
+													왜 여기서는 못 짓는지 알려 준다.
+													감옥은 안전지대이자 필드 진입점,
+													게이트는 출격구, 아이템 칸은 파밍 보상 칸이다.
+													이 셋을 사유화할 수 있으면 보드 규칙이 무너진다.
+												*/
+												var _rkind = $this.attr("tile") ? $this.attr("tile") : ""
+												var _rmsg = window.ReservedNotice
+													? window.ReservedNotice(_rkind)
+													: { head : "RESERVED", body : "You cannot build here" }
+												window.Notice(_rmsg.head, _rmsg.body, 2400)
+												return
+											}else if($this.hasClass("Build")){
+												/*
+													개발 Part 32 (부동산 건설)
+													덱에 있던 건설 버튼(method="property")을 여기로 옮긴다.
+													덱에서는 어느 칸에서나 눌렸지만
+													서버 #property 는 fields[x:z](해안 링)에만 반응하므로
+													내륙에서 누르면 조용히 아무 일도 일어나지 않았다.
+													링 위에서만 노출되는 이 자리가 정확한 위치다.
+													링이 확정되기 전에는 판정 자체가 불가능하므로
+													먼저 EdgeReady 를 확인한다.
+												*/
+												if(window.EdgeReady && !window.EdgeReady()){
+													window.Notice("MAP LOADING", "Board path is not ready", 1800)
+													return
+												}
+												if(!window.IsEdge(player.x, player.z)){
+													window.Notice("NOT ON PATH", "Build only on the board path", 2200)
+													return
+												}
+												/*
+													개발 Part 37 (예약 칸)
+													슬롯 렌더에서 이미 걸렀지만, 폴링 사이에 칸이 바뀌면
+													옛 슬롯이 남아 있을 수 있다. 여기서 다시 확인한다.
+												*/
+												var _bk = window.ReservedTile
+													? window.ReservedTile(player.x, player.z) : ""
+												if(_bk){
+													var _bmsg = window.ReservedNotice(_bk)
+													window.Notice(_bmsg.head, _bmsg.body, 2400)
+													return
+												}
+												$('tooltip').removeClass("on")
+												$body.removeAttr("tooltip")
+												if(window.PropertyPanel){
+													window.PropertyPanel()
+												}else{
+													window.Notice("BUILD", "Property panel is not ready", 1800)
+												}
+												return
 											}else if($this.hasClass("Fire")){
 												body.cc = "flag"
 											}else if($this.hasClass("Flag")){
@@ -5626,24 +6109,22 @@ OAuth3.on("ready", function(e){
 												return
 											}
 											/*
-												개발 Part 17 (식량)
-												필드에서 나무 / 돌 / 얼음을 폭파해 파밍한 결과물 중
-												음식 계열은 클릭 즉시 섭취해 체력을 회복한다.
-												상점(스왑) 선택 토글보다 먼저 판정해야 한다.
-												그렇지 않으면 먹으려던 클릭이 매도 선택으로 먹힌다.
+												개발 Part 31 (아이템 선택)
+												현행 문제
+												  음식은 클릭 즉시 섭취돼 팔 수가 없었고,
+												  장비는 스왑 토글만 돼 장착할 수가 없었다.
+												  같은 클릭이 아이템 종류에 따라 다르게 동작하는데
+												  안내가 없어 식량을 실수로 먹게 된다.
+												조치
+												  무엇을 할지 고르는 팝업(ItemPick)을 띄운다.
+												  먹기 / 장착 / 판매 를 한 화면에서 고른다.
+												  실제 동작은 팝업의 위임 핸들러가 수행하므로
+												  기존 Consume / Equipment / 스왑 경로는 그대로다.
+												스왑 의도(SwapIntent)로 열린 잔액 화면에서는
+												팝업을 건너뛴다. 그때는 이미 "판다" 가 확정된 흐름이다.
 											*/
-											if(window.typeof_food && window.typeof_food(emoji)){
-												var _maxHpFood = window.MaxHp[cookies.role ? cookies.role : ""]
-												var _hpFood = typeof cookies.hp != "undefined" ? cookies.hp * 1 : _maxHpFood
-												if(_hpFood >= _maxHpFood){
-													window.Notice("FULL HP", "No damage to heal", 1800)
-													return
-												}
-												$('tooltip').removeClass("on")
-												$body.removeAttr("tooltip")
-												if(window.Consume){
-													window.Consume(emoji)
-												}
+											if(window.ItemPick && !window.SwapIntent){
+												window.ItemPick(emoji, $this)
 												return
 											}
 											$('tooltip').removeClass("on")
@@ -6285,11 +6766,20 @@ OAuth3.on("ready", function(e){
 				icon : "construction",
 				type : "emoji"
 			})
-			window.emojis.unshift({
-				method : "property",
-				icon : "home",
-				type : "emoji"
-			})
+			/*
+				개발 Part 32 (첫 슬롯 재배치)
+				건설 버튼(method="property", icon="home")을 여기서 제거한다.
+				플레이어 툴팁의 첫 슬롯(a.hashType.Build)으로 옮겼다.
+				제거하는 이유
+				  덱은 위치와 무관하게 항상 떠 있는 목록이다.
+				  그런데 부동산은 링 위에서만 지을 수 있어
+				  내륙에서 누르면 요청만 나가고 아무 반응이 없었다.
+				  "눌러도 안 되는 버튼" 이 상시 노출되는 상태였다.
+				아래 클릭 핸들러의 method == "property" 분기는 그대로 둔다.
+				도달하지 않는 경로가 되지만, 덱 항목을 다시 넣을 때
+				바로 동작하도록 남겨 둔다.
+				craft(제작)는 위치 제한이 없으므로 덱에 그대로 둔다.
+			*/
 			window.emojis.unshift({
 				method : "notify",
 				icon : "notifications",

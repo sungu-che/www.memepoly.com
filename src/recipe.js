@@ -37,7 +37,22 @@ window.Recipes.forEach(function(row){
 
 window.MaxHp = { "" : 10, "PLAYER" : 10, "PMC" : 8, "SCAV" : 5, "UCAV" : 8 }
 
+/*
+	개발 Part 38 (중복 제거)
+	이 함수는 호출부가 없다.
+	같은 규칙(%45 jail / %9 gate / %3 item)을
+	src/components/Experience.jsx 의 window.FieldsSync 가 인라인으로 갖고 있고,
+	실제로 window.fields 를 채우는 것도 그쪽이다.
+	규칙이 두 벌이면 한쪽만 고쳤을 때 서버 board_tiles.ring_index 와
+	조용히 어긋난다(개발 Part 37 의 예약 칸 판정이 여기에 의존한다).
+	호출부가 생길 때를 대비해 시그니처만 남기고 경고를 띄운다.
+	되살리려면 FieldsSync 쪽을 지우고 이쪽 하나만 남겨야 한다.
+*/
 window.PropertyInit = function(fields){
+	if(!window.PropertyInit.warned){
+		window.PropertyInit.warned = true
+		console.log("[fields] PropertyInit is deprecated. FieldsSync owns the reserved-tile rule.")
+	}
 	if(!fields){
 		return fields
 	}

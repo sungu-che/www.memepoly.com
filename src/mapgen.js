@@ -67,8 +67,29 @@ window.MapGen.apply = function(force){
 		return false
 	}
 	if(!fields || !fields.tiles){
+		/*
+			개발 Part 39 (무음 실패)
+			Fields(hash) 가 tiles 없는 배열을 돌려주는 경우다.
+			  voronoi build 예외
+			  result 없음
+			  ring.length < 12 (섬이 너무 작다)
+			이때 FieldsSerpentine 폴백이 오고 apply 는 false 로 빠진다.
+			현행은 로그가 없어 다음 증상만 보였다.
+			  MapGen.ready 가 영원히 false
+			  window.map.biomes 가 비어 onClick 이 매번 조용히 return
+			  EdgeReady() false 라 주사위도 막힘
+			즉 게임이 통째로 멈추는데 콘솔에 아무것도 안 남는다.
+			키를 갱신하지 않는 것도 그대로 둔다.
+			실패한 섬을 확정으로 기록하면 다음 apply 가 건너뛴다.
+		*/
+		if(window.MapGen.__buildFailKey !== t.key){
+			window.MapGen.__buildFailKey = t.key
+			console.log("[mapgen] island build failed :: " + t.key +
+				" (serpentine fallback). board is not playable until this recovers.")
+		}
 		return false
 	}
+	window.MapGen.__buildFailKey = ""
 	if(!window.map){
 		window.MapReset()
 	}
@@ -121,6 +142,35 @@ window.MapGen.apply = function(force){
 	*/
 	window.MapGen.ensureCanvas()
 	window.MapGen.sync()
+	/*
+		개발 Part 39 (섬 / 링 동기화)
+		현행 문제
+		  apply() 는 window.map.biomes 를 갈아끼우고 MapGen.key 를 바꾸지만
+		  window.fields 는 손대지 않는다.
+		  FieldsSync 를 실제로 부르는 곳은 Experience.jsx 의 useEffect 뿐이고,
+		  그건 리렌더가 나야 돈다.
+		    if(JSON.stringify(window.players) != JSON.stringify(_players)){
+		        window.players.set(_players)
+		    }
+		  플레이어와 에셋이 둘 다 동일한 프레임에서는 리렌더가 없다.
+		  그러면 biomes 는 새 섬인데 fields 는 옛 링인 상태가 유지된다.
+		  실제로는 섬이 바뀌면 _assets 가 달라져 리렌더가 나지만,
+		  게임 좌표계가 렌더 여부에 걸려 있는 것 자체가 위험하다.
+		조치
+		  섬을 확정한 그 자리에서 링도 확정한다.
+		  FieldsSync 는 키가 같으면 즉시 반환하므로 중복 호출 비용이 없다.
+		  방금 MapGen.key 를 바꿨으므로 여기서는 정확히 한 번 재구축된다.
+		FieldsSync 는 window.MapGen.target() / window.Fields() 만 호출하고
+		apply() 로 되돌아오지 않으므로 재귀가 생기지 않는다.
+		Experience.jsx 보다 먼저 실행되는 경로가 있어 존재 확인을 둔다.
+	*/
+	try{
+		if(typeof window.FieldsSync === "function"){
+			window.FieldsSync(true)
+		}
+	}catch(err){
+		console.log("[mapgen] fields sync err", err)
+	}
 	return true
 }
 /*

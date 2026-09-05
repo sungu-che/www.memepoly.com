@@ -378,6 +378,13 @@
 		<script src="/src/js/qrcode.min.js?ver1"></script>
 		<script src="/src/js/voronoi-core.js"></script>
 		<script src="/src/mapgen.js"></script>
+		<!--
+			개발 Part 43 (효과음)
+			일반 스크립트로 둔다. import 가 없고,
+			module 은 defer 되므로 mapgen.js 처럼 즉시 실행시켜
+			뒤따르는 모듈이 실행될 때 window.Sfx 가 반드시 존재하게 한다.
+		-->
+		<script src="/src/sfx.js"></script>
 		<script src="/src/js/browser-image-compression.js"></script>
 		<script type="module" src="/src/oauth3.js"></script>
 		<script type="module" src="/src/event.js"></script>

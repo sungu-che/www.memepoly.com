@@ -356,3 +356,174 @@ $(document).on("click", ".btn.exit, .hashType.Exit", function(e){
 
 	window.Exit()
 })
+/*
+	개발 Part 31 (아이템 선택)
+	현행 문제
+	  덱의 아이템을 클릭하면 곧바로 동작이 확정됐다.
+	    음식  window.Consume() 즉시 섭취. 팔 방법이 없다
+	    그 외 스왑 선택 토글. 장착할 방법이 없다
+	  같은 클릭이 아이템 종류에 따라 다른 일을 하는데
+	  화면에는 아무 안내가 없어 실수로 아까운 식량을 먹게 된다.
+	조치
+	  클릭하면 무엇을 할지 고르는 팝업을 띄운다.
+	    먹기 / 사용   회복량과 현재 HP 를 함께 표시
+	    장착         장비류
+	    판매         스왑 선택 토글(기존 동작)
+	  RolePick 과 동일한 .layer + form.popup 규약이라
+	  index.html 수정 없이 동작하고 back.close 로 닫힌다.
+	회복량 표기
+	  실제 회복은 언제나 서버가 확정한다.
+	  여기 값은 안내용이며 서버 FOOD_HEAL / item.heal 과 같은 규칙을 쓴다.
+*/
+window.ItemPick = function(emoji, $el){
+	var cookies = window.cookies
+	if(!cookies || !emoji){
+		return null
+	}
+	window.ItemPick.emoji = emoji
+	window.ItemPick.$el = $el
+	var maxHp = window.MaxHp ? window.MaxHp[cookies.role ? cookies.role : ""] : 10
+	if(typeof maxHp == "undefined" || isNaN(maxHp)){
+		maxHp = 10
+	}
+	var hp = typeof cookies.hp != "undefined" ? cookies.hp * 1 : maxHp
+	var food = window.typeof_food ? window.typeof_food(emoji) : false
+	var equip = window.typeof_equipment ? window.typeof_equipment(emoji) : false
+	var heal = 0
+	var healKind = ""
+	if(equip && equip.subgroup == "equipment-consumable" && equip.heal){
+		heal = equip.heal * 3
+		healKind = "potion"
+	}else if(food){
+		heal = window.FoodHeal ? window.FoodHeal(emoji) : 0
+		healKind = "food"
+	}
+	var wearable = (equip && equip.subgroup != "equipment-consumable") ? true : false
+	var sellable = (window.typeof_item && window.typeof_item(emoji)) ? true : false
+	var full = hp >= maxHp
+	var body = '<div class="item_pick_head">\
+		<div class="item_pick_icon"><a class="emoji color">' + emoji + '</a></div>\
+		<div class="item_pick_meta">\
+			<strong class="title">' + (equip ? equip.name : (food ? food.name : emoji)) + '</strong>\
+			<p class="hp"><i class="emoji color">❤️</i><span>' + hp + ' / ' + maxHp + '</span></p>\
+		</div>\
+	</div>\
+	<div class="item_pick_body">'
+	if(heal > 0){
+		body += '<a class="btn pick eat ' + (full ? "disabled" : "") + '">\
+			<i class="emoji color">' + (healKind == "potion" ? "🧪" : "🍽") + '</i>\
+			<strong>\
+				<span class="ko">' + (healKind == "potion" ? "사용" : "먹기") + '</span>\
+				<span class="en">' + (healKind == "potion" ? "Use" : "Eat") + '</span>\
+			</strong>\
+			<span class="ko">체력을 ' + heal + ' 회복합니다.</span>\
+			<span class="en">Restores ' + heal + ' HP.</span>\
+			' + (full ? '<em class="why">\
+				<span class="ko">체력이 가득 찼습니다.</span>\
+				<span class="en">Your HP is already full.</span>\
+			</em>' : '') + '\
+		</a>'
+	}
+	if(wearable){
+		body += '<a class="btn pick equip">\
+			<i class="emoji color">🎒</i>\
+			<strong>\
+				<span class="ko">장착</span>\
+				<span class="en">Equip</span>\
+			</strong>\
+			<span class="ko">장비 슬롯에 착용합니다.</span>\
+			<span class="en">Put it on an equipment slot.</span>\
+		</a>'
+	}
+	if(sellable){
+		body += '<a class="btn pick sell">\
+			<i class="emoji color">🪙</i>\
+			<strong>\
+				<span class="ko">판매</span>\
+				<span class="en">Sell</span>\
+			</strong>\
+			<span class="ko">상점 목록에 담습니다.</span>\
+			<span class="en">Add it to the shop list.</span>\
+		</a>'
+	}
+	body += '</div>'
+	if(heal === 0 && !wearable && !sellable){
+		body += '<p class="reason">\
+			<span class="ko">이 아이템으로 할 수 있는 것이 없습니다.</span>\
+			<span class="en">Nothing to do with this item.</span>\
+		</p>'
+	}
+	var $form = $('form[name="ItemPick"]')
+	if(!$form.length){
+		$(".layer").append('<form name="ItemPick" class="popup"><back class="close">❌</back></form>')
+		$form = $('form[name="ItemPick"]')
+	}
+	$form.find(".item_pick_head, .item_pick_body, .reason").remove()
+	$form.prepend(body)
+	$('tooltip').removeClass("on")
+	$("body").removeAttr("tooltip")
+	$(".layer").addClass("on")
+	$form.addClass("on")
+	return $form
+}
+$(document).on("click", 'form[name="ItemPick"] .btn.pick', function(e){
+	e.preventDefault()
+	var $t = $(this)
+	if($t.hasClass("disabled")){
+		return
+	}
+	var emoji = window.ItemPick.emoji
+	var $el = window.ItemPick.$el
+	$(".layer, .layer form.popup").removeClass("on")
+	if(!emoji){
+		return
+	}
+	if($t.hasClass("eat")){
+		if(window.Consume){
+			window.Consume(emoji)
+		}
+		return
+	}
+	if($t.hasClass("equip")){
+		if(window.Equipment){
+			window.Equipment([emoji], [])
+		}
+		return
+	}
+	if($t.hasClass("sell")){
+		/*
+			기존 스왑 토글 동작을 그대로 재현한다.
+			선택된 .emoji_asset.on 목록을 BoardPoll 이 읽어
+			query.assets 로 올리고 서버가 시세를 내려준다.
+		*/
+		if(!$el || !$el.length){
+			return
+		}
+		$el.toggleClass("on")
+		var $assets = $('.emoji_asset.on')
+		var $status = document.querySelector(".aside .status")
+		if($assets.length){
+			$("body").attr("swap","")
+			$("#swap").addClass("loading")
+			if($status){
+				$status.innerHTML = '<div class="loading"><strong>Loading...</strong></div>'
+			}
+		}else{
+			$("body").removeAttr("swap")
+			$("#pool ul").html("")
+			$("#swap .submit input").val("")
+			if($status){
+				$status.innerHTML = ""
+			}
+			delete window.SwapIntent
+		}
+		try{
+			if(OAuth3.xhr){
+				OAuth3.xhr.abort()
+				delete OAuth3.xhr
+			}
+		}catch(err){
+		}
+		return
+	}
+})

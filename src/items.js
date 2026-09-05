@@ -6164,12 +6164,12 @@ window.items = [
     {
         "codes": "1F9EA",
         "char": "🧪",
-        "name": "test tube",
+        "name": "potion",
         "category": "Equipment (equipment-consumable)",
         "group": "Equipment",
         "subgroup": "equipment-consumable",
         "slot": "consumable",
-        "heal": 1
+        "heal": 2
     },
     {
         "codes": "1F5E1",

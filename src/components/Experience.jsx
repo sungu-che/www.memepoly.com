@@ -55,14 +55,39 @@ window.FieldsSync = function(force){
 	}catch(err){
 	}
 	var next = window.Fields(hash)
+	/*
+		개발 Part 38 (폴백 오염)
+		현행 문제
+		  이 함수는 모듈 로드 시점에 한 번 실행된다.
+		  그때는 MapGen 이 없어 hash 가 "" 이고,
+		  window.Fields("") 는 Serpentine 폴백(10000칸 격자)을 돌려준다.
+		  그런데 아래 순번 규칙이 그 격자에도 그대로 적용됐다.
+		    jail 222칸 / gate 1111칸 / item 3333칸
+		  EdgeReady() 가 ring === false 로 막으므로
+		  IsEdge / EdgeField 판정은 안전하다.
+		  하지만 Asset 컴포넌트는 window.fields["x:z"] 를 직접 조회해
+		  최초 로드와 해시 변경 직후에 주변 칸에 ❔ / 🚪 를 뿌렸다.
+		  실제 링과 무관한 좌표이며, 그 사이 클릭하면
+		  ReservedTile 이 이 가짜 값을 읽는다.
+		조치
+		  링이 확정된 경우에만 순번 규칙을 적용한다.
+		  Serpentine 은 좌표 집합일 뿐 보드 경로가 아니므로
+		  감옥 / 게이트 / 아이템이라는 개념 자체가 성립하지 않는다.
+		좌표 키와 index 는 그대로 부여한다.
+		Respawn() 이 fields[i].x 로 접근하고,
+		좌표 키가 없으면 클릭 판정이 전부 실패한다.
+	*/
+	var _isRing = next.ring ? true : false
 	next.forEach(function(field, index){
-		if(index % 45 == 0){
-			field.jail = true
-		}else if(index % 9 == 0){
-			field.drop = "❓"
-			field.gate = true
-		}else if(index % 3 == 0){
-			field.item = "❔"
+		if(_isRing){
+			if(index % 45 == 0){
+				field.jail = true
+			}else if(index % 9 == 0){
+				field.drop = "❓"
+				field.gate = true
+			}else if(index % 3 == 0){
+				field.item = "❔"
+			}
 		}
 		field.index = index
 		var b = window.map && window.map.biomes ? window.map.biomes[`${field.x}:${field.z}`] : null
@@ -750,7 +775,20 @@ export const Experience = () => {
 				}
 			}
 
-			var field = (window.Mode() == "room") ? null : (window.fields ? window.fields[`${props.position.x}:${props.position.z}`] : null)
+			/*
+				개발 Part 38 (폴백 오염)
+				링이 확정되기 전에는 window.fields 가 Serpentine 격자다.
+				그 상태에서 좌표 키를 조회하면 보드 밖 칸이 잡혀
+				감옥 색 / 게이트 문 / 아이템 아이콘이 잘못 그려진다.
+				EdgeReady() 는 window.fields.ring 을 확인하므로
+				이 한 줄로 폴백 프레임을 통째로 걸러낸다.
+			*/
+			var field = null
+			if(window.Mode() != "room"){
+				if(window.EdgeReady && window.EdgeReady()){
+					field = window.fields ? window.fields[`${props.position.x}:${props.position.z}`] : null
+				}
+			}
 
 			if(emoji){
 				if(field){

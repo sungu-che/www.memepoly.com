@@ -41,6 +41,36 @@ window.Notice = function(head, body, ms){
 	if(!$n.length){
 		return
 	}
+	/*
+		개발 Part 43 (효과음)
+		Notice 호출부가 25 곳이 넘는다.
+		개별로 소리를 붙이는 대신 여기 한 곳에서 처리한다.
+		머리말로 성격을 가른다.
+		  거절 계열  낮은 두 음 (deny)
+		  그 외      짧은 알림음 (blip)
+		SfxSync 가 이미 울린 신호(통행료 / 수금 / 파산)는
+		여기서 blip 이 겹치면 지저분하므로 건너뛴다.
+	*/
+	try{
+		if(window.Sfx){
+			var h = String(head ? head : "").toUpperCase()
+			var skip = ["TOLL", "STATE TOLL", "TREASURY RAID", "BANKRUPT",
+				"EXTRACTED", "MIA", "SAFE ZONE"]
+			if(skip.indexOf(h) === -1){
+				var denyWords = ["FAILED", "BLOCKED", "NO ", "NOT ", "CANNOT",
+					"RESERVED", "GATE", "SUPPLY", "OWNED", "FULL", "TIMED"]
+				var isDeny = false
+				for(var _di = 0; _di < denyWords.length; _di++){
+					if(h.indexOf(denyWords[_di]) > -1){
+						isDeny = true
+						break
+					}
+				}
+				window.Sfx.play(isDeny ? "deny" : "blip")
+			}
+		}
+	}catch(err){
+	}
 	$n.find(".head").text(head ? head : "")
 	$n.find(".body").html(body ? body : "")
 	$n.addClass("on")

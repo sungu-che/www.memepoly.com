@@ -80,7 +80,56 @@
 	}
 
 	window.MatchRefresh = function(){
+		/*
+			개발 Part 39 (타이머 누수)
+			현행 문제
+			  MatchVerify 는 만료 타이머를 current(= window.match) 객체에 붙인다.
+			  그런데 MatchRefresh 가 MatchApply() 로 window.match 를 새 객체로 교체하므로
+			  옛 객체의 timer 는 참조만 끊긴 채 계속 살아 있다.
+			  오프셋 보정 경로(serverIndex 불일치)로 들어오면
+			  그 타이머가 옛 만료 시각에 발화해
+			  불필요한 전체 리셋 + 폴링을 한 번 더 일으킨다.
+			  세션이 길수록 누적된다.
+			교체 전에 반드시 해제한다.
+		*/
+		try{
+			if(window.match && window.match.timer){
+				clearTimeout(window.match.timer)
+				delete window.match.timer
+			}
+		}catch(err){
+		}
 		window.MatchApply()
+		/*
+			개발 Part 39 (해시 선행 반영)
+			현행 문제
+			  MapGen.target() 은 해시를 이렇게 고른다.
+			    var hash = cookies.match ? cookies.match : (m ? m.hash : "")
+			  만료 타이머로 여기 들어온 시점에는 아직 새 응답을 받기 전이라
+			  cookies.match 가 직전 판 해시다.
+			  그래서 아래의
+			    MapGen.apply(true)   옛 섬을 다시 만든다
+			    FieldsSync(true)     옛 링을 다시 만든다
+			    MapGen.sync()        옛 미니맵을 그린다
+			  가 전부 헛일이 되고, 다음 폴링까지 약 600ms 동안
+			  플레이어는 옛 섬 / 옛 링 위에 있고 서버는 새 판이다.
+			  그 상태로 주사위를 굴리면 RingPathReach 가 실패해
+			  서버가 경로 주행으로 내려가고 도착 칸이 갈린다.
+			조치
+			  MatchApply() 가 방금 확정한 새 해시를 cookies.match 에 먼저 반영한다.
+			  어차피 다음 응답에서 서버 값으로 덮어써지므로 충돌하지 않는다.
+			  cookies.match 를 읽는 곳은 MapGen.target() 뿐이다.
+		*/
+		try{
+			if(window.cookies && window.match && window.match.hash){
+				if(window.cookies.match !== window.match.hash){
+					console.log("[match] hash advanced :: " +
+						window.cookies.match + " -> " + window.match.hash)
+					window.cookies.match = window.match.hash
+				}
+			}
+		}catch(err){
+		}
 		/*
 			개발 Part 30 (판 전환 리셋)
 			현행 문제
