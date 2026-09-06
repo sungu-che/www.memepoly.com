@@ -652,8 +652,28 @@ window.SlotBody = function(opts){
 	}catch(err){
 		src = ""
 	}
-	var out = cookies.enter
-		? `<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>`
+	/*
+		개발 Part 75 (필드 슬롯)
+		현행 문제
+		  조건이 cookies.enter 하나뿐이었다.
+		  감옥 칸에서 걸어 나온 상태는 jail 만 서 있고 enter 가 없으므로
+		  빈 <a class="hashType"></a> 가 나갔다.
+		  그런데 서버 flag 핸들러는 출격 여부를 보지 않는다.
+		    else if (req.body.cc == "flag" && req.cookies.team)
+		  team 은 모든 플레이어에게 배정되므로 감옥 외출 중에도
+		  깃발은 이미 허용되고 있었다. 프론트만 버튼을 감춘 상태였다.
+		확정 규칙
+		  개발 Part 30 이 감옥을 필드 진입점으로 확정했다.
+		  필드에 나와 있으면(enter 또는 jail) 첫 슬롯은 깃발이다.
+		  링 위에서는 아래 Exit / Reserved / Build 분기가 덮어쓰므로
+		  이 값은 "링 밖" 에서만 최종값이 된다.
+		폭탄과의 차이
+		  폭탄은 개발 Part 47 규칙으로 enter 를 요구한다.
+		  깃발은 서버가 team 만 본다. 두 자격은 다르므로 분리한다.
+	*/
+	var _inField = (cookies.enter || cookies.jail) ? true : false
+	var out = _inField
+		? `<a class="hashType Fire" ready="${cookies.enter ? "1" : "0"}"><img src="${src}"><span class="cnt">${cnt}</span></a>`
 		: `<a class="hashType"></a>`
 	try{
 		var _sf = window.EdgeSelf ? window.EdgeSelf() : null
@@ -789,6 +809,137 @@ window.SlotBody = function(opts){
 	return out
 }
 /*
+	개발 Part 74 (두 번째 슬롯 아이콘)
+	현행 문제
+	  툴팁 두 번째 슬롯(Meta)은 자리에 따라 역할이 바뀐다.
+	    링 위    주사위
+	    링 밖    폭탄
+	  그런데 붙어 있는 것은 빈 <i></i> 하나뿐이고,
+	  이 노드를 채우는 코드가 어디에도 없다.
+	    BoardCallback  템플릿에 <i></i> 로 고정
+	    TileSync       children("li").first() 즉 첫 슬롯만 갱신
+	  그래서 내륙으로 걸어 들어가도 폭탄 아이콘이 뜨지 않는다.
+	조치
+	  첫 슬롯의 SlotBody 와 같은 방식으로 아이콘을 순수 함수로 만든다.
+	  링 위에서는 빈 문자열을 돌려준다.
+	  거기서는 #dice 슬롯머신이 아이콘 역할을 하므로
+	  <i> 에 무언가를 넣으면 두 개가 겹친다.
+	반환
+	  { icon, act, ready }
+	    icon   <i> 에 넣을 문자
+	    act    "dice" | "bomb" | ""   CSS 분기용
+	    ready  "1" | "0"              지금 실행 가능한가
+	ready 를 나누는 이유
+	  감옥에서 걸어 나온 미출격 플레이어는 내륙에 서 있지만
+	  개발 Part 47 규칙으로 폭탄을 던질 수 없다.
+	  아이콘을 감추면 "왜 아무것도 없지" 가 되고,
+	  똑같이 보이면 "눌러도 안 되는 버튼" 이 된다.
+	  Exit 슬롯의 ready 속성과 같은 방식으로 상태를 드러낸다.
+*/
+window.MetaIcon = function(){
+	var out = { icon : "", act : "", ready : "0" }
+	var cookies = window.cookies
+	if(!cookies){
+		return out
+	}
+	try{
+		if(!window.EdgeReady || !window.EdgeReady()){
+			return out
+		}
+		if(window.EdgeSelf && window.EdgeSelf()){
+			out.act = "dice"
+			out.ready = (window.CanDiceNow && window.CanDiceNow()) ? "1" : "0"
+			return out
+		}
+		var _p = window.players.self()
+		var _b = null
+		try{
+			_b = (window.map && window.map.biomes)
+				? window.map.biomes[_p.x + ":" + _p.z] : null
+		}catch(err){
+			_b = null
+		}
+		if(!_b || !_b.biome){
+			return out
+		}
+		if(!window.Biomes["#" + _b.biome]){
+			return out
+		}
+		out.icon = "💣"
+		out.act = "bomb"
+		out.ready = cookies.enter ? "1" : "0"
+	}catch(err){
+		return { icon : "", act : "", ready : "0" }
+	}
+	return out
+}
+/*
+	개발 Part 75 (두 번째 슬롯 분리)
+	개발 Part 74 의 오판
+	  Meta 노드 안의 <i> 에 문자만 꽂으면 될 줄 알았다.
+	  실제로는 두 가지에 막힌다.
+	    1) <i> 에 emoji color 클래스가 없다.
+	       보이는 슬롯(Build / Exit / Reserved / Balance)은 전부
+	         <i class="emoji color">이모지</i>
+	       형태다. Meta 만 <i></i> 로 비어 있는데, 그 자리는
+	       원래 CSS 가 아이콘을 그리도록 설계된 곳이다.
+	    2) .hashType.Meta 는 #dice 를 품는 컨테이너로 스타일링돼 있고
+	       표시 자체가 body[edge="true"] 로 게이트된다.
+	         body[edge="true"] ... ul[style]{opacity: 1}
+	       내륙에서는 TileSync 가 body[edge] 를 지우므로
+	       Meta 슬롯 내부가 통째로 감춰진다.
+	       그래서 DOM 에 💣 가 있어도 화면에 뜨지 않았다.
+	확정 규칙
+	  Exit / Build / Reserved 가 각자 클래스를 갖는 것처럼
+	  폭탄도 자기 클래스(Bomb)를 가진 별도 앵커로 그린다.
+	  마크업 모양을 Build 와 동일하게 맞추면
+	  이미 검증된 .hashType + .emoji.color 스타일을 그대로 탄다.
+	  개발 Part 46 이 지적한 "폭탄 오인" 도
+	  Meta 하나가 두 역할을 겸한 데서 온 문제였다.
+	두 벌 조립 금지
+	  BoardCallback 과 TileSync 가 각자 조립하면
+	  결과가 갈려 슬롯이 깜빡인다(개발 Part 67).
+	  SlotBody 와 같이 순수 함수 하나로 모은다.
+	dice 값
+	  opts.dice 를 주지 않으면 현재 DOM 의 .num 을 그대로 유지한다.
+	  SlotBody 의 fireCount 폴백과 같은 방식이다.
+	공백
+	  개행 / 탭 없이 한 줄로 만든다.
+	  호출부가 정규화 후 문자열 비교를 하므로 형태가 어긋나면
+	  매 프레임 교체가 일어난다.
+*/
+window.MetaBody = function(opts){
+	var o = opts ? opts : {}
+	var _num = 0
+	if(typeof o.dice !== "undefined" && !isNaN(o.dice * 1)){
+		_num = Math.ceil(Math.sqrt(Math.pow(o.dice * 1, 2)))
+	}else{
+		try{
+			var _prev = $('#root player[self="true"] tooltip #dice .num').text()
+			_num = (_prev && !isNaN(_prev * 1)) ? (_prev * 1) : 0
+		}catch(err){
+			_num = 0
+		}
+	}
+	var _meta = window.MetaIcon
+		? window.MetaIcon()
+		: { icon : "", act : "", ready : "0" }
+	if(_meta.act === "bomb"){
+		/*
+			링 밖. 폭탄 자리다.
+			ready 는 개발 Part 47 자격(enter)을 그대로 반영한다.
+			  1  던질 수 있다
+			  0  감옥 외출 중이라 아직 못 던진다
+			감추지 않는 이유
+			  감추면 "왜 아무것도 없지" 가 되고,
+			  똑같이 보이면 "눌러도 안 되는 버튼" 이 된다.
+			  Exit 슬롯의 ready 와 같은 방식으로 상태를 드러낸다.
+		*/
+		return `<a class="hashType Bomb emoji color" ready="${_meta.ready}"><i class="emoji color">💣</i></a>`
+	}
+	return `<a class="hashType Meta emoji color" act="${_meta.act}" ready="${_meta.ready}"><i></i><div id="dice" class="slot-machine"><div class="slotwrapper"><ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li></ul><div class="num">${_num}</div></div></div></a>`
+}
+/*
 	개발 Part 67 (좌표 즉시 반영)
 	좌표가 바뀌는 순간 화면 상태를 맞춘다.
 	  body[biome]     발밑 바이옴
@@ -856,6 +1007,25 @@ window.TileSync = function(){
 		}catch(err){
 			$body.removeAttr("dicehome")
 		}
+		/*
+			개발 Part 74 (폭탄 자리)
+			body[diceable] 과 짝을 이루는 속성이다.
+			  bombable="true"  지금 이 칸에서 폭탄을 놓을 수 있다
+			  bombable 없음    링 위이거나 자격이 없다
+			CSS 가 아이콘 / 활성 상태를 이 속성으로 나눌 수 있게 둔다.
+			아이콘 자체는 아래 Meta 동기화가 직접 문자로 넣으므로
+			이 속성이 없어도 화면은 정상 동작한다.
+		*/
+		try{
+			var _mb = window.MetaIcon ? window.MetaIcon() : null
+			if(_mb && _mb.act === "bomb" && _mb.ready === "1"){
+				$body.attr("bombable", "true")
+			}else{
+				$body.removeAttr("bombable")
+			}
+		}catch(err){
+			$body.removeAttr("bombable")
+		}
 		try{
 			if(window.DiceSpinBusy && window.DiceSpinBusy()){
 				return true
@@ -874,6 +1044,57 @@ window.TileSync = function(){
 		var after = body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 		if(before !== after){
 			$li.html(after)
+		}
+		/*
+			개발 Part 74 (두 번째 슬롯 아이콘)
+			첫 슬롯처럼 통째로 교체하지 않는다.
+			  a.hashType.Meta 안에는 #dice 슬롯머신이 들어 있다.
+			  innerHTML 을 갈아끼우면 착지 애니메이션이 끊긴다(개발 Part 52).
+			속성과 직계 <i> 하나만 손댄다.
+			#dice 노드는 형제이므로 전혀 영향을 받지 않는다.
+			DiceSpinBusy 중에는 위에서 이미 return 했으므로
+			여기까지 오지 않는다.
+		*/
+		/*
+			개발 Part 75 (두 번째 슬롯 교체)
+			개발 Part 74 는 Meta 노드의 <i> 만 갈아끼웠다.
+			그 노드는 링 위 전용으로 스타일링돼 있어
+			내륙에서는 아무리 채워도 화면에 뜨지 않았다.
+			이제 슬롯 종류 자체를 바꾼다.
+			  링 위    a.hashType.Meta + #dice
+			  링 밖    a.hashType.Bomb
+			교체 조건
+			  첫 슬롯처럼 html 문자열 비교로 하지 않는다.
+			  playSpin 이 <ul> 에 data-playslot 속성을 남기고
+			  DiceSpinReset 전까지 지우지 않으므로,
+			  문자열 비교로는 굴림이 끝난 뒤 매 프레임 diff 가 나서
+			  주사위 노드를 계속 다시 만들게 된다.
+			  종류가 바뀔 때만 교체하고, 그 외에는 속성만 맞춘다.
+			스핀 중
+			  위 DiceSpinBusy 가드에서 이미 return 했으므로
+			  여기까지 오지 않는다(개발 Part 52).
+		*/
+		try{
+			var _meta = window.MetaIcon ? window.MetaIcon() : null
+			if(_meta){
+				var $li2 = $('#root player[self="true"] tooltip ul').children("li").eq(1)
+				if($li2.length){
+					var $slot = $li2.children("a").first()
+					var _isBomb = $slot.length ? $slot.hasClass("Bomb") : false
+					var _wantBomb = (_meta.act === "bomb")
+					if(!$slot.length || _isBomb !== _wantBomb){
+						$li2.html(window.MetaBody({}))
+					}else{
+						if($slot.attr("ready") !== _meta.ready){
+							$slot.attr("ready", _meta.ready)
+						}
+						if(!_wantBomb && $slot.attr("act") !== _meta.act){
+							$slot.attr("act", _meta.act)
+						}
+					}
+				}
+			}
+		}catch(err){
 		}
 		return true
 	}catch(err){
@@ -1254,14 +1475,77 @@ window.Zoom = function(){
 	$("body").removeAttr("class")
 }
 
+/*
+	개발 Part 76 (쿠키 파싱 방어)
+	현행 문제
+	  응답의 cookies 는 JSON 문자열이고, 그 안에 또 JSON 문자열이 들어 있다.
+	    "tile":"{\"x\":-21.5,\"z\":-75.5,…}"
+	  이스케이프가 한 번이라도 빠지면 다음 형태가 되어
+	    "tile":"{"x":3.5,"z":-19.5,…}"
+	  JSON.parse 가 통째로 실패한다.
+	    Uncaught SyntaxError: Expected ',' or '}' after property value
+	  그러면 tile 하나 때문에
+	    dice / axis / match / team / balance
+	  를 전부 잃고 BoardCallback 이 첫 줄에서 중단된다.
+	  화면이 멈추고, 폴링은 계속 돌면서 매번 같은 예외를 던진다.
+	조치
+	  파싱을 3단계로 나눈다.
+	    1) 그대로 파싱한다. 정상 응답은 여기서 끝난다.
+	    2) 실패하면 이스케이프가 빠진 중첩 JSON 값을 복구한다.
+	       "key":"{…}"  ->  "key":{…}
+	       따옴표를 벗기면 그 자리가 유효한 객체가 되어 전체가 살아난다.
+	    3) 그래도 실패하면 문제 있는 값을 잘라내고 다시 시도한다.
+	  전부 실패하면 null 을 돌려준다. 호출부가 직전 쿠키를 유지한다.
+	2단계를 정상 응답에 적용하지 않는 이유
+	  정상 응답에는 "key":"{\"x\":…}" 처럼 이스케이프가 살아 있다.
+	  거기에 같은 치환을 걸면 멀쩡한 값을 깨뜨린다.
+	  1단계가 성공하면 아예 도달하지 않으므로 안전하다.
+*/
+window.CookiesParse = function(raw){
+	if(!raw){
+		return null
+	}
+	if(typeof raw === "object"){
+		return raw
+	}
+	var text = String(raw)
+	try{
+		return JSON.parse(text)
+	}catch(err){
+	}
+	/* 2) 이스케이프가 빠진 중첩 JSON 복구 */
+	try{
+		var _fixed = text.replace(
+			/"([A-Za-z0-9_]+)"\s*:\s*"(\{[\s\S]*?\}|\[[\s\S]*?\])"(?=\s*[,}])/g,
+			'"$1":$2'
+		)
+		var _out = JSON.parse(_fixed)
+		console.log("[cookie] repaired nested json")
+		return _out
+	}catch(err){
+	}
+	/* 3) 문제 있는 값을 잘라낸다 */
+	try{
+		var _stripped = text.replace(
+			/,?\s*"([A-Za-z0-9_]+)"\s*:\s*"\{[\s\S]*?\}"(?=\s*[,}])/g,
+			""
+		)
+		/* 첫 키가 잘려 "{," 가 된 경우를 정리한다 */
+		_stripped = _stripped.replace(/\{\s*,/, "{")
+		var _out2 = JSON.parse(_stripped)
+		console.log("[cookie] dropped malformed value(s) to recover")
+		return _out2
+	}catch(err){
+	}
+	console.log("[cookie] parse failed. keeping previous cookies")
+	return null
+}
 window.Callback = async function(resp){
 	if(!resp || !resp.body || !resp.body.cookies){
 		return
 	}
-	var _cookies
-	try{
-		_cookies = JSON.parse(resp.body.cookies)
-	}catch(err){
+	var _cookies = window.CookiesParse(resp.body.cookies)
+	if(!_cookies){
 		_cookies = window.cookies
 	}
 	try{
@@ -3620,7 +3904,21 @@ OAuth3.on("ready", function(e){
 		window.BoardCallback = async function(resp){
 			var url = new URL(window.location.href)
 			var _dice = window.cookies.dice * 1
-			var cookies = window.cookies = JSON.parse(resp.body.cookies)
+			/*
+				개발 Part 76 (쿠키 파싱 방어)
+				현행은 여기서 바로 JSON.parse 를 했다.
+				중첩 JSON 이 한 번이라도 깨지면 이 줄에서 예외가 나고
+				아래 전부(맵 / 플레이어 / 툴팁 / 폴링 전환)가 실행되지 않는다.
+				폴링은 계속 도는데 화면만 멈춘 상태가 된다.
+				복구에 실패하면 직전 쿠키를 유지하고 이번 프레임만 건너뛴다.
+				다음 폴링이 정상 응답을 받으면 저절로 복구된다.
+			*/
+			var cookies = window.CookiesParse(resp.body.cookies)
+			if(!cookies){
+				console.log("[board] callback skipped :: cookies unreadable")
+				return
+			}
+			window.cookies = cookies
 			var dice = cookies.dice * 1
 
 			try{
@@ -3811,11 +4109,27 @@ OAuth3.on("ready", function(e){
 								  클레임이 받아들여진 정상 경우에는 _cur 과 axis 가 같아
 								  아래 비교에서 _teleport 가 스스로 해제된다.
 							*/
-							if(cookies.spawned || cookies.edgeBlocked || cookies.matchRolled || cookies.anchorReturn || cookies.arrive){
+							if(cookies.spawned || cookies.edgeBlocked || cookies.matchRolled || cookies.anchorReturn || cookies.arrive || cookies.recovered){
+								/*
+									개발 Part 74 (서버 교정 채택)
+									현행 문제
+									  개발 Part 72 가 서버에 "off-ring 복구" 를 넣고
+									  cookies.recovered 로 알리기까지 했는데,
+									  이 스냅 조건 목록에는 recovered 를 넣지 않았다.
+									  그래서 서버는 좌표를 링으로 되돌리고 앵커도 그 칸으로
+									  확정했는데, 클라이언트는 옛 좌표에 그대로 서 있었다.
+									  화면 좌표 != 앵커 이므로 DiceHome() 이 참이 되고
+									  📍 가 뜬다. 눌러야만 좌표가 맞춰지는 상태였다.
+									조치
+									  서버가 좌표를 교정한 응답은 무조건 따라간다.
+									  recovered 는 브라우저 쿠키로 직렬화되지 않으므로
+									  교정이 일어난 응답 한 번에만 실린다.
+								*/
 								_teleport = cookies.matchRolled ? "match"
 									: (cookies.spawned ? "spawn"
 									: (cookies.anchorReturn ? "anchor"
-									: (cookies.edgeBlocked ? "edge" : "arrive")))
+									: (cookies.recovered ? "recover"
+									: (cookies.edgeBlocked ? "edge" : "arrive"))))
 								if(_cur.x === axis.x && _cur.z === axis.z){
 									/* 이미 같은 칸이면 스냅이 필요 없다 */
 									_teleport = ""
@@ -4199,11 +4513,42 @@ OAuth3.on("ready", function(e){
 							}
 
 							if(window.Biomes[hashtag] && b){
+								/*
+									개발 Part 74 (바이옴 장식 키 정렬)
+									현행 문제
+									  장식 마커는 window.map.biomes[키] 에 존재하기만 하면
+									  해당 타일에 나무 / 바위를 그리는 방식이다.
+									  그 "키" 는 타일 에셋의 id 와 같아야 한다.
+									    var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
+									    if(window.map.biomes[_id]){ isBiome = true }
+									  개발 Part 68 이전 클라이언트 생성기도 이 키를 썼고,
+									  listToBiomes() 주석도 crc32 키를 명시한다.
+									  그런데 서버 decorRows 는 Id 를 좌표 문자열로 바꿨다.
+									    Id : "dc:" + bx + ":" + bz
+									  그 결과 window.map.biomes["dc:5.5:-40.5"] 가 만들어지고,
+									  렌더는 window.map.biomes["2TPHPJV"] 를 찾는다.
+									  아무도 읽지 않는 키에 저장되어 장식이 통째로 사라졌다.
+									서버가 crc32 를 만들 수 없는 이유
+									  crc32 는 프론트 전용 함수이고,
+									  시드에 들어가는 cc_address 도 서버는 "0x" 를 벗기지 않아
+									  같은 값을 낼 수 없다.
+									  따라서 재키잉은 여기서 한다.
+									좌표 형식
+									  row.x / row.z 는 서버가 숫자로 실어 보내고,
+									  _assets 루프의 b.x / b.z 도 숫자다.
+									  문자열 결합 결과가 동일하므로 키가 일치한다.
+								*/
+								var _decoId = row.Id
+								try{
+									_decoId = crc32(cc_address + hashtag + row.x + row.z)
+										.toString(32).toUpperCase()
+								}catch(err){
+									_decoId = row.Id
+								}
 								if(row.Flag && hashtag != "#dice"){
-									delete window.map.biomes[row.Id]
+									delete window.map.biomes[_decoId]
 									
 									var $clipped = $(`.clipped .emoji[x="${row.x}"][z="${row.z}"]`)
-
 									if($clipped.length && !window.bingo[row.Id]){
 										window.bingo[row.Id] = true
 										if(b){
@@ -4212,7 +4557,7 @@ OAuth3.on("ready", function(e){
 									}
 								}else{
 									var _asset = {
-										id : row.Id,
+										id : _decoId,
 										hash : cc_address,
 										name : hashtag,
 										value : "",
@@ -4228,12 +4573,19 @@ OAuth3.on("ready", function(e){
 											listToBiomes() 가 다시 읽으므로
 											바이옴 장식이 좌표 없는 유령 항목이 됐다.
 										*/
-										z : row.z
+										z : row.z,
+										/*
+											개발 Part 74
+											서버가 정한 장식 이모지를 그대로 보관한다.
+											아래 _assets 서명이 이 값을 읽어
+											장식이 붙고 떨어질 때 리렌더를 강제한다.
+										*/
+										emoji : row.emoji ? row.emoji : ""
 									}
-									if(window.map.nonces[row.Id]){
-										delete window.map.nonces[row.Id]
+									if(window.map.nonces[_decoId]){
+										delete window.map.nonces[_decoId]
 									}
-									window.map.biomes[row.Id] = _asset
+									window.map.biomes[_decoId] = _asset
 								}
 							}else if(row.Subject == "#position"){
 								var player = {
@@ -4636,6 +4988,30 @@ OAuth3.on("ready", function(e){
 								}catch(err){
 									_ownSig = ""
 								}
+								/*
+									개발 Part 74 (바이옴 장식 리렌더)
+									현행 문제
+									  window.assets 갱신은 JSON.stringify 동등성으로만 한다.
+									    if(JSON.stringify(window.assets) != JSON.stringify(_assets))
+									  장식 마커는 window.map.biomes 에만 들어가고
+									  _assets 항목에는 어떤 흔적도 남기지 않았다.
+									  그래서 키를 바로잡아도 지형이 그대로면 서명이 같아
+									  리렌더가 나지 않고 장식이 화면에 뜨지 않는다.
+									  개발 Part 70 의 소유 서명(own)과 똑같은 구조다.
+									조치
+									  장식 이모지를 항목에 싣는다.
+									  Asset 이 이 값을 읽지 않아도 key 비교에는 참여하므로
+									  장식이 붙거나 떨어지면 반드시 다시 그린다.
+								*/
+								var _decoSig = ""
+								try{
+									var _dm = window.map.biomes[_id]
+									if(_dm && _dm.name && !_dm.biome){
+										_decoSig = _dm.emoji ? _dm.emoji : "1"
+									}
+								}catch(err){
+									_decoSig = ""
+								}
 								_assets.push({
 									id : _id,
 									hash : cc_address,
@@ -4643,6 +5019,7 @@ OAuth3.on("ready", function(e){
 									value : color,
 									color: color,
 									own : _ownSig,
+									deco : _decoSig,
 									x : b.x,
 									y : b.y - (b.water ? 0.8 : 0.5),
 									z : b.z
@@ -5141,26 +5518,27 @@ OAuth3.on("ready", function(e){
 											깃발 수(cnt)는 이 응답의 flags 집계를 그대로 넘긴다.
 										*/
 										var _slotBody = window.SlotBody({ fireCount : cnt })
+										/*
+											개발 Part 75 (두 번째 슬롯 분리)
+											개발 Part 74 는 Meta 템플릿을 그대로 두고
+											<i> 안에만 이모지를 넣었다.
+											그 노드는 링 위 전용 스타일이라 내륙에서 감춰진다.
+											이제 MetaBody 가 슬롯 마크업 전체를 만든다.
+											  링 위    Meta + #dice
+											  링 밖    Bomb
+											TileSync 도 같은 함수를 쓰므로 결과가 갈리지 않는다.
+											dice 를 넘기는 이유
+											  이 응답의 확정 눈을 .num 에 반영해야 한다.
+											  넘기지 않으면 MetaBody 가 현재 DOM 값을 유지한다.
+										*/
+										var _metaBody = window.MetaBody
+											? window.MetaBody({ dice : dice })
+											: ""
 										tooltip_body = `<li>
 											${_slotBody}
 										</li>
 										<li>
-											<a class="hashType Meta emoji color">
-												<i></i>
-												<div id="dice" class="slot-machine">
-													<div class="slotwrapper">
-														<ul>
-															<li>1</li>
-															<li>2</li>
-															<li>3</li>
-															<li>4</li>
-															<li>5</li>
-															<li>6</li>
-														</ul>
-														<div class="num">${Math.ceil(Math.sqrt(Math.pow(dice, 2)))}</div>
-													</div>
-												</div>
-											</a>
+											${_metaBody}
 										</li>
 										<li>
 											<a class="hashType Balance emoji color"><i class="emoji color"></i><span class="cnt">${nFormatter(cookies.balance,1)}</span></a>
@@ -6037,8 +6415,17 @@ OAuth3.on("ready", function(e){
 
 		var response = function(res){
 			var rows = res.body.rows
-			var cookies = window.cookies = JSON.parse(res.body.cookies)
-
+			/*
+				개발 Part 76 (쿠키 파싱 방어)
+				최초 응답이다. 여기서 죽으면 BoardInit / BoardPoll 이
+				정의조차 되지 않아 게임이 아예 시작되지 않는다.
+				복구 실패 시에도 빈 객체로 진행해 최소한 폴링은 살린다.
+			*/
+			var cookies = window.CookiesParse(res.body.cookies)
+			if(!cookies){
+				cookies = window.cookies ? window.cookies : {}
+			}
+			window.cookies = cookies
 			$body.attr("address", cookies.address)
 
 			var len = rows.length;
@@ -6945,6 +7332,56 @@ OAuth3.on("ready", function(e){
 													window.ExitPick()
 												}
 												return
+											}else if($this.hasClass("Bomb")){
+												/*
+													개발 Part 75 (폭탄 슬롯)
+													현행 문제
+													  폭탄이 Meta 분기 안쪽 세 번째 else 에 있었다.
+													    if(_isEdgeHere){ … }
+													    else if(_anc){ …BACK ON PATH… return }
+													    else if(window.Biomes[…]){ …isBomb… }
+													  그런데 개발 Part 35 가 PMC 게이트 스폰에서
+													    RingAnchorSet(x, z)
+													  를 부르므로 출격한 PMC 는 항상 앵커를 가진 채
+													  내륙에 있다. 두 번째 분기에 걸려
+													  폭탄 분기가 한 번도 실행되지 않았다.
+													  개발 Part 74 가 그 조건에 !cookies.enter 를 붙여
+													  통과는 시켰지만, 슬롯 자체가 화면에 없어
+													  누를 방법이 없었다.
+													조치
+													  폭탄을 독립 슬롯으로 올린다.
+													  앵커는 링으로 돌아왔을 때의 굴림 기준점이지
+													  필드 행동을 막는 값이 아니므로 여기서는 보지 않는다.
+													판정 순서
+													  1) 링 미확정      판정 근거 없음
+													  2) 링 위          규칙 R5. 폭탄 무효
+													  3) 미출격         개발 Part 47. 자격 없음
+													  4) 이미 설치 중   중복 금지
+													  5) 지형 없음      놓을 자리가 아니다
+												*/
+												if(window.EdgeReady && !window.EdgeReady()){
+													window.Notice("MAP LOADING", "Board path is not ready", 1800)
+													return
+												}
+												if(window.EdgeSelf && window.EdgeSelf()){
+													window.Notice("NO BOMBS", "Bombs do not work on the path", 2200)
+													return
+												}
+												if(!cookies.enter){
+													window.Notice("NOT IN RAID", "Deploy first to use bombs", 2200)
+													return
+												}
+												if(plant){
+													return
+												}
+												if(!b || !window.Biomes[`#${b.biome}`]){
+													window.Notice("NO GROUND", "You cannot place a bomb here", 2000)
+													return
+												}
+												window.cookies.dice = 0
+												isBomb = true
+												body.cc = "bomb"
+												query.edge = 0
 											}else if($this.hasClass("Meta")){
 												var _dice = $body.attr("dice") * 1
 												if(!isNaN(_dice)){
@@ -7022,7 +7459,20 @@ OAuth3.on("ready", function(e){
 													링 밖(내륙) + 미출격은 정상 상태가 아니므로
 													복구 경로로 RolePick 을 유지한다.
 												*/
-												if(!_isEdgeHere && !window.cookies.enter){
+												/*
+													개발 Part 74 (감옥 외출)
+													현행 문제
+													  개발 Part 29 는 "링 밖 + 미출격" 을
+													  비정상 상태로 보고 RolePick 으로 복구시켰다.
+													  그런데 개발 Part 30 이 감옥을 필드 진입점으로 확정하면서
+													  감옥 외출(jail)은 정상 상태가 됐다.
+													  지금은 감옥에서 한 칸만 걸어 나가도
+													  주사위 자리를 누를 때마다 출격 팝업이 뜬다.
+													조치
+													  jail 은 이 복구 경로에서 제외한다.
+													  아래 앵커 분기가 "걸어서 돌아가라" 로 정확히 안내한다.
+												*/
+												if(!_isEdgeHere && !window.cookies.enter && !window.cookies.jail){
 													if(window.RolePick){
 														window.RolePick()
 														return
@@ -7109,11 +7559,21 @@ OAuth3.on("ready", function(e){
 														링 위이거나 앵커로 되돌아온 뒤이므로 좌표는 반드시 링이다.
 													*/
 													query.edge = 1
-												}else if(_anc){
+												}else if(_anc && !cookies.enter){
 													/*
-														링 밖 + 앵커 있음.
+														링 밖 + 앵커 있음 + 미출격.
 														감옥에서 걸어 나온 상태다. 걸어서 돌아가야 한다.
 														여기서 되감으면 감옥 외출의 위험 부담이 사라진다.
+														개발 Part 74 (출격 중 예외)
+														  현행은 enter 를 보지 않아 출격 중에도 이 분기가 먹었다.
+														  개발 Part 35 가 PMC 게이트 스폰에서
+														    RingAnchorSet(x, z)
+														  를 부르므로, 출격한 PMC 는 항상 앵커를 가진 채
+														  내륙에 있다. 그래서 아래 폭탄 분기가
+														  단 한 번도 실행되지 않았다.
+														  "내륙인데 폭탄이 안 나간다" 의 직접 원인이다.
+														  앵커는 링으로 돌아왔을 때 굴림 기준점이지
+														  필드 행동을 막는 값이 아니다.
 													*/
 													window.Notice("BACK ON PATH",
 														"Walk back to " +
@@ -7129,10 +7589,14 @@ OAuth3.on("ready", function(e){
 														덱의 💣 는 이미 같은 확인을 한다.
 															if(!cookies.enter){
 																window.Notice("NOT IN RAID", ...)
+														개발 Part 74
+														  문구를 덱과 통일한다.
+														  아이콘은 ready="0" 으로 보이고 있으므로
+														  "왜 안 되는가" 를 정확히 알려야 한다.
 													*/
 													if(!cookies.enter){
-														window.Notice("NOT ON PATH",
-															"Return to the board path", 2200)
+														window.Notice("NOT IN RAID",
+															"Deploy first to use bombs", 2200)
 														return
 													}
 													isBomb = true

@@ -840,7 +840,25 @@ window.RoomCallback = async function(resp){
 	var host_address = ethers.hashMessage((_host_url.host+"/"))
 		host_address = ethers.computeAddress(host_address).toLowerCase()
 	var url = new URL(window.location.href)
-	var cookies = window.cookies = JSON.parse(resp.body.cookies)
+	/*
+		개발 Part 76 (쿠키 파싱 방어)
+		룸도 iceServers 배열을 쿠키에 싣는다.
+		보드와 같은 사고가 날 수 있으므로 같은 관용 파서를 쓴다.
+		window.CookiesParse 는 src/index.js 가 정의한다.
+		로드 순서가 보장되지 않는 경로를 대비해 존재를 확인한다.
+	*/
+	var cookies = window.CookiesParse
+		? window.CookiesParse(resp.body.cookies)
+		: null
+	if(!cookies){
+		try{
+			cookies = JSON.parse(resp.body.cookies)
+		}catch(err){
+			console.log("[room] callback skipped :: cookies unreadable")
+			return
+		}
+	}
+	window.cookies = cookies
 	var cc_address = ethers.hashMessage(url.href.replace(window.location.protocol+"//",""))
 		cc_address = ethers.computeAddress(cc_address).toLowerCase()
 	var iceServers = window.RoomState.iceServers

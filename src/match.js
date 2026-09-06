@@ -192,6 +192,42 @@
 			delete window.current.axis
 		}catch(err){
 		}
+		/*
+			개발 Part 74 (판 전환 앵커)
+			현행 문제
+			  MatchRefresh 는 섬 / 링 / 주사위 / 스테이지를 전부 리셋하면서도
+			  window.cookies.anchor 와 tolled 는 그대로 둔다.
+			  그 값은 직전 판의 링 좌표다.
+			  리셋 직후 FieldsSync(true) 가 새 링을 확정하므로
+			  RingAnchor() 의 IsEdge 방어는 "옛 좌표가 새 링에도 있는 경우"
+			  를 걸러내지 못한다. 해안선이 겹치면 실제로 자주 통과한다.
+			  그러면 DiceHome() 이 참이 되어
+			    body[dicehome] -> 📍 노출 -> 툴팁 강제 오픈
+			  이 되고, 누르면 이전 판 좌표로 걸어간다.
+			조치
+			  좌표에서 파생된 상태를 여기서 전부 버린다.
+			  서버가 새 스폰과 새 앵커를 내려줄 때까지는
+			  "앵커 없음" 이 정확한 상태다.
+			  열려 있던 툴팁도 함께 닫는다. 판이 바뀌었으므로
+			  거기 그려진 슬롯(건설 / 잔액 / 주사위)은 전부 옛 판 기준이다.
+		*/
+		try{
+			if(window.cookies){
+				delete window.cookies.anchor
+				delete window.cookies.tolled
+				delete window.cookies.tile
+				delete window.cookies.onEdge
+				delete window.cookies.onJail
+				delete window.cookies.recovered
+			}
+			$("body")
+				.removeAttr("dicehome")
+				.removeAttr("diceable")
+				.removeAttr("edge")
+				.removeAttr("tooltip")
+			$("tooltip").removeClass("on")
+		}catch(err){
+		}
 		window.Snap = 8
 		/* 4) 출격 상태를 비운다. 새 판은 슬롯이 회복된다 */
 		try{
