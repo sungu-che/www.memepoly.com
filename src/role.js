@@ -319,21 +319,180 @@ window.Enlist = function(){
 
 window.Exit = function(){
 	var cookies = window.cookies
-
 	if(!cookies || !cookies.exitable){
 		return
 	}
-
 	if(window.Action){
 		window.Action({
 			cc : "exit"
 		})
 	}
 }
-
+/*
+	개발 Part 65 (탈출 확인)
+	현행 문제
+	  게이트(🚪) 슬롯이 미출격이면 RolePick(역할 선택)을 띄웠다.
+	  링 위에서 주사위를 굴리는 것 자체가 PMC 활동이므로
+	  거기서 역할을 다시 고르라는 것은 같은 것을 두 번 묻는 셈이다.
+	  출격 중이면 확인 없이 즉시 나가버려 오조작으로 판을 끝낼 수 있었다.
+	조치
+	  게이트(또는 UCAV 내륙 탈출 구역)에서는 이 팝업 하나만 띄운다.
+	  안내 문구 + 탈출 버튼. 역할 선택지는 없다.
+	버튼 활성 조건
+	  서버가 내려준 cookies.exitable 하나로 판정한다.
+	  프론트가 따로 계산하면 서버와 갈려 "눌리는데 실패" 가 생긴다.
+	비활성 사유
+	  notdeployed  출격 상태가 아니다
+	  nokey        탈출키가 없다
+	사유를 감추지 않고 그대로 보여준다. 왜 못 나가는지 알아야 다음 행동이 정해진다.
+*/
+window.ExitPick = function(){
+	var cookies = window.cookies
+	if(!cookies){
+		return null
+	}
+	if(cookies.damage || cookies.dead){
+		if(window.Dead){
+			window.Dead()
+		}
+		return null
+	}
+	var keys = window.ExitKeys ? window.ExitKeys() : []
+	var hold = cookies.exitHold ? cookies.exitHold : ""
+	var zone = false
+	try{
+		var _me = window.players.self()
+		var _sf = window.EdgeField ? window.EdgeField(_me.x, _me.z) : null
+		if(!_sf && window.ExitZone){
+			zone = window.ExitZone(_me.x, _me.z)
+		}
+	}catch(err){
+		zone = false
+	}
+	/*
+		개발 Part 68 (자유 탈출구)
+		이 칸이 자유 탈출구면 키 없이 나갈 수 있다.
+		서버 cookies.exitFreeHere 를 우선 믿고,
+		아직 응답이 오지 않은 프레임에서는 같은 식의 결정론 판정으로 보완한다.
+		(FreeExit 은 서버 isFreeExit 과 동일한 해시다)
+	*/
+	var free = false
+	try{
+		free = cookies.exitFreeHere
+			? true
+			: (window.FreeExitSelf ? window.FreeExitSelf() : false)
+	}catch(err){
+		free = false
+	}
+	var ready = (cookies.exitable || free) ? true : false
+	var where = zone
+		? { ko : "현재 위치 : 내륙 탈출 구역", en : "You are on : an inland extraction zone" }
+		: { ko : "현재 위치 : 주사위 경로의 게이트", en : "You are on : a gate on the dice path" }
+	/*
+		개발 Part 66 (출격 없이 시작한 판)
+		현행 문제
+		  cookies.enter 를 필수로 봤다.
+		  enter 는 마이룸 출격(cc == "start")에서만 생긴다.
+		  보드 주소로 바로 접속해 주사위부터 굴린 계정은 enter 가 없어
+		  게이트에 서 있어도 "마이룸에서 출격하라" 는 사유만 떴다.
+		  그런데 그 계정도 이미 판 안에서 이동하고 통행료를 내고 있다.
+		조치
+		  탈출 가능 여부는 서버가 내려준 cookies.exitable 하나로 판정한다.
+		  실패 사유도 "탈출키 없음" 하나로 줄인다.
+		  장소가 아니면 애초에 이 팝업이 열리지 않는다(BoardInit 이 먼저 거절한다).
+	*/
+	var why = null
+	if(!ready){
+		why = keys.length
+			? {
+				ko : "탈출키가 없습니다. " + keys.join(" ") + " 중 하나를 들고 오세요.",
+				en : "No extraction key. Carry one of " + keys.join(" ") + "."
+			}
+			: {
+				ko : "탈출키가 없습니다.",
+				en : "You need an extraction key."
+			}
+	}
+	var keyBody = ""
+	for(var k = 0; k < keys.length; k++){
+		keyBody += '<i class="emoji color">' + keys[k] + '</i>'
+	}
+	/*
+		개발 Part 68 (자유 탈출구)
+		자유 탈출구에서는 키 목록을 보여줄 이유가 없다.
+		대신 "여기는 키가 필요 없다" 를 명시한다.
+		다른 게이트에서는 여전히 키가 필요하므로
+		키 목록은 그 칸에서만 표시된다.
+	*/
+	var noteBody = free
+		? '<p class="exit_pick_free">\
+			<span class="ko">이 출구는 탈출키가 필요 없습니다.</span>\
+			<span class="en">This exit needs no extraction key.</span>\
+		</p>'
+		: (keyBody ? '<p class="exit_pick_keys">\
+			<span class="ko">이번 판 탈출키</span>\
+			<span class="en">Keys this match</span>\
+			<span class="list">' + keyBody + '</span>\
+		</p>' : '')
+	var descKo = free
+		? "탈출키 없이 판을 빠져나갑니다. 소지품은 그대로 남습니다."
+		: (hold
+			? (hold + " 를 사용해 판을 빠져나갑니다. 소지품은 그대로 남습니다.")
+			: "판을 빠져나갑니다. 소지품은 그대로 남습니다.")
+	var descEn = free
+		? "Leave the match without a key. Your carried items stay with you."
+		: (hold
+			? ("Leave the match with " + hold + ". Your carried items stay with you.")
+			: "Leave the match. Your carried items stay with you.")
+	var body = '<div class="exit_pick_head">\
+		<strong class="title">\
+			<span class="ko">탈출하시겠습니까?</span>\
+			<span class="en">Extract now?</span>\
+		</strong>\
+		<p class="exit_pick_where">\
+			<span class="ko">' + where.ko + '</span>\
+			<span class="en">' + where.en + '</span>\
+		</p>\
+		' + noteBody + '\
+	</div>\
+	<div class="exit_pick_body">\
+		<a class="btn exit ' + (ready ? "" : "disabled") + '">\
+			<i class="emoji color">' + (free ? "🏳" : "🚪") + '</i>\
+			<strong>\
+				<span class="ko">탈출</span>\
+				<span class="en">Extract</span>\
+			</strong>\
+			<span class="ko">' + descKo + '</span>\
+			<span class="en">' + descEn + '</span>\
+			' + (why ? '<em class="why"><span class="ko">' + why.ko + '</span><span class="en">' + why.en + '</span></em>' : '') + '\
+		</a>\
+	</div>'
+	var $form = $('form[name="ExitPick"]')
+	if(!$form.length){
+		$(".layer").append('<form name="ExitPick" class="popup"><back class="close">❌</back></form>')
+		$form = $('form[name="ExitPick"]')
+	}
+	/* 개발 Part 68 : .exit_pick_free 도 함께 지운다. 남기면 열 때마다 누적된다 */
+	$form.find(".exit_pick_head, .exit_pick_body, .exit_pick_where, .exit_pick_keys, .exit_pick_free, .why").remove()
+	$form.prepend(body)
+	$('tooltip').removeClass("on")
+	$("body").removeAttr("tooltip")
+	$(".layer").addClass("on")
+	$form.addClass("on")
+	return $form
+}
+$(document).on("click", 'form[name="ExitPick"] .btn.exit', function(e){
+	e.preventDefault()
+	if($(this).hasClass("disabled")){
+		return
+	}
+	$(".layer, .layer form.popup").removeClass("on")
+	if(window.Exit){
+		window.Exit()
+	}
+})
 $(document).on("click", "#role .btn.enlist", function(e){
 	e.preventDefault()
-
 	window.Enlist()
 })
 
@@ -351,11 +510,15 @@ $(document).on("click", "#role .role_loadout .slot", function(e){
 	}
 })
 
-$(document).on("click", ".btn.exit, .hashType.Exit", function(e){
-	e.preventDefault()
-
-	window.Exit()
-})
+/*
+	개발 Part 65 (탈출 확인)
+	여기 있던 위임을 제거한다.
+	  .hashType.Exit  BoardInit 클릭 핸들러가 ExitPick 으로 넘긴다
+	  .btn.exit       ExitPick 팝업 전용 위임이 위에서 처리한다
+	현행은 두 셀렉터가 모두 window.Exit() 를 직접 불러
+	확인 절차 없이 즉시 판을 빠져나갔고,
+	BoardInit 분기와 겹쳐 같은 요청이 두 번 나갔다.
+*/
 /*
 	개발 Part 31 (아이템 선택)
 	현행 문제

@@ -32,6 +32,88 @@ textures.black.magFilter = THREE.NearestFilter
 textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
 var PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
+/*
+	개발 Part 70 (소유 타일 표시)
+	현행 문제
+	  건물을 지어도 바닥은 바이옴 색 그대로였다.
+	  타일 위 이모지(🪵 / 🏠 / 🏪 / 🏰)만 바뀌므로
+	  누구 땅인지 알려면 밟아서 툴팁을 열어야 했다.
+	조치
+	  소유자 해시로 만든 blockies 를 바닥 텍스처로 쓴다.
+	  마이룸의 OpenTile 과 같은 방식이며,
+	  룸에서 이미 검증된 표현이라 학습 비용이 없다.
+	캐시
+	  타일마다 CanvasTexture 를 만들면 GPU 메모리가 금방 찬다.
+	  소유자당 하나만 만들어 공유한다.
+	  판이 바뀌어도 같은 계정이면 같은 아이콘이므로 비우지 않는다.
+	  상한을 두어 무한 증가를 막는다.
+*/
+var OwnerTextures = {}
+var OwnerTextureLimit = 64
+window.OwnerTexture = function(hash){
+	var seed = ""
+	try{
+		seed = String(hash ? hash : "").replace("0x","").toLowerCase()
+	}catch(err){
+		seed = ""
+	}
+	if(!seed){
+		return null
+	}
+	if(OwnerTextures[seed]){
+		return OwnerTextures[seed]
+	}
+	try{
+		var canvas = window.Blockie
+			? window.Blockie(seed)
+			: blockies.create({ seed : "0x" + seed })
+		if(!canvas){
+			return null
+		}
+		var t = new THREE.CanvasTexture(canvas)
+		t.magFilter = THREE.NearestFilter
+		t.minFilter = THREE.NearestFilter
+		t.needsUpdate = true
+		var keys = Object.keys(OwnerTextures)
+		if(keys.length >= OwnerTextureLimit){
+			try{
+				OwnerTextures[keys[0]].dispose()
+			}catch(err){
+			}
+			delete OwnerTextures[keys[0]]
+		}
+		OwnerTextures[seed] = t
+		return t
+	}catch(err){
+		return null
+	}
+}
+/*
+	타일의 소유자 해시를 고른다.
+	  nation / ZERO  국가 또는 경매 대상이므로 아이콘을 쓰지 않는다
+	  그 외          owner 를 그대로 쓴다
+	빈 문자열이면 소유자가 없다는 뜻이다.
+*/
+window.TileOwner = function(field){
+	if(!field || !field.property){
+		return ""
+	}
+	if((field.property.level * 1) <= 0){
+		return ""
+	}
+	if(field.property.nation){
+		return ""
+	}
+	var owner = field.property.owner ? String(field.property.owner) : ""
+	if(!owner){
+		return ""
+	}
+	var flat = owner.replace("0x","").toLowerCase()
+	if(flat === "0000000000000000000000000000000000000000"){
+		return ""
+	}
+	return flat
+}
 var fields = []
 window.FieldsSync = function(force){
 	var key = ""
@@ -374,6 +456,24 @@ export const Experience = () => {
 
 	var point = {}
 	var onClick = function(e){
+		/*
+			개발 Part 69 (패널 위 클릭 차단)
+			마이룸 패널 / 로비 / 레이드 / 사망 / 패널 레이어가 열려 있으면
+			3D 클릭을 처리하지 않는다.
+			CSS 가 대부분 막고 있지만,
+			  레이어가 닫히는 프레임에 이미 큐에 들어간 클릭
+			  transition 중이라 pointer-events 가 아직 살아 있는 순간
+			이 두 경우에 캐릭터가 엉뚱한 칸으로 튄다.
+			body 속성 하나로 한 번 더 거른다.
+		*/
+		try{
+			var $b = $("body")
+			if($b.attr("myroom") || $b.attr("panel") ||
+				$b.attr("dead") || $b.attr("stage")){
+				return
+			}
+		}catch(err){
+		}
 		if(window.Mode() == "room" && !(window.MapGen && window.MapGen.ready)){
 			if(window.RoomClick){
 				return window.RoomClick(e)
@@ -747,6 +847,21 @@ export const Experience = () => {
 					field = window.fields ? window.fields[`${props.position.x}:${props.position.z}`] : null
 				}
 			}
+			/*
+				개발 Part 65 (UCAV 탈출 구역)
+				링 밖 내륙 칸 중 일부가 탈출 구역이다.
+				field 가 있으면 링 위이므로 게이트가 담당한다.
+				판정은 window.ExitZone 이 match.hash 로 결정론 계산한다.
+				화면에 안 보이면 UCAV 가 찾을 방법이 없으므로 반드시 표시한다.
+			*/
+			var exitZone = false
+			try{
+				if(!field && window.Mode() != "room" && window.ExitZone){
+					exitZone = window.ExitZone(props.position.x, props.position.z)
+				}
+			}catch(err){
+				exitZone = false
+			}
 
 			if(emoji){
 				if(field){
@@ -786,17 +901,37 @@ export const Experience = () => {
 					}
 					if(field.property && field.property.level > 0){
 						var propertyEmoji = PropertyLevelEmoji[field.property.level]
+						/*
+							개발 Part 70 (소유 타일 표시)
+							소유자가 있으면 바닥을 blockies 로 덮는다.
+							  ownerTex 없음  기존과 동일(바이옴 색)
+							  ownerTex 있음  0.02 띄운 평면을 얹어 소유를 표시한다
+							바닥 박스 자체를 바꾸지 않는 이유
+							  boxGeometry 는 6면에 같은 텍스처가 붙어
+							  옆면까지 아이콘이 늘어져 지저분해진다.
+							  윗면만 덮는 평면이 목적에 맞다.
+							useLoader 개수는 그대로 2개다. CanvasTexture 는 훅이 아니다.
+						*/
+						var ownerHash = window.TileOwner ? window.TileOwner(field) : ""
+						var ownerTex = ownerHash && window.OwnerTexture
+							? window.OwnerTexture(ownerHash) : null
 						return <>
 						<group position={props.position}>
 							<mesh position={[0, 0, 0.005]} onClick={onClick}>
 								<boxGeometry attach="geometry" args={[1, 1]} />
 								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
 							</mesh>
+							{ownerTex ? (
+								<mesh rotation-x={rotation_x} position={[0, 0.52, 0]} onClick={onClick}>
+									<planeGeometry attach="geometry" args={[0.96, 0.96]} />
+									<meshBasicMaterial attach="material" map={ownerTex} transparent opacity={0.82} />
+								</mesh>
+							) : null}
 							<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
 								<planeGeometry attach="geometry" args={[1, 1]} />
 								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
 							</mesh>
-							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.53, 0]}>
 								<planeGeometry attach="geometry" args={[0.7, 0.7]} />
 								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(propertyEmoji)}.png`)} transparent />
 							</mesh>
@@ -827,6 +962,30 @@ export const Experience = () => {
 						</group>
 						</>
 					}
+				}
+				/*
+					개발 Part 65 (UCAV 탈출 구역)
+					useLoader 호출 수를 아래 기본 반환과 같은 1개로 맞춘다.
+					분기마다 훅 개수가 달라지면 같은 타일이 재렌더될 때 순서가 깨진다.
+					타일 색만 게이트와 같은 노란색으로 바꾸고
+					라벨은 CSS(.emoji.color.exit)가 그린다.
+				*/
+				if(exitZone){
+					return <>
+					<group position={props.position}>
+						<mesh position={[0, 0, 0.005]} onClick={onClick}>
+							<boxGeometry attach="geometry" args={[1, 1]} />
+							<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color="#ffcc00" />
+						</mesh>
+						<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
+							<planeGeometry attach="geometry" args={[1, 1]} />
+							<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
+						</mesh>
+						<Html className="clipped">
+							<div className="emoji color exit" x={props.position.x} z={props.position.z}></div>
+						</Html>
+					</group>
+					</>
 				}
 
 				return <>
@@ -879,13 +1038,23 @@ export const Experience = () => {
 					}
 					if(field.property && field.property.level > 0){
 						var propertyEmoji = PropertyLevelEmoji[field.property.level]
+						/* 개발 Part 70 : 소유자 blockies 바닥 (위 갈래와 동일 규칙) */
+						var ownerHash = window.TileOwner ? window.TileOwner(field) : ""
+						var ownerTex = ownerHash && window.OwnerTexture
+							? window.OwnerTexture(ownerHash) : null
 						return <>
 						<group position={props.position}>
 							<mesh position={[0, 0, 0.005]} onClick={onClick}>
 								<boxGeometry attach="geometry" args={[1, 1]} />
 								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
 							</mesh>
-							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+							{ownerTex ? (
+								<mesh rotation-x={rotation_x} position={[0, 0.515, 0]} onClick={onClick}>
+									<planeGeometry attach="geometry" args={[0.96, 0.96]} />
+									<meshBasicMaterial attach="material" map={ownerTex} transparent opacity={0.82} />
+								</mesh>
+							) : null}
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.525, 0]}>
 								<planeGeometry attach="geometry" args={[0.7, 0.7]} />
 								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(propertyEmoji)}.png`)} transparent />
 							</mesh>
@@ -912,6 +1081,24 @@ export const Experience = () => {
 						</group>
 						</>
 					}
+				}
+				/*
+					개발 Part 65 (UCAV 탈출 구역)
+					이 갈래의 기본 반환은 useLoader 를 쓰지 않는다.
+					같은 개수(0개)를 유지해 훅 순서를 지킨다.
+				*/
+				if(exitZone){
+					return <>
+					<group position={props.position}>
+						<mesh position={[0, 0, 0.005]} onClick={onClick}>
+							<boxGeometry attach="geometry" args={[1, 1]} />
+							<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color="#ffcc00" />
+						</mesh>
+						<Html className="clipped">
+							<div className="emoji color exit" x={props.position.x} z={props.position.z}></div>
+						</Html>
+					</group>
+					</>
 				}
 
 				return <>

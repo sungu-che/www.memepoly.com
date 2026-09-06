@@ -1130,6 +1130,28 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 	animation: exitready 1.4s ease-in-out infinite;
 	-webkit-animation: exitready 1.4s ease-in-out infinite;
 }
+/*
+	개발 Part 68 (자유 탈출구)
+	키가 필요 없는 출구는 초록 계열로 구분한다.
+	  🚪  키가 필요한 일반 출구
+	  🏳  키 없이 나갈 수 있는 자유 출구
+	아이콘은 SlotBody 가 바꾸지 않고(게이트 정체성 유지) 발광만 나눈다.
+	멀리서도 "여기는 그냥 나갈 수 있다" 가 읽혀야 하기 때문이다.
+*/
+#root player tooltip li a.hashType.Exit[free="1"]{
+	animation: exitfree 1.4s ease-in-out infinite;
+	-webkit-animation: exitfree 1.4s ease-in-out infinite;
+}
+@keyframes exitfree{
+	0%{ filter: drop-shadow(0 0 2px #5ef08a); }
+	50%{ filter: drop-shadow(0 0 10px #5ef08a); }
+	100%{ filter: drop-shadow(0 0 2px #5ef08a); }
+}
+@-webkit-keyframes exitfree{
+	0%{ -webkit-filter: drop-shadow(0 0 2px #5ef08a); }
+	50%{ -webkit-filter: drop-shadow(0 0 10px #5ef08a); }
+	100%{ -webkit-filter: drop-shadow(0 0 2px #5ef08a); }
+}
 #root player tooltip li a.hashType.Exit .cnt{
 	position: absolute;
 	right: -6px;
@@ -2388,10 +2410,35 @@ body[stage="lobby"] form.message{opacity: 0 !important; pointer-events: none !im
 #lobby .actions .reason{margin: 0 auto 1.2em; max-width: 340px; text-align: center;}
 #lobby .actions .reason .head{display: block; margin-bottom: 0.5em; font-size: 0.95em; font-weight: 900; letter-spacing: 1px; color: #ff6b6b;}
 #lobby .actions .reason .body{display: block; line-height: 1.5; font-size: 0.8em; color: #ffffff99;}
+/*
+	개발 Part 70 (슬롯 소진 안내)
+	사유 뒤에 붙는 안내 문구(.ko / .en).
+	body 와 같은 크기로 두되 줄 사이를 벌려 읽기 쉽게 한다.
+*/
+#lobby .actions .reason span.ko,
+#lobby .actions .reason span.en{display: block; margin-top: 0.5em; line-height: 1.5; font-size: 0.8em; color: #ffffff99;}
 #lobby .actions .btn{display: block; margin: 0 auto 0.8em; border-radius: 1em; max-width: 340px; height: 4em; line-height: 4em; font-weight: 900; cursor: pointer;}
 #lobby .actions .btn.raid{background-color: #fde030; color: #000;}
 #lobby .actions .btn.raid.disabled{display: none !important;}
 #lobby .actions .btn.stash{border: 1px solid #ffffff55; color: #fff;}
+/*
+	개발 Part 70 (슬롯 소진)
+	출격할 수 없는 상태에서는 마이룸이 유일한 선택지다.
+	보조 버튼에서 주 버튼으로 승격시킨다.
+*/
+#lobby .actions .btn.stash.primary{border-color: #fde030; background-color: #fde030; color: #000;}
+#lobby .actions .btn.stash.primary span{color: #000;}
+/*
+	개발 Part 72 (보드 고립 복구)
+	링 밖에 고립됐을 때만 나타난다.
+	마이룸(노란색)과 구분되도록 청록 계열로 둔다.
+	  마이룸  판을 떠나 정리한다
+	  복귀    판으로 돌아간다
+	두 행동의 방향이 반대이므로 색도 나눈다.
+*/
+#lobby .actions .btn.reboard{border: 1px solid #5ecfff; background-color: #5ecfff; color: #000;}
+#lobby .actions .btn.reboard span{color: #000;}
+#lobby .actions .btn.reboard.primary{border-color: #5ecfff; background-color: #5ecfff;}
 body[stage="raid"] #raid{opacity: 1; pointer-events: initial;}
 #raid{position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 11114; background-color: #000; opacity: 0; pointer-events: none; transition-duration: 0.4s; -webkit-transition-duration: 0.4s;}
 #raid .tb{width: 100%; height: 100%;}
@@ -2414,6 +2461,13 @@ body[jail] #capture:before{content: "JAIL"; position: absolute; left: 0; top: -1
 #root .emoji.color.gate{position: absolute; left: -22px; top: -30px; width: 44px; font-size: 9px; font-weight: 900; text-align: center; color: #fde030; text-shadow: 0 0 3px #000;}
 #root .emoji.color.jail{position: absolute; left: -26px; top: -30px; width: 52px; font-size: 9px; font-weight: 900; letter-spacing: 1px; text-align: center; color: #9fa8ff; text-shadow: 0 0 3px #000;}
 #root .emoji.color.jail:before{content: "SAFE";}
+/*
+	개발 Part 65 (UCAV 탈출 구역)
+	내륙 탈출 구역 라벨.
+	게이트와 같은 노란 계열로 두어 "여기가 출구" 라는 의미를 통일한다.
+*/
+#root .emoji.color.exit{position: absolute; left: -26px; top: -30px; width: 52px; font-size: 9px; font-weight: 900; letter-spacing: 1px; text-align: center; color: #fde030; text-shadow: 0 0 3px #000;}
+#root .emoji.color.exit:before{content: "EXIT";}
 #root player[self="true"] tooltip li a.hashType.Hp{position: relative;}
 #root player[self="true"] tooltip li a.hashType.Hp i{display: block; font-size: 1.6em; line-height: 47px;}
 #root player[self="true"] tooltip li a.hashType.Hp .cnt{top: 0; bottom: 0; line-height: 47px; font-size: 11px;}
@@ -2423,6 +2477,80 @@ body[potion="on"] #root player[self="true"] tooltip li a.hashType.Hp:after{conte
 #panel .row.auction .cost{color: #ffffff99;}
 #panel .row.bid .name{color: #fde030;}
 #panel .row.build .name{color: #fff;}
+/* ===== 개발 Part 71 : 매수 제안 ===== */
+/*
+	남의 땅 정보 행.
+	클릭 대상이 아니므로 hover 반응을 없앤다.
+*/
+#panel .row.owned{cursor: default; background-color: #ffffff0a;}
+#panel .row.owned:hover{background-color: #ffffff0a;}
+#panel .row.owned .name{color: #ffffffcc;}
+#panel .row.owned .cost{color: #ffffff77;}
+/*
+	제안 버튼.
+	건설(노란색) / 입찰(노란색)과 구분되도록 청록 계열로 둔다.
+	"내 의지만으로 성립하지 않는다" 는 성격을 색으로 나눈다.
+*/
+#panel .row.offer{border: 1px solid #5ecfff55; background-color: #5ecfff14;}
+#panel .row.offer:hover{background-color: #5ecfff26;}
+#panel .row.offer .name{color: #5ecfff;}
+#panel .row.offer .cost{color: #ffffff99;}
+/*
+	받은 제안 목록.
+	행 자체는 정보이고, 아래 act 행이 조작이다.
+*/
+#panel .row.offer_item{cursor: default; background-color: #ffffff0a;}
+#panel .row.offer_item:hover{background-color: #ffffff0a;}
+#panel .row.offer_item.done{opacity: 0.35;}
+#panel .row.offer_item .name{color: #fff;}
+#panel .row.offer_item .cost{color: #5ecfff;}
+#panel .row.offer_item .mat{margin-top: 0.4em; font-size: 0.75em;}
+#panel .row.offer_item .mat .from{
+	display: inline-block;
+	padding: 0.25em 0.6em;
+	border-radius: 0.6em;
+	font-size: 1em;
+	letter-spacing: 0.02em;
+	color: #ffffff99;
+	background-color: #ffffff14;
+}
+/*
+	승낙 / 거부.
+	두 버튼을 나란히 두고 색으로 결과를 구분한다.
+	  승낙  초록. 소유권이 넘어간다
+	  거부  붉은색. 환불된다
+	오조작이 곧 재산 이동이므로 색 구분이 필수다.
+*/
+#panel .row.offer_act{
+	display: flex;
+	gap: 0.5em;
+	margin-bottom: 0.9em;
+	padding: 0;
+	background: none;
+	cursor: default;
+}
+#panel .row.offer_act:hover{background: none;}
+#panel .row.offer_act .act{
+	flex: 1;
+	display: block;
+	padding: 0.9em 0;
+	border-radius: 0.9em;
+	text-align: center;
+	font-weight: 900;
+	cursor: pointer;
+}
+#panel .row.offer_act .act span{font-size: 0.85em; font-weight: 900;}
+#panel .row.offer_act .act.accept{background-color: #5ef08a; color: #000;}
+#panel .row.offer_act .act.accept span{color: #000;}
+#panel .row.offer_act .act.reject{border: 1px solid #ff6b6b; color: #ff6b6b;}
+#panel .row.offer_act .act.reject span{color: #ff6b6b;}
+#panel .row.offer_act .act.busy{opacity: 0.4; pointer-events: none;}
+/*
+	제안 패널이 열려 있을 때는 3D 조작을 막는다.
+	Experience.onClick 이 body[panel] 로 이미 거르지만
+	시각적으로도 뒤가 눌리지 않는다는 것이 보여야 한다.
+*/
+body[panel="offer"] #panel{background-color: #000000e0;}
 emojis .tab_content .deck .emoji_asset[method="property"] a,
 emojis .tab_content .deck .emoji_asset[method="craft"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-size: 22px; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
 emojis .tab_content .deck .emoji_asset[method="property"].disabled,
@@ -2541,6 +2669,7 @@ html[lang="en"] .ko{display: none;}
 /* ===== 개발 Part 40 : RolePick / ItemPick ===== */
 
 .layer form[name="RolePick"],
+.layer form[name="ExitPick"],
 .layer form[name="ItemPick"]{
 	padding: 1.2em 1.2em 5em;
 	border-radius: 1em;
@@ -2551,13 +2680,17 @@ html[lang="en"] .ko{display: none;}
 	box-shadow: 0 0 12px #000;
 }
 .layer form[name="RolePick"]::-webkit-scrollbar,
+.layer form[name="ExitPick"]::-webkit-scrollbar,
 .layer form[name="ItemPick"]::-webkit-scrollbar{width: 4px;}
 .layer form[name="RolePick"]::-webkit-scrollbar-thumb,
+.layer form[name="ExitPick"]::-webkit-scrollbar-thumb,
 .layer form[name="ItemPick"]::-webkit-scrollbar-thumb{background-color: #ffffff44;}
 /* 머리말 */
 .layer form.popup .role_pick_head,
+.layer form.popup .exit_pick_head,
 .layer form.popup .item_pick_head{margin-bottom: 1.2em; text-align: center;}
-.layer form.popup .role_pick_head .title{
+.layer form.popup .role_pick_head .title,
+.layer form.popup .exit_pick_head .title{
 	display: block;
 	margin-bottom: 0.5em;
 	font-size: 1.3em;
@@ -2565,11 +2698,50 @@ html[lang="en"] .ko{display: none;}
 	color: #fff;
 }
 .layer form.popup .role_pick_where{}
-.layer form.popup .role_pick_where span{
+.layer form.popup .role_pick_where span,
+.layer form.popup .exit_pick_where span{
 	display: block;
 	line-height: 1.5;
 	font-size: 0.78em;
 	color: #fde030;
+}
+/*
+	개발 Part 65 (탈출 확인)
+	이번 판 탈출키 목록.
+	무엇을 들고 있어야 나갈 수 있는지 팝업 안에서 바로 보여준다.
+*/
+.layer form.popup .exit_pick_keys{margin-top: 0.7em;}
+.layer form.popup .exit_pick_keys>span{
+	display: block;
+	line-height: 1.5;
+	font-size: 0.72em;
+	color: #ffffff77;
+}
+.layer form.popup .exit_pick_keys .list{margin-top: 0.4em;}
+.layer form.popup .exit_pick_keys .list i{
+	display: inline-block;
+	margin: 0 0.15em;
+	font-size: 1.4em;
+	line-height: 1;
+	vertical-align: middle;
+}
+/*
+	개발 Part 68 (자유 탈출구)
+	키가 필요 없는 출구 안내.
+	노란색(키 필요)과 구분되도록 초록 계열로 둔다.
+*/
+.layer form.popup .exit_pick_free{margin-top: 0.7em;}
+.layer form.popup .exit_pick_free span{
+	display: block;
+	line-height: 1.5;
+	font-size: 0.78em;
+	font-weight: 900;
+	color: #5ef08a;
+}
+.layer form.popup .btn.exit[data-free="1"]:not(.disabled),
+.layer form.popup .exit_pick_free+.exit_pick_body .btn.exit:not(.disabled){
+	border-color: #5ef08a;
+	background-color: #5ef08a1a;
 }
 /* ItemPick 머리말 : 아이콘 + 이름 + HP */
 .layer form.popup .item_pick_icon{display: inline-block; vertical-align: middle;}
@@ -2603,6 +2775,7 @@ html[lang="en"] .ko{display: none;}
 .layer form.popup .item_pick_meta .hp i{margin-right: 0.3em;}
 /* 선택 버튼 */
 .layer form.popup .btn.role,
+.layer form.popup .btn.exit,
 .layer form.popup .btn.pick{
 	position: relative;
 	display: block;
@@ -2614,10 +2787,22 @@ html[lang="en"] .ko{display: none;}
 	cursor: pointer;
 }
 .layer form.popup .btn.role:hover,
+.layer form.popup .btn.exit:hover,
 .layer form.popup .btn.pick:hover{background-color: #ffffff26;}
 .layer form.popup .btn.role.disabled,
+.layer form.popup .btn.exit.disabled,
 .layer form.popup .btn.pick.disabled{opacity: 0.4; cursor: not-allowed;}
+/*
+	개발 Part 65 (탈출 확인)
+	탈출은 판을 끝내는 확정 행동이다.
+	활성일 때만 노란 테두리로 강조해 "지금 누를 수 있다" 를 알린다.
+*/
+.layer form.popup .btn.exit:not(.disabled){
+	border: 1px solid #fde030;
+	background-color: #fde0301a;
+}
 .layer form.popup .btn.role>i,
+.layer form.popup .btn.exit>i,
 .layer form.popup .btn.pick>i{
 	position: absolute;
 	left: 0.9em;
@@ -2626,6 +2811,7 @@ html[lang="en"] .ko{display: none;}
 	line-height: 1;
 }
 .layer form.popup .btn.role>strong,
+.layer form.popup .btn.exit>strong,
 .layer form.popup .btn.pick>strong{
 	display: block;
 	margin-bottom: 0.4em;
@@ -2638,8 +2824,10 @@ html[lang="en"] .ko{display: none;}
 	*{color:#000} 이 상속을 끊으므로 명시적으로 지정한다.
 */
 .layer form.popup .btn.role>strong span,
+.layer form.popup .btn.exit>strong span,
 .layer form.popup .btn.pick>strong span{font-size: 1em; font-weight: 900; color: #fff;}
 .layer form.popup .btn.role>span,
+.layer form.popup .btn.exit>span,
 .layer form.popup .btn.pick>span{
 	display: block;
 	line-height: 1.5;
@@ -2900,6 +3088,21 @@ body[myroom] #myroom{opacity: 1; pointer-events: initial;}
 	transition-duration: 0.3s;
 	-webkit-transition-duration: 0.3s;
 }
+/*
+	개발 Part 69 (닫힌 뒤 클릭 보장)
+	현행 문제
+	  #myroom 은 opacity 0 이어도 전체 화면을 덮는 fixed 레이어다.
+	  자체에는 pointer-events: none 이 걸려 있지만,
+	  내부 요소(.btn / input / a)는 자기 규칙이나 브라우저 기본값으로
+	  포인터를 다시 받는 경우가 있다.
+	  그러면 닫은 뒤에도 그 자리만 3D 클릭이 통하지 않는다.
+	조치
+	  body[myroom] 이 없을 때는 자손까지 전부 포인터를 막는다.
+	  overflow-y: auto 도 꺼서 스크롤 이벤트를 가로채지 않게 한다.
+*/
+body:not([myroom]) #myroom,
+body:not([myroom]) #myroom *{pointer-events: none !important;}
+body:not([myroom]) #myroom{overflow: hidden;}
 #myroom .tb{width: 100%; height: 100%;}
 #myroom .tc{padding: 2em 1em; text-align: center; vertical-align: middle;}
 /* 머리말 */

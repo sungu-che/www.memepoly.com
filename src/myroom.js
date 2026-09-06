@@ -73,15 +73,46 @@ window.MyRoom = function(resp){
 		}
 	}
 	var player_hash = cookies.address ? cookies.address : cookies.hash
-
 	var hash = window.location.hash.replace("#","").toLowerCase()
-
 	var owner = player_hash.replace("0x","").toLowerCase()
-
 	if(!hash || hash != owner){
 		$("#myroom").removeClass("on")
 		$("body").removeAttr("myroom")
-
+		/*
+			개발 Part 69 (닫음 상태)
+			남의 방 / 보드로 나갔다.
+			다시 내 방으로 돌아오면 패널을 한 번은 보여주는 것이 맞으므로
+			닫음 표식을 해제한다.
+		*/
+		window.MyRoom.closed = ""
+		return
+	}
+	/*
+		개발 Part 69 (닫음 상태)
+		현행 문제
+		  RoomCallback 이 폴링마다(600ms) MyRoom(resp) 을 부르고,
+		  MyRoom 은 마지막에 무조건 $panel.addClass("on") 을 한다.
+		    $panel.addClass("on")
+		    $("body").attr("myroom", "on")
+		  닫기 위임은 클래스만 떼므로 닫은 상태를 기억하는 곳이 없다.
+		    $("#myroom").removeClass("on")
+		  그래서 닫아도 600ms 뒤 다시 열리고, 필드를 클릭해도 다시 열린다.
+		  게다가 #myroom 은 전체 화면을 덮는 fixed 레이어라
+		  열려 있는 동안 3D 클릭이 통째로 삼켜져 캐릭터가 움직이지 않는다.
+		조치
+		  방(owner) 단위로 닫음 표식을 남긴다.
+		  같은 방에 머무는 동안은 다시 열지 않는다.
+		  방을 옮기거나(RoomHashChange) 판이 바뀌면 표식이 지워져
+		  다음 진입에서 한 번 다시 열린다.
+		다시 여는 방법
+		  마이룸 진입 경로가 두 가지 남아 있다.
+		    lobby 의 .btn.stash
+		    dead 패널의 .btn.myroom
+		  둘 다 window.MyRoomOpen() 을 거치도록 아래에서 배선한다.
+		예외
+		  보관 요청 중(busy)에는 결과를 보여줘야 하므로 닫음 표식을 무시한다.
+	*/
+	if(window.MyRoom.closed === owner && !window.MyRoom.busy){
 		return
 	}
 
@@ -243,8 +274,8 @@ window.MyRoom = function(resp){
 			<span class="en">Carried</span>\
 		</strong>\
 		<p class="hint">\
-			<span class="ko">탈출에 실패하면 마지막에 얻은 3개만 남습니다. 전사하면 전부 잃습니다.</span>\
-			<span class="en">On MIA only your last 3 pickups survive. On death you lose everything.</span>\
+			<span class="ko">탈출하지 못하거나 전사하면 전부 잃습니다. 지키려면 보관함에 넣으세요.</span>\
+			<span class="en">Lost entirely on MIA or death. Store them to keep them.</span>\
 		</p>\
 		<ul class="stash carried">'+held_body+'</ul>\
 		'+(held.length ? '<div class="bulk">\
@@ -304,6 +335,62 @@ window.MyRoom = function(resp){
 }
 window.MyRoom.busy = false
 window.MyRoom.busyAt = 0
+/*
+	개발 Part 69 (닫음 상태)
+	닫은 방의 owner 해시.
+	빈 문자열이면 "닫은 적 없음" 이다.
+	페이지를 새로 열면 초기화되므로 첫 진입에서는 항상 보인다.
+*/
+window.MyRoom.closed = ""
+/*
+	패널을 강제로 연다.
+	닫음 표식을 지우고 즉시 그린다.
+	버튼(lobby / dead)에서 명시적으로 부를 때만 쓴다.
+	resp 가 없으면 마지막 응답(window.response)으로 그린다.
+*/
+window.MyRoomOpen = function(resp){
+	window.MyRoom.closed = ""
+	var r = resp
+	if(!r){
+		r = window.response ? window.response : null
+	}
+	if(!r){
+		/*
+			응답이 아직 없다.
+			다음 폴링이 MyRoom 을 부르면 닫음 표식이 비어 있으므로 열린다.
+		*/
+		return null
+	}
+	return window.MyRoom(r)
+}
+/*
+	패널을 닫고 닫음 표식을 남긴다.
+	닫기 버튼 / 출격 버튼 / 해시 변경이 공용으로 쓴다.
+*/
+window.MyRoomClose = function(){
+	var cookies = window.cookies
+	var owner = ""
+	try{
+		var _h = cookies.address ? cookies.address : cookies.hash
+		owner = String(_h ? _h : "").replace("0x","").toLowerCase()
+	}catch(err){
+		owner = ""
+	}
+	window.MyRoom.closed = owner ? owner : "*"
+	$("#myroom").removeClass("on")
+	$("body").removeAttr("myroom")
+	/*
+		닫는 순간 3D 클릭이 다시 살아나야 한다.
+		frameloop 가 demand 로 내려가 있으면 첫 클릭이 한 프레임 늦는다.
+	*/
+	try{
+		if(window.setFrameloop){
+			window.setFrameloop("always")
+		}
+	}catch(err){
+	}
+	return true
+}
 window.MyRoomSync = function(){
 	var $list = $("#myroom .stash.carried")
 	var $bulk = $("#myroom .myroom_body .bulk")
@@ -359,8 +446,18 @@ $(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
 		sessionStorage.raidRole = $t.attr("data-role") ? $t.attr("data-role") : ""
 	}catch(err){
 	}
-	$("#myroom").removeClass("on")
-	$("body").removeAttr("myroom")
+	/*
+		개발 Part 69 (닫음 상태)
+		보드로 나가므로 닫음 표식을 남긴다.
+		해시가 비면 MyRoom 초입의 hash != owner 분기가
+		표식을 스스로 해제하므로, 다음에 방으로 돌아오면 한 번 열린다.
+	*/
+	if(window.MyRoomClose){
+		window.MyRoomClose()
+	}else{
+		$("#myroom").removeClass("on")
+		$("body").removeAttr("myroom")
+	}
 	if(window.history && window.history.replaceState){
 		window.history.replaceState(null, "", window.location.pathname)
 	}
@@ -371,9 +468,34 @@ $(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
 })
 $(document).on("click", "#myroom .myroom_close", function(e){
 	e.preventDefault()
-
-	$("#myroom").removeClass("on")
-	$("body").removeAttr("myroom")
+	/*
+		개발 Part 69 (닫음 상태)
+		클래스만 떼면 다음 폴링이 다시 연다.
+		MyRoomClose 가 닫음 표식까지 남긴다.
+	*/
+	if(window.MyRoomClose){
+		window.MyRoomClose()
+	}else{
+		$("#myroom").removeClass("on")
+		$("body").removeAttr("myroom")
+	}
+})
+/*
+	개발 Part 69 (바깥 클릭으로 닫기)
+	현행에는 닫기 버튼 하나뿐이었다.
+	패널이 전체 화면을 덮으므로 바깥을 눌러도 닫히지 않으면
+	"눌러도 아무 반응 없는 화면" 이 된다.
+	본문(.tc) 밖을 누르면 닫는다.
+	.tc 안쪽은 목록 / 스테퍼 / 출격 버튼이므로 그대로 둔다.
+*/
+$(document).on("click", "#myroom", function(e){
+	if(e.target !== this){
+		return
+	}
+	e.preventDefault()
+	if(window.MyRoomClose){
+		window.MyRoomClose()
+	}
 })
 
 $(document).on("change", "#myroom .stash.carried li.item .check .sel", function(){

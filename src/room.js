@@ -7412,13 +7412,26 @@ window.RoomInit = function(cookies){
 
 window.RoomHashChange = function(e){
 	var cookies = window.cookies
-
 	var $body = $("body")
 	var $nav = $('input[id="nav"]')
 	var $status = document.querySelector(".aside .status")
 	var $go = $("#go")
-
 	document.scrollingElement.scrollTop = 0
+	/*
+		개발 Part 69 (닫음 상태)
+		방이 바뀌었다. 닫음 표식은 방 단위이므로 여기서 지운다.
+		  내 방 -> 남의 방  MyRoom 초입의 hash != owner 분기가 패널을 닫는다
+		  남의 방 -> 내 방  표식이 비어 있으므로 한 번 열린다
+		표식을 남겨두면 "다른 방에 갔다 왔는데 패널이 안 열린다" 가 된다.
+	*/
+	try{
+		if(window.MyRoom){
+			window.MyRoom.closed = ""
+		}
+		$("#myroom").removeClass("on")
+		$body.removeAttr("myroom")
+	}catch(err){
+	}
 	window.MapReset()
 	if(window.MapGen){
 		window.MapGen.ready = false

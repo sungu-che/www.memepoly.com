@@ -226,50 +226,8 @@ window.TrailMap = function(){
 	}
 	return out
 }
-window.TrailFill = function(cx, cz, size, seen, push){
-	var trail = window.TrailMap()
-	var keys = Object.keys(trail)
-	if(!keys.length){
-		return 0
-	}
-	var n = 0
-	for(var i = 0; i < keys.length; i++){
-		var key = keys[i]
-		if(seen[key]){
-			continue
-		}
-		var p = key.split(":")
-		var tx = p[0] * 1
-		var tz = p[1] * 1
-		if(isNaN(tx) || isNaN(tz)){
-			continue
-		}
-		/* 창 안이면 본 루프가 이미 담았다 */
-		if((cx - size < tx && cx + size > tx) && (cz - size < tz && cz + size > tz)){
-			continue
-		}
-		try{
-			if(window.ReservedTile && window.ReservedTile(tx, tz)){
-				continue
-			}
-		}catch(err){
-		}
-		var b = window.map.biomes[key]
-		if(!b || !b.biome){
-			continue
-		}
-		seen[key] = true
-		push({
-			key : key,
-			x : tx,
-			z : tz,
-			y : b.y,
-			water : b.water ? true : false,
-			biome : b.biome
-		})
-		n++
-	}
-	return n
+window.TrailFill = function(){
+	return 0
 }
 window.CanDiceNow = function(){
 	var cookies = window.cookies
@@ -315,6 +273,23 @@ window.DiceHome = function(){
 	try{
 		var _d = cookies.dice * 1
 		if(!isNaN(_d) && _d > 0){
+			return null
+		}
+	}catch(err){
+	}
+	/*
+		개발 Part 67 (커밋 대기 가드)
+		굴림이 끝난 직후에는 서버 커밋이 아직 도착하지 않았다.
+		  화면 좌표  새 도착 칸 (window.Roll 이 이미 옮겼다)
+		  앵커       옛 출발 칸 (커밋에서만 갱신된다)
+		이 한 왕복 동안 앵커가 다르다는 이유로 📍 를 띄우면
+		"굴려서 앞으로 갔는데 돌아가라" 는 신호가 되어 흐름이 끊긴다.
+		미정산 nonce 가 남아 있는 동안은 판정을 유보한다.
+		커밋 응답이 오면 OAuth3.nonces 가 비워지므로 자동으로 풀린다.
+		응답이 유실돼도 다음 폴링이 replay 로 정리해 한 왕복 뒤 풀린다.
+	*/
+	try{
+		if(typeof OAuth3 != "undefined" && OAuth3.nonces && OAuth3.nonces.length){
 			return null
 		}
 	}catch(err){
@@ -374,6 +349,536 @@ window.ReservedNotice = function(kind){
 		return { head : "SUPPLY TILE", body : "This tile drops items. No building here" }
 	}
 	return { head : "RESERVED", body : "You cannot build here" }
+}
+/*
+	개발 Part 65 (UCAV 탈출 구역)
+	현행 문제
+	  탈출구는 링(주사위 경로)의 게이트뿐이다.
+	  그런데 UCAV 는 CanMoveTo 가 링 진입을 막으므로
+	  게이트를 밟을 방법이 없다. 즉 UCAV 는 탈출이 불가능하고
+	  시간이 지나면 MIA 로 소지품을 잃는 것 외에 선택지가 없었다.
+	조치
+	  해안 링 "안쪽" 내륙 육지 칸 중 일부를 탈출 구역으로 정한다.
+	  UCAV 는 그 칸에서 나간다.
+	결정 방식
+	  후보 목록을 만들어 k개를 뽑으면 서버와 클라이언트의
+	  객체 순회 순서가 달라 결과가 갈릴 수 있다.
+	  그래서 목록을 만들지 않고 좌표마다 순수 해시로 판정한다.
+	    hash(match.hash + ":" + x + ":" + z) % MOD === 0
+	  같은 판, 같은 좌표면 서버와 프론트가 반드시 같은 답을 낸다.
+	  캐시도 필요 없고 좌표당 O(1) 이다.
+	서버 memepoly.com/index.js 의 isExitZone 과 반드시 같은 식이어야 한다.
+	MOD 를 바꾸면 양쪽을 함께 바꿔야 한다.
+*/
+window.EXIT_ZONE_MOD = 250
+window.ExitZoneHash = function(hash, x, z){
+	var s = String(hash ? hash : "") + ":" + (x * 1) + ":" + (z * 1)
+	var h = 5381
+	for(var i = 0; i < s.length; i++){
+		h = (Math.imul(h, 33) ^ s.charCodeAt(i)) | 0
+	}
+	return h >>> 0
+}
+window.ExitZone = function(x, z){
+	var cookies = window.cookies
+	if(!cookies || !cookies.match){
+		return false
+	}
+	/*
+		개발 Part 66 (역할 일치)
+		서버 index.js 는 내륙 탈출을 UCAV 에만 허용한다.
+		  if(!_exitOnGate && req.cookies.role == "UCAV"){ _exitOnZone = isExitZone(x, z) }
+		프론트가 역할을 보지 않으면
+		  내륙을 자유 이동하는 PMC 에게도 EXIT 타일과 슬롯이 보이고
+		  눌렀을 때 서버가 nogate 로 거절한다.
+		"보이는데 안 되는 버튼" 이 되므로 판정 기준을 맞춘다.
+		PMC 는 9칸마다 있는 게이트로 나간다.
+	*/
+	if(cookies.role != "UCAV"){
+		return false
+	}
+	var gx = window.Grid ? window.Grid(x) : (x * 1)
+	var gz = window.Grid ? window.Grid(z) : (z * 1)
+	if(isNaN(gx) || isNaN(gz)){
+		return false
+	}
+	/* 링 위는 게이트가 담당한다. 내륙만 탈출 구역이 된다 */
+	try{
+		if(window.EdgeReady && window.EdgeReady()){
+			if(window.IsEdge(gx, gz)){
+				return false
+			}
+		}else{
+			/* 링이 확정되기 전에는 판정 근거가 없다 */
+			return false
+		}
+	}catch(err){
+		return false
+	}
+	var b = null
+	try{
+		b = (window.map && window.map.biomes) ? window.map.biomes[gx + ":" + gz] : null
+	}catch(err){
+		b = null
+	}
+	if(!b){
+		return false
+	}
+	if(b.water || b.ocean){
+		return false
+	}
+	return (window.ExitZoneHash(cookies.match, gx, gz) % window.EXIT_ZONE_MOD) === 0
+}
+/*
+	내 발밑이 탈출 구역인가.
+	슬롯 렌더 / 팝업이 함께 쓴다.
+*/
+window.ExitZoneSelf = function(){
+	try{
+		var p = window.players.self()
+		return window.ExitZone(p.x, p.z)
+	}catch(err){
+		return false
+	}
+}
+/*
+	개발 Part 68 (자유 탈출구)
+	탈출구 중 일부는 키 없이 나갈 수 있다.
+	현행 문제
+	  모든 탈출구가 exitKeys 5종 중 하나를 요구했다.
+	  키는 대부분 크래프트를 거쳐야 얻으므로
+	  자원을 못 모은 플레이어는 판이 끝날 때까지 나갈 수 없고
+	  MIA 로 소지품을 잃는 것 외에 선택지가 없었다.
+	조치
+	  게이트 / 내륙 탈출 구역 중 일부를 자유 탈출구로 표시한다.
+	판정
+	  서버 memepoly.com/index.js 의 isFreeExit 과 완전히 같은 식이다.
+	  솔트 "free" 를 섞어 ExitZone 판정과 독립적으로 흩어진다.
+	  FREE_EXIT_MOD 를 바꾸면 양쪽을 함께 바꿔야 한다.
+	주의
+	  이 함수는 "이 칸이 자유 탈출구인가" 만 답한다.
+	  장소 자격(게이트인가 / 탈출 구역인가)은 호출부가 따로 확인한다.
+*/
+window.FREE_EXIT_MOD = 4
+window.FreeExit = function(x, z){
+	var cookies = window.cookies
+	if(!cookies || !cookies.match){
+		return false
+	}
+	var gx = window.Grid ? window.Grid(x) : (x * 1)
+	var gz = window.Grid ? window.Grid(z) : (z * 1)
+	if(isNaN(gx) || isNaN(gz)){
+		return false
+	}
+	var s = String(cookies.match) + ":free:" + gx + ":" + gz
+	var h = 5381
+	for(var i = 0; i < s.length; i++){
+		h = (Math.imul(h, 33) ^ s.charCodeAt(i)) | 0
+	}
+	return ((h >>> 0) % window.FREE_EXIT_MOD) === 0
+}
+/*
+	내 발밑이 자유 탈출구인가.
+	장소 자격까지 함께 본다. 슬롯 / 팝업이 공용으로 쓴다.
+*/
+window.FreeExitSelf = function(){
+	try{
+		var p = window.players.self()
+		var f = window.EdgeField ? window.EdgeField(p.x, p.z) : null
+		var ok = (f && (f.gate || f.drop)) ? true : false
+		if(!ok && window.ExitZone){
+			ok = window.ExitZone(p.x, p.z)
+		}
+		if(!ok){
+			return false
+		}
+		return window.FreeExit(p.x, p.z)
+	}catch(err){
+		return false
+	}
+}
+/*
+	개발 Part 67 (커밋 보존)
+	미정산 nonce 를 요청 본문 형식(JSON 문자열)으로 만든다.
+	BoardPoll 이 쓰던 조립 코드를 그대로 옮겨 온 것이며,
+	window.Action 도 같은 것을 실어야 커밋이 유실되지 않는다.
+	비어 있으면 "" 를 돌려준다. 호출부가 그때는 body 에 넣지 않는다.
+*/
+window.Nonces = function(){
+	try{
+		if(typeof OAuth3 == "undefined" || !OAuth3.nonces || !OAuth3.nonces.length){
+			return ""
+		}
+		var out = []
+		for(var i = 0; i < OAuth3.nonces.length; i++){
+			var nonce = OAuth3.nonces[i]
+			if(nonce){
+				out.push(nonce)
+			}
+		}
+		if(!out.length){
+			return ""
+		}
+		return JSON.stringify(out)
+	}catch(err){
+		return ""
+	}
+}
+/*
+	개발 Part 67 (폴링 중단 억제)
+	현행 문제
+	  여러 버튼이 "즉시 새 폴링을 띄우려고" 진행 중인 요청을 abort 한다.
+	    if(OAuth3.xhr){ OAuth3.xhr.abort(); delete OAuth3.xhr }
+	  그런데 그 요청이 주사위 커밋을 실어 나르는 폴링일 수 있다.
+	  abort 는 클라이언트만 끊으므로 서버는 커밋을 마치지만,
+	  응답 헤더 도착 전에 끊기면 브라우저가 새 anchor 쿠키를 못 받는다.
+	  다음 폴링은 같은 nonce 를 replay 로 거절당해 앵커가 영구히 옛 칸에 남고
+	  📍 복귀 버튼이 계속 뜬다.
+	조치
+	  미정산 nonce 가 있으면 끊지 않는다.
+	  그 요청이 끝나야 커밋과 앵커가 확정된다.
+	  UI 갱신은 600ms 뒤 다음 폴링에서 따라온다.
+	반환 : 실제로 끊었는가
+*/
+window.PollBreak = function(){
+	try{
+		if(!OAuth3.xhr){
+			return false
+		}
+		if(OAuth3.nonces && OAuth3.nonces.length){
+			return false
+		}
+		OAuth3.xhr.abort()
+		delete OAuth3.xhr
+		return true
+	}catch(err){
+		return false
+	}
+}
+/*
+	개발 Part 73 (백그라운드 굴림 보호)
+	현행 문제
+	  window.Roll 은 500ms setInterval 로 한 칸씩 전진한다.
+	  탭이 백그라운드로 가면 브라우저가 타이머를 1초 이상으로 클램프하고,
+	  시간이 지나면 더 크게 늦춘다. 즉 진행이 느려진다.
+	  그 사이 BoardCallback 이 아래 분기로 들어가면
+	    if(typeof window.Poll.ing == "undefined" && !cookies.damage){
+	        clearInterval(window.Roll.ing)
+	        delete window.Roll.ing
+	        window.Poll.ing = setInterval(window.Poll, time.balance)
+	  진행 중인 굴림이 통째로 끊긴다.
+	  그 상태로 폴링이 나가면 좌표가 중간 칸이라
+	  서버 RingPathReach 가 클레임을 거절하고
+	  서버 계산 도착 또는 직전 앵커로 되돌아간다.
+	  사용자에게는 "탭 갔다 오니 굴리기 전 자리로 돌아갔다" 로 보인다.
+	조치
+	  굴림이 살아 있는지 한 곳에서 판정하고,
+	  살아 있으면 폴링 전환을 하지 않는다.
+	판정 근거
+	  Roll.ing        인터벌이 살아 있다
+	  cookies.dice    아직 걸을 칸이 남았다
+	  둘 중 하나라도 참이면 굴림 중이다.
+	  타이머가 늦어져 dice 만 남은 프레임도 굴림 중으로 본다.
+*/
+window.RollBusy = function(){
+	try{
+		if(typeof window.Roll === "undefined"){
+			return false
+		}
+		if(typeof window.Roll.ing !== "undefined"){
+			return true
+		}
+		var d = window.cookies ? (window.cookies.dice * 1) : 0
+		if(!isNaN(d) && d > 0){
+			return true
+		}
+	}catch(err){
+	}
+	return false
+}
+/*
+	개발 Part 67 (툴팁 첫 슬롯)
+	현행 문제
+	  첫 슬롯(Build / Exit / Reserved / Fire) 조립이
+	  BoardCallback 안쪽 300ms setTimeout 루프에 갇혀 있었다.
+	  그래서 서버 응답이 와야만 갱신된다.
+	  주사위 이동 중에는 폴링이 멈춰 있으므로
+	  4칸(약 2초) + 폴링 주기 + RTT 동안 출발 칸 기준 슬롯이 남는다.
+	  게이트에 도착했는데 🏗 가 떠 있거나,
+	  일반 칸으로 왔는데 🚪 가 남아 있는 상태가 그것이다.
+	조치
+	  조립을 순수 함수로 꺼내 두 곳이 같은 결과를 쓰게 한다.
+	    BoardCallback  서버 응답 시
+	    TileSync       좌표가 바뀌는 즉시
+	판정 근거
+	  링/예약 칸  window.fields (match.hash 결정론. 서버와 동일)
+	  탈출 구역   window.ExitZone (match.hash 결정론. 서버와 동일)
+	  부동산      cookies.tile 이 현재 좌표와 일치할 때만 채택,
+	              아니면 window.fields[].property 폴백
+	  탈출 가능   cookies.exitable (서버 최종 판정)
+	즉 좌표 의존 정보는 전부 클라이언트가 스스로 계산할 수 있고,
+	서버 확정값이 필요한 것만 쿠키를 좌표 일치 조건으로 읽는다.
+	opts.fireCount 를 주지 않으면 현재 DOM 의 깃발 수를 그대로 유지한다.
+*/
+window.SlotBody = function(opts){
+	var o = opts ? opts : {}
+	var cookies = window.cookies
+	if(!cookies){
+		return `<a class="hashType"></a>`
+	}
+	var player = null
+	try{
+		player = window.players.self()
+	}catch(err){
+		player = null
+	}
+	if(!player){
+		return `<a class="hashType"></a>`
+	}
+	var cnt = 0
+	if(typeof o.fireCount !== "undefined" && !isNaN(o.fireCount * 1)){
+		cnt = o.fireCount * 1
+	}else{
+		try{
+			var _prev = $('#root player[self="true"] tooltip a.hashType.Fire .cnt').text()
+			cnt = (_prev && !isNaN(_prev * 1)) ? (_prev * 1) : 0
+		}catch(err){
+			cnt = 0
+		}
+	}
+	var src = ""
+	try{
+		src = "/src/fonts/emoji/animated/" + window.emojiUnicode("🔥") + ".webp"
+	}catch(err){
+		src = ""
+	}
+	var out = cookies.enter
+		? `<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>`
+		: `<a class="hashType"></a>`
+	try{
+		var _sf = window.EdgeSelf ? window.EdgeSelf() : null
+		var _rk = (_sf && window.ReservedTile)
+			? window.ReservedTile(_sf.x, _sf.z) : ""
+		var _zone = false
+		try{
+			if(!_sf && window.ExitZone){
+				_zone = window.ExitZone(player.x, player.z)
+			}
+		}catch(err){
+			_zone = false
+		}
+		if((_sf && (_sf.gate || _sf.drop)) || _zone){
+			/*
+				개발 Part 68 (자유 탈출구)
+				자유 탈출구는 키 없이 나갈 수 있다.
+				서버 cookies.exitFreeHere 가 최종 판정이지만,
+				굴리는 중에는 응답이 아직 안 왔을 수 있으므로
+				같은 식의 결정론 판정으로 먼저 보여준다.
+				free="1" 이면 ready 도 1 이다.
+				CSS 가 free 속성으로 아이콘을 나눈다.
+			*/
+			var _free = false
+			try{
+				_free = cookies.exitFreeHere
+					? true
+					: (window.FreeExit ? window.FreeExit(player.x, player.z) : false)
+			}catch(err){
+				_free = false
+			}
+			var _exitOk = (cookies.exitable || _free) ? true : false
+			var _exitHold = cookies.exitHold ? cookies.exitHold : ""
+			out = `<a class="hashType Exit emoji color" ready="${_exitOk ? "1" : "0"}" zone="${_zone ? "1" : "0"}" free="${_free ? "1" : "0"}"><i class="emoji color">🚪</i><span class="cnt">${_free ? "" : _exitHold}</span></a>`
+		}else if(_sf && _rk){
+			if(_rk === "item"){
+				out = `<a class="hashType"></a>`
+			}else{
+				out = `<a class="hashType Reserved emoji color" tile="${_rk}"><i class="emoji color">🔒</i></a>`
+			}
+		}else if(_sf){
+			var _prop = null
+			try{
+				if(cookies.tile &&
+					(cookies.tile.x * 1) === (player.x * 1) &&
+					(cookies.tile.z * 1) === (player.z * 1)){
+					_prop = {
+						level : cookies.tile.level * 1,
+						owner : cookies.tile.owner ? cookies.tile.owner : "",
+						toll : cookies.tile.toll ? cookies.tile.toll * 1 : 0
+					}
+				}
+			}catch(err){
+				_prop = null
+			}
+			if(!_prop && _sf.property){
+				_prop = {
+					level : _sf.property.level * 1,
+					owner : _sf.property.owner ? _sf.property.owner : "",
+					toll : _sf.property.toll ? _sf.property.toll * 1 : 0
+				}
+			}
+			if(!_prop){
+				_prop = { level : 0, owner : "", toll : 0 }
+			}
+			if(isNaN(_prop.level)){
+				_prop.level = 0
+			}
+			if(isNaN(_prop.toll)){
+				_prop.toll = 0
+			}
+			var _lvEmoji = "🏗"
+			try{
+				if(_prop.level > 0 && window.PropertyLevelEmoji){
+					if(window.PropertyLevelEmoji[_prop.level]){
+						_lvEmoji = window.PropertyLevelEmoji[_prop.level]
+					}
+				}
+			}catch(err){
+			}
+			var _own = ""
+			var _cnt = _prop.toll > 0 ? _prop.toll : ""
+			var _nation = false
+			try{
+				if(cookies.tile &&
+					(cookies.tile.x * 1) === (player.x * 1) &&
+					(cookies.tile.z * 1) === (player.z * 1)){
+					_nation = cookies.tile.nation ? true : false
+					if(_nation){
+						var _pot = cookies.tile.treasury ? cookies.tile.treasury * 1 : 0
+						_cnt = (isNaN(_pot) || _pot <= 0) ? "" : _pot
+					}
+				}
+			}catch(err){
+				_nation = false
+			}
+			if(_nation){
+				_own = "nation"
+				_lvEmoji = "🏛"
+			}else if(_prop.owner){
+				var _me = cookies.address ? cookies.address : cookies.hash
+				var _oa = String(_prop.owner).replace("0x","").toLowerCase()
+				var _ma = String(_me ? _me : "").replace("0x","").toLowerCase()
+				var _zero = "0000000000000000000000000000000000000000"
+				if(_oa === _zero){
+					_own = ""
+				}else{
+					_own = (_oa === _ma) ? "self" : "other"
+				}
+			}
+			/*
+				개발 Part 71 (매수 제안)
+				남의 땅이면 건설이 아니라 제안이다.
+				아이콘을 🤝 로 바꿔 "지을 수 없지만 살 수는 있다" 를 알린다.
+				금액은 서버가 계산한 offerPrice 를 그대로 보여준다.
+			*/
+			if(_own === "other"){
+				try{
+					if(cookies.tile &&
+						(cookies.tile.x * 1) === (player.x * 1) &&
+						(cookies.tile.z * 1) === (player.z * 1) &&
+						cookies.tile.offerPrice){
+						_lvEmoji = "🤝"
+						_cnt = cookies.tile.offerOpen ? "…" : (cookies.tile.offerPrice * 1)
+					}
+				}catch(err){
+				}
+			}
+			out = `<a class="hashType Build emoji color" lv="${_prop.level}" own="${_own}"><i class="emoji color">${_lvEmoji}</i><span class="cnt">${_cnt}</span></a>`
+		}
+	}catch(err){
+	}
+	return out
+}
+/*
+	개발 Part 67 (좌표 즉시 반영)
+	좌표가 바뀌는 순간 화면 상태를 맞춘다.
+	  body[biome]     발밑 바이옴
+	  body[field]     아이템 / 게이트 드랍 표식
+	  body[edge]      링 위인가 (주사위 슬롯 노출 조건)
+	  body[diceable]  지금 굴릴 수 있는가
+	  body[dicehome]  앵커 복귀 상태인가 (📍)
+	  툴팁 첫 슬롯
+	서버 응답을 기다리지 않는다. 전부 결정론 데이터로 판정한다.
+	주사위 슬롯이 도는 중에는 손대지 않는다.
+	  DiceSpinBusy 중 툴팁을 건드리면 노드가 교체되어 착지가 끊긴다(개발 Part 52).
+*/
+window.TileSync = function(){
+	try{
+		if(window.Mode() != "board"){
+			return false
+		}
+		var cookies = window.cookies
+		if(!cookies){
+			return false
+		}
+		var $body = $("body")
+		var player = null
+		try{
+			player = window.players.self()
+		}catch(err){
+			player = null
+		}
+		if(!player){
+			return false
+		}
+		try{
+			var b = window.map.biomes[player.x + ":" + player.z]
+			if(b && b.biome){
+				$body.attr("biome", b.biome)
+			}
+		}catch(err){
+		}
+		try{
+			var f = window.EdgeField ? window.EdgeField(player.x, player.z) : null
+			$body.attr("field", (f && (f.item || f.drop)) ? (f.item || f.drop) : "")
+			if(f){
+				$body.attr("edge", "true")
+			}else{
+				$body.removeAttr("edge")
+			}
+		}catch(err){
+			$body.removeAttr("edge")
+		}
+		try{
+			if(window.CanDiceNow && window.CanDiceNow()){
+				$body.attr("diceable", "true")
+			}else{
+				$body.removeAttr("diceable")
+			}
+		}catch(err){
+			$body.removeAttr("diceable")
+		}
+		try{
+			if(window.DiceHome && window.DiceHome()){
+				$body.attr("dicehome", "true")
+			}else{
+				$body.removeAttr("dicehome")
+			}
+		}catch(err){
+			$body.removeAttr("dicehome")
+		}
+		try{
+			if(window.DiceSpinBusy && window.DiceSpinBusy()){
+				return true
+			}
+		}catch(err){
+		}
+		var $li = $('#root player[self="true"] tooltip ul').children("li").first()
+		if(!$li.length){
+			return true
+		}
+		var body = window.SlotBody({})
+		var before = $li.html()
+		if(before){
+			before = before.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+		}
+		var after = body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+		if(before !== after){
+			$li.html(after)
+		}
+		return true
+	}catch(err){
+		return false
+	}
 }
 /*
 	개발 Part 15 (규칙 R3)
@@ -549,23 +1054,12 @@ window.FieldView = function(_x, _z){
 				})
 			}
 		}
-		try{
-			if(window.TrailFill){
-				window.TrailFill(cx, cz, size, seen, function(t){
-					out.push({
-						id : crc32(cc + "#" + t.biome + t.x + t.z).toString(32).toUpperCase(),
-						hash : cc,
-						name : "#" + t.biome,
-						value : "black",
-						color : "black",
-						x : t.x,
-						y : t.y - (t.water ? 0.8 : 0.5),
-						z : t.z
-					})
-				})
-			}
-		}catch(err){
-		}
+		/*
+			개발 Part 65 (시야 밖 궤적 제거)
+			여기 있던 TrailFill 호출을 제거한다.
+			창 안 좌표는 위 이중 루프가 이미 담았고,
+			창 밖 좌표는 그리지 않는다.
+		*/
 		if(!out.length){
 			return false
 		}
@@ -2599,7 +3093,23 @@ OAuth3.on("ready", function(e){
 		if(!body.emoji){
 			body.emoji = window.emojis.self
 		}
-
+		/*
+			개발 Part 67 (커밋 보존)
+			현행 문제
+			  Action 은 진행 중인 폴링을 abort 하면서 nonce 를 싣지 않았다.
+			  그 폴링이 주사위 커밋을 나르던 요청이면
+			  커밋 기회가 통째로 사라지고 앵커가 옛 칸에 굳는다.
+			  (equip / craft / consume / property / auction / exit / deposit 전부 해당)
+			조치
+			  BoardPoll 과 동일하게 미정산 nonce 를 함께 보낸다.
+			  이 요청이 폴링을 대신해 정산까지 마친다.
+		*/
+		if(!body.nonces){
+			var _an = window.Nonces ? window.Nonces() : ""
+			if(_an){
+				body.nonces = _an
+			}
+		}
 		OAuth3.xhr = OAuth3.fetch({
 			method : "POST",
 			url : url,
@@ -2607,7 +3117,6 @@ OAuth3.on("ready", function(e){
 			query : query
 		}, window.Callback);
 	}
-
 	window.Equipment = function(equip, unequip){
 		window.Action({
 			cc : "equip",
@@ -2822,10 +3331,70 @@ OAuth3.on("ready", function(e){
 			window.Roll.pathIdx = -1
 			window.Roll.prevX = null
 			window.Roll.prevZ = null
+			/*
+				개발 Part 73 (백그라운드 캐치업)
+				따라잡기 상태도 함께 비운다.
+				정리 지점이 흩어지면 한 곳만 빠져도
+				다음 굴림이 이전 상태를 물려받는다.
+			*/
+			window.Roll.catchup = 0
+			window.Roll.at = 0
 		}
 		window.Roll = function(biomes){
 			try{
 				var dice = window.cookies.dice * 1
+				/*
+					개발 Part 73 (백그라운드 캐치업)
+					현행 문제
+					  이 함수는 호출 1회당 정확히 한 칸만 전진한다.
+					  전제는 "500ms 마다 호출된다" 인데
+					  백그라운드 탭에서는 브라우저가 타이머를 클램프해
+					  1초, 몇 초 간격으로 늘어난다.
+					  그래서 탭을 벗어난 동안 진행이 사실상 멈추고,
+					  돌아오면 남은 칸을 다시 걷기 시작한다.
+					  그 사이 폴링이 나가면 중간 좌표가 서버에 올라가
+					  클레임이 거절되고 앵커로 되돌아간다.
+					조치
+					  마지막 호출 시각을 기억해 밀린 만큼 따라잡는다.
+					  500ms 마다 한 칸이므로
+					    경과 1200ms  ->  2칸
+					    경과 3000ms  ->  6칸(남은 만큼만)
+					  캐치업 중에는 소리와 시야 갱신을 건너뛴다.
+					  발소리가 한꺼번에 겹치면 클리핑이 나고,
+					  FieldView 를 칸마다 부르면 프레임이 튄다.
+					  마지막 칸에서만 정상 처리한다.
+					상한
+					  한 번에 6칸을 넘지 않는다. 주사위 최댓값이 6이다.
+				*/
+				var _now = Date.now()
+				var _catch = 0
+				try{
+					if(window.Roll.at){
+						var _gap = _now - window.Roll.at
+						if(_gap > 900){
+							_catch = Math.floor(_gap / 500) - 1
+							if(_catch < 0){
+								_catch = 0
+							}
+							if(_catch > 6){
+								_catch = 6
+							}
+						}
+					}
+				}catch(err){
+					_catch = 0
+				}
+				window.Roll.at = _now
+				if(_catch > 0 && dice > 1){
+					var _steps = _catch
+					if(_steps > (dice - 1)){
+						_steps = dice - 1
+					}
+					if(_steps > 0){
+						console.log("[dice] catching up " + _steps + " step(s) after background")
+						window.Roll.catchup = _steps
+					}
+				}
 				if(dice > 0){
 					if(typeof OAuth3.interval == "undefined"){
 						/*
@@ -2915,8 +3484,12 @@ OAuth3.on("ready", function(e){
 							한 칸 전진할 때마다 발소리를 낸다.
 							_next 가 없으면(경로 끝 / 스냅샷 실패) 소리도 내지 않는다.
 							Roll 은 500ms 간격이라 겹치지 않는다.
+							개발 Part 73 (백그라운드 캐치업)
+							  밀린 칸을 따라잡는 중에는 소리를 내지 않는다.
+							  한꺼번에 겹치면 클리핑이 나고,
+							  Sfx.limit(10) 을 넘으면 그 뒤 소리가 통째로 막힌다.
 						*/
-						if(_next && window.Sfx){
+						if(_next && window.Sfx && !window.Roll.catchup){
 							window.Sfx.play("step")
 						}
 						/*
@@ -2936,14 +3509,52 @@ OAuth3.on("ready", function(e){
 								window.Roll.trailMatch = window.cookies.match
 							}catch(err){
 							}
-							try{
-								if(window.FieldView){
-									window.FieldView(_next.x, _next.z)
+							/*
+								개발 Part 73 (백그라운드 캐치업)
+								따라잡는 중에는 시야 / 툴팁 갱신을 건너뛴다.
+								  FieldView   assets.set 을 부르므로 R3F 리렌더가 난다
+								  TileSync    DOM 을 만진다
+								칸마다 부르면 복귀 프레임에 한꺼번에 몰려 화면이 멈춘다.
+								마지막 칸에서 한 번만 하면 결과는 같다.
+							*/
+							if(!window.Roll.catchup){
+								try{
+									if(window.FieldView){
+										window.FieldView(_next.x, _next.z)
+									}
+								}catch(err){
 								}
-							}catch(err){
+								/*
+									개발 Part 67 (좌표 즉시 반영)
+									현행은 여기서 메시 좌표만 옮기고 화면 상태를 갱신하지 않았다.
+									굴리는 동안 폴링이 멈춰 있으므로
+									  4칸 이동(약 2초) + 폴링 주기 + RTT
+									동안 출발 칸 기준 툴팁과 body 속성이 그대로 남았다.
+									한 칸마다 맞춰 준다.
+								*/
+								try{
+									if(window.TileSync){
+										window.TileSync()
+									}
+								}catch(err){
+								}
 							}
 						}
 						window.cookies.dice = dice - 1
+						/*
+							개발 Part 73 (백그라운드 캐치업)
+							따라잡을 칸이 남았으면 다음 인터벌을 기다리지 않고
+							그 자리에서 이어서 전진한다.
+							재귀가 아니라 반복 호출이므로 스택이 쌓이지 않는다.
+							dice 는 방금 1 줄었으므로 종료 조건이 반드시 성립한다.
+						*/
+						if(window.Roll.catchup > 0){
+							window.Roll.catchup--
+							if(window.cookies.dice > 0){
+								return window.Roll(biomes)
+							}
+						}
+						window.Roll.catchup = 0
 						window.setFrameloop("always")
 						return
 					}
@@ -2959,7 +3570,44 @@ OAuth3.on("ready", function(e){
 					*/
 					window.RollReset()
 					window.cookies.dice = 0
+					/*
+						개발 Part 73 (백그라운드 캐치업)
+						따라잡기 상태를 비운다.
+						남겨두면 다음 굴림의 첫 칸이 소리 없이 지나간다.
+					*/
+					window.Roll.catchup = 0
+					window.Roll.at = 0
 					window.setFrameloop("always")
+					/*
+						개발 Part 73 (캐치업 종료 시 시야 복구)
+						따라잡는 동안 FieldView 를 건너뛰었으므로
+						도착 칸 기준으로 한 번 다시 만든다.
+						건너뛴 적이 없어도 같은 서명이면 내부에서 조기 반환한다.
+					*/
+					try{
+						if(window.FieldView && window.current){
+							window.FieldView(
+								window.current.current.position.x,
+								window.current.current.position.z
+							)
+						}
+					}catch(err){
+					}
+					/*
+						개발 Part 67 (좌표 즉시 반영)
+						도착 직후 상태를 맞춘다.
+						  dice 가 0 이 되었으므로 CanDiceNow / DiceHome 판정이 바뀐다
+						  도착 칸이 게이트면 슬롯이 🚪 로 바뀌어야 한다
+						서버 커밋 응답까지 기다리면 최대 한 왕복이 비어 보인다.
+						DiceHome 은 미정산 nonce 가 있는 동안 null 을 돌려주므로
+						여기서 📍 가 잘못 켜지지 않는다.
+					*/
+					try{
+						if(window.TileSync){
+							window.TileSync()
+						}
+					}catch(err){
+					}
 					if(typeof window.Poll.ing == "undefined"){
 						window.Poll.ing = setInterval(window.Poll, 600)
 					}
@@ -3144,14 +3792,40 @@ OAuth3.on("ready", function(e){
 						}
 						var _teleport = ""
 						try{
-							if(cookies.spawned || cookies.edgeBlocked || cookies.matchRolled || cookies.anchorReturn){
+							/*
+								개발 Part 66 (도착 좌표 확정)
+								현행 문제
+								  주사위 커밋 응답에는 서버가 확정한 도착 칸이
+								    cookies.arrive / cookies.arriveBy / cookies.axis
+								  로 실려 온다. 그런데 이 블록은 arrive 를 보지 않아
+								  클라이언트가 자기 좌표(_cur)를 그대로 유지했다.
+								  서버가 클레임을 거절하고 경로 주행(arriveBy="path")이나
+								  링 인덱스(arriveBy="ring")로 도착을 정한 경우
+								  화면 위치와 서버 앵커가 갈린다.
+								  그 결과 DiceHome() 이 참이 되어 📍 가 뜨고
+								  누르면 서버 앵커로 걸어 돌아간다.
+								조치
+								  커밋이 일어난 프레임에서는 서버 도착을 최종으로 채택한다.
+								  arrive 는 브라우저 쿠키로 직렬화되지 않으므로
+								  커밋 응답 한 번에만 실린다. 매 폴링마다 튀지 않는다.
+								  클레임이 받아들여진 정상 경우에는 _cur 과 axis 가 같아
+								  아래 비교에서 _teleport 가 스스로 해제된다.
+							*/
+							if(cookies.spawned || cookies.edgeBlocked || cookies.matchRolled || cookies.anchorReturn || cookies.arrive){
 								_teleport = cookies.matchRolled ? "match"
 									: (cookies.spawned ? "spawn"
-									: (cookies.anchorReturn ? "anchor" : "edge"))
+									: (cookies.anchorReturn ? "anchor"
+									: (cookies.edgeBlocked ? "edge" : "arrive")))
 								if(_cur.x === axis.x && _cur.z === axis.z){
 									/* 이미 같은 칸이면 스냅이 필요 없다 */
 									_teleport = ""
 								}else{
+									if(_teleport === "arrive"){
+										console.log("[board] arrival adopted :: client " +
+											_cur.x + "," + _cur.z +
+											" -> server " + axis.x + "," + axis.z +
+											" by=" + (cookies.arriveBy ? cookies.arriveBy : ""))
+									}
 									var _tb = window.map.biomes[axis.x + ":" + axis.z]
 									if(_tb && typeof _tb.y !== "undefined"){
 										axis.y = _tb.y * 1
@@ -3936,82 +4610,68 @@ OAuth3.on("ready", function(e){
 									color = "black"
 								}
 								_seen[b.x + ":" + b.z] = true
+								/*
+									개발 Part 70 (소유 타일 표시)
+									현행 문제
+									  window.assets 비교는 JSON.stringify 동등성으로 한다.
+									    if(JSON.stringify(window.assets) != JSON.stringify(_assets))
+									  그런데 소유 정보는 window.fields[].property 에만 있고
+									  _assets 항목에는 들어가지 않는다.
+									  applyToFields 는 같은 객체를 제자리 갱신하므로
+									  건물을 지어도 _assets 서명이 변하지 않아
+									  리렌더가 나지 않고 바닥이 그대로였다.
+									조치
+									  소유 서명(레벨 + 소유자 8자리)을 항목에 싣는다.
+									  Experience 의 Asset 은 이 값을 읽지 않지만
+									  key 비교에는 참여하므로 소유가 바뀌면 반드시 다시 그린다.
+								*/
+								var _ownSig = ""
+								try{
+									var _of = window.fields ? window.fields[b.x + ":" + b.z] : null
+									if(_of && _of.property && (_of.property.level * 1) > 0){
+										var _oh = window.TileOwner ? window.TileOwner(_of) : ""
+										_ownSig = (_of.property.level * 1) + ":" +
+											(_of.property.nation ? "n" : (_oh ? _oh.substr(0, 8) : ""))
+									}
+								}catch(err){
+									_ownSig = ""
+								}
 								_assets.push({
 									id : _id,
 									hash : cc_address,
 									name : "#"+b.biome,
 									value : color,
 									color: color,
+									own : _ownSig,
 									x : b.x,
 									y : b.y - (b.water ? 0.8 : 0.5),
 									z : b.z
 								})	
 							}
 						})
-						try{
-							if(window.TrailFill){
-								window.TrailFill(biomes.x, biomes.z, size, _seen, function(t){
-									_assets.push({
-										id : crc32(cc_address+"#"+t.biome+t.x+t.z).toString(32).toUpperCase(),
-										hash : cc_address,
-										name : "#"+t.biome,
-										value : "black",
-										color : "black",
-										x : t.x,
-										y : t.y - (t.water ? 0.8 : 0.5),
-										z : t.z
-									})
-								})
-							}
-						}catch(err){
-						}
-						if(window.assets && !isBiome){
-							if(!window.map.biomes){
-								window.map.biomes = {}
-							}
-							if(!window.map.nonces){
-								window.map.nonces = []
-							}
-							biomes.forEach(function(b, i){
-								var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-								if(
-									(biomes.x - size < b.x && biomes.x + size > b.x) &&
-									(biomes.z - size < b.z && biomes.z + size > b.z) &&
-									!window.map.biomes[_id]
-								){
-									if(Math.random() < 0.1){
-										var _date = new Date(new Date() - time.offset)
-											_date = _date.toISOString()
-												.replace(/T/, ' ')
-												.replace(/\..+/, '')
-
-										var color = window.Biomes["#"+b.biome]
-
-										var emoji = window.Biomes[color]
-
-										if(emoji){
-											window.map.biomes[_id] = {
-												id : _id,
-												hash : cc_address,
-												name : "#"+b.biome,
-												value : "",
-												color: "",
-												x : b.x,
-												y : b.y - 0.5,
-												z : b.z
-											}
-
-											var _row = {
-												Id : _id,
-												Cc : b.x+','+b.z+" #"+b.biome+" 0x"+cc_address
-											}
-
-											window.map.nonces[_id] = _row
-										}
-									}
-								}
-							})
-						}
+						/*
+							개발 Part 65 (시야 밖 궤적 제거)
+							여기 있던 TrailFill 호출을 제거한다.
+							_trailPaint 가 창 안 좌표만 검정으로 바꾸므로
+							시야를 벗어난 궤적 타일은 애초에 _assets 에 담기지 않는다.
+							다시 그 좌표가 창 안으로 들어오면 같은 판정으로 복구된다.
+						*/
+						/*
+							개발 Part 68 (바이옴 장식 서버 생성)
+							여기 있던 클라이언트 장식 생성 블록을 제거한다.
+							제거 사유
+							  1) Math.random() 이므로 플레이어마다 장식이 달랐다.
+							     같은 칸에 나무가 보이는 사람과 안 보이는 사람이 생긴다.
+							  2) 뽑은 결과를 window.map.nonces 에 넣어 매 폴링마다 올려 보냈고
+							     서버는 그것을 버렸다. 왕복만 늘고 남는 것이 없었다.
+							  3) 새로고침하면 장식이 통째로 바뀌어 지형이 불안정해 보였다.
+							이제 서버 decorRows 가 match.hash 로 판정해 #biome 행으로 내려준다.
+							그 행은 위쪽 rows 루프의
+							  if(window.Biomes[hashtag] && b){ ... window.map.biomes[row.Id] = _asset }
+							분기가 그대로 흡수하므로 렌더 경로는 바뀌지 않는다.
+							isBiome 플래그도 더 이상 쓰이지 않지만
+							위 루프가 계산하고 있으므로 선언은 그대로 둔다.
+						*/
 					}
 
 					if(plant){
@@ -4469,100 +5129,18 @@ OAuth3.on("ready", function(e){
 										if(window.HpBadge){
 											window.HpBadge(_hp, _maxHp)
 										}
-										var _slotBody = cookies.enter
-											? `<a class="hashType Fire"><img src="${src}"><span class="cnt">${cnt}</span></a>`
-											: `<a class="hashType"></a>`
-										try{
-											var _sf = window.EdgeSelf ? window.EdgeSelf() : null
-											var _rk = (_sf && window.ReservedTile)
-												? window.ReservedTile(_sf.x, _sf.z) : ""
-											if(_sf && (_sf.gate || _sf.drop)){
-												if(!cookies.enter){
-													_slotBody = `<a class="hashType Deploy emoji color"><i class="emoji color">🚪</i></a>`
-												}else{
-													var _exitOk = cookies.exitable ? true : false
-													var _exitHold = cookies.exitHold ? cookies.exitHold : ""
-													_slotBody = `<a class="hashType Exit emoji color" ready="${_exitOk ? "1" : "0"}"><i class="emoji color">🚪</i><span class="cnt">${_exitHold}</span></a>`
-												}
-											}else if(_sf && _rk){
-												if(_rk === "item"){
-													_slotBody = `<a class="hashType"></a>`
-												}else{
-													_slotBody = `<a class="hashType Reserved emoji color" tile="${_rk}"><i class="emoji color">🔒</i></a>`
-												}
-											}else if(_sf){
-												var _prop = null
-												try{
-													if(cookies.tile &&
-														(cookies.tile.x * 1) === (self_player.x * 1) &&
-														(cookies.tile.z * 1) === (self_player.z * 1)){
-														_prop = {
-															level : cookies.tile.level * 1,
-															owner : cookies.tile.owner ? cookies.tile.owner : "",
-															toll : cookies.tile.toll ? cookies.tile.toll * 1 : 0
-														}
-													}
-												}catch(err){
-													_prop = null
-												}
-												if(!_prop && _sf.property){
-													_prop = {
-														level : _sf.property.level * 1,
-														owner : _sf.property.owner ? _sf.property.owner : "",
-														toll : _sf.property.toll ? _sf.property.toll * 1 : 0
-													}
-												}
-												if(!_prop){
-													_prop = { level : 0, owner : "", toll : 0 }
-												}
-												if(isNaN(_prop.level)){
-													_prop.level = 0
-												}
-												if(isNaN(_prop.toll)){
-													_prop.toll = 0
-												}
-												var _lvEmoji = "🏗"
-												try{
-													if(_prop.level > 0 && window.PropertyLevelEmoji){
-														if(window.PropertyLevelEmoji[_prop.level]){
-															_lvEmoji = window.PropertyLevelEmoji[_prop.level]
-														}
-													}
-												}catch(err){
-												}
-												var _own = ""
-												var _cnt = _prop.toll > 0 ? _prop.toll : ""
-												var _nation = false
-												try{
-													if(cookies.tile &&
-														(cookies.tile.x * 1) === (self_player.x * 1) &&
-														(cookies.tile.z * 1) === (self_player.z * 1)){
-														_nation = cookies.tile.nation ? true : false
-														if(_nation){
-															var _pot = cookies.tile.treasury ? cookies.tile.treasury * 1 : 0
-															_cnt = (isNaN(_pot) || _pot <= 0) ? "" : _pot
-														}
-													}
-												}catch(err){
-													_nation = false
-												}
-												if(_nation){
-													_own = "nation"
-													_lvEmoji = "🏛"
-												}else if(_prop.owner){
-													var _oa = String(_prop.owner).replace("0x","").toLowerCase()
-													var _ma = String(player_hash).replace("0x","").toLowerCase()
-													var _zero = "0000000000000000000000000000000000000000"
-													if(_oa === _zero){
-														_own = ""
-													}else{
-														_own = (_oa === _ma) ? "self" : "other"
-													}
-												}
-												_slotBody = `<a class="hashType Build emoji color" lv="${_prop.level}" own="${_own}"><i class="emoji color">${_lvEmoji}</i><span class="cnt">${_cnt}</span></a>`
-											}
-										}catch(err){
-										}
+										/*
+											개발 Part 67 (툴팁 첫 슬롯)
+											여기 있던 조립을 window.SlotBody 로 옮긴다.
+											같은 조립이 두 벌이면
+											  BoardCallback  서버 응답 때만
+											  TileSync       좌표가 바뀔 때마다
+											두 경로의 결과가 갈려 슬롯이 깜빡인다.
+											판정 근거(fields / ExitZone / cookies.tile)는 동일하므로
+											한 함수로 합쳐도 결과가 바뀌지 않는다.
+											깃발 수(cnt)는 이 응답의 flags 집계를 그대로 넘긴다.
+										*/
+										var _slotBody = window.SlotBody({ fireCount : cnt })
 										tooltip_body = `<li>
 											${_slotBody}
 										</li>
@@ -4975,7 +5553,70 @@ OAuth3.on("ready", function(e){
 						}
 					}catch(err){
 					}
+					/*
+						개발 Part 71 (매수 제안)
+						받은 제안 / 보낸 제안의 결과를 처리한다.
+						  새 제안 도착  자동으로 승낙 / 거부 패널을 띄운다
+						  결과 확정     알림으로 알린다
+						통행료 알림보다 뒤에 둔다.
+						제안 패널이 열리면 Notice 가 가려질 수 있는데,
+						통행료는 즉시성이 더 중요하기 때문이다.
+					*/
+					try{
+						if(window.OfferSync){
+							window.OfferSync(cookies)
+						}
+					}catch(err){
+					}
+					try{
+						if(cookies.offerError){
+							var _oe = String(cookies.offerError)
+							var _oeBody = "Could not send the offer"
+							if(_oe === "offer_pending"){
+								_oeBody = "An offer is already pending on this tile"
+							}else if(_oe === "offer_balance"){
+								_oeBody = "Not enough coins to escrow"
+							}else if(_oe === "offer_self"){
+								_oeBody = "You already own this tile"
+							}else if(_oe === "offer_unowned"){
+								_oeBody = "This tile has no owner. Use the auction"
+							}else if(_oe === "notowner"){
+								_oeBody = "You are not the owner of this offer"
+							}else if(_oe === "resolved"){
+								_oeBody = "This offer was already answered"
+							}
+							window.Notice("OFFER FAILED", _oeBody, 3000)
+						}
+					}catch(err){
+					}
 
+					/*
+						개발 Part 72 (보드 고립 복구)
+						서버가 좌표를 링으로 되돌렸다.
+						아무 설명 없이 캐릭터가 순간이동하면 버그로 보인다.
+						왜 옮겨졌는지 알린다.
+						recovered 는 브라우저 쿠키로 직렬화되지 않으므로
+						교정이 일어난 응답 한 번에만 실린다.
+					*/
+					try{
+						if(cookies.recovered && window.BoardCallback.recovered !== cookies.recovered){
+							window.BoardCallback.recovered = cookies.recovered
+							var _rc = String(cookies.recovered).split(",")
+							window.Notice("BACK ON PATH",
+								"You were off the board path. Moved to " +
+								Math.floor(_rc[0] * 1) + ", " + Math.floor(_rc[1] * 1),
+								2800)
+							try{
+								if(window.Sfx){
+									window.Sfx.play("step")
+								}
+							}catch(err){
+							}
+						}else if(!cookies.recovered){
+							delete window.BoardCallback.recovered
+						}
+					}catch(err){
+					}
 					try{
 						if(cookies.onJail && !window.BoardCallback.jailed){
 							window.BoardCallback.jailed = true
@@ -5006,16 +5647,29 @@ OAuth3.on("ready", function(e){
 						if(OAuth3.xhr){
 							OAuth3.xhr.abort()
 							delete OAuth3.xhr
-
 							window.response = resp
 						}
 					}
-
-					if(typeof window.Poll.ing == "undefined" && !cookies.damage){
+					/*
+						개발 Part 73 (백그라운드 굴림 보호)
+						현행 문제
+						  이 분기는 Roll.ing 을 무조건 지우고 폴링을 켠다.
+						  백그라운드에서 타이머가 늦어져 아직 걷는 중인데
+						  응답 하나가 도착하면 굴림이 끊긴다.
+						  그러면 중간 좌표로 폴링이 나가고,
+						  서버가 클레임을 거절해 앵커로 되돌아간다.
+						조치
+						  굴림이 살아 있으면 폴링 전환을 미룬다.
+						  다 걷고 나면 window.Roll 의 소진 분기가 직접 폴링을 켠다.
+						    if(typeof window.Poll.ing == "undefined"){
+						        window.Poll.ing = setInterval(window.Poll, 600)
+						  즉 여기서 안 켜도 흐름이 끊기지 않는다.
+					*/
+					if(typeof window.Poll.ing == "undefined" && !cookies.damage &&
+						!(window.RollBusy && window.RollBusy())){
 						if(cookies.hash){
 							clearInterval(window.Roll.ing)
 							delete window.Roll.ing
-
 							window.Poll.ing = setInterval(window.Poll, time.balance)
 						}else{
 							window.location.href = OAuth3.host+"/logout"
@@ -5538,10 +6192,28 @@ OAuth3.on("ready", function(e){
 
 			window.BoardPoll = async function(){
 				try{
+					/*
+						개발 Part 73 (굴림 중 폴링 차단)
+						현행 문제
+						  굴림이 시작되면 Roll 분기가 Poll.ing 을 지운다.
+						    clearInterval(window.Poll.ing)
+						    delete window.Poll.ing
+						  그런데 그 사이 이미 예약된 호출이 한 번 더 실행될 수 있고,
+						  MatchRefresh / reboard 등 다른 경로도 Poll() 을 직접 부른다.
+						  그때 self_player 는 걷는 도중의 중간 칸이다.
+						  서버 RingPathReach 는 시작 칸에서 dice 칸 떨어진 곳을 기대하므로
+						  중간 좌표 클레임을 거절하고 자기 계산으로 도착을 정한다.
+						  커밋 nonce 도 아직 없어 앵커가 갱신되지 않으므로
+						  다음 응답의 axis 가 직전 앵커가 되어 되돌아간다.
+						조치
+						  걷는 중에는 폴링을 보내지 않는다.
+						  다 걷고 나면 Roll 의 소진 분기가 폴링을 다시 켠다.
+					*/
+					if(window.RollBusy && window.RollBusy()){
+						return
+					}
 					var self_player = window.players.self()
-
 					var cookies = window.cookies
-
 					if(typeof self_player != "undefined"){
 						if(cookies.hash && !OAuth3.xhr){
 							var url = "https://memepoly.com"
@@ -5623,23 +6295,15 @@ OAuth3.on("ready", function(e){
 								body.x = plant.x
 								body.z = plant.z
 							}
-
-							if(Object.keys(window.map.nonces).length){
-								var rows = []
-
-								for(var row in window.map.nonces){
-									if(window.map.nonces.hasOwnProperty(row)) {
-										if(!window.map.nonces[row].nonce && !window.map.biomes[row.Id]){
-											rows.push(window.map.nonces[row])
-										}
-									}
-								}
-
-								if(rows.length){
-									body.rows = rows
-								}
-							}
-
+							/*
+								개발 Part 68 (바이옴 장식 서버 생성)
+								여기 있던 body.rows 조립을 제거한다.
+								현행은 클라이언트가 Math.random() 으로 뽑은 장식 좌표를
+								매 폴링마다 올려 보냈고, 서버는 values 에 담았다가 버렸다.
+								  console.log("[legacy] skipped " + values.length + " row inserts")
+								장식은 이제 서버가 match.hash 로 결정론 생성해 내려준다.
+								올릴 것도, 받아줄 것도 없다.
+							*/
 							OAuth3.xhr = OAuth3.fetch({
 								method : "POST",
 								url : url,
@@ -5719,12 +6383,68 @@ OAuth3.on("ready", function(e){
 			}
 			window.addEventListener('focus', function(){
 				window.setFrameloop("always")
+				/*
+					개발 Part 73 (복귀 동기화)
+					탭으로 돌아왔다.
+					백그라운드에서 타이머가 늦어져 좌표와 화면이 갈렸을 수 있다.
+					  굴림 중  Roll 이 캐치업으로 스스로 따라잡는다
+					  굴림 끝  화면 상태만 맞추면 된다
+					어느 쪽이든 TileSync 로 슬롯 / body 속성을 현재 좌표에 맞춘다.
+					폴링을 강제로 쏘지는 않는다.
+					굴림이 살아 있는데 폴링이 나가면 중간 좌표가 올라가
+					서버 클레임이 거절되어 앵커로 되돌아간다.
+				*/
+				try{
+					if(window.TileSync){
+						window.TileSync()
+					}
+				}catch(err){
+				}
 			})
-
 			window.addEventListener('blur', function(){
+				/*
+					개발 Part 73 (굴림 중 렌더 유지)
+					현행 문제
+					  탭을 벗어나면 무조건 demand 로 내렸다.
+					  굴리는 중이면 window.Roll 이 좌표를 옮겨도 그려지지 않고,
+					  Player.jsx 의 lerp 보간이 멈춘 채 목표 좌표만 앞서 나간다.
+					  복귀 시 always 로 돌아오는 순간
+					  캐릭터가 여러 칸을 한 번에 미끄러지거나,
+					  그 사이 폴링이 개입하면 앵커로 되돌아간다.
+					조치
+					  굴림이 살아 있으면 렌더를 끄지 않는다.
+					  주사위는 길어야 3초(6칸)이므로 비용이 크지 않다.
+					  다 걷고 나면 Roll 의 소진 분기가 always 로 두므로
+					  다음 blur 에서 정상적으로 내려간다.
+				*/
+				if(window.RollBusy && window.RollBusy()){
+					return
+				}
 				window.setFrameloop("demand")
 			})
-
+			/*
+				개발 Part 73 (탭 가시성)
+				현행은 focus / blur 만 봤다.
+				모바일 브라우저와 일부 데스크톱 환경에서는
+				탭 전환 시 focus 가 오지 않고 visibilitychange 만 오는 경우가 있다.
+				같은 처리를 붙여 두 경로 모두를 덮는다.
+			*/
+			document.addEventListener("visibilitychange", function(){
+				try{
+					if(document.hidden){
+						if(window.RollBusy && window.RollBusy()){
+							return
+						}
+						window.setFrameloop("demand")
+						return
+					}
+					window.setFrameloop("always")
+					if(window.TileSync){
+						window.TileSync()
+					}
+				}catch(err){
+				}
+			})
 			$body.on({
 				click : async function(e){
 					if(window.Mode() != "board"){
@@ -6187,57 +6907,42 @@ OAuth3.on("ready", function(e){
 												cc_address = window.location.hash.replace("#", "0x")
 											}
 
-											if($this.hasClass("Exit")){
+											if($this.hasClass("Exit") || $this.hasClass("Deploy")){
 												/*
-													개발 Part 59 (탈출)
-													게이트에서 나간다.
-													서버가 exitable 로 최종 판정하지만,
-													여기서 먼저 걸러 왕복을 아끼고 사유를 즉시 알린다.
-													키가 없을 때 아무 반응도 없으면
-													"눌러도 안 되는 버튼" 이 되므로 반드시 안내한다.
+													개발 Part 65 (게이트 = 탈출구)
+													Deploy 분기를 흡수한다.
+													  링 위 주사위 이동 = PMC 활동
+													  게이트 = 나가는 문
+													이므로 여기서 역할을 다시 고르게 하지 않는다.
+													판정은 프론트가 먼저 하고 사유를 팝업이 알린다.
+													  게이트 아님 / 탈출 구역 아님  Notice 로 즉시 거절
+													  그 외                          ExitPick 팝업
+													서버 exitable 이 최종 판정이며,
+													팝업의 탈출 버튼은 exitable 일 때만 활성된다.
 												*/
-												if(!window.cookies.enter){
-													return
-												}
-												if(!window.cookies.exitable){
-													var _needs = window.ExitKeys ? window.ExitKeys() : []
-													window.Notice("NO EXIT KEY",
-														_needs.length
-															? ("Carry one of " + _needs.join(" ") + " to extract")
-															: "You need an extraction key",
-														3200)
-													return
-												}
-												if(window.Exit){
-													window.Exit()
-												}
-												return
-											}else if($this.hasClass("Deploy")){
-												/*
-													개발 Part 29 (게이트 출격)
-													게이트(🚪) 칸 전용 출격 진입점.
-													주사위(🎲)와 완전히 분리한다.
-													여기서만 RolePick 이 뜬다.
-												*/
-												if(window.cookies.enter){
-													return
-												}
 												if(window.EdgeReady && !window.EdgeReady()){
 													window.Notice("MAP LOADING", "Board path is not ready", 1800)
 													return
 												}
 												var _gateField = window.EdgeField
 													? window.EdgeField(player.x, player.z) : null
-												if(!_gateField || !_gateField.gate){
-													window.Notice("NO GATE", "Deploy only from a gate tile", 2000)
+												var _onGate = (_gateField && (_gateField.gate || _gateField.drop))
+													? true : false
+												var _onZone = false
+												try{
+													if(!_gateField && window.ExitZone){
+														_onZone = window.ExitZone(player.x, player.z)
+													}
+												}catch(err){
+													_onZone = false
+												}
+												if(!_onGate && !_onZone){
+													window.Notice("NO GATE",
+														"Extract from a gate on the board path", 2400)
 													return
 												}
-												if(window.CanRaid && !window.CanRaid()){
-													window.Notice("NO SLOTS", "Wait for the next match", 2200)
-													return
-												}
-												if(window.RolePick){
-													window.RolePick()
+												if(window.ExitPick){
+													window.ExitPick()
 												}
 												return
 											}else if($this.hasClass("Meta")){
@@ -6565,7 +7270,16 @@ OAuth3.on("ready", function(e){
 												$status.innerHTML = `<div class="loading">
 													<strong>Loading...</strong>
 												</div>`
-												if(OAuth3.xhr){
+												/*
+													개발 Part 67 (폴링 중단 억제)
+													여기서 무조건 abort 하면
+													주사위 커밋을 나르던 폴링이 끊겨
+													앵커가 옛 칸에 굳고 📍 가 뜬다.
+													미정산 nonce 가 있으면 끊지 않는다.
+												*/
+												if(window.PollBreak){
+													window.PollBreak()
+												}else if(OAuth3.xhr){
 													OAuth3.xhr.abort()
 													delete OAuth3.xhr
 												}
@@ -6747,7 +7461,10 @@ OAuth3.on("ready", function(e){
 												$status.innerHTML = ""
 												delete window.SwapIntent
 											}
-											if(OAuth3.xhr){
+											/* 개발 Part 67 : 커밋 폴링은 끊지 않는다 */
+											if(window.PollBreak){
+												window.PollBreak()
+											}else if(OAuth3.xhr){
 												OAuth3.xhr.abort()
 												delete OAuth3.xhr
 											}
@@ -7518,6 +8235,39 @@ OAuth3.on("ready", function(e){
 			window.BoardHashChange = function(e){
 				var cookies = window.cookies
 				document.scrollingElement.scrollTop = 0
+				/*
+					개발 Part 72 (보드 고립 복구)
+					현행 문제
+					  룸에서 보드로 나올 때 좌표를 손대지 않았다.
+					  window.players.self() 는 룸과 보드가 같은
+					  window.current.current.position 을 쓰므로
+					  룸에서 서 있던 칸이 그대로 보드 좌표가 된다.
+					  그 좌표가 링 밖 내륙이면
+					  주사위도 이동도 막혀 고립된다.
+					조치
+					  보드로 나가는 순간 좌표 잠금을 푼다.
+					    current.axis    다음 응답의 axis 를 무조건 채택하게 한다
+					    cookies.axis    옛 룸 좌표를 지운다
+					  서버가 앵커 또는 링 칸으로 교정해 내려주므로
+					  첫 응답에서 정상 좌표로 확정된다.
+					  Snap 을 세워 그 이동을 보간 없이 즉시 반영한다.
+					  (링 반대편까지 기어가는 연출을 막는다)
+					앵커
+					  판이 바뀌지 않았다면 서버 anchor 쿠키가 살아 있다.
+					  서버가 그 칸으로 되돌리므로 진행 상황을 잃지 않는다.
+				*/
+				try{
+					delete window.current.axis
+				}catch(err){
+				}
+				try{
+					if(cookies){
+						delete cookies.axis
+						cookies.dice = 0
+					}
+				}catch(err){
+				}
+				window.Snap = 8
 				window.MapReset()
 				if(window.MapGen){
 					window.MapGen.ready = false

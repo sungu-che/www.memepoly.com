@@ -319,6 +319,17 @@ $(document).on("click", "#dead .btn.myroom", function(e){
 	window.DeadClose()
 	window.Stage.graceCount = 0
 	window.Stage.set("")
+	/*
+		개발 Part 69 (닫음 상태)
+		사용자가 마이룸을 명시적으로 요청했다.
+		이전에 닫아 둔 표식을 해제해 도착 즉시 패널이 열리게 한다.
+	*/
+	try{
+		if(window.MyRoom){
+			window.MyRoom.closed = ""
+		}
+	}catch(err){
+	}
 	window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
 })
 window.Lobby = function(){
@@ -394,19 +405,100 @@ window.Lobby = function(){
 			$actions.prepend('<p class="reason"></p>')
 			$reason = $actions.find(".reason")
 		}
+		var slots = window.RaidSlots()
 		var blocked = window.Stage.blocked ? window.Stage.blocked : ""
-		if(!blocked && !window.CanRaid()){
+		var noSlot = !window.CanRaid()
+		/*
+			개발 Part 72 (보드 고립)
+			링 밖에 있는데 출격 상태도 감옥도 아니면 잘못된 상태다.
+			  주사위는 링 위에서만 굴린다
+			  자유 이동은 출격 / 감옥에서만 된다
+			서버가 좌표를 교정해 내려주지만
+			  링이 아직 확정되지 않았거나
+			  응답이 늦거나
+			  구버전 서버와 붙은 경우
+			교정이 오지 않을 수 있다.
+			그때는 사용자에게 "어떻게 빠져나가는지" 를 알려야 한다.
+		*/
+		var stranded = false
+		try{
+			if(!cookies.enter && !cookies.jail && !cookies.onJail &&
+				!cookies.damage && !cookies.dead &&
+				window.EdgeReady && window.EdgeReady()){
+				var _lp = window.players.self()
+				stranded = !window.IsEdge(_lp.x, _lp.z)
+			}
+		}catch(err){
+			stranded = false
+		}
+		if(!blocked && noSlot){
 			blocked = "No slots left this match"
 		}
 		if(blocked){
 			$raid.addClass("disabled").hide()
-			$reason.show().html('<strong class="head">DEPLOY FAILED</strong>\
-				<span class="body">' + blocked + '</span>')
+			/*
+				개발 Part 70 (슬롯 소진 안내)
+				현행 문제
+				  사유가 영문 한 줄이었고, 다음에 무엇을 해야 하는지 말하지 않았다.
+				  브라우저 뒤로가기로 보드에 떨어진 경우
+				  PMC / UCAV 를 이미 둘 다 써서 나갈 수도 들어갈 수도 없는데
+				  화면에는 "DEPLOY FAILED" 만 남는다.
+				조치
+				  왜 막혔는지 + 지금 할 수 있는 것을 함께 말한다.
+				  슬롯이 둘 다 소진된 경우에는 마이룸을 주 동선으로 강조한다.
+				  다음 판이 시작되면 슬롯이 회복되므로
+				  그때까지 보관함을 정리하는 것이 유일하게 의미 있는 행동이다.
+			*/
+			var _head = "DEPLOY FAILED"
+			var _tip = ""
+			if(noSlot){
+				_head = "NO DEPLOY SLOT"
+				if(slots.aborted){
+					_tip = '<span class="ko">이번 매치에서 전사했습니다. 다음 매치를 기다리세요.</span>\
+						<span class="en">You went down this match. Wait for the next match.</span>'
+				}else{
+					_tip = '<span class="ko">이번 매치의 PMC / UCAV 출격을 모두 사용했습니다.</span>\
+						<span class="en">Both PMC and UCAV are used this match.</span>'
+				}
+				_tip += '<span class="ko">마이룸에서 보관함을 정리하고 다음 매치를 준비하세요.</span>\
+					<span class="en">Sort your stash in My Room and wait for the next match.</span>'
+			}
+			$reason.show().html('<strong class="head">' + _head + '</strong>\
+				<span class="body">' + blocked + '</span>' + _tip)
 		}else{
 			$raid.removeClass("disabled").show()
 			$reason.hide().html("")
 		}
+		/*
+			슬롯이 없으면 마이룸이 유일한 선택지다.
+			주 버튼처럼 보이게 클래스를 붙인다(CSS 가 색을 바꾼다).
+		*/
+		if(noSlot){
+			$stash.addClass("primary")
+		}else{
+			$stash.removeClass("primary")
+		}
 		$stash.show()
+		/*
+			개발 Part 72 (보드 고립)
+			링 밖 고립 상태면 복귀 버튼을 띄운다.
+			누르면 앵커(또는 링 아무 칸)로 되돌려 폴링을 다시 돌린다.
+			서버 교정과 같은 결과를 프론트에서도 만들 수 있는 이유는
+			앵커와 링(window.fields)이 전부 결정론 데이터이기 때문이다.
+		*/
+		var $back = $actions.find(".btn.reboard")
+		if(stranded){
+			if(!$back.length){
+				$actions.append('<a class="btn reboard primary">\
+					<span class="ko">보드 경로로 복귀</span>\
+					<span class="en">Return to the board path</span>\
+				</a>')
+				$back = $actions.find(".btn.reboard")
+			}
+			$back.show()
+		}else if($back.length){
+			$back.hide()
+		}
 	}
 	window.Stage.set("lobby")
 }
@@ -602,6 +694,17 @@ window.StageSync = function(cookies){
 		window.Notice("EXTRACTED", "Loot moved to My Room", 2600)
 		window.Stage.graceCount = 0
 		window.Stage.set("")
+		/*
+			개발 Part 69 (닫음 상태)
+			탈출 전리품을 확인해야 하므로 도착 시 한 번은 열어야 한다.
+			직전에 마이룸을 닫아 둔 상태였다면 표식을 해제한다.
+		*/
+		try{
+			if(window.MyRoom){
+				window.MyRoom.closed = ""
+			}
+		}catch(err){
+		}
 		setTimeout(function(){
 			window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
 		}, 1200)
@@ -650,16 +753,18 @@ window.StageSync = function(cookies){
 		delete window.StageSync.exitWarned
 	}
 	if(cookies.miaRolled){
-		var _saved = cookies.miaSaved ? cookies.miaSaved * 1 : 0
 		var _burned = cookies.miaBurned ? cookies.miaBurned * 1 : 0
+		/*
+			개발 Part 70 (MIA 전량 소각)
+			miaSaved 는 항상 0 이다. 분기를 없애고 소실만 알린다.
+			"보관함에 넣었어야 한다" 를 함께 말해
+			다음 판에서 어떻게 해야 하는지 알려준다.
+		*/
 		var _miaBody = "The match ended while you were deployed."
-		if(_saved > 0){
-			_miaBody += " " + _saved + " kept in your stash"
-			if(_burned > 0){
-				_miaBody += ", " + _burned + " lost"
-			}
-		}else if(_burned > 0){
-			_miaBody += " " + _burned + " lost"
+		if(_burned > 0){
+			_miaBody += " " + _burned + " item(s) lost. Store loot in My Room next time."
+		}else{
+			_miaBody += " Store loot in My Room before the match ends."
 		}
 		window.Notice("MIA", _miaBody, 3200)
 		window.Stage.graceCount = 0
@@ -743,11 +848,36 @@ window.StageSync = function(cookies){
 			}
 		}
 		if(window.Stage.current == "lobby" && _onBoard && !window.Stage.blocked){
-			window.Stage.set("")
-			return
+			/*
+				개발 Part 70 (슬롯 소진)
+				보드 위(링/감옥/앵커)에 있으면 로비를 닫는 것이 기본이다.
+				다만 출격 슬롯이 하나도 없으면 이야기가 다르다.
+				  주사위는 굴릴 수 있지만 필드로 나갈 수 없고
+				  탈출도 출격 상태가 아니면 의미가 없다
+				이 상태에서 로비를 닫으면
+				"왜 아무 것도 안 되는지" 를 알려줄 화면이 사라진다.
+				슬롯이 있을 때만 닫는다.
+			*/
+			if(window.CanRaid()){
+				window.Stage.set("")
+				return
+			}
 		}
 		if(window.Stage.current != "lobby" && window.Stage.current != "raid"){
-			if(window.Mode() == "board" && !_onBoard){
+			/*
+				개발 Part 70 (뒤로가기 진입)
+				현행 문제
+				  브라우저 뒤로가기로 마이룸에서 보드로 나오면
+				  해시만 비고 좌표는 링 위에 남는 경우가 많다.
+				  그러면 _onBoard 가 true 라 로비가 뜨지 않고,
+				  PMC / UCAV 를 둘 다 쓴 상태여도 아무 안내가 없다.
+				  사용자는 "게임이 멈췄다" 고 느낀다.
+				조치
+				  슬롯이 하나도 없으면 위치와 무관하게 로비를 띄운다.
+				  로비가 사유와 마이룸 이동 버튼을 보여준다.
+				사망 / MIA 는 위쪽 분기가 이미 각각 처리한다.
+			*/
+			if(window.Mode() == "board" && (!_onBoard || !window.CanRaid())){
 				window.Lobby()
 			}
 		}
@@ -776,7 +906,82 @@ $(document).on("click", "#lobby .btn.stash", function(e){
 	}
 	window.Stage.graceCount = 0
 	window.Stage.set("")
+	/* 개발 Part 69 : 명시적 진입이므로 닫음 표식을 해제한다 */
+	try{
+		if(window.MyRoom){
+			window.MyRoom.closed = ""
+		}
+	}catch(err){
+	}
 	window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
+})
+/*
+	개발 Part 72 (보드 고립 복구)
+	링 밖에 고립된 상태에서 보드 경로로 되돌린다.
+	  1) 앵커가 있으면 그 칸
+	  2) 없으면 window.fields 에서 육지 링 칸을 무작위로
+	RingReturn 이 메시 / 커서 / 플레이어 좌표를 한 번에 맞추고
+	Snap 을 세워 보간 없이 즉시 이동시킨다.
+	그 뒤 폴링을 즉시 한 번 돌려 서버 좌표를 확정한다.
+*/
+$(document).on("click", "#lobby .btn.reboard", function(e){
+	e.preventDefault()
+	var target = null
+	try{
+		target = window.RingAnchor ? window.RingAnchor() : null
+	}catch(err){
+		target = null
+	}
+	if(!target){
+		try{
+			var f = window.fields
+			if(f && f.length){
+				for(var i = 0; i < 64; i++){
+					var r = f[Math.floor(Math.random() * f.length)]
+					if(!r){
+						continue
+					}
+					var b = window.map.biomes[r.x + ":" + r.z]
+					if(b && !b.water){
+						target = { x : r.x, z : r.z }
+						break
+					}
+				}
+				if(!target && f[0]){
+					target = { x : f[0].x, z : f[0].z }
+				}
+			}
+		}catch(err){
+			target = null
+		}
+	}
+	if(!target){
+		window.Notice("MAP LOADING", "Board path is not ready", 2000)
+		return
+	}
+	window.Stage.graceCount = 0
+	window.Stage.set("")
+	if(window.RingReturn){
+		window.RingReturn(target)
+	}
+	window.Notice("BACK ON PATH",
+		"Returned to " + Math.floor(target.x) + ", " + Math.floor(target.z), 2400)
+	try{
+		if(window.Sfx){
+			window.Sfx.play("step")
+		}
+	}catch(err){
+	}
+	try{
+		if(OAuth3.xhr){
+			OAuth3.xhr.abort()
+			delete OAuth3.xhr
+		}
+		if(window.Poll){
+			window.Poll()
+		}
+	}catch(err){
+	}
 })
 window.addEventListener("hashchange", function(){
 	if(window.Stage.raidTimer){
