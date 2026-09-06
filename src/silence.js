@@ -1,4 +1,25 @@
-if (import.meta.env.DEV) {
+/*
+	개발 Part 79 (외부 주입 오류 억제 범위)
+	현행 문제
+	  이 파일 전체가 import.meta.env.DEV 로 감싸여 있었다.
+	  그래서 프로덕션에서는 아래 예외가 그대로 콘솔에 남는다.
+	    Uncaught TypeError: Cannot read properties of undefined (reading 'startTime')
+	        at et.reportAllChanges (<anonymous>:2:19429)
+	  이건 web-vitals 계측기가 확장 프로그램으로 주입돼 발생하는 것이고
+	  memepoly 번들에는 reportAllChanges 라는 식별자 자체가 없다.
+	  그런데 실제 게임 버그(사망 후 마이룸 이동 불가 등)를 조사할 때
+	  이 예외가 먼저 눈에 띄어 원인을 오판하게 만든다.
+	조치
+	  환경 가드를 없애고 항상 등록한다.
+	억제 범위를 넓히지 않는 이유
+	  아래 두 가지 조건은 그대로 유지한다.
+	    1) e.filename 이 있으면 즉시 통과시킨다.
+	       우리 번들이 던진 예외는 반드시 파일명을 갖는다.
+	    2) 화이트리스트 패턴에 걸릴 때만 삼킨다.
+	  즉 "파일명 없는 예외 중 알려진 외부 패턴" 만 막는다.
+	  범위를 넓히면 진짜 버그를 가리게 되므로 지금 폭이 정확하다.
+*/
+{
 	var _consoleError = console.error
 	var _ignorePatterns = [
 		"is unrecognized in this browser"

@@ -33,17 +33,37 @@ window.Panel.open = function(kind, head, body){
 
 window.CountAssets = function(){
 	var out = {}
-
-	$("emojis .items .emoji_asset[emoji]").each(function(){
+	/*
+		개발 Part 81 (아이템 이중 집계)
+		현행 문제
+		  "emojis .items .emoji_asset[emoji]" 는 후손 선택자다.
+		  문서에 .items 가 두 개 있으므로
+		    .deck > .items                        진짜 아이템 목록
+		    .deck > .emojis > .emoji_asset.items  덱 안 자리표시자
+		  같은 아이템이 두 번 매칭됐다.
+		  out[emoji] = cnt 는 덮어쓰기라 개수 자체는 같지만,
+		  두 컨테이너의 cnt 가 어긋난 프레임에서는 값이 갈린다.
+		  더 큰 문제는 이 함수를 쓰는 HasMaterials 다.
+		  중복 주입으로 한쪽이 갱신되지 않은 순간에
+		  옛 개수를 채택해 "재료가 있다" 고 오판한다.
+		  그러면 크래프트 / 건설 버튼이 활성화되는데
+		  서버는 insufficient_material 로 거절한다.
+		  "눌리는데 안 되는 버튼" 이 된다.
+		조치
+		  진짜 목록 하나만 센다.
+		  ItemsDeck() 은 src/index.js 가 정의한다.
+	*/
+	var $deck = window.ItemsDeck
+		? window.ItemsDeck()
+		: $("emojis .items").not(".emoji_asset")
+	$deck.find(".emoji_asset[emoji]").each(function(){
 		var $t = $(this)
 		var emoji = $t.attr("emoji")
 		var cnt = $t.attr("cnt") ? $t.attr("cnt") * 1 : 1
-
 		if(emoji){
 			out[emoji] = cnt
 		}
 	})
-
 	return out
 }
 
@@ -140,42 +160,20 @@ window.PropertyPanel = function(){
 	var owner = tile.owner ? tile.owner : ""
 	var level = tile.level ? tile.level * 1 : 0
 	var balance = cookies.balance ? cookies.balance * 1 : 0
-	/*
-		개발 Part 33 (국가 소유)
-		현행은 owner == ZERO 를 전부 "경매 땅" 으로 봤다.
-		개발 Part 33 부터 ZERO 에는 두 가지가 섞인다.
-		  nation true   건물이 선 국가 부동산. 국고가 쌓인다
-		  nation false  건물 없는 몰수지. 기존대로 경매 대상
-		국가 부동산은 밟는 방식에 따라 결과가 다르므로 안내만 한다.
-		  주사위로 도착  통행료를 국고에 낸다
-		  걸어서 도착    국고를 수금한다
-		둘 다 서버가 도착 시점에 자동 처리한다.
-		여기서 버튼을 두면 "패널을 열어야만 수금" 이 되어
-		이미 지나간 칸을 소급 수금하는 구멍이 생긴다.
-	*/
 	var isNation = tile.nation ? true : false
 	var treasury = tile.treasury ? tile.treasury * 1 : 0
 	if(isNaN(treasury)){
 		treasury = 0
 	}
-	/*
-		개발 Part 71 (매수 제안)
-		현행 문제
-		  남의 땅이면 통행료만 알리고 패널을 닫았다.
-		  즉 이미 지어진 땅은 어떤 방식으로도 거래할 수 없었고,
-		  좋은 자리를 먼저 차지한 사람이 판이 끝날 때까지 독점했다.
-		조치
-		  제안 행을 그린다.
-		  제안가는 서버가 계산해 cookies.tile.offerPrice 로 내려준다.
-		  프론트가 따로 계산하면 규칙이 두 벌이 되어 갈린다.
-		이미 제안이 열려 있으면(offerOpen) 새로 걸 수 없다.
-		소유자가 답할 시간을 줘야 하기 때문이다.
-	*/
 	if(owner && owner != me && !isNation && owner != ZERO){
 		var offerPrice = tile.offerPrice ? tile.offerPrice * 1 : 0
 		var offerBase = tile.offerBase ? tile.offerBase * 1 : 0
 		if(!offerPrice || isNaN(offerPrice)){
-			window.Notice("OWNED", "Toll " + tile.toll + " 🪙", 2200)
+			if((level * 1) <= 0){
+				window.Notice("OWNED LAND", "Someone already claimed this tile", 2200)
+			}else{
+				window.Notice("OWNED", "Toll " + tile.toll + " 🪙", 2200)
+			}
 			return
 		}
 		var offerBody = '<div class="row owned disabled">\
@@ -249,18 +247,20 @@ window.PropertyPanel = function(){
 	}
 
 	if(!owner || isAuctionLand){
-		var steps = [1.0, 1.5, 2.0]
-
-		for(var s = 0; s < steps.length; s++){
-			var base = tile.auction ? tile.auction.bid : window.PropertyCost[1]
-			var bid = Math.round(base * steps[s]) + (tile.auction ? 10 : 0)
-			var canBid = balance >= bid
-
-			body += '<div class="row bid ' + (canBid ? "" : "disabled") + '" data-bid="' + bid + '">\
-				<span class="name">🔨 Bid ' + bid + ' 🪙</span>\
-				<span class="cost">' + (tile.auction ? "outbid current" : "open auction") + '</span>\
-			</div>'
+		var _landPrice = (window.PropertyCost && window.PropertyCost[1])
+			? window.PropertyCost[1] * 1 : 200
+		if(isNaN(_landPrice) || _landPrice <= 0){
+			_landPrice = 200
 		}
+		var _canBuy = balance >= _landPrice
+		body += '<div class="row bid ' + (_canBuy ? "" : "disabled") + '" data-bid="' + _landPrice + '">\
+			<span class="name">🔨 Buy ' + _landPrice + ' 🪙</span>\
+			<span class="cost">' + (_canBuy ? "claim this tile" : "not enough coins") + '</span>\
+			<span class="mat">\
+				<span class="ko">즉시 소유합니다. 이후 건설할 수 있습니다.</span>\
+				<span class="en">You own it instantly. Build afterwards.</span>\
+			</span>\
+		</div>'
 	}
 
 	for(var lv = level + 1; lv <= 4; lv++){
@@ -585,13 +585,6 @@ $(document).on("click", "#panel .row", function(e){
 
 	if(window.Panel.kind == "property"){
 		if($t.hasClass("offer")){
-			/*
-				개발 Part 71 (매수 제안)
-				서버는 cc == "auction" 하나로 받는다.
-				  주인 없는 땅  경매 입찰
-				  주인 있는 땅  매수 제안
-				판정은 서버가 owner_id 로 하므로 프론트는 금액만 보낸다.
-			*/
 			var offer = $t.attr("data-offer") * 1
 			if(window.Auction){
 				window.Auction(offer)
@@ -603,7 +596,7 @@ $(document).on("click", "#panel .row", function(e){
 			if(window.Auction){
 				window.Auction(bid)
 			}
-			window.Notice("BID PLACED", bid + " 🪙", 2000)
+			window.Notice("PURCHASING", bid + " 🪙 · claiming the tile", 2000)
 		}else{
 			var lv = $t.attr("data-level") * 1
 			if(window.Property){

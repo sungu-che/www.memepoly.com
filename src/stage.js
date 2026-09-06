@@ -234,6 +234,25 @@ window.Dead = function(){
 	if(!cookies){
 		return
 	}
+	/*
+		개발 Part 80 (사망 패널 모드 가드)
+		이 함수는 body[dead] 와 body[stage="dead"] 를 세운다.
+		둘 다 Experience.jsx 개발 Part 69 의 클릭 게이트가 보는 속성이라
+		룸 모드에서 켜지면 마이룸 3D 클릭이 통째로 막힌다.
+		#dead 는 전체 화면 레이어이므로 마이룸 패널 위에도 겹친다.
+		StageSync 에 모드 가드를 넣었지만 Lobby() 안에도 직접 호출이 있다.
+		  if(cookies.damage || cookies.dead){ return window.Dead() }
+		진입점 자체를 막아 어느 경로로 불려도 안전하게 한다.
+		사망 사실을 잃지 않는다
+		  진실 원천은 서버 cookies.damage / cookies.dead 다.
+		  보드로 돌아오면 StageSync 가 같은 자리에서 다시 띄운다.
+	*/
+	try{
+		if(window.Mode && window.Mode() != "board"){
+			return null
+		}
+	}catch(err){
+	}
 	var hash = cookies.address ? cookies.address : cookies.hash
 	var deadBy = cookies.deadBy ? cookies.deadBy : ""
 	var deadAt = cookies.deadAt ? cookies.deadAt : ""
@@ -309,6 +328,28 @@ window.Dead = function(){
 window.DeadClose = function(){
 	$("#dead").removeClass("on")
 	$("body").removeAttr("dead")
+	/*
+		개발 Part 80 (사망 패널 정리)
+		현행 문제
+		  Dead() 는 두 가지를 세웠다.
+		    $("body").attr("dead", "true")
+		    window.Stage.set("dead")   -> body[stage="dead"]
+		  그런데 DeadClose 는 dead 만 내렸다.
+		  body[stage] 가 남으면 Experience.jsx 개발 Part 69 의
+		  클릭 게이트가 계속 막는다.
+		    body[myroom/panel/dead/stage] 중 하나라도 있으면 클릭 무시
+		  "패널은 닫았는데 여전히 안 움직인다" 의 원인이다.
+		조치
+		  세운 것을 짝맞춰 내린다.
+		  다른 스테이지(lobby / raid)를 지우지 않도록
+		  현재 값이 dead 일 때만 비운다.
+	*/
+	try{
+		if(window.Stage && window.Stage.current === "dead"){
+			window.Stage.set("")
+		}
+	}catch(err){
+	}
 }
 $(document).on("click", "#dead .btn.myroom", function(e){
 	e.preventDefault()
@@ -330,7 +371,55 @@ $(document).on("click", "#dead .btn.myroom", function(e){
 		}
 	}catch(err){
 	}
-	window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
+	/*
+		개발 Part 80 (동일 해시 진입)
+		현행 문제
+		  location.hash 에 현재와 같은 값을 대입하면
+		  브라우저는 hashchange 를 발화하지 않는다.
+		  그러면 아래가 전부 실행되지 않는다.
+		    window.onhashchange -> RoomHashChange
+		      폴링 재시작(Poll.ing)
+		      body[world] 갱신
+		      좌표 / 카메라 리셋
+		  사망 시 BoardCallback 이 폴링을 끊어 두므로
+		    clearInterval(window.Poll.ing)
+		    delete window.Poll.ing
+		  폴링이 영영 돌아오지 않는다.
+		  화면에서는 마이룸인데 서버와 통신이 없는 상태가 된다.
+		이 상황이 실제로 생기는 경로
+		  개발 Part 80 가드 이전에는 늦게 도착한 보드 응답이
+		  룸 모드에서 Dead() 를 다시 띄웠다.
+		  이미 마이룸에 있으므로 해시가 같고, 버튼을 눌러도 무반응이었다.
+		  "마이룸으로 갔는데 아무것도 안 된다" 가 이것이다.
+		조치
+		  해시가 이미 목적지면 대입 대신 직접 호출한다.
+		  window.onhashchange 는 src/index.js 가 정의하며
+		  내부에서 Mode() 를 다시 읽으므로 인자 없이 불러도 안전하다.
+	*/
+	var _target = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
+	var _now = ""
+	try{
+		_now = String(window.location.hash || "").replace("#", "")
+	}catch(err){
+		_now = ""
+	}
+	if(_now.toLowerCase() === String(_target).toLowerCase()){
+		console.log("[stage] already in my room. syncing without hashchange")
+		try{
+			if(window.onhashchange){
+				window.onhashchange()
+			}
+		}catch(err){
+		}
+		try{
+			if(window.MyRoomOpen){
+				window.MyRoomOpen()
+			}
+		}catch(err){
+		}
+		return
+	}
+	window.location.hash = _target
 })
 window.Lobby = function(){
 	var cookies = window.cookies
@@ -644,6 +733,59 @@ window.StageSync = function(cookies){
 			}
 		}
 	}
+	/*
+		개발 Part 80 (스테이지 모드 가드)
+		현행 문제
+		  StageSync 는 보드 전용 상태 머신인데 모드를 보지 않는다.
+		  호출부는 BoardCallback 뿐이지만,
+		  "호출 시점의 모드" 와 "응답 도착 시점의 모드" 가 다를 수 있다.
+		    1) 보드 폴링이 나간다 (아직 응답 전)
+		    2) 사망 응답이 먼저 도착 -> Dead() -> body[dead] / body[stage="dead"]
+		    3) 사용자가 마이룸으로 이동 -> 룸 모드
+		    4) 1번 응답이 뒤늦게 도착
+		       Callback 은 Mode() 로 라우팅하지만
+		       이미 실행 중이던 BoardCallback 은 끝까지 돈다
+		       -> StageSync 재실행 -> cookies.damage 가 여전히 true
+		       -> Dead() 가 룸 화면에서 body[dead] 를 다시 세운다
+		  그러면 Experience.jsx 개발 Part 69 의 클릭 게이트가
+		  마이룸에서 3D 클릭을 통째로 막는다.
+		  개발 Part 78 의 룸 측 재확인이 지워도 다음 응답이 다시 세우는
+		  싸움이 되므로 근본에서 막는다.
+		조치
+		  룸 모드에서는 스테이지 판정을 하지 않는다.
+		  잃는 것이 없다.
+		    진실 원천은 서버 쿠키(damage / dead / enter / mia)이고
+		    보드로 돌아오면 다음 폴링이 같은 자리에서 다시 판정한다.
+		  대신 룸에서 남아 있을 수 있는 보드 오버레이를 여기서 내린다.
+		룰셋 서명 비교보다 뒤에 두는 이유
+		  그 검사는 모드와 무관한 버전 확인이라 룸에서도 유효하다.
+	*/
+	try{
+		if(window.Mode && window.Mode() != "board"){
+			if(window.Stage.raidTimer){
+				clearInterval(window.Stage.raidTimer)
+				delete window.Stage.raidTimer
+			}
+			if(window.Stage.timeoutTimer){
+				clearTimeout(window.Stage.timeoutTimer)
+				delete window.Stage.timeoutTimer
+			}
+			if(window.Stage.miaTimer){
+				clearTimeout(window.Stage.miaTimer)
+				delete window.Stage.miaTimer
+			}
+			window.Stage.graceCount = 0
+			if(window.Stage.current){
+				window.Stage.set("")
+			}
+			window.DeadClose()
+			$("body").removeAttr("game").removeAttr("jail")
+			$("#lobby, #raid").removeClass("on")
+			$("#raid .progress .bar").css("width", "0")
+			return
+		}
+	}catch(err){
+	}
 	if(window.Stage.blocked && window.CanRaid()){
 		window.Stage.blocked = ""
 	}
@@ -663,6 +805,12 @@ window.StageSync = function(cookies){
 		$("#lobby").removeClass("on")
 		$("#raid .progress .bar").css("width", "0")
 		window.Stage.graceCount = 0
+		$("body")
+			.removeAttr("jail")
+			.removeAttr("edge")
+			.removeAttr("diceable")
+			.removeAttr("dicehome")
+			.removeAttr("bombable")
 		if(window.Stage.current != "dead"){
 			window.Dead()
 		}
@@ -913,7 +1061,38 @@ $(document).on("click", "#lobby .btn.stash", function(e){
 		}
 	}catch(err){
 	}
-	window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
+	/*
+		개발 Part 80 (동일 해시 진입)
+		dead 패널의 .btn.myroom 과 같은 구조다.
+		로비가 룸 모드에서 떠 있는 경우는 없어야 하지만,
+		개발 Part 80 가드 이전 버전이 캐시에 남아 있거나
+		뒤로가기 복원으로 그 상태가 재현될 수 있다.
+		두 진입점의 동작을 같게 맞춘다.
+	*/
+	var _stashTarget = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
+	var _stashNow = ""
+	try{
+		_stashNow = String(window.location.hash || "").replace("#", "")
+	}catch(err){
+		_stashNow = ""
+	}
+	if(_stashNow.toLowerCase() === String(_stashTarget).toLowerCase()){
+		console.log("[stage] already in my room. syncing without hashchange")
+		try{
+			if(window.onhashchange){
+				window.onhashchange()
+			}
+		}catch(err){
+		}
+		try{
+			if(window.MyRoomOpen){
+				window.MyRoomOpen()
+			}
+		}catch(err){
+		}
+		return
+	}
+	window.location.hash = _stashTarget
 })
 /*
 	개발 Part 72 (보드 고립 복구)
@@ -1003,4 +1182,35 @@ window.addEventListener("hashchange", function(){
 	$("#raid .progress .bar").css("width", "0")
 	window.Stage.graceCount = 0
 	window.Stage.set("")
+	/*
+		개발 Part 80 (오버레이 정리)
+		현행 문제
+		  이 리스너는 타이머와 Stage.current 만 정리하고
+		  DOM 에 남은 보드 전용 오버레이는 그대로 뒀다.
+		    body[dead]   Dead() 가 세운다. else 분기가 없는 룸에서는 안 지워진다
+		    body[game]   BoardCallback 이 세운다. 같은 이유로 남는다
+		    body[jail]   StageSync 가 세운다
+		    #dead        전체 화면 레이어
+		  전부 Experience.jsx 개발 Part 69 의 클릭 게이트에 걸리거나
+		  화면을 덮어 마이룸 입력을 봉쇄한다.
+		조치
+		  룸으로 넘어갈 때 함께 내린다.
+		  보드로 나갈 때는 건드리지 않는다.
+		  거기서는 다음 폴링이 서버 쿠키로 정확히 다시 세운다.
+		  여기서 지우면 사망 상태가 한 프레임 깜빡인다.
+	*/
+	try{
+		if(window.Mode && window.Mode() == "room"){
+			window.DeadClose()
+			$("body")
+				.removeAttr("game")
+				.removeAttr("jail")
+				.removeAttr("edge")
+				.removeAttr("diceable")
+				.removeAttr("dicehome")
+				.removeAttr("bombable")
+			$("#lobby, #raid").removeClass("on")
+		}
+	}catch(err){
+	}
 })

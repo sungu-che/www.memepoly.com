@@ -32,22 +32,6 @@ textures.black.magFilter = THREE.NearestFilter
 textures.black.minFilter = THREE.LinearMipMapLinearFilter
 
 var PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
-/*
-	개발 Part 70 (소유 타일 표시)
-	현행 문제
-	  건물을 지어도 바닥은 바이옴 색 그대로였다.
-	  타일 위 이모지(🪵 / 🏠 / 🏪 / 🏰)만 바뀌므로
-	  누구 땅인지 알려면 밟아서 툴팁을 열어야 했다.
-	조치
-	  소유자 해시로 만든 blockies 를 바닥 텍스처로 쓴다.
-	  마이룸의 OpenTile 과 같은 방식이며,
-	  룸에서 이미 검증된 표현이라 학습 비용이 없다.
-	캐시
-	  타일마다 CanvasTexture 를 만들면 GPU 메모리가 금방 찬다.
-	  소유자당 하나만 만들어 공유한다.
-	  판이 바뀌어도 같은 계정이면 같은 아이콘이므로 비우지 않는다.
-	  상한을 두어 무한 증가를 막는다.
-*/
 var OwnerTextures = {}
 var OwnerTextureLimit = 64
 window.OwnerTexture = function(hash){
@@ -98,9 +82,17 @@ window.TileOwner = function(field){
 	if(!field || !field.property){
 		return ""
 	}
-	if((field.property.level * 1) <= 0){
-		return ""
-	}
+	/*
+		개발 Part 87 (즉시 구매)
+		현행은 level 0 이면 무조건 "" 를 돌려줬다.
+		즉시 구매로 "주인은 있는데 건물은 없는" 칸이 생기므로
+		그 조건을 제거한다.
+		주인 없는 빈 땅은 아래 owner 검사에서 걸러진다.
+		  owner 미설정   -> ""
+		  ZERO(국유/경매) -> ""
+		국가 부동산은 level > 0 + owner 없음이라
+		바로 아래 nation 검사가 계속 담당한다.
+	*/
 	if(field.property.nation){
 		return ""
 	}
@@ -133,13 +125,27 @@ window.FieldsSync = function(force){
 	var _isRing = next.ring ? true : false
 	next.forEach(function(field, index){
 		if(_isRing){
-			if(index % 45 == 0){
-				field.jail = true
-			}else if(index % 9 == 0){
-				field.drop = "❓"
-				field.gate = true
-			}else if(index % 3 == 0){
-				field.item = "❔"
+			/*
+				개발 Part 89 (jail 간격)
+				worldService.toTileRows 와 완전히 같은 식이어야 한다.
+				어긋나면 클릭 판정과 화면 표시가 서로 다른 칸을 가리킨다.
+				  slot = index / 3
+				  slot % 4 === 3   jail
+				  slot % 3 === 0   gate ❓
+				  그 외            item ❔
+				jail 에는 drop 을 주지 않는다.
+				서버가 field.drop 을 게이트 드랍 소각과 탈출구 판정에 쓴다.
+			*/
+			if(index % 3 == 0){
+				var _slot = index / 3
+				if(_slot % 4 == 3){
+					field.jail = true
+				}else if(_slot % 3 == 0){
+					field.drop = "❓"
+					field.gate = true
+				}else{
+					field.item = "❔"
+				}
 			}
 		}
 		field.index = index
@@ -243,14 +249,6 @@ export const Experience = () => {
 					}
 				}
 			}else if(cookies.axis){
-				/*
-					개발 Part 14 (검수) - G2
-					현행은 바이옴이 없으면 position 을 만들지 않고
-					아래 랜덤 스폰 루프로 빠져 저장 좌표를 버렸다.
-					또한 axis 의 y 는 서버가 +1 오프셋을 더한 값이라
-					그대로 쓰면 캐릭터가 공중에 떴다.
-					window.AxisParse 가 두 문제를 함께 처리한다.
-				*/
 				var _ax = window.AxisParse ? window.AxisParse(cookies.axis) : null
 				if(_ax && _ax.ok){
 					position = {
@@ -456,20 +454,13 @@ export const Experience = () => {
 
 	var point = {}
 	var onClick = function(e){
-		/*
-			개발 Part 69 (패널 위 클릭 차단)
-			마이룸 패널 / 로비 / 레이드 / 사망 / 패널 레이어가 열려 있으면
-			3D 클릭을 처리하지 않는다.
-			CSS 가 대부분 막고 있지만,
-			  레이어가 닫히는 프레임에 이미 큐에 들어간 클릭
-			  transition 중이라 pointer-events 가 아직 살아 있는 순간
-			이 두 경우에 캐릭터가 엉뚱한 칸으로 튄다.
-			body 속성 하나로 한 번 더 거른다.
-		*/
 		try{
 			var $b = $("body")
-			if($b.attr("myroom") || $b.attr("panel") ||
-				$b.attr("dead") || $b.attr("stage")){
+			var _gateRoom = window.Mode() == "room"
+			if($b.attr("myroom") || $b.attr("panel")){
+				return
+			}
+			if(!_gateRoom && ($b.attr("dead") || $b.attr("stage"))){
 				return
 			}
 		}catch(err){
@@ -493,7 +484,7 @@ export const Experience = () => {
 				var _canMove = _isRoom
 					? true
 					: (window.CanFreeMove ? window.CanFreeMove() : true)
-				if((_isRoom || cookies.axis) && !cookies.damage){
+				if((_isRoom || cookies.axis) && (_isRoom || !cookies.damage)){
 					if(e.point){
 						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
 						var biome = window.map.biomes[_point.x+":"+_point.z]
@@ -526,7 +517,7 @@ export const Experience = () => {
 									}
 									return
 								}
-								if(window.CanMoveTo && !window.CanMoveTo(point.x, point.z)){
+								if(!_isRoom && window.CanMoveTo && !window.CanMoveTo(point.x, point.z)){
 									try{
 										var _mr = window.CanMoveTo.reason
 										if(_mr === "anchor"){
@@ -759,6 +750,28 @@ export const Experience = () => {
 					<planeGeometry attach="geometry" args={[0.94, 0.94]} />
 					<meshBasicMaterial attach="material" map={texture} transparent opacity={0.92} />
 				</mesh>
+				{/*
+					개발 Part 85 (지뢰찾기 숫자)
+					서버가 board_objects.dice 로 내려준 인접 지뢰 수를 바닥에 새긴다.
+					  ""    빈 칸(0). 아무 것도 그리지 않는다
+					  1~8   숫자
+					  💣    밟아서 터진 칸
+					값이 없으면 노드를 만들지 않는다.
+					Text 는 파일 상단에서 이미 import 되어 있다.
+				*/}
+				{props.value ? (
+					<Text
+						rotation-x={-Math.PI / 2}
+						rotation-z={Math.PI / 0.0815}
+						position={[0, 0.06, 0]}
+						fontSize={0.42}
+						color="#ffffff"
+						outlineWidth={0.035}
+						outlineColor="#000000"
+						anchorX="center"
+						anchorY="middle"
+					>{props.value}</Text>
+				) : null}
 				<Html className="clipped">
 					<div className="emoji color open" x={props.position.x} z={props.position.z}></div>
 				</Html>
@@ -866,11 +879,26 @@ export const Experience = () => {
 			if(emoji){
 				if(field){
 					if(field.jail){
+						/*
+							개발 Part 89 (jail 표시)
+							현행은 바닥색과 SAFE 라벨뿐이라 멀리서 구분이 안 됐다.
+							게이트와 같은 자리에 ❓ 를 세운다.
+							문(🚪)은 게이트 전용이므로 여기엔 두지 않는다.
+							  jail  회보라 바닥 + ❓
+							  gate  노란 바닥 + ❓ + 🚪
+							  item  일반 바닥 + ❔
+							useLoader 는 1개다. 이 갈래의 기본 반환과 같은 수이므로
+							훅 순서가 어긋나지 않는다.
+						*/
 						return <>
 						<group position={props.position}>
 							<mesh position={[0, 0, 0.005]} onClick={onClick}>
 								<boxGeometry attach="geometry" args={[1, 1]} />
 								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color="#5a5a7a" />
+							</mesh>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+								<planeGeometry attach="geometry" args={[0.7, 0.7]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode("❓")}.png`)} transparent />
 							</mesh>
 							<Html className="clipped">
 								<div className="emoji color jail" x={props.position.x} z={props.position.z}></div>
@@ -941,6 +969,43 @@ export const Experience = () => {
 						</group>
 						</>
 					}
+					/*
+						개발 Part 87 (빈 땅 소유 표시)
+						즉시 구매로 "주인은 있는데 건물은 없는" 칸이 생긴다.
+						현행 분기는 level > 0 일 때만 blockies 를 깔았으므로
+						땅을 사도 화면이 전혀 바뀌지 않았다.
+						여기서 바닥만 소유자 아이콘으로 덮는다.
+						  건물 이모지는 없다(아직 짓지 않았다)
+						  높이는 0.52 로 부동산 분기와 같다
+						useLoader 는 1개다. 이 갈래의 기본 반환과 같은 수이므로
+						훅 순서가 어긋나지 않는다.
+					*/
+					if(field.property && (field.property.level * 1) <= 0){
+						var landHash = window.TileOwner ? window.TileOwner(field) : ""
+						var landTex = landHash && window.OwnerTexture
+							? window.OwnerTexture(landHash) : null
+						if(landTex){
+							return <>
+							<group position={props.position}>
+								<mesh position={[0, 0, 0.005]} onClick={onClick}>
+									<boxGeometry attach="geometry" args={[1, 1]} />
+									<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
+								</mesh>
+								<mesh rotation-x={rotation_x} position={[0, 0.52, 0]} onClick={onClick}>
+									<planeGeometry attach="geometry" args={[0.96, 0.96]} />
+									<meshBasicMaterial attach="material" map={landTex} transparent opacity={0.82} />
+								</mesh>
+								<mesh rotation-y={Math.PI / 3.8} position={[0, 1, 0]}>
+									<planeGeometry attach="geometry" args={[1, 1]} />
+									<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode(emoji)}.png`)} transparent />
+								</mesh>
+								<Html className="clipped">
+									<div className="emoji color owned" x={props.position.x} z={props.position.z}></div>
+								</Html>
+							</group>
+							</>
+						}
+					}
 					if(field.item || field.drop){
 						return <>
 						<group position={props.position}>
@@ -1007,11 +1072,21 @@ export const Experience = () => {
 			}else{
 				if(field){
 					if(field.jail){
+						/*
+							개발 Part 89 (jail 표시)
+							장식 이모지가 없는 갈래.
+							바로 아래 gate 분기가 이미 useLoader 1개를 쓰므로
+							같은 방식으로 ❓ 를 세운다.
+						*/
 						return <>
 						<group position={props.position}>
 							<mesh position={[0, 0, 0.005]} onClick={onClick}>
 								<boxGeometry attach="geometry" args={[1, 1]} />
 								<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color="#5a5a7a" />
+							</mesh>
+							<mesh rotation-x={rotation_x} rotation-z={Math.PI / 0.0815} position={[0, 0.52, 0]}>
+								<planeGeometry attach="geometry" args={[0.7, 0.7]} />
+								<meshBasicMaterial attach="material" map={useLoader(THREE.TextureLoader, `/src/fonts/emoji/emoji_u${window.emojiUnicode("❓")}.png`)} transparent />
 							</mesh>
 							<Html className="clipped">
 								<div className="emoji color jail" x={props.position.x} z={props.position.z}></div>
@@ -1063,6 +1138,34 @@ export const Experience = () => {
 							</Html>
 						</group>
 						</>
+					}
+					/*
+						개발 Part 87 (빈 땅 소유 표시)
+						장식 이모지가 없는 갈래.
+						이 갈래의 기본 반환은 useLoader 를 쓰지 않으므로
+						여기서도 0개를 유지한다. CanvasTexture 는 훅이 아니다.
+					*/
+					if(field.property && (field.property.level * 1) <= 0){
+						var landHash2 = window.TileOwner ? window.TileOwner(field) : ""
+						var landTex2 = landHash2 && window.OwnerTexture
+							? window.OwnerTexture(landHash2) : null
+						if(landTex2){
+							return <>
+							<group position={props.position}>
+								<mesh position={[0, 0, 0.005]} onClick={onClick}>
+									<boxGeometry attach="geometry" args={[1, 1]} />
+									<meshStandardMaterial attach="material" map={textures[texture]} transparent opacity={opacity} color={color} />
+								</mesh>
+								<mesh rotation-x={rotation_x} position={[0, 0.515, 0]} onClick={onClick}>
+									<planeGeometry attach="geometry" args={[0.96, 0.96]} />
+									<meshBasicMaterial attach="material" map={landTex2} transparent opacity={0.82} />
+								</mesh>
+								<Html className="clipped">
+									<div className="emoji color owned" x={props.position.x} z={props.position.z}></div>
+								</Html>
+							</group>
+							</>
+						}
 					}
 					if(field.item || field.drop){
 						return <>
@@ -1237,10 +1340,11 @@ export const Experience = () => {
 						/>
 					) : (mode == "room" && (window.MapGen && window.MapGen.ready) && (asset.name + "").indexOf("open") === 0) ? (
 						<OpenTile
-							key={asset.id + ":" + asset.name}
+							key={asset.id + ":" + asset.name + ":" + (asset.value ? asset.value : "")}
 							uid={asset.id}
 							hash={asset.hash}
 							name={asset.name}
+							value={asset.value}
 							position={
 								new THREE.Vector3(
 									asset.x,

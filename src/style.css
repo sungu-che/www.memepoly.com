@@ -736,15 +736,18 @@ body[swap] .back span{text-decoration: none}
 emojis{position: fixed; bottom: 0; left: 0; right: 0;  z-index: 2; transition-delay: 0.5s; -webkit-transition-delay: 0.5s; pointer-events:none;}
 body[mobile="ios"] emojis{pointer-events:initial;}
 emojis .scroll{overflow: hidden; overflow-x:scroll; width: 100%; -webkit-overflow-scrolling: touch;}
-
-
 /*emojis .scroll .deck>div.items{position: absolute; opacity: 0}*/
-
 emojis .scroll .deck>div ul{display: inline;}
-emojis .scroll .deck .emojis>.emoji_asset.items:after{display: none;}
-emojis .scroll .deck .emojis>.emoji_asset.items{display: inline; padding: 0; width: auto; top: -1px;}
-emojis .scroll .deck .emojis>.emoji_asset.items .emoji{color: #fff; -webkit-transform-style: preserve-3d;  -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
-emojis .scroll .deck .emojis>.emoji_asset.items .emoji[color=""]{filter: grayscale(1);}
+/*
+	개발 Part 88 (아이템 컨테이너)
+	.deck > .emojis > .emoji_asset.items 자리표시자를 제거했다.
+	거기 걸려 있던 아이템 이모지 스타일을 진짜 목록으로 옮긴다.
+	  color #fff        이모지 폰트가 흑백일 때의 기본색
+	  grayscale(1)      color 속성이 빈 항목(비활성)을 흐리게
+	옮기지 않으면 아이템이 전부 검게 나오고 비활성 구분이 사라진다.
+*/
+emojis .scroll .deck>.items .emoji{color: #fff; -webkit-transform-style: preserve-3d;  -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
+emojis .scroll .deck>.items .emoji[color=""]{filter: grayscale(1);}
 emojis .scroll .deck .emojis>.emoji_asset:last-child{margin-right: 2%}
 
 emojis .emojis_filter.scroll{display: none;}
@@ -1008,9 +1011,8 @@ body[swap] #swap::-webkit-scrollbar-track {}
 #swap{position: fixed; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; opacity: 0; background-color: #00000096;}
 
 body[swap] emojis .tab_content .deck .emoji_asset[type="emoji"]{display: none;}
-
 body[swap] emojis .tab_content .deck .emoji_asset[emoji="sms"]{display: none;}
-body[swap] emojis .tab_content .deck .emoji_asset.items{margin-right: 26em;}
+body[swap] emojis .tab_content .deck>.items{margin-right: 26em;}
 
 body[swap] player emoji img{opacity: 0.5;}
 body[swap] player *{pointer-events: none;}
@@ -2718,12 +2720,25 @@ html[lang="en"] .ko{display: none;}
 	color: #ffffff77;
 }
 .layer form.popup .exit_pick_keys .list{margin-top: 0.4em;}
+/*
+	개발 Part 87 (탈출 키 3개)
+	목록 전부를 모아야 나갈 수 있으므로
+	이미 가진 키와 아직 없는 키를 시각적으로 나눈다.
+*/
 .layer form.popup .exit_pick_keys .list i{
 	display: inline-block;
 	margin: 0 0.15em;
 	font-size: 1.4em;
 	line-height: 1;
 	vertical-align: middle;
+	opacity: 0.3;
+	filter: grayscale(1);
+	-webkit-filter: grayscale(1);
+}
+.layer form.popup .exit_pick_keys .list i.on{
+	opacity: 1;
+	filter: drop-shadow(0 0 6px #fde030);
+	-webkit-filter: drop-shadow(0 0 6px #fde030);
 }
 /*
 	개발 Part 68 (자유 탈출구)
@@ -3460,3 +3475,65 @@ body[zoom="10"] #root player .emoji i.role-emoji{
 	font-size: 0.9em;
 }
 
+/*
+	개발 Part 77 (폭탄 슬롯)
+	현행 문제
+	  개발 Part 75 가 툴팁 두 번째 슬롯을 둘로 나눴다.
+	    링 위    a.hashType.Meta + #dice
+	    링 밖    a.hashType.Bomb
+	  JS 는 정상 동작해 DOM 에 슬롯이 만들어졌는데 화면에 뜨지 않았다.
+	  이 파일의 슬롯 스타일이 클래스별로 개별 작성돼 있기 때문이다.
+	    개발 Part 45  Build / Deploy 아이콘
+	    개발 Part 59  Exit 버튼
+	  즉 .hashType 은 빈 자리표시자(<a class="hashType"></a>)가 기본이고
+	  실제 표시는 각 클래스 규칙이 켠다.
+	  새 클래스 Bomb 에는 그 규칙이 없어 자리만 차지한 채 비어 있었다.
+	  결정적으로 개발 Part 50 이 인용한 아래 규칙이
+	    #root player[type="image"] i{display: none;}
+	  후손 선택자라 툴팁 안의 <i> 까지 감춘다.
+	  Build / Exit 은 각자 규칙에서 이 display 를 되살리지만
+	  Bomb 은 되살리는 곳이 없었다.
+	조치
+	  Build 와 동일한 표시 규칙을 부여한다.
+	  구조가 같으므로(.hashType > i.emoji.color) 값도 같게 둔다.
+	ready 속성
+	  1  던질 수 있다
+	  0  감옥 외출 중이라 자격이 없다 (개발 Part 47)
+	  감추지 않고 흐리게 둔다.
+	  감추면 "왜 아무것도 없지" 가 되고,
+	  똑같이 보이면 "눌러도 안 되는 버튼" 이 된다.
+	  Exit 슬롯의 ready 처리와 같은 방식이다.
+*/
+#root player tooltip a.hashType.Bomb{
+	opacity: 1;
+	visibility: visible;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+#root player tooltip a.hashType.Bomb i,
+#root player[type="image"] tooltip a.hashType.Bomb i,
+#root player[type="video"] tooltip a.hashType.Bomb i,
+#root player[type="text"] tooltip a.hashType.Bomb i{
+	display: block;
+	opacity: 1;
+	visibility: visible;
+	font-style: normal;
+}
+#root player tooltip a.hashType.Bomb[ready="0"]{
+	opacity: 0.45;
+}
+#root player tooltip a.hashType.Bomb[ready="1"] i{
+	animation: none;
+}
+/*
+	개발 Part 77 (깃발 슬롯)
+	개발 Part 75 가 Fire 슬롯을 감옥 외출 중에도 노출하도록 바꿨다.
+	  ready="1"  출격 중. 깃발이 정상 동작한다
+	  ready="0"  감옥 외출 중. 서버 flag 는 team 만 보므로 동작은 하되
+	             레이드 상태가 아님을 시각적으로 구분한다
+	기존 .Fire 규칙은 그대로 두고 투명도만 얹는다.
+*/
+#root player tooltip a.hashType.Fire[ready="0"]{
+	opacity: 0.55;
+}

@@ -25,9 +25,87 @@ if(!OAuth3.isMobile){
 
 window.bingo = {}
 window.sticker = {}
-
 window.com = {}
-
+/*
+	개발 Part 81 (덱 중복 등록)
+	현행 문제
+	  window.emojis 는 보드와 룸이 공유하는 단일 배열이다.
+	  그런데 양쪽 Init 이 각자 unshift 로 항목을 밀어 넣는다.
+	    BoardInit  chat / craft / notify
+	    RoomInit   getDisplayMedia / chat / notify
+	    room.js    checkDeviceSupport 콜백이 mic / videocam
+	  window.Init.done 은 모드별로만 막으므로
+	  보드 1회 + 룸 1회가 각각 실행된다.
+	  결과적으로 chat(sms)이 덱에 두 번 나온다.
+	    sms → cast → notifications → construction → sms → videocam → mic
+	  세션 안에서 보드와 룸을 오갈수록 누적될 수 있다.
+	조치
+	  등록을 단일 진입점으로 모으고 (method, icon) 로 중복을 막는다.
+	  unshift 를 유지하는 이유
+	    덱은 앞에서부터 그려진다. 기능 버튼(채팅 / 알림 / 제작)이
+	    이모지 목록보다 앞에 와야 하므로 순서 의미가 있다.
+	  이미 있으면 위치를 옮기지 않는다
+	    보드에서 등록한 chat 을 룸에서 다시 맨 앞으로 끌어올리면
+	    모드를 오갈 때마다 덱 순서가 바뀐다.
+	반환 : 실제로 추가했는가
+*/
+window.EmojiDeck = function(method, icon, type){
+	if(!window.emojis || !window.emojis.length){
+		return false
+	}
+	var _m = method ? String(method) : ""
+	var _i = icon ? String(icon) : ""
+	if(!_m && !_i){
+		return false
+	}
+	for(var i = 0; i < window.emojis.length; i++){
+		var e = window.emojis[i]
+		if(!e){
+			continue
+		}
+		var em = e.method ? String(e.method) : ""
+		var ei = e.icon ? String(e.icon) : ""
+		if(em === _m && ei === _i){
+			return false
+		}
+	}
+	window.emojis.unshift({
+		method : _m,
+		icon : _i,
+		type : type ? type : "emoji"
+	})
+	return true
+}
+/*
+	개발 Part 81 (아이템 컨테이너)
+	현행 문제
+	  덱 렌더 루프가 💣 앞에 빈 자리표시자를 넣는다.
+	    if(type == "emoji" && icon == "💣"){
+	        li += '<div draggable="false" class="emoji_asset items"></div>'
+	    }
+	  그래서 문서에 .items 가 두 개 존재한다.
+	    .deck > .items                        진짜 아이템 목록
+	    .deck > .emojis > .emoji_asset.items  덱 안 자리표시자
+	  그런데 주입 선택자가 후손 선택자다.
+	    $("emojis .items").html(li)
+	  둘 다 매칭되어 같은 HTML 이 두 곳에 들어간다.
+	  🎁 / 📦 가 화면에 두 번 보이는 원인이다.
+	  더 나쁜 것은 src/panel.js 의 CountAssets 다.
+	    $("emojis .items .emoji_asset[emoji]")
+	  같은 이유로 아이템을 2배로 센다.
+	  🪵 1개를 2개로 보고 HasMaterials 가 통과시켜
+	  "눌리는데 서버가 거절하는" 크래프트 / 건설 버튼이 된다.
+	조치
+	  진짜 목록만 가리키는 선택자를 하나로 모은다.
+	  자리표시자는 .emoji_asset 클래스를 함께 갖고 있으므로
+	  그것으로 배제한다.
+	  클래스명을 바꾸지 않는 이유
+	    style.css 가 .emoji_asset.items 를 스타일링할 수 있다.
+	    선택자만 좁히면 CSS 를 건드리지 않아도 된다.
+*/
+window.ItemsDeck = function(){
+	return $("emojis .items").not(".emoji_asset")
+}
 window.Mode = function(cookies){
 	cookies = cookies ? cookies : window.cookies
 
@@ -688,15 +766,6 @@ window.SlotBody = function(opts){
 			_zone = false
 		}
 		if((_sf && (_sf.gate || _sf.drop)) || _zone){
-			/*
-				개발 Part 68 (자유 탈출구)
-				자유 탈출구는 키 없이 나갈 수 있다.
-				서버 cookies.exitFreeHere 가 최종 판정이지만,
-				굴리는 중에는 응답이 아직 안 왔을 수 있으므로
-				같은 식의 결정론 판정으로 먼저 보여준다.
-				free="1" 이면 ready 도 1 이다.
-				CSS 가 free 속성으로 아이콘을 나눈다.
-			*/
 			var _free = false
 			try{
 				_free = cookies.exitFreeHere
@@ -706,8 +775,19 @@ window.SlotBody = function(opts){
 				_free = false
 			}
 			var _exitOk = (cookies.exitable || _free) ? true : false
-			var _exitHold = cookies.exitHold ? cookies.exitHold : ""
-			out = `<a class="hashType Exit emoji color" ready="${_exitOk ? "1" : "0"}" zone="${_zone ? "1" : "0"}" free="${_free ? "1" : "0"}"><i class="emoji color">🚪</i><span class="cnt">${_free ? "" : _exitHold}</span></a>`
+			var _exitHave = cookies.exitHave ? cookies.exitHave * 1 : 0
+			var _exitNeed = cookies.exitNeed ? cookies.exitNeed * 1 : 0
+			if(isNaN(_exitHave)){
+				_exitHave = 0
+			}
+			if(isNaN(_exitNeed)){
+				_exitNeed = 0
+			}
+			var _exitCnt = ""
+			if(!_free && _exitNeed > 0){
+				_exitCnt = _exitHave + "/" + _exitNeed
+			}
+			out = `<a class="hashType Exit emoji color" ready="${_exitOk ? "1" : "0"}" zone="${_zone ? "1" : "0"}" free="${_free ? "1" : "0"}"><i class="emoji color">🚪</i><span class="cnt">${_exitCnt}</span></a>`
 		}else if(_sf && _rk){
 			if(_rk === "item"){
 				out = `<a class="hashType"></a>`
@@ -1661,10 +1741,68 @@ window.onhashchange = function(e){
 		}
 	}catch(err){
 	}
-
 	$("#myroom").removeClass("on")
 	$("body").removeAttr("myroom")
-
+	/*
+		개발 Part 78 (사망 후 마이룸)
+		현행 문제
+		  사망하면 BoardCallback 이 아래를 세운다.
+		    $body.attr('game',"over")
+		    $body.attr('dead',"true")
+		  지우는 곳은 같은 if 의 else 분기 하나뿐이고,
+		  그건 보드 모드에서만 실행된다.
+		  마이룸으로 넘어가는 경로 어디에도 해제가 없다.
+		    onhashchange   myroom 속성만 제거
+		    RoomHashChange removeAttr("class") 뿐. dead / game 은 속성이라 남는다
+		    RoomCallback   스테이지 상태를 건드리지 않는다
+		                   (StageSync 는 BoardCallback 에서만 호출된다)
+		  그 결과 마이룸에서 두 가지가 동시에 걸린다.
+		    1) Experience.jsx 개발 Part 69 의 클릭 게이트가 막는다.
+		       body[myroom] / body[panel] / body[dead] / body[stage]
+		       중 하나라도 서 있으면 3D 클릭을 무시한다.
+		       마이룸 패널을 닫아 body[myroom] 을 지워도
+		       body[dead] 가 남아 계속 막힌다.
+		    2) #dead 전체 화면 레이어가 마이룸 위에 겹쳐 클릭을 먹는다.
+		  "사망 후 마이룸에서 필드를 클릭해도 안 움직인다" 의 직접 원인이다.
+		확정 규칙
+		  사망은 보드 매치에 속한 상태다.
+		  진실 원천은 서버의 cookies.damage / cookies.dead 이고,
+		  보드로 돌아오면 BoardCallback 이 같은 자리에서 다시 세운다.
+		  마이룸은 개발 Part 15 (규칙 R1 / R2) 가
+		  "사망 시에도 열어 두는 경로" 로 확정한 목적지이므로
+		  거기서 표시만 내리는 것은 규칙과 어긋나지 않는다.
+		  슬롯 소모 / 소지품 소각 같은 실제 정산은 서버가 이미 마쳤다.
+		좌표 파생 속성
+		  edge / diceable / dicehome / bombable 은 보드 링 기준이다.
+		  룸 좌표계에서는 의미가 없고, TileSync 는
+		  Mode() != "board" 이면 즉시 반환하므로 스스로 지우지 못한다.
+		  여기서 함께 내린다.
+	*/
+	if(mode == "room"){
+		try{
+			$("body")
+				.removeAttr("dead")
+				.removeAttr("game")
+				.removeAttr("stage")
+				.removeAttr("panel")
+				.removeAttr("jail")
+				.removeAttr("edge")
+				.removeAttr("diceable")
+				.removeAttr("dicehome")
+				.removeAttr("bombable")
+			if(window.DeadClose){
+				window.DeadClose()
+			}
+			if(window.Panel && window.Panel.close){
+				window.Panel.close()
+			}
+			if(window.Stage && window.Stage.set){
+				window.Stage.set("")
+			}
+			$("#dead, #lobby, #raid").removeClass("on")
+		}catch(err){
+		}
+	}
 	if(mode == "room"){
 		if(window.RoomHashChange){
 			window.RoomHashChange(e)
@@ -1674,7 +1812,6 @@ window.onhashchange = function(e){
 			window.BoardHashChange(e)
 		}
 	}
-
 	try{
 		window.Init(window.cookies)
 	}catch(err){
@@ -4962,25 +5099,11 @@ OAuth3.on("ready", function(e){
 									color = "black"
 								}
 								_seen[b.x + ":" + b.z] = true
-								/*
-									개발 Part 70 (소유 타일 표시)
-									현행 문제
-									  window.assets 비교는 JSON.stringify 동등성으로 한다.
-									    if(JSON.stringify(window.assets) != JSON.stringify(_assets))
-									  그런데 소유 정보는 window.fields[].property 에만 있고
-									  _assets 항목에는 들어가지 않는다.
-									  applyToFields 는 같은 객체를 제자리 갱신하므로
-									  건물을 지어도 _assets 서명이 변하지 않아
-									  리렌더가 나지 않고 바닥이 그대로였다.
-									조치
-									  소유 서명(레벨 + 소유자 8자리)을 항목에 싣는다.
-									  Experience 의 Asset 은 이 값을 읽지 않지만
-									  key 비교에는 참여하므로 소유가 바뀌면 반드시 다시 그린다.
-								*/
 								var _ownSig = ""
 								try{
 									var _of = window.fields ? window.fields[b.x + ":" + b.z] : null
-									if(_of && _of.property && (_of.property.level * 1) > 0){
+									if(_of && _of.property &&
+										((_of.property.level * 1) > 0 || _of.property.ownerId)){
 										var _oh = window.TileOwner ? window.TileOwner(_of) : ""
 										_ownSig = (_of.property.level * 1) + ":" +
 											(_of.property.nation ? "n" : (_oh ? _oh.substr(0, 8) : ""))
@@ -4988,21 +5111,6 @@ OAuth3.on("ready", function(e){
 								}catch(err){
 									_ownSig = ""
 								}
-								/*
-									개발 Part 74 (바이옴 장식 리렌더)
-									현행 문제
-									  window.assets 갱신은 JSON.stringify 동등성으로만 한다.
-									    if(JSON.stringify(window.assets) != JSON.stringify(_assets))
-									  장식 마커는 window.map.biomes 에만 들어가고
-									  _assets 항목에는 어떤 흔적도 남기지 않았다.
-									  그래서 키를 바로잡아도 지형이 그대로면 서명이 같아
-									  리렌더가 나지 않고 장식이 화면에 뜨지 않는다.
-									  개발 Part 70 의 소유 서명(own)과 똑같은 구조다.
-									조치
-									  장식 이모지를 항목에 싣는다.
-									  Asset 이 이 값을 읽지 않아도 key 비교에는 참여하므로
-									  장식이 붙거나 떨어지면 반드시 다시 그린다.
-								*/
 								var _decoSig = ""
 								try{
 									var _dm = window.map.biomes[_id]
@@ -5026,54 +5134,11 @@ OAuth3.on("ready", function(e){
 								})	
 							}
 						})
-						/*
-							개발 Part 65 (시야 밖 궤적 제거)
-							여기 있던 TrailFill 호출을 제거한다.
-							_trailPaint 가 창 안 좌표만 검정으로 바꾸므로
-							시야를 벗어난 궤적 타일은 애초에 _assets 에 담기지 않는다.
-							다시 그 좌표가 창 안으로 들어오면 같은 판정으로 복구된다.
-						*/
-						/*
-							개발 Part 68 (바이옴 장식 서버 생성)
-							여기 있던 클라이언트 장식 생성 블록을 제거한다.
-							제거 사유
-							  1) Math.random() 이므로 플레이어마다 장식이 달랐다.
-							     같은 칸에 나무가 보이는 사람과 안 보이는 사람이 생긴다.
-							  2) 뽑은 결과를 window.map.nonces 에 넣어 매 폴링마다 올려 보냈고
-							     서버는 그것을 버렸다. 왕복만 늘고 남는 것이 없었다.
-							  3) 새로고침하면 장식이 통째로 바뀌어 지형이 불안정해 보였다.
-							이제 서버 decorRows 가 match.hash 로 판정해 #biome 행으로 내려준다.
-							그 행은 위쪽 rows 루프의
-							  if(window.Biomes[hashtag] && b){ ... window.map.biomes[row.Id] = _asset }
-							분기가 그대로 흡수하므로 렌더 경로는 바뀌지 않는다.
-							isBiome 플래그도 더 이상 쓰이지 않지만
-							위 루프가 계산하고 있으므로 선언은 그대로 둔다.
-						*/
 					}
 
 					if(plant){
 						_players.push(plant)
 					}
-					/*
-						개발 Part 14 (검수) - G1
-						React 중복 key 경고를 차단한다.
-						  Warning: Encountered two children with the same key, `42df07...`
-						Experience.jsx 는 <Player key={player.hash} /> 로 렌더하므로
-						_players 안에 같은 hash 가 두 번 들어가면 경고가 난다.
-						중복이 생기는 경로가 여러 개다.
-						  1) 서버가 같은 계정을 #position 과 #start(#nonce) 로 두 행에 담는다.
-						  2) 익명 계정(cookies.address == "")에서는
-						     if(cookies.address){ if(cookies.hash == _from){ continue } }
-						     가 실행되지 않아 자기 자신이 걸러지지 않는다.
-						  3) rows[_from] = true 가드는 _from 이 nonce 로 치환되는 경로에서
-						     서로 다른 키를 쓰게 되어 같은 hash 를 두 번 통과시킨다.
-						  4) plant(폭탄)는 hash 가 ZeroAddress 로 고정이라
-						     두 번 심으면 중복이 된다.
-						개별 분기를 고치면 남은 경로가 또 터지므로
-						set 직전에 해시 기준으로 한 번 정리한다.
-						뒤에 온 항목이 최신이므로 뒤를 남긴다.
-						cnt 는 배열의 커스텀 속성이라 새 배열로 옮겨 준다.
-					*/
 					var _uniq = []
 					var _seenHash = {}
 					for(var _pi = _players.length - 1; _pi >= 0; _pi--){
@@ -5104,25 +5169,6 @@ OAuth3.on("ready", function(e){
 					_players = _uniq
 					try{
 						if(window.players){
-							/*
-								개발 Part 16 (미니맵)
-								현행 문제
-								  1) 조건이 !window.players.length 라
-								     플레이어가 한 명이라도 렌더된 뒤에는
-								     썸네일이 영구히 갱신되지 않았다.
-								     첫 폴링에는 아직 캔버스가 비어 있어
-								     결국 빈 이미지가 고정됐다.
-								  2) canvas.toDataURL() 을 직접 불러
-								     캔버스 부재 시 TypeError 로 아래 전부가 건너뛰어졌다.
-								조치
-								  MapGen.sync() 가
-								    타일 확보 -> 2D 평면화 -> base64 -> #map img[src]
-								  를 한 번에 처리한다.
-								  이미 만들어져 있으면 문자열 비교 1 회로 끝나므로
-								  폴링마다 호출해도 비용이 없다.
-								  실패해도 자체 try/catch 안에서 삼켜
-								  3D 렌더 갱신을 막지 않는다.
-							*/
 							try{
 								if(window.MapGen && window.MapGen.sync){
 									window.MapGen.sync()
@@ -5285,17 +5331,50 @@ OAuth3.on("ready", function(e){
 						}
 
 						$('[id="'+player_hash+'"] items ul').html(after_body)
-
 						
-						var before_body = $("emojis .items").html()
+						/*
+							개발 Part 81 (아이템 컨테이너)
+							현행은 후손 선택자 "emojis .items" 를 썼다.
+							문서에는 .items 가 두 개 있다.
+							  .deck > .items                        진짜 아이템 목록
+							  .deck > .emojis > .emoji_asset.items  덱 안 자리표시자
+							둘 다 매칭되어 같은 HTML 이 두 곳에 들어갔고
+							화면에 아이템이 두 번 보였다.
+							또 jQuery .html() 은 여러 요소를 받으면
+							읽을 때는 첫 요소만 반환하고 쓸 때는 전부에 쓴다.
+							그래서 before/after 비교가 한쪽만 보고 판단하는
+							비대칭 상태이기도 했다.
+							ItemsDeck() 이 진짜 목록 하나만 돌려준다.
+						*/
+						/*
+							개발 Part 88 (아이템 컨테이너)
+							개발 Part 81 이 room.js / panel.js 는 고쳤는데
+							이 블록만 원본 선택자가 남아 있었다.
+							  $("emojis .items")
+							후손 선택자라 두 곳을 모두 잡는다.
+							  .deck > .items                        진짜 목록
+							  .deck > .emojis > .emoji_asset.items  덱 자리표시자
+							jQuery .html(값) 은 매칭된 전부에 쓰므로
+							같은 아이템이 화면에 두 번 그려졌다.
+							읽기는 첫 요소만 돌려주므로 before/after 비교도 비대칭이었다.
+							  자리표시자만 바뀐 프레임에서는 차이를 못 잡고
+							  진짜 목록만 바뀐 프레임에서는 매번 다시 그린다
+							ItemsDeck() 이 진짜 목록 하나만 돌려준다.
+							정의는 이 파일 위쪽에 있다.
+							  window.ItemsDeck = function(){
+							      return $("emojis .items").not(".emoji_asset")
+							  }
+						*/
+						var $itemsDeck = window.ItemsDeck
+							? window.ItemsDeck()
+							: $("emojis .items").not(".emoji_asset")
+						var before_body = $itemsDeck.html()
 						if(before_body){
 							before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
 						}
-
 						after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-
 						if(before_body != after_body){
-							$("emojis .items").html(after_body)
+							$itemsDeck.html(after_body)
 						}
 
 						var $player = $('player[self="true"]')
@@ -5931,18 +6010,46 @@ OAuth3.on("ready", function(e){
 						}
 					}catch(err){
 					}
-					/*
-						개발 Part 71 (매수 제안)
-						받은 제안 / 보낸 제안의 결과를 처리한다.
-						  새 제안 도착  자동으로 승낙 / 거부 패널을 띄운다
-						  결과 확정     알림으로 알린다
-						통행료 알림보다 뒤에 둔다.
-						제안 패널이 열리면 Notice 가 가려질 수 있는데,
-						통행료는 즉시성이 더 중요하기 때문이다.
-					*/
 					try{
 						if(window.OfferSync){
 							window.OfferSync(cookies)
+						}
+					}catch(err){
+					}
+					try{
+						if(cookies.bought){
+							window.Notice("TILE CLAIMED",
+								"Paid " + cookies.bought + " 🪙. This land is yours", 2600)
+						}else if(cookies.bidError){
+							var _be = String(cookies.bidError)
+							var _beHead = "CLAIM FAILED"
+							var _beBody = "Could not claim this tile"
+							if(_be === "insufficient_balance"){
+								_beBody = "Not enough coins"
+							}else if(_be === "owned"){
+								_beBody = "Someone claimed it first"
+							}else if(_be === "self"){
+								_beBody = "You already own this tile"
+							}else if(_be === "nation_property"){
+								_beBody = "State property cannot be bought"
+							}else if(_be === "auction"){
+								_beBody = "An auction is closing here. Try again shortly"
+							}else if(_be === "no_property" || _be === "lock_failed"){
+								_beBody = "Tile is busy. Try again"
+							}else if(_be === "schema"){
+								/*
+									개발 Part 87 (스키마 오류)
+									재시도해도 낫지 않는 종류다.
+									"다시 해보라" 고 안내하면 사용자가 계속 누르게 되므로
+									서버 문제임을 분명히 말한다.
+								*/
+								_beHead = "SERVER UPDATING"
+								_beBody = "Land purchase is temporarily unavailable"
+								console.log("[board] property schema is out of date on the server")
+							}else if(_be.indexOf("reserved_") === 0){
+								_beBody = "This tile is reserved"
+							}
+							window.Notice(_beHead, _beBody, 2800)
 						}
 					}catch(err){
 					}
@@ -6372,28 +6479,6 @@ OAuth3.on("ready", function(e){
 
 							window.Roll.prevX = null
 							window.Roll.prevZ = null
-							/*
-								개발 Part 47 (이동 궤적)
-								새 롤이 시작되면 이전 궤적을 버리고 출발 칸을 기록한다.
-								도착 후에도 궤적을 남겨 "어디서 어디까지 왔는지" 를 보여준다.
-								RollReset 에서 지우지 않는 이유
-								  RollReset 은 주사위가 0 이 되는 순간 호출된다.
-								  거기서 지우면 도착하자마자 궤적이 사라져
-								  사용자가 경로를 확인할 시간이 없다.
-								판 전환 안전장치
-								  trailMatch 를 함께 저장한다.
-								  섬이 바뀌면 좌표 의미가 달라지므로
-								  렌더 쪽에서 match 가 다르면 궤적을 무시한다.
-							*/
-							/*
-								개발 Part 58 (이동 궤적)
-								로컬 예측만 초기화한다.
-								서버 궤적(window.State.trail)은 건드리지 않는다.
-								그것은 이미 커밋된 지난 턴들이며 계속 보여야 한다.
-								판 전체 누적이 궤적의 정의이기 때문이다.
-								개발 Part 56 이 여기서 cookies.trail 을 지웠던 것은
-								쿠키 방식의 겹침을 땜질하려던 것이라 이제 필요 없다.
-							*/
 							window.Roll.trail = {}
 							window.Roll.trailMatch = window.cookies.match
 							try{
@@ -6415,17 +6500,35 @@ OAuth3.on("ready", function(e){
 
 		var response = function(res){
 			var rows = res.body.rows
-			/*
-				개발 Part 76 (쿠키 파싱 방어)
-				최초 응답이다. 여기서 죽으면 BoardInit / BoardPoll 이
-				정의조차 되지 않아 게임이 아예 시작되지 않는다.
-				복구 실패 시에도 빈 객체로 진행해 최소한 폴링은 살린다.
-			*/
 			var cookies = window.CookiesParse(res.body.cookies)
 			if(!cookies){
 				cookies = window.cookies ? window.cookies : {}
 			}
 			window.cookies = cookies
+			try{
+				var _bootHash = String(window.location.hash || "").replace("#","").toLowerCase()
+				if(_bootHash){
+					var _selfKey = String(cookies.address ? cookies.address : cookies.hash)
+						.replace("0x","").toLowerCase()
+					if(_selfKey && _bootHash === _selfKey){
+						console.log("[board] my room direct entry blocked :: " + _bootHash)
+						if(window.history && window.history.replaceState){
+							window.history.replaceState(null, "",
+								window.location.pathname + window.location.search)
+						}else{
+							window.location.hash = ""
+						}
+						try{
+							if(window.Notice){
+								window.Notice("BOARD MODE",
+									"My Room opens from the board", 2600)
+							}
+						}catch(err){
+						}
+					}
+				}
+			}catch(err){
+			}
 			$body.attr("address", cookies.address)
 
 			var len = rows.length;
@@ -8550,16 +8653,15 @@ OAuth3.on("ready", function(e){
 				$form.message.value = "";
 			}
 
-			window.emojis.unshift({
-				method : "chat",
-				icon : "chat",
-				type : "emoji"
-			})
-			window.emojis.unshift({
-				method : "craft",
-				icon : "construction",
-				type : "emoji"
-			})
+			/*
+				개발 Part 81 (덱 중복 등록)
+				unshift 직접 호출을 EmojiDeck 으로 바꾼다.
+				RoomInit 도 chat / notify 를 등록하므로
+				보드와 룸을 모두 거치면 같은 버튼이 두 번 생겼다.
+				EmojiDeck 이 (method, icon) 로 중복을 막는다.
+			*/
+			window.EmojiDeck("chat", "chat", "emoji")
+			window.EmojiDeck("craft", "construction", "emoji")
 			/*
 				개발 Part 32 (첫 슬롯 재배치)
 				건설 버튼(method="property", icon="home")을 여기서 제거한다.
@@ -8574,11 +8676,7 @@ OAuth3.on("ready", function(e){
 				바로 동작하도록 남겨 둔다.
 				craft(제작)는 위치 제한이 없으므로 덱에 그대로 둔다.
 			*/
-			window.emojis.unshift({
-				method : "notify",
-				icon : "notifications",
-				type : "emoji"
-			})
+			window.EmojiDeck("notify", "notifications", "emoji")
 
 			
 
@@ -8586,20 +8684,6 @@ OAuth3.on("ready", function(e){
 			var emojis = []
 			var assets = []
 			var player_hash = cookies.hash
-			/*
-				개발 Part 17 (덱)
-				mic / videocam(getUserMedia), cast(getDisplayMedia), recommand 는
-				마이룸 전용 기능이다.
-				현행 문제
-				  src/room.js 는 모듈 로드 시점(모드와 무관)에 checkDeviceSupport() 를 돌려
-				  window.emojis 로 mic / videocam 을 unshift 한다.
-				  window.emojis 는 보드/룸 공용 배열이므로
-				  보드 덱에도 그대로 흘러들어와 빈 버튼 3개가 노출됐다.
-				  recommand 는 skip 처리라 <a> 없이 빈 div 만 남아 더 눈에 띄었다.
-				조치
-				  보드 덱 렌더 루프에서 이 method 들을 건너뛴다.
-				  window.emojis 자체는 건드리지 않으므로 마이룸 덱은 그대로다.
-			*/
 			var roomOnly = ["getUserMedia", "getDisplayMedia", "recommand"]
 			for(var i = 0; i < window.emojis.length; i++){
 				var item = window.emojis[i]
@@ -8610,10 +8694,6 @@ OAuth3.on("ready", function(e){
 				if(roomOnly.indexOf(method) > -1){
 					continue
 				}
-				if(type == "emoji" && icon == "💣"){
-					li += '<div draggable="false" class="emoji_asset items"></div>'
-				}
-
 				if(type == "emoji"){
 					emojis.push(item)
 

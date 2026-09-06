@@ -388,25 +388,28 @@ window.ExitPick = function(){
 	var where = zone
 		? { ko : "현재 위치 : 내륙 탈출 구역", en : "You are on : an inland extraction zone" }
 		: { ko : "현재 위치 : 주사위 경로의 게이트", en : "You are on : a gate on the dice path" }
-	/*
-		개발 Part 66 (출격 없이 시작한 판)
-		현행 문제
-		  cookies.enter 를 필수로 봤다.
-		  enter 는 마이룸 출격(cc == "start")에서만 생긴다.
-		  보드 주소로 바로 접속해 주사위부터 굴린 계정은 enter 가 없어
-		  게이트에 서 있어도 "마이룸에서 출격하라" 는 사유만 떴다.
-		  그런데 그 계정도 이미 판 안에서 이동하고 통행료를 내고 있다.
-		조치
-		  탈출 가능 여부는 서버가 내려준 cookies.exitable 하나로 판정한다.
-		  실패 사유도 "탈출키 없음" 하나로 줄인다.
-		  장소가 아니면 애초에 이 팝업이 열리지 않는다(BoardInit 이 먼저 거절한다).
-	*/
+	var have = cookies.exitHave ? cookies.exitHave * 1 : 0
+	var need = cookies.exitNeed ? cookies.exitNeed * 1 : keys.length
+	if(isNaN(have)){
+		have = 0
+	}
+	if(isNaN(need)){
+		need = keys.length
+	}
+	var missing = []
+	for(var m = 0; m < keys.length; m++){
+		if(hold.indexOf(keys[m]) === -1){
+			missing.push(keys[m])
+		}
+	}
 	var why = null
 	if(!ready){
 		why = keys.length
 			? {
-				ko : "탈출키가 없습니다. " + keys.join(" ") + " 중 하나를 들고 오세요.",
-				en : "No extraction key. Carry one of " + keys.join(" ") + "."
+				ko : "탈출키 " + have + " / " + need + " 개. " +
+					(missing.length ? (missing.join(" ") + " 를 더 모아야 합니다.") : "키를 모아야 합니다."),
+				en : "Extraction keys " + have + " / " + need + ". " +
+					(missing.length ? ("Still need " + missing.join(" ") + ".") : "Collect the keys first.")
 			}
 			: {
 				ko : "탈출키가 없습니다.",
@@ -415,35 +418,25 @@ window.ExitPick = function(){
 	}
 	var keyBody = ""
 	for(var k = 0; k < keys.length; k++){
-		keyBody += '<i class="emoji color">' + keys[k] + '</i>'
+		var _hasKey = hold.indexOf(keys[k]) > -1
+		keyBody += '<i class="emoji color' + (_hasKey ? " on" : "") + '">' + keys[k] + '</i>'
 	}
-	/*
-		개발 Part 68 (자유 탈출구)
-		자유 탈출구에서는 키 목록을 보여줄 이유가 없다.
-		대신 "여기는 키가 필요 없다" 를 명시한다.
-		다른 게이트에서는 여전히 키가 필요하므로
-		키 목록은 그 칸에서만 표시된다.
-	*/
 	var noteBody = free
 		? '<p class="exit_pick_free">\
 			<span class="ko">이 출구는 탈출키가 필요 없습니다.</span>\
 			<span class="en">This exit needs no extraction key.</span>\
 		</p>'
 		: (keyBody ? '<p class="exit_pick_keys">\
-			<span class="ko">이번 판 탈출키</span>\
-			<span class="en">Keys this match</span>\
+			<span class="ko">이번 판 탈출키 (' + have + ' / ' + need + ')</span>\
+			<span class="en">Keys this match (' + have + ' / ' + need + ')</span>\
 			<span class="list">' + keyBody + '</span>\
 		</p>' : '')
 	var descKo = free
 		? "탈출키 없이 판을 빠져나갑니다. 소지품은 그대로 남습니다."
-		: (hold
-			? (hold + " 를 사용해 판을 빠져나갑니다. 소지품은 그대로 남습니다.")
-			: "판을 빠져나갑니다. 소지품은 그대로 남습니다.")
+		: ("탈출키 " + need + "개를 반납하고 판을 빠져나갑니다. 나머지 소지품은 그대로 남습니다.")
 	var descEn = free
 		? "Leave the match without a key. Your carried items stay with you."
-		: (hold
-			? ("Leave the match with " + hold + ". Your carried items stay with you.")
-			: "Leave the match. Your carried items stay with you.")
+		: ("Hand over " + need + " keys and leave the match. The rest of your loot stays with you.")
 	var body = '<div class="exit_pick_head">\
 		<strong class="title">\
 			<span class="ko">탈출하시겠습니까?</span>\

@@ -672,20 +672,47 @@ function setStream(connection, method, self) {
 }
 
 checkDeviceSupport(function() {
-	if(hasMicrophone){
+	/*
+		개발 Part 81 (덱 중복 등록)
+		이 콜백은 모듈 로드 시점에 한 번 도는 것이 원칙이지만
+		enumerateDevices 는 권한 부여 / 장치 연결 변화로
+		다시 호출될 수 있는 API 다.
+		그때마다 unshift 하면 mic / videocam 이 계속 늘어난다.
+		EmojiDeck 이 (method, icon) 로 중복을 막는다.
+		mic 과 videocam 은 method 가 같고 icon 이 다르므로
+		두 항목이 서로를 막지 않는다.
+		이 시점에는 src/index.js 가 아직 로드되지 않았을 수 있어
+		존재를 확인하고 없으면 자체 중복 검사를 한다.
+	*/
+	var _add = function(method, icon){
+		if(window.EmojiDeck){
+			return window.EmojiDeck(method, icon, "emoji")
+		}
+		if(!window.emojis || !window.emojis.length){
+			return false
+		}
+		for(var i = 0; i < window.emojis.length; i++){
+			var e = window.emojis[i]
+			if(!e){
+				continue
+			}
+			if((e.method ? e.method : "") === method &&
+				(e.icon ? e.icon : "") === icon){
+				return false
+			}
+		}
 		window.emojis.unshift({
-			method : "getUserMedia",
-			icon : "mic",
+			method : method,
+			icon : icon,
 			type : "emoji"
 		})
+		return true
 	}
-
+	if(hasMicrophone){
+		_add("getUserMedia", "mic")
+	}
 	if(hasWebcam){
-		window.emojis.unshift({
-			method : "getUserMedia",
-			icon : "videocam",
-			type : "emoji"
-		})
+		_add("getUserMedia", "videocam")
 	}
 })
 
@@ -873,23 +900,56 @@ window.RoomCallback = async function(resp){
 		console.log("mapgen err",err);
 	}
 	/*
-		개발 Part 16 (미니맵)
-		마이룸도 보드와 동일하게
-		voronoi 타일을 2D 로 평면화한 base64 를 #map img[src] 에 넣는다.
-		룸은 MapGen.target() 이 room:{owner} 키를 돌려주므로
-		소유자 해시로 생성된 섬이 그려진다.
-		이미 만들어져 있으면 문자열 비교 1 회로 끝난다.
+		개발 Part 78 (사망 후 마이룸)
+		진입 시점(onhashchange)에서 한 번 내렸지만
+		폴링마다 다시 확인한다.
+		다시 설 수 있는 경로
+		  1) 해시가 바뀌지 않는 진입
+		     dead 패널의 .btn.myroom 은 MyRoomOpen 을 거치는데,
+		     이미 같은 해시에 있으면 onhashchange 가 발화하지 않는다.
+		  2) 보드 응답이 늦게 도착
+		     사망 직후 나간 보드 폴링이 마이룸 전환 뒤에 돌아오면
+		     BoardCallback 이 body[dead] 를 다시 세운다.
+		     Mode() 가 room 이면 Callback 이 RoomCallback 으로 보내지만,
+		     이미 진행 중이던 BoardCallback 은 끝까지 실행된다.
+		  3) 구버전 캐시 / 뒤로가기 복원
+		룸 모드에서 이 속성들은 어떤 기능도 하지 않는다.
+		오직 3D 클릭 게이트와 전체 화면 레이어만 켠다.
+		폴링마다 지워도 잃는 상태가 없다.
+		비용
+		  attr 이 이미 없으면 jQuery removeAttr 은 DOM 을 건드리지 않는다.
+		  값이 있을 때만 실제 변경이 일어나므로 폴링 부담이 없다.
 	*/
+	try{
+		var $roomBody = $("body")
+		if(typeof $roomBody.attr("dead") !== "undefined" ||
+			typeof $roomBody.attr("game") !== "undefined" ||
+			typeof $roomBody.attr("stage") !== "undefined"){
+			console.log("[room] board overlay cleared in room mode")
+			$roomBody
+				.removeAttr("dead")
+				.removeAttr("game")
+				.removeAttr("stage")
+			if(window.DeadClose){
+				window.DeadClose()
+			}
+			if(window.Stage && window.Stage.set){
+				window.Stage.set("")
+			}
+			$("#dead, #lobby, #raid").removeClass("on")
+		}
+		$roomBody
+			.removeAttr("jail")
+			.removeAttr("edge")
+			.removeAttr("diceable")
+			.removeAttr("dicehome")
+			.removeAttr("bombable")
+	}catch(err){
+	}
 	try{
 		if(window.MapGen && window.MapGen.sync){
 			window.MapGen.sync()
 		}
-		/*
-			개발 Part 17 (미니맵)
-			현행 마이룸은 .voronoi .map 의 위치를 한 번도 갱신하지 않았다.
-			(BoardCallback 에만 css 이동이 있었다)
-			인자를 생략하면 players.self() 좌표를 쓴다.
-		*/
 		if(window.MapFocus){
 			window.MapFocus()
 		}
@@ -2661,6 +2721,34 @@ window.RoomCallback = async function(resp){
 							asset = JSON.parse("["+position+"]")
 						}
 						var color = "black"
+						/*
+							개발 Part 85 (지뢰찾기 숫자)
+							서버가 board_objects.dice 에 인접 지뢰 수를 담아 보낸다.
+							  0     빈 칸. 아무 것도 그리지 않는다
+							  1~8   인접 지뢰 수
+							  9     밟아서 터진 칸
+							구버전 응답(dice 없음)을 대비해 Cc 세 번째 항목으로 폴백한다.
+						*/
+						var _near = 0
+						try{
+							if(typeof row.dice != "undefined" && row.dice !== null){
+								_near = row.dice * 1
+							}else{
+								var _openHead = row.Cc.split(" #open")[0].split(",")
+								_near = _openHead[2] ? _openHead[2] * 1 : 0
+							}
+						}catch(err){
+							_near = 0
+						}
+						if(isNaN(_near) || _near < 0){
+							_near = 0
+						}
+						var _nearText = ""
+						if(_near === 9){
+							_nearText = "💣"
+						}else if(_near > 0){
+							_nearText = String(_near)
+						}
 						if(!score_board[row.From]){
 							score_board[row.From] = 0
 						}
@@ -2718,18 +2806,25 @@ window.RoomCallback = async function(resp){
 								id : row.Id,
 								hash : row.From,
 								name : name,
-								value : "",
+								/*
+									개발 Part 85 (지뢰찾기 숫자)
+									현행은 value 가 항상 "" 라 서버가 계산한 인접 지뢰 수가
+									화면까지 도달할 수 없었다.
+									near 는 원시값(0~9)이며 chord 안내 등에 쓴다.
+								*/
+								value : _nearText,
+								near : _near,
 								color: color,
 								x : asset[0],
 								y : y,
 								z : asset[1]
 							}
-
 							_assets.push({
 								id : row.Id,
 								hash : row.From,
 								name : name,
-								value : "",
+								value : _nearText,
+								near : _near,
 								color: color,
 								x : asset[0],
 								y : y,
@@ -3323,8 +3418,19 @@ window.RoomCallback = async function(resp){
 				}
 
 				$('[id="'+player_hash+'"] items ul').html(li)
-
-				$("emojis .items").html(li)
+				/*
+					개발 Part 81 (아이템 컨테이너)
+					보드와 같은 사고다.
+					"emojis .items" 는 진짜 목록과 덱 자리표시자를 모두 잡아
+					🎁 / 📦 가 화면에 두 번 그려졌다.
+					ItemsDeck() 은 src/index.js 가 정의한다.
+					로드 순서를 대비해 폴백 선택자를 둔다.
+				*/
+				if(window.ItemsDeck){
+					window.ItemsDeck().html(li)
+				}else{
+					$("emojis .items").not(".emoji_asset").html(li)
+				}
 				$('.emoji[type="sticker"] cnt').text(stickerCnt+(rewardLength ? 1 : 0))
 				$('.emoji[type="players"] cnt').text(_players.cnt+1)
 
@@ -6506,17 +6612,47 @@ window.RoomInit = function(cookies){
 									}
 								}
 
-								if(body.puzzles.length){
-									if(typeof piece.emoji == "undefined" && typeof piece.value != "undefined"){
-										/*
-											개발 Part 16 (마이룸 퍼즐)
-											빙고가 성립한 경로에서는 piece 가 value 를 유지한 채였다.
-											아래 프리뷰 타일이 value:undefined 로 그려져
-											조각이 잠깐 비어 보였다.
-										*/
-										piece.emoji = piece.value + ""
-										delete piece.value
+								/*
+									개발 Part 85 (놓는 조각 유실)
+									현행 문제
+									  서버 room.js 의 cc == "puzzle" 은
+									    for(...){ if(!_puzzle.id){ piece = _puzzle } }
+									    if(piece){ ... }
+									  로 "id 가 빈 항목" 을 지금 놓는 조각으로 본다.
+									  그런데 빙고가 성립한 경로에서는 body.puzzles 에
+									  매칭된 퍼즐(전부 id 보유)만 담기는 경우가 있다.
+									  누산 루프가 중심칸을 지나가야만 piece 가 섞여 들어가는데,
+									  줄의 방향과 bingoLimit 조합에 따라 지나가지 않는다.
+									  그러면 서버에서 piece 가 undefined 가 되어
+									  if(piece) 아래 전부(😎 처리 / 빙고 확정 / 보상)가
+									  통째로 건너뛰어진다.
+									  "😎 를 눌러도 아무 일도 안 난다" 의 직접 원인이다.
+									조치
+									  조각을 먼저 정규화하고, 없으면 맨 앞에 명시적으로 넣는다.
+									  이미 누산 루프가 넣었으면 중복시키지 않는다.
+									  서버 판정 기준(id 가 빈 항목 = 조각)은 그대로 유지한다.
+								*/
+								if(typeof piece.emoji == "undefined" && typeof piece.value != "undefined"){
+									piece.emoji = piece.value + ""
+									delete piece.value
+								}
+								var _hasPiece = false
+								for(var _bp = 0; _bp < body.puzzles.length; _bp++){
+									if(body.puzzles[_bp] && !body.puzzles[_bp].id){
+										_hasPiece = true
+										break
 									}
+								}
+								if(!_hasPiece){
+									body.puzzles.unshift(piece)
+								}
+								/*
+									프리뷰 타일.
+									조각 1개만 있는 경우(= 빙고 없음)는 서버가 퍼즐을 만들고
+									다음 폴링에 그려지므로 미리 그리지 않는다.
+									매칭이 있을 때만 즉시 보여준다.
+								*/
+								if(body.puzzles.length > 1){
 									var _assets = window.assets;
 									_assets.push({
 										id : "",
@@ -6528,13 +6664,7 @@ window.RoomInit = function(cookies){
 										y : 0,
 										z : piece.z
 									})
-									// var assets_ = JSON.stringify(_assets)
 									window.assets.set(_assets)
-								}else if(body.puzzles.length == 0){
-									piece.emoji = piece.value+""
-									delete piece.value
-									
-									body.puzzles = [piece]
 								}
 								/*
 									개발 Part 16 (마이룸 퍼즐)
@@ -6973,34 +7103,62 @@ window.RoomInit = function(cookies){
 					var _edge = _islandMode ? ((1000000000000000000 / 2) - 1) : (( window.grid.edge / 2 ) - 1)
 					if(player.x < -_edge || player.z < -_edge || player.x > _edge || player.z > _edge){
 						var alpha = 0
-
 						if(player.x > _edge || player.z < -_edge){
 							alpha = 1
 						}else if(player.x < -_edge || player.z > _edge){
 							alpha = -1
 						}
-
 						var cc_address = ethers.hashMessage(window.location.href.replace(window.location.protocol+"//",""))
 							cc_address = ethers.computeAddress(cc_address).toLowerCase()
-
 						if(window.location.hash){
 							cc_address = window.location.hash.replace("#","")
 						}
-
 						if(window.dialog){
 							cc_address = (window.dialog.to.indexOf("0x") == 0 ? window.dialog.to : "0x"+window.dialog.to).replace("0x","")
 						}
-
 						var href = window.numStringToBytes32(
 							(BigInt(window.bytes32ToNumString(cc_address))+BigInt(alpha)).toString()
 						).replace("0x","#")
-
 						$go.attr("href",href)
 						$go.text(alpha > 0 ? "east" : "west")
 						$go.attr("way", (alpha > 0 ? "east" : "west"))
 					}else{
 						$go.removeAttr("href")
 						$go.removeAttr("way")
+					}
+					/*
+						개발 Part 85 (스와이프 즉시 렌더)
+						현행 문제
+						  클릭 경로는 Experience.jsx onClick 마지막에
+						    window.Callback(window.response)
+						  를 불러 마지막 응답을 그 자리에서 재생한다.
+						  RoomCallback 이 다시 돌면서
+						    window.MapGen.assets(cc_address, { x : self_player.x, z : self_player.z }, 4)
+						  로 새 좌표 기준 바닥을 다시 만들고 assets.set 을 호출하므로
+						  이동과 동시에 필드가 그려진다.
+						  그런데 조이스틱(스와이프)에는 그 재생 호출이 없다.
+						  좌표만 옮겨두고 다음 폴링(600ms)이 돌아와야
+						  비로소 바닥이 갱신되어 "끌려오는" 느낌이 난다.
+						  보드 모드 조이스틱(src/index.js)에는 이미 같은 재생이 있는데
+						  룸에만 빠져 있었다.
+						조치
+						  클릭과 동일하게 마지막 응답을 즉시 재생한다.
+						  서버로 좌표를 올리는 것은 기존대로 다음 RoomPoll 이 한다.
+						  (RoomPoll 은 players.self() 로 current 좌표를 읽으므로
+						   여기서 따로 보낼 필요가 없다)
+						안전성
+						  RoomCallback 은 재생에 안전하도록 만들어져 있다.
+						    MyRoom.closed 표식이 패널 재오픈을 막고
+						    스폰 보정 블록은 "바이옴 없음 / 물" 일 때만 발동하는데
+						    위에서 이미 _nb 검사로 걸렀으므로 발동하지 않는다.
+						  응답이 아직 없으면(첫 진입) 아무 것도 하지 않는다.
+					*/
+					try{
+						if(window.response){
+							window.Callback(window.response)
+						}
+					}catch(err){
+						console.log("[room] joystick redraw err", err)
 					}
 				}
 			}
@@ -7299,49 +7457,99 @@ window.RoomInit = function(cookies){
 		$form.message.value = "";
 	}
 
-	if(!OAuth3.isMobile){
+	/*
+		개발 Part 81 (덱 중복 등록)
+		현행은 unshift 를 직접 호출해 BoardInit 이 등록한 것과 겹쳤다.
+		window.Init.done 은 모드별로만 막으므로
+		보드 1회 + 룸 1회가 각각 실행되어 chat 이 두 번 들어갔다.
+		EmojiDeck 이 (method, icon) 로 중복을 막는다.
+		window.EmojiDeck 은 src/index.js 가 정의한다.
+		로드 순서가 보장되지 않는 경로를 대비해 존재를 확인한다.
+	*/
+	var _roomDeck = function(method, icon, type){
+		if(window.EmojiDeck){
+			return window.EmojiDeck(method, icon, type)
+		}
+		if(!window.emojis || !window.emojis.length){
+			return false
+		}
+		for(var i = 0; i < window.emojis.length; i++){
+			var e = window.emojis[i]
+			if(!e){
+				continue
+			}
+			if((e.method ? e.method : "") === method &&
+				(e.icon ? e.icon : "") === icon){
+				return false
+			}
+		}
 		window.emojis.unshift({
-			method : "getDisplayMedia",
-			icon : "cast",
-			type : "emoji"
+			method : method,
+			icon : icon,
+			type : type ? type : "emoji"
 		})
+		return true
 	}
-
-	window.emojis.unshift({
-		method : "chat",
-		icon : "chat",
-		type : "emoji"
-	})
-
+	if(!OAuth3.isMobile){
+		_roomDeck("getDisplayMedia", "cast", "emoji")
+	}
+	_roomDeck("chat", "chat", "emoji")
 	if(Object.keys(window.com).length){
-		window.emojis.unshift({
-			method : "notify",
-			icon : "notifications",
-			type : "emoji"
-		})
+		_roomDeck("notify", "notifications", "emoji")
 	}
 
 	var li = ""
-
 	var emojis = []
-
 	var assets = []
-
 	var player_hash = cookies.hash
-
+	/*
+		개발 Part 84 (마이룸 덱)
+		현행 문제
+		  💣 는 보드 전용 행동인데 마이룸 덱에도 그대로 나왔다.
+		  window.emojis 가 보드와 룸이 공유하는 단일 배열이고
+		  이 루프가 모드를 보지 않기 때문이다.
+		  눌렀을 때 무슨 일이 일어나는가
+		    method 가 비어 있어 아래 if(open){ ... } 분기로 떨어지고
+		    body.cc = "puzzle" 로 💣 를 퍼즐 조각으로 놓는다.
+		  그런데 마이룸의 지뢰 설치는 툴팁 Mine 버튼이 이미 담당한다.
+		    }else if($this.hasClass("Mine")){
+		        body.puzzles = window.RoomPuzzlePayload([{ emoji : "💣", ... }])
+		  같은 일을 하는 경로가 둘인데, 덱 쪽은 오픈 타일 위에 서 있을 때만
+		  우연히 동작하고 그 외에는 아무 반응이 없다.
+		조치
+		  룸 덱에서 뺀다. BoardInit 이 roomOnly 로 마이룸 전용 버튼을
+		  걸러내는 것과 같은 방식이다.
+		자리표시자는 남긴다
+		  이 순번에서 li 에 붙는
+		    <div class="emoji_asset items"></div>
+		  는 아이템 목록이 이모지 탭 안에 인라인으로 흐르게 하는 컨테이너다.
+		  style.css 가 그 자리를 직접 스타일링한다.
+		    emojis .scroll .deck .emojis>.emoji_asset.items{display: inline; ...}
+		  함께 지우면 이모지 탭에서 아이템이 사라진다.
+		  그래서 자리표시자를 먼저 붙이고 continue 로 버튼만 건너뛴다.
+		window.emojis 를 건드리지 않는 이유
+		  typeof_emoji / EmojiSrc / Player.jsx 가 그 배열을 참조한다.
+		  배열에서 빼면 보드에서도 💣 판정이 깨진다.
+		  렌더에서만 제외하는 것이 정확하다.
+	*/
+	var boardOnly = ["💣"]
+	/*
+		개발 Part 88 (아이템 컨테이너)
+		보드와 같은 사유로 자리표시자 삽입을 제거한다.
+		룸의 주입부는 개발 Part 81 에서 이미 ItemsDeck() 으로 바뀌어
+		중복 렌더링은 없었지만, 자리표시자가 남아 있으면
+		앞으로 누가 $("emojis .items") 를 다시 쓰는 순간 같은 사고가 난다.
+		원인을 없애는 편이 확실하다.
+	*/
 	for(var i = 0; i < window.emojis.length; i++){
 		var item = window.emojis[i]
-
 		var type = item.type
-
 		var method = item.method ? item.method : ""
 		var icon = item.icon
 		var className = "emoji color"
-
-		if(type == "emoji" && icon == "💣"){
-			li += '<div draggable="false" class="emoji_asset items"></div>'
+		if(type == "emoji" && boardOnly.indexOf(icon) > -1){
+			continue
 		}
-
 		if(type == "emoji"){
 			emojis.push(item)
 			var skip = false
