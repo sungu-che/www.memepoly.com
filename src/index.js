@@ -26,29 +26,6 @@ if(!OAuth3.isMobile){
 window.bingo = {}
 window.sticker = {}
 window.com = {}
-/*
-	개발 Part 81 (덱 중복 등록)
-	현행 문제
-	  window.emojis 는 보드와 룸이 공유하는 단일 배열이다.
-	  그런데 양쪽 Init 이 각자 unshift 로 항목을 밀어 넣는다.
-	    BoardInit  chat / craft / notify
-	    RoomInit   getDisplayMedia / chat / notify
-	    room.js    checkDeviceSupport 콜백이 mic / videocam
-	  window.Init.done 은 모드별로만 막으므로
-	  보드 1회 + 룸 1회가 각각 실행된다.
-	  결과적으로 chat(sms)이 덱에 두 번 나온다.
-	    sms → cast → notifications → construction → sms → videocam → mic
-	  세션 안에서 보드와 룸을 오갈수록 누적될 수 있다.
-	조치
-	  등록을 단일 진입점으로 모으고 (method, icon) 로 중복을 막는다.
-	  unshift 를 유지하는 이유
-	    덱은 앞에서부터 그려진다. 기능 버튼(채팅 / 알림 / 제작)이
-	    이모지 목록보다 앞에 와야 하므로 순서 의미가 있다.
-	  이미 있으면 위치를 옮기지 않는다
-	    보드에서 등록한 chat 을 룸에서 다시 맨 앞으로 끌어올리면
-	    모드를 오갈 때마다 덱 순서가 바뀐다.
-	반환 : 실제로 추가했는가
-*/
 window.EmojiDeck = function(method, icon, type){
 	if(!window.emojis || !window.emojis.length){
 		return false
@@ -76,33 +53,6 @@ window.EmojiDeck = function(method, icon, type){
 	})
 	return true
 }
-/*
-	개발 Part 81 (아이템 컨테이너)
-	현행 문제
-	  덱 렌더 루프가 💣 앞에 빈 자리표시자를 넣는다.
-	    if(type == "emoji" && icon == "💣"){
-	        li += '<div draggable="false" class="emoji_asset items"></div>'
-	    }
-	  그래서 문서에 .items 가 두 개 존재한다.
-	    .deck > .items                        진짜 아이템 목록
-	    .deck > .emojis > .emoji_asset.items  덱 안 자리표시자
-	  그런데 주입 선택자가 후손 선택자다.
-	    $("emojis .items").html(li)
-	  둘 다 매칭되어 같은 HTML 이 두 곳에 들어간다.
-	  🎁 / 📦 가 화면에 두 번 보이는 원인이다.
-	  더 나쁜 것은 src/panel.js 의 CountAssets 다.
-	    $("emojis .items .emoji_asset[emoji]")
-	  같은 이유로 아이템을 2배로 센다.
-	  🪵 1개를 2개로 보고 HasMaterials 가 통과시켜
-	  "눌리는데 서버가 거절하는" 크래프트 / 건설 버튼이 된다.
-	조치
-	  진짜 목록만 가리키는 선택자를 하나로 모은다.
-	  자리표시자는 .emoji_asset 클래스를 함께 갖고 있으므로
-	  그것으로 배제한다.
-	  클래스명을 바꾸지 않는 이유
-	    style.css 가 .emoji_asset.items 를 스타일링할 수 있다.
-	    선택자만 좁히면 CSS 를 건드리지 않아도 된다.
-*/
 window.ItemsDeck = function(){
 	return $("emojis .items").not(".emoji_asset")
 }
@@ -387,6 +337,57 @@ window.DiceHome = function(){
 		return null
 	}
 	return _anc
+}
+window.RingSync = function(){
+	var cookies = window.cookies
+	if(!cookies){
+		return false
+	}
+	if(cookies.enter){
+		return false
+	}
+	if(cookies.damage || cookies.dead){
+		return false
+	}
+	if(window.RollBusy && window.RollBusy()){
+		return false
+	}
+	try{
+		if(typeof OAuth3 != "undefined" && OAuth3.nonces && OAuth3.nonces.length){
+			return false
+		}
+	}catch(err){
+	}
+	var _anc = window.RingAnchor ? window.RingAnchor() : null
+	if(!_anc){
+		return false
+	}
+	var _me = null
+	try{
+		_me = window.players.self()
+	}catch(err){
+		return false
+	}
+	if(!_me){
+		return false
+	}
+	var _mx = window.Grid(_me.x)
+	var _mz = window.Grid(_me.z)
+	if(isNaN(_mx) || isNaN(_mz)){
+		return false
+	}
+	if(_anc.x === _mx && _anc.z === _mz){
+		return false
+	}
+	if(!window.RingReturn){
+		return false
+	}
+	var _ok = window.RingReturn(_anc)
+	if(_ok){
+		console.log("[dice] resynced to server anchor :: " +
+			_mx + "," + _mz + " -> " + _anc.x + "," + _anc.z)
+	}
+	return _ok
 }
 window.ReservedTile = function(_x, _z){
 	try{
@@ -1005,33 +1006,10 @@ window.MetaBody = function(opts){
 		? window.MetaIcon()
 		: { icon : "", act : "", ready : "0" }
 	if(_meta.act === "bomb"){
-		/*
-			링 밖. 폭탄 자리다.
-			ready 는 개발 Part 47 자격(enter)을 그대로 반영한다.
-			  1  던질 수 있다
-			  0  감옥 외출 중이라 아직 못 던진다
-			감추지 않는 이유
-			  감추면 "왜 아무것도 없지" 가 되고,
-			  똑같이 보이면 "눌러도 안 되는 버튼" 이 된다.
-			  Exit 슬롯의 ready 와 같은 방식으로 상태를 드러낸다.
-		*/
 		return `<a class="hashType Bomb emoji color" ready="${_meta.ready}"><i class="emoji color">💣</i></a>`
 	}
 	return `<a class="hashType Meta emoji color" act="${_meta.act}" ready="${_meta.ready}"><i></i><div id="dice" class="slot-machine"><div class="slotwrapper"><ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li></ul><div class="num">${_num}</div></div></div></a>`
 }
-/*
-	개발 Part 67 (좌표 즉시 반영)
-	좌표가 바뀌는 순간 화면 상태를 맞춘다.
-	  body[biome]     발밑 바이옴
-	  body[field]     아이템 / 게이트 드랍 표식
-	  body[edge]      링 위인가 (주사위 슬롯 노출 조건)
-	  body[diceable]  지금 굴릴 수 있는가
-	  body[dicehome]  앵커 복귀 상태인가 (📍)
-	  툴팁 첫 슬롯
-	서버 응답을 기다리지 않는다. 전부 결정론 데이터로 판정한다.
-	주사위 슬롯이 도는 중에는 손대지 않는다.
-	  DiceSpinBusy 중 툴팁을 건드리면 노드가 교체되어 착지가 끊긴다(개발 Part 52).
-*/
 window.TileSync = function(){
 	try{
 		if(window.Mode() != "board"){
@@ -1079,6 +1057,12 @@ window.TileSync = function(){
 			$body.removeAttr("diceable")
 		}
 		try{
+			if(window.RingSync){
+				window.RingSync()
+			}
+		}catch(err){
+		}
+		try{
 			if(window.DiceHome && window.DiceHome()){
 				$body.attr("dicehome", "true")
 			}else{
@@ -1087,15 +1071,6 @@ window.TileSync = function(){
 		}catch(err){
 			$body.removeAttr("dicehome")
 		}
-		/*
-			개발 Part 74 (폭탄 자리)
-			body[diceable] 과 짝을 이루는 속성이다.
-			  bombable="true"  지금 이 칸에서 폭탄을 놓을 수 있다
-			  bombable 없음    링 위이거나 자격이 없다
-			CSS 가 아이콘 / 활성 상태를 이 속성으로 나눌 수 있게 둔다.
-			아이콘 자체는 아래 Meta 동기화가 직접 문자로 넣으므로
-			이 속성이 없어도 화면은 정상 동작한다.
-		*/
 		try{
 			var _mb = window.MetaIcon ? window.MetaIcon() : null
 			if(_mb && _mb.act === "bomb" && _mb.ready === "1"){
@@ -1125,35 +1100,6 @@ window.TileSync = function(){
 		if(before !== after){
 			$li.html(after)
 		}
-		/*
-			개발 Part 74 (두 번째 슬롯 아이콘)
-			첫 슬롯처럼 통째로 교체하지 않는다.
-			  a.hashType.Meta 안에는 #dice 슬롯머신이 들어 있다.
-			  innerHTML 을 갈아끼우면 착지 애니메이션이 끊긴다(개발 Part 52).
-			속성과 직계 <i> 하나만 손댄다.
-			#dice 노드는 형제이므로 전혀 영향을 받지 않는다.
-			DiceSpinBusy 중에는 위에서 이미 return 했으므로
-			여기까지 오지 않는다.
-		*/
-		/*
-			개발 Part 75 (두 번째 슬롯 교체)
-			개발 Part 74 는 Meta 노드의 <i> 만 갈아끼웠다.
-			그 노드는 링 위 전용으로 스타일링돼 있어
-			내륙에서는 아무리 채워도 화면에 뜨지 않았다.
-			이제 슬롯 종류 자체를 바꾼다.
-			  링 위    a.hashType.Meta + #dice
-			  링 밖    a.hashType.Bomb
-			교체 조건
-			  첫 슬롯처럼 html 문자열 비교로 하지 않는다.
-			  playSpin 이 <ul> 에 data-playslot 속성을 남기고
-			  DiceSpinReset 전까지 지우지 않으므로,
-			  문자열 비교로는 굴림이 끝난 뒤 매 프레임 diff 가 나서
-			  주사위 노드를 계속 다시 만들게 된다.
-			  종류가 바뀔 때만 교체하고, 그 외에는 속성만 맞춘다.
-			스핀 중
-			  위 DiceSpinBusy 가드에서 이미 return 했으므로
-			  여기까지 오지 않는다(개발 Part 52).
-		*/
 		try{
 			var _meta = window.MetaIcon ? window.MetaIcon() : null
 			if(_meta){
@@ -1181,11 +1127,6 @@ window.TileSync = function(){
 		return false
 	}
 }
-/*
-	개발 Part 15 (규칙 R3)
-	주사위를 굴릴 수 있는 상태인가.
-	링 위 + 레이드 미참가 + 미사망 + 진행 중 아님.
-*/
 window.CanRollDice = function(){
 	var cookies = window.cookies
 	if(!cookies){
@@ -2004,9 +1945,14 @@ window.Subscribe = function(){
 			OAuth3.xhr.abort()
 			delete OAuth3.xhr
 		}
-
-		var cookies = JSON.parse(res.body.cookies)
-
+		/* 개발 Part 94 : 쿠키 파싱은 CookiesParse 로 일원화한다 */
+		var cookies = window.CookiesParse
+			? window.CookiesParse(res.body.cookies)
+			: null
+		if(!cookies){
+			console.log("[push] subscribe response :: cookies unreadable")
+			return
+		}
 		if(cookies.vapid){
 			var $submit = $form.querySelector('input[type="submit"]')
 
@@ -3388,24 +3334,23 @@ OAuth3.on("ready", function(e){
 
 	window.Swap = function(){
 		var player = window.players.self()
-
 		if(player){
 			var cookies = window.cookies
-
 			if(OAuth3.xhr){
 				OAuth3.xhr.abort()
 				delete OAuth3.xhr
 			}
-
 			var url = "https://memepoly.com"
-
 			if(OAuth3.localhost){
 				url = "http://localhost:3001"
 			}
-
 			var body = {
 				emoji : player.emoji,
 				assets : []
+			}
+			var _swapNonces = window.Nonces ? window.Nonces() : ""
+			if(_swapNonces){
+				body.nonces = _swapNonces
 			}
 
 			var dice = cookies.dice * 1
@@ -4041,15 +3986,6 @@ OAuth3.on("ready", function(e){
 		window.BoardCallback = async function(resp){
 			var url = new URL(window.location.href)
 			var _dice = window.cookies.dice * 1
-			/*
-				개발 Part 76 (쿠키 파싱 방어)
-				현행은 여기서 바로 JSON.parse 를 했다.
-				중첩 JSON 이 한 번이라도 깨지면 이 줄에서 예외가 나고
-				아래 전부(맵 / 플레이어 / 툴팁 / 폴링 전환)가 실행되지 않는다.
-				폴링은 계속 도는데 화면만 멈춘 상태가 된다.
-				복구에 실패하면 직전 쿠키를 유지하고 이번 프레임만 건너뛴다.
-				다음 폴링이 정상 응답을 받으면 저절로 복구된다.
-			*/
 			var cookies = window.CookiesParse(resp.body.cookies)
 			if(!cookies){
 				console.log("[board] callback skipped :: cookies unreadable")
@@ -4349,12 +4285,38 @@ OAuth3.on("ready", function(e){
 								asset.address = ethers.hashMessage(asset.emoji)
 								asset.address = ethers.computeAddress(asset.address).toLowerCase()
 								var amm = cookies[asset.address]
-								
-								asset.balance = amm.x - amm.y
 								var type = ""
 								var $asset = $(`#${asset.address}`)
 								if($asset.length){
 									type = $asset.attr("type")
+								}
+								/*
+									개발 Part 92 (시세 미도착 방어)
+									현행 문제
+									  amm 검사 없이 amm.x 를 읽어
+									    TypeError: Cannot read properties of undefined (reading 'x')
+									  로 Callback 전체가 중단됐다.
+									  cookies[address] 는 서버가 query.assets 를 받았을 때만 채운다.
+									  잔액 버튼은 .emoji_asset 에 .on 을 붙인 뒤 폴링을 새로 보내는데,
+									  그 전에 나가 있던 응답이 먼저 도착하면 시세가 없다.
+									  이동 중에는 항상 in-flight 응답이 있어 재현 확률이 높다.
+									조치
+									  같은 파일의 총액 계산 루프와 같은 방어를 건다.
+									  시세가 없으면 이전에 그려둔 값을 그대로 쓰고,
+									  그것도 없으면 "-" 로 표시한다.
+									  다음 폴링에 quote 가 오면 자동으로 채워진다.
+									가격 산정은 서버 market.pool.priceOf 가 체결 시점에 다시 하므로
+									여기 표시값이 잠깐 비어도 거래 금액에는 영향이 없다.
+								*/
+								if(amm){
+									asset.balance = amm.x - amm.y
+								}else{
+									var _prevBalance = $asset.length
+										? $asset.find(".col.y .amount span").text()
+										: ""
+									asset.balance = (_prevBalance && !isNaN(_prevBalance * 1))
+										? (_prevBalance * 1)
+										: "-"
 								}
 								/*
 									개발 Part 17 (상점)
@@ -4552,16 +4514,6 @@ OAuth3.on("ready", function(e){
 					}else{
 						$('.emoji_asset[method="notify"]').removeClass("on")
 					}
-					
-					/*
-						개발 Part 14 (검수) - E15
-						서버는 flags 를 배열로 만들면서 문자열 키(#red / #blue / hash)를 붙인다.
-						JSON.stringify 는 배열의 문자열 키를 버리므로
-						클라이언트에는 빈 배열 [] 로 도착한다.
-						서버가 객체로 바꿔 내려보내면 flags.forEach 가
-						  TypeError: flags.forEach is not a function
-						이 된다. 형태를 배열로 정규화한다.
-					*/
 					var flags = []
 					var _rawFlags = resp.body.flags
 					if(_rawFlags){
@@ -4637,44 +4589,20 @@ OAuth3.on("ready", function(e){
 							try{
 								var _nonce = row.Cc.split(` ${hashtag}`)[1]
 									_nonce = _nonce.split("@")[0].trim()
-
-								if(progress.nonce != _nonce && _nonce.indexOf(cc_address) == -1 && ((!row.Flag && window.Biomes[hashtag]) || row.Flag && !window.Biomes[hashtag]) ){
+								if(row.Subject == "#nonce"){
+									if(_nonce && OAuth3.nonces.indexOf(_nonce) == -1){
+										OAuth3.nonces.push(_nonce)
+									}
+								}else if(progress.nonce != _nonce && _nonce.indexOf(cc_address) == -1 && ((!row.Flag && window.Biomes[hashtag]) || row.Flag && !window.Biomes[hashtag]) ){
 									var _index = OAuth3.nonces.indexOf(_nonce)
-
 									if(_index > -1){
 										OAuth3.nonces.splice(_index, 1)
 									}
 								}
 							}catch(err){
-
 							}
 
 							if(window.Biomes[hashtag] && b){
-								/*
-									개발 Part 74 (바이옴 장식 키 정렬)
-									현행 문제
-									  장식 마커는 window.map.biomes[키] 에 존재하기만 하면
-									  해당 타일에 나무 / 바위를 그리는 방식이다.
-									  그 "키" 는 타일 에셋의 id 와 같아야 한다.
-									    var _id = crc32(cc_address+"#"+b.biome+b.x+b.z).toString(32).toUpperCase()
-									    if(window.map.biomes[_id]){ isBiome = true }
-									  개발 Part 68 이전 클라이언트 생성기도 이 키를 썼고,
-									  listToBiomes() 주석도 crc32 키를 명시한다.
-									  그런데 서버 decorRows 는 Id 를 좌표 문자열로 바꿨다.
-									    Id : "dc:" + bx + ":" + bz
-									  그 결과 window.map.biomes["dc:5.5:-40.5"] 가 만들어지고,
-									  렌더는 window.map.biomes["2TPHPJV"] 를 찾는다.
-									  아무도 읽지 않는 키에 저장되어 장식이 통째로 사라졌다.
-									서버가 crc32 를 만들 수 없는 이유
-									  crc32 는 프론트 전용 함수이고,
-									  시드에 들어가는 cc_address 도 서버는 "0x" 를 벗기지 않아
-									  같은 값을 낼 수 없다.
-									  따라서 재키잉은 여기서 한다.
-									좌표 형식
-									  row.x / row.z 는 서버가 숫자로 실어 보내고,
-									  _assets 루프의 b.x / b.z 도 숫자다.
-									  문자열 결합 결과가 동일하므로 키가 일치한다.
-								*/
 								var _decoId = row.Id
 								try{
 									_decoId = crc32(cc_address + hashtag + row.x + row.z)
@@ -4701,22 +4629,7 @@ OAuth3.on("ready", function(e){
 										color: "",
 										x : row.x,
 										y : y,
-										/*
-											개발 Part 14 (검수) - E9
-											현행은 z 에 row.y 를 넣었다.
-											row 는 서버가 Cc 에서 조립한 행이라 y 속성이 없어
-											z 가 항상 undefined 였다.
-											이 객체는 window.map.biomes[row.Id] 로 들어가고
-											listToBiomes() 가 다시 읽으므로
-											바이옴 장식이 좌표 없는 유령 항목이 됐다.
-										*/
 										z : row.z,
-										/*
-											개발 Part 74
-											서버가 정한 장식 이모지를 그대로 보관한다.
-											아래 _assets 서명이 이 값을 읽어
-											장식이 붙고 떨어질 때 리렌더를 강제한다.
-										*/
 										emoji : row.emoji ? row.emoji : ""
 									}
 									if(window.map.nonces[_decoId]){
@@ -5009,6 +4922,9 @@ OAuth3.on("ready", function(e){
 							}else{
 								$body.removeAttr("diceable")
 							}
+							if(window.RingSync){
+								window.RingSync()
+							}
 							if(window.DiceHome && window.DiceHome()){
 								$body.attr("dicehome", "true")
 							}else{
@@ -5291,27 +5207,6 @@ OAuth3.on("ready", function(e){
 								var _el = $('[id="'+row.Id+'"]')
 								if(!window.sticker[row.Id]){
 									window.sticker[row.Id] = true
-									/*
-										개발 Part 47 (new 플래그 인덱싱)
-										현행 문제
-										  stickers[len].new = true
-										  len 은 이모지 그룹 안의 마지막 인덱스인데
-										  stickers 는 전체 아이템 평면 배열이다.
-										  같은 이모지만 먹을 때는 우연히 맞았지만
-										  이모지 두 종류를 동시에 먹으면
-										    i=0 (A)  stickers[0].new = true  -> A
-										    i=1 (B)  stickers[0].new = true  -> 또 A
-										  가 되어 B 에는 new 가 서지 않고
-										  아래 if(row.new) 를 통과하지 못해
-										  B 의 획득 애니메이션이 아예 뜨지 않았다.
-										  (gatherRate 2 이상, 게이트 드랍 동시 획득 등)
-										조치
-										  자기 자신에게 표시한다.
-										  실제 애니메이션 대상은 아래
-										    if(len == row.index)
-										  이 걸러 그룹당 마지막 1개만 남기므로
-										  결과 개수는 달라지지 않는다.
-									*/
 									row.new = true
 								}
 
@@ -5329,42 +5224,7 @@ OAuth3.on("ready", function(e){
 								}
 							}
 						}
-
 						$('[id="'+player_hash+'"] items ul').html(after_body)
-						
-						/*
-							개발 Part 81 (아이템 컨테이너)
-							현행은 후손 선택자 "emojis .items" 를 썼다.
-							문서에는 .items 가 두 개 있다.
-							  .deck > .items                        진짜 아이템 목록
-							  .deck > .emojis > .emoji_asset.items  덱 안 자리표시자
-							둘 다 매칭되어 같은 HTML 이 두 곳에 들어갔고
-							화면에 아이템이 두 번 보였다.
-							또 jQuery .html() 은 여러 요소를 받으면
-							읽을 때는 첫 요소만 반환하고 쓸 때는 전부에 쓴다.
-							그래서 before/after 비교가 한쪽만 보고 판단하는
-							비대칭 상태이기도 했다.
-							ItemsDeck() 이 진짜 목록 하나만 돌려준다.
-						*/
-						/*
-							개발 Part 88 (아이템 컨테이너)
-							개발 Part 81 이 room.js / panel.js 는 고쳤는데
-							이 블록만 원본 선택자가 남아 있었다.
-							  $("emojis .items")
-							후손 선택자라 두 곳을 모두 잡는다.
-							  .deck > .items                        진짜 목록
-							  .deck > .emojis > .emoji_asset.items  덱 자리표시자
-							jQuery .html(값) 은 매칭된 전부에 쓰므로
-							같은 아이템이 화면에 두 번 그려졌다.
-							읽기는 첫 요소만 돌려주므로 before/after 비교도 비대칭이었다.
-							  자리표시자만 바뀐 프레임에서는 차이를 못 잡고
-							  진짜 목록만 바뀐 프레임에서는 매번 다시 그린다
-							ItemsDeck() 이 진짜 목록 하나만 돌려준다.
-							정의는 이 파일 위쪽에 있다.
-							  window.ItemsDeck = function(){
-							      return $("emojis .items").not(".emoji_asset")
-							  }
-						*/
 						var $itemsDeck = window.ItemsDeck
 							? window.ItemsDeck()
 							: $("emojis .items").not(".emoji_asset")
@@ -6105,13 +5965,6 @@ OAuth3.on("ready", function(e){
 					try{
 						if(cookies.onJail && !window.BoardCallback.jailed){
 							window.BoardCallback.jailed = true
-							/*
-								개발 Part 30 (감옥 = 필드 진입점)
-								감옥 칸은 안전지대이자 링을 벗어나는 유일한 지점이다.
-								기존 문구 "You can move freely here" 는
-								"이 칸 안에서 자유롭다" 로 읽혀 진입점이라는 사실이 전달되지 않았다.
-								칸을 벗어나면 다시 주사위 전용으로 돌아간다는 것도 함께 알린다.
-							*/
 							window.Notice("SAFE ZONE",
 								"Step off the path into the field. Leave this tile and it's dice only again",
 								3200)
@@ -6135,21 +5988,6 @@ OAuth3.on("ready", function(e){
 							window.response = resp
 						}
 					}
-					/*
-						개발 Part 73 (백그라운드 굴림 보호)
-						현행 문제
-						  이 분기는 Roll.ing 을 무조건 지우고 폴링을 켠다.
-						  백그라운드에서 타이머가 늦어져 아직 걷는 중인데
-						  응답 하나가 도착하면 굴림이 끊긴다.
-						  그러면 중간 좌표로 폴링이 나가고,
-						  서버가 클레임을 거절해 앵커로 되돌아간다.
-						조치
-						  굴림이 살아 있으면 폴링 전환을 미룬다.
-						  다 걷고 나면 window.Roll 의 소진 분기가 직접 폴링을 켠다.
-						    if(typeof window.Poll.ing == "undefined"){
-						        window.Poll.ing = setInterval(window.Poll, 600)
-						  즉 여기서 안 켜도 흐름이 끊기지 않는다.
-					*/
 					if(typeof window.Poll.ing == "undefined" && !cookies.damage &&
 						!(window.RollBusy && window.RollBusy())){
 						if(cookies.hash){
@@ -6410,11 +6248,6 @@ OAuth3.on("ready", function(e){
 									var fdx = dirs8[d0][0] / fm
 									var fdz = dirs8[d0][1] / fm
 									var total = (dirX * fdx) + (dirZ * fdz)
-									/*
-										링 순서 전방 보너스.
-										동점 해소용이므로 코사인 항(최대 1.0)을 넘지 않는 크기로 둔다.
-										값을 키우면 링 순서가 각도를 이겨 순간이동이 된다.
-									*/
 									if(_curIdx >= 0 && _snapLen > 0){
 										var fwd0 = (_keys[fk] - _curIdx + _snapLen) % _snapLen
 										if(fwd0 === 1){
@@ -6682,23 +6515,6 @@ OAuth3.on("ready", function(e){
 
 			window.BoardPoll = async function(){
 				try{
-					/*
-						개발 Part 73 (굴림 중 폴링 차단)
-						현행 문제
-						  굴림이 시작되면 Roll 분기가 Poll.ing 을 지운다.
-						    clearInterval(window.Poll.ing)
-						    delete window.Poll.ing
-						  그런데 그 사이 이미 예약된 호출이 한 번 더 실행될 수 있고,
-						  MatchRefresh / reboard 등 다른 경로도 Poll() 을 직접 부른다.
-						  그때 self_player 는 걷는 도중의 중간 칸이다.
-						  서버 RingPathReach 는 시작 칸에서 dice 칸 떨어진 곳을 기대하므로
-						  중간 좌표 클레임을 거절하고 자기 계산으로 도착을 정한다.
-						  커밋 nonce 도 아직 없어 앵커가 갱신되지 않으므로
-						  다음 응답의 axis 가 직전 앵커가 되어 되돌아간다.
-						조치
-						  걷는 중에는 폴링을 보내지 않는다.
-						  다 걷고 나면 Roll 의 소진 분기가 폴링을 다시 켠다.
-					*/
 					if(window.RollBusy && window.RollBusy()){
 						return
 					}
@@ -6785,15 +6601,6 @@ OAuth3.on("ready", function(e){
 								body.x = plant.x
 								body.z = plant.z
 							}
-							/*
-								개발 Part 68 (바이옴 장식 서버 생성)
-								여기 있던 body.rows 조립을 제거한다.
-								현행은 클라이언트가 Math.random() 으로 뽑은 장식 좌표를
-								매 폴링마다 올려 보냈고, 서버는 values 에 담았다가 버렸다.
-								  console.log("[legacy] skipped " + values.length + " row inserts")
-								장식은 이제 서버가 match.hash 로 결정론 생성해 내려준다.
-								올릴 것도, 받아줄 것도 없다.
-							*/
 							OAuth3.xhr = OAuth3.fetch({
 								method : "POST",
 								url : url,
@@ -6912,13 +6719,6 @@ OAuth3.on("ready", function(e){
 				}
 				window.setFrameloop("demand")
 			})
-			/*
-				개발 Part 73 (탭 가시성)
-				현행은 focus / blur 만 봤다.
-				모바일 브라우저와 일부 데스크톱 환경에서는
-				탭 전환 시 focus 가 오지 않고 visibilitychange 만 오는 경우가 있다.
-				같은 처리를 붙여 두 경로 모두를 덮는다.
-			*/
 			document.addEventListener("visibilitychange", function(){
 				try{
 					if(document.hidden){
@@ -6929,6 +6729,15 @@ OAuth3.on("ready", function(e){
 						return
 					}
 					window.setFrameloop("always")
+					try{
+						if(window.RollBusy && window.RollBusy() && window.Roll){
+							window.Roll.at = Date.now() - 4000
+						}
+					}catch(err){
+					}
+					if(window.RingSync){
+						window.RingSync()
+					}
 					if(window.TileSync){
 						window.TileSync()
 					}
@@ -7038,19 +6847,21 @@ OAuth3.on("ready", function(e){
 												body : body,
 												url : url
 											}, function(_resp){
-												window.cookies = JSON.parse(_resp.body.cookies)
-
-												$body.attr("team",cookies.team ? cookies.team : "")
-
+												var _startCookies = window.CookiesParse
+													? window.CookiesParse(_resp.body.cookies)
+													: null
+												if(!_startCookies){
+													console.log("[board] start response :: cookies unreadable")
+													_startCookies = window.cookies ? window.cookies : {}
+												}
+												window.cookies = _startCookies
+												$body.attr("team", _startCookies.team ? _startCookies.team : "")
 												if(OAuth3.xhr){
 													OAuth3.xhr.abort()
 													delete OAuth3.xhr
 												}
-
 												window.response = _resp
-
 												window.Callback(_resp)
-
 												$root.scrollTop(0)
 											})
 										}
@@ -7060,14 +6871,6 @@ OAuth3.on("ready", function(e){
 								return
 							}
 						}
-
-						/*
-							개발 Part 17 (미니맵)
-							현행은 e.target 이 정확히 .voronoi 일 때만 토글됐다.
-							실제로는 안쪽 img / flags 가 클릭되므로 대부분 먹지 않았다.
-							closest 로 올려 잡고, 줌 후에는 컨테이너 크기가 바뀌므로
-							다음 프레임에 MapFocus 로 다시 중앙 정렬한다.
-						*/
 						var $voronoi = $this.closest(".voronoi")
 						if($voronoi.length){
 							if($voronoi.hasClass("zoom")){
@@ -7470,7 +7273,12 @@ OAuth3.on("ready", function(e){
 													window.Notice("NO BOMBS", "Bombs do not work on the path", 2200)
 													return
 												}
-												if(!cookies.enter){
+												/*
+													개발 Part 92 (감옥 외출 폭탄 허용)
+													서버 cc == "bomb" 은 링 여부만 본다. enter 를 요구하지 않는다.
+													감옥 외출 중에도 NPC 는 붙으므로 반격 수단을 준다.
+												*/
+												if(!cookies.enter && !cookies.jail){
 													window.Notice("NOT IN RAID", "Deploy first to use bombs", 2200)
 													return
 												}
@@ -7492,41 +7300,6 @@ OAuth3.on("ready", function(e){
 														return
 													}
 												}
-												/*
-													개발 Part 18 (주사위 게이트 재작성)
-													개발 Part 17 의 오수정을 되돌린다.
-													Part 17 은 !cookies.enter 를 "아직 출격 안 함" 으로만 보고
-													무조건 RolePick() 을 띄웠다.
-													그런데 이 프로젝트의 확정 규칙(CanFreeMove 주석)은
-													  enter 없음 = 보드게임 모드 = 링 위를 주사위로 전진
-													이다. 즉 !enter 는 "주사위를 굴리는 정상 상태" 다.
-													그래서 링 위에서 주사위를 굴리려는 순간마다
-													UCAV 설명 팝업이 떠 버렸다.
-													확정 판정 순서 (전부 프론트 window.fields 기준)
-													  0) 링이 아직 확정되지 않음 -> 아무 것도 하지 않는다
-													  1) 링 위(EDGE)
-													       UCAV 로 출격 중 -> 주사위 불가 안내
-													       게이트(🚪) + 미출격 -> 역할 선택(출격 진입점)
-													       그 외 -> 주사위
-													  2) 링 밖(내륙)
-													       출격 중 -> 폭탄
-													       미출격 -> 역할 선택
-												*/
-												/*
-													개발 Part 52 (연타 차단)
-													현행 문제
-													  재진입 가드가 playSpin 안에만 있었다.
-													    if ($(this).is(':animated')) return;
-													  $(this) 는 클릭 시점에 새로 조회한 노드다.
-													  스핀 도중 툴팁이 재렌더되면 노드가 교체되고
-													  새 노드는 애니메이션 중이 아니라 그냥 통과한다.
-													  그 결과 연타할 때마다 POST 가 나가고
-													  응답마다 다시 재렌더가 일어나 악순환이 된다.
-													조치
-													  DOM 이 아니라 스핀 상태로 판정한다.
-													  노드가 교체돼도 상태는 남아 있다.
-													  요청 자체를 보내지 않으므로 재렌더도 유발하지 않는다.
-												*/
 												if(window.DiceSpinBusy && window.DiceSpinBusy()){
 													return
 												}
@@ -7534,12 +7307,6 @@ OAuth3.on("ready", function(e){
 													window.Notice("MAP LOADING", "Board path is not ready", 1800)
 													return
 												}
-												/*
-													개발 Part 46 (판정 단일화)
-													슬롯 렌더 / body[edge] 와 같은 EdgeSelf 를 쓴다.
-													이전에는 여기만 원본 좌표로 EdgeField 를 호출해
-													"아이콘은 폭탄인데 눌렀더니 주사위" 가 생겼다.
-												*/
 												var _edgeField = window.EdgeSelf
 													? window.EdgeSelf() : null
 												var _isEdgeHere = _edgeField ? true : false
@@ -7547,34 +7314,6 @@ OAuth3.on("ready", function(e){
 													window.Notice("UCAV", "Drones fight in the field, not on the path", 2200)
 													return
 												}
-												/*
-													개발 Part 29 (게이트)
-													현행 문제
-													  게이트 칸에서는 !enter 인 동안 무조건 RolePick 을 띄우고
-													  return 했다. 그래서 주사위가 영원히 굴러가지 않았다.
-													  링 393칸 중 index % 9 == 0 이 게이트이므로
-													  9칸에 한 번은 반드시 멈춘다.
-													확정 규칙
-													  게이트는 "출격할 수 있는 칸" 일 뿐
-													  "출격해야 하는 칸" 이 아니다.
-													  주사위 버튼은 언제나 주사위다.
-													  출격은 a.hashType.Deploy 로만 한다.
-													링 밖(내륙) + 미출격은 정상 상태가 아니므로
-													복구 경로로 RolePick 을 유지한다.
-												*/
-												/*
-													개발 Part 74 (감옥 외출)
-													현행 문제
-													  개발 Part 29 는 "링 밖 + 미출격" 을
-													  비정상 상태로 보고 RolePick 으로 복구시켰다.
-													  그런데 개발 Part 30 이 감옥을 필드 진입점으로 확정하면서
-													  감옥 외출(jail)은 정상 상태가 됐다.
-													  지금은 감옥에서 한 칸만 걸어 나가도
-													  주사위 자리를 누를 때마다 출격 팝업이 뜬다.
-													조치
-													  jail 은 이 복구 경로에서 제외한다.
-													  아래 앵커 분기가 "걸어서 돌아가라" 로 정확히 안내한다.
-												*/
 												if(!_isEdgeHere && !window.cookies.enter && !window.cookies.jail){
 													if(window.RolePick){
 														window.RolePick()
@@ -7584,64 +7323,11 @@ OAuth3.on("ready", function(e){
 													return
 												}
 												window.cookies.dice = 0
-												
-												/*
-													개발 Part 15 (규칙 R3 / R5)
-													링 위   주사위 이동
-													링 밖   폭탄 투척
-													규칙 R5 에 따라 링에서는 폭탄을 놓지 않는다.
-													개발 Part 31 (링 앵커)
-													현행 문제
-													  "지금 서 있는 칸이 링이면 굴린다" 였다.
-													  감옥에서 자유 이동이 열린 뒤 링을 따라
-													  앞으로 걸어가 거기서 굴리면 그만큼 공짜 전진이고,
-													  통행료 칸 직전까지 뒤로 걸어가면 회피가 됐다.
-													확정 규칙
-													  주사위는 언제나 앵커에서 출발한다.
-													  앵커와 다른 칸에 서 있으면 먼저 앵커로 되돌린다.
-													  앵커가 없고 링 위면 그 칸이 첫 앵커가 된다.
-													  앵커도 없고 링 밖이면 굴릴 수 없다.
-													앵커 복귀는 이미 밟은 칸으로 돌아가는 것이라
-													전진 거리가 늘지 않는다.
-												*/
 												body.cc = ""
 												var _anc = window.RingAnchor ? window.RingAnchor() : null
-												/*
-													개발 Part 54 (앵커 복귀 재정리)
-													개발 Part 47 은 앵커 칸이 아니면 무조건 거절했다.
-													그런데 앵커는 서버 커밋에서만 갱신되므로
-													커밋이 어긋나면 링 위에서도 영영 굴릴 수 없게 된다.
-													확정 규칙
-													  링 위      굴린다. 앵커와 다르면 먼저 앵커로 되돌린다
-													             (개발 Part 31 의 원래 규칙)
-													  링 밖      앵커가 있으면 걸어서 돌아가라고 안내한다
-													             앵커가 없으면 굴릴 수 없다
-													되돌리는 것이 이득이 아닌 이유
-													  앵커는 이미 밟았던 칸이다. 전진 거리가 늘지 않는다.
-													  게다가 서버도 스테이징 시점에 같은 되감기를 한다.
-													    var _anc = RingAnchor()
-													    if(_anc){ ... x = _anc.x; z = _anc.z ... }
-													  프론트가 안 되감아도 서버가 되감으므로,
-													  프론트가 함께 되감아야 화면과 서버가 일치한다.
-													  (개발 Part 47 처럼 프론트만 거절하면
-													   서버 anchorReturn 이 발동해 화면이 한 번 튄다)
-													좌표 비교
-													  개발 Part 36 대로 0.5 그리드로 맞춘 뒤 한다.
-													  lerp 잔차로 같은 칸이 다르다고 판정되는 것을 막는다.
-												*/
 												var _pgx = window.Grid ? window.Grid(player.x) : player.x
 												var _pgz = window.Grid ? window.Grid(player.z) : player.z
 												if(_isEdgeHere){
-													/*
-														개발 Part 56 (복귀 전용 클릭)
-														앵커와 다른 링 칸이면 이번 클릭은 "복귀" 다.
-														되돌리기만 하고 굴리지 않는다.
-														현행(개발 Part 54)은 되돌린 뒤 같은 클릭으로 굴렸다.
-														그러면 사용자는 자기가 어디서 굴렸는지 알 수 없고,
-														"마지막 굴린 칸에서만 굴린다" 규칙이 체감되지 않는다.
-														한 번 더 눌러야 굴러가게 해서 규칙을 드러낸다.
-														(아이콘도 📍 에서 🎲 로 바뀌므로 상태가 보인다)
-													*/
 													if(_anc && (_anc.x !== _pgx || _anc.z !== _pgz)){
 														window.RingReturn(_anc)
 														try{
@@ -7656,48 +7342,16 @@ OAuth3.on("ready", function(e){
 													}
 													query.dice = 10
 													body.cc = "dice"
-													/*
-														개발 Part 18 (Edge 판정)
-														프론트 판정을 서버가 그대로 채택하도록 실어 보낸다.
-														링 위이거나 앵커로 되돌아온 뒤이므로 좌표는 반드시 링이다.
-													*/
 													query.edge = 1
 												}else if(_anc && !cookies.enter){
-													/*
-														링 밖 + 앵커 있음 + 미출격.
-														감옥에서 걸어 나온 상태다. 걸어서 돌아가야 한다.
-														여기서 되감으면 감옥 외출의 위험 부담이 사라진다.
-														개발 Part 74 (출격 중 예외)
-														  현행은 enter 를 보지 않아 출격 중에도 이 분기가 먹었다.
-														  개발 Part 35 가 PMC 게이트 스폰에서
-														    RingAnchorSet(x, z)
-														  를 부르므로, 출격한 PMC 는 항상 앵커를 가진 채
-														  내륙에 있다. 그래서 아래 폭탄 분기가
-														  단 한 번도 실행되지 않았다.
-														  "내륙인데 폭탄이 안 나간다" 의 직접 원인이다.
-														  앵커는 링으로 돌아왔을 때 굴림 기준점이지
-														  필드 행동을 막는 값이 아니다.
-													*/
 													window.Notice("BACK ON PATH",
 														"Walk back to " +
 														Math.floor(_anc.x) + ", " + Math.floor(_anc.z) +
 														" to roll again", 2600)
 													return
 												}else if(window.Biomes[`#${b.biome}`]){
-													/*
-														개발 Part 47 (폭탄 자격)
-														현행은 enter 확인 없이 폭탄으로 빠졌다.
-														감옥 외출 중인 미출격 플레이어가
-														Meta 버튼으로 폭탄을 던질 수 있었다.
-														덱의 💣 는 이미 같은 확인을 한다.
-															if(!cookies.enter){
-																window.Notice("NOT IN RAID", ...)
-														개발 Part 74
-														  문구를 덱과 통일한다.
-														  아이콘은 ready="0" 으로 보이고 있으므로
-														  "왜 안 되는가" 를 정확히 알려야 한다.
-													*/
-													if(!cookies.enter){
+													/* 개발 Part 92 : 감옥 외출 중에도 허용한다 */
+													if(!cookies.enter && !cookies.jail){
 														window.Notice("NOT IN RAID",
 															"Deploy first to use bombs", 2200)
 														return
@@ -7713,25 +7367,6 @@ OAuth3.on("ready", function(e){
 													return
 												}
 												$body.attr(body.cc,query.dice)
-												/*
-													개발 Part 44 (주사위 소리)
-													슬롯 애니메이션이 실제로 시작되는 유일한 지점이다.
-													playSpin 은
-													  if ($(this).is(':animated')) return
-													로 이미 돌고 있으면 그냥 빠져나가므로
-													같은 판정을 먼저 해 소리와 화면이 어긋나지 않게 한다.
-													개발 Part 46 (폭탄 오인)
-													현행 문제
-													  playSpin() 이 body.cc 와 무관하게 실행됐다.
-													  폭탄을 던져도 주사위 슬롯이 돌아
-													  "주사위 요청이 나갔다" 로 오인됐다.
-													  $body.attr("bomb", undefined) 도 무의미하다.
-													  jQuery attr 는 값이 undefined 면 게터로 동작해
-													  속성을 만들지 않는다.
-													조치
-													  주사위일 때만 소리와 애니메이션을 돌린다.
-													  폭탄은 SfxSync 가 결과(bomb / damage)를 받아 울린다.
-												*/
 												if(body.cc == "dice"){
 													if(window.DiceSpinStart && window.DiceSpinStart()){
 														try{
@@ -7743,13 +7378,6 @@ OAuth3.on("ready", function(e){
 													}
 												}
 											}else if($this.hasClass("Reserved")){
-												/*
-													개발 Part 37 (예약 칸)
-													왜 여기서는 못 짓는지 알려 준다.
-													감옥은 안전지대이자 필드 진입점,
-													게이트는 출격구, 아이템 칸은 파밍 보상 칸이다.
-													이 셋을 사유화할 수 있으면 보드 규칙이 무너진다.
-												*/
 												var _rkind = $this.attr("tile") ? $this.attr("tile") : ""
 												var _rmsg = window.ReservedNotice
 													? window.ReservedNotice(_rkind)
@@ -7757,16 +7385,6 @@ OAuth3.on("ready", function(e){
 												window.Notice(_rmsg.head, _rmsg.body, 2400)
 												return
 											}else if($this.hasClass("Build")){
-												/*
-													개발 Part 32 (부동산 건설)
-													덱에 있던 건설 버튼(method="property")을 여기로 옮긴다.
-													덱에서는 어느 칸에서나 눌렸지만
-													서버 #property 는 fields[x:z](해안 링)에만 반응하므로
-													내륙에서 누르면 조용히 아무 일도 일어나지 않았다.
-													링 위에서만 노출되는 이 자리가 정확한 위치다.
-													링이 확정되기 전에는 판정 자체가 불가능하므로
-													먼저 EdgeReady 를 확인한다.
-												*/
 												if(window.EdgeReady && !window.EdgeReady()){
 													window.Notice("MAP LOADING", "Board path is not ready", 1800)
 													return
@@ -7775,11 +7393,6 @@ OAuth3.on("ready", function(e){
 													window.Notice("NOT ON PATH", "Build only on the board path", 2200)
 													return
 												}
-												/*
-													개발 Part 37 (예약 칸)
-													슬롯 렌더에서 이미 걸렀지만, 폴링 사이에 칸이 바뀌면
-													옛 슬롯이 남아 있을 수 있다. 여기서 다시 확인한다.
-												*/
 												var _bk = window.ReservedTile
 													? window.ReservedTile(player.x, player.z) : ""
 												if(_bk){
@@ -7837,13 +7450,6 @@ OAuth3.on("ready", function(e){
 												$status.innerHTML = `<div class="loading">
 													<strong>Loading...</strong>
 												</div>`
-												/*
-													개발 Part 67 (폴링 중단 억제)
-													여기서 무조건 abort 하면
-													주사위 커밋을 나르던 폴링이 끊겨
-													앵커가 옛 칸에 굳고 📍 가 뜬다.
-													미정산 nonce 가 있으면 끊지 않는다.
-												*/
 												if(window.PollBreak){
 													window.PollBreak()
 												}else if(OAuth3.xhr){
@@ -7991,21 +7597,6 @@ OAuth3.on("ready", function(e){
 											if($this.find(".emoji.color").attr("color") == ""){
 												return
 											}
-											/*
-												개발 Part 31 (아이템 선택)
-												현행 문제
-												  음식은 클릭 즉시 섭취돼 팔 수가 없었고,
-												  장비는 스왑 토글만 돼 장착할 수가 없었다.
-												  같은 클릭이 아이템 종류에 따라 다르게 동작하는데
-												  안내가 없어 식량을 실수로 먹게 된다.
-												조치
-												  무엇을 할지 고르는 팝업(ItemPick)을 띄운다.
-												  먹기 / 장착 / 판매 를 한 화면에서 고른다.
-												  실제 동작은 팝업의 위임 핸들러가 수행하므로
-												  기존 Consume / Equipment / 스왑 경로는 그대로다.
-												스왑 의도(SwapIntent)로 열린 잔액 화면에서는
-												팝업을 건너뛴다. 그때는 이미 "판다" 가 확정된 흐름이다.
-											*/
 											if(window.ItemPick && !window.SwapIntent){
 												window.ItemPick(emoji, $this)
 												return
@@ -8096,14 +7687,19 @@ OAuth3.on("ready", function(e){
 														}
 
 														var response = function(res){
-															var cookies = JSON.parse(res.body.cookies);
-
+															/* 개발 Part 94 : 쿠키 파싱은 CookiesParse 로 일원화한다 */
+															var cookies = window.CookiesParse
+																? window.CookiesParse(res.body.cookies)
+																: null
+															if(!cookies){
+																console.log("[auth] response :: cookies unreadable")
+																cookies = window.cookies ? window.cookies : {}
+															}
 															if(cookies.email){
 																$status.innerHTML = ''
 															}else{
 																$status.innerHTML = '<a href="/login/">Sign In</a>'
 															}
-
 															if(OAuth3.xhr){
 																OAuth3.xhr.abort()
 																delete OAuth3.xhr
@@ -8203,17 +7799,12 @@ OAuth3.on("ready", function(e){
 											if(plant){
 												return
 											}
-											/*
-												개발 Part 15 (규칙 R5)
-												링(edge) 칸에서는 폭탄을 놓을 수 없다.
-												서버가 bombBlocked="edge" 로 거절하므로
-												요청 자체를 보내지 않는다.
-											*/
 											if(window.IsEdge(player.x, player.z)){
 												window.Notice("NO BOMBS", "Bombs do not work on the path", 2200)
 												return
 											}
-											if(!cookies.enter){
+											/* 개발 Part 92 : 감옥 외출 중에도 허용한다 */
+											if(!cookies.enter && !cookies.jail){
 												window.Notice("NOT IN RAID", "Deploy first to use bombs", 2200)
 												return
 											}
@@ -8779,27 +8370,6 @@ OAuth3.on("ready", function(e){
 			window.BoardHashChange = function(e){
 				var cookies = window.cookies
 				document.scrollingElement.scrollTop = 0
-				/*
-					개발 Part 72 (보드 고립 복구)
-					현행 문제
-					  룸에서 보드로 나올 때 좌표를 손대지 않았다.
-					  window.players.self() 는 룸과 보드가 같은
-					  window.current.current.position 을 쓰므로
-					  룸에서 서 있던 칸이 그대로 보드 좌표가 된다.
-					  그 좌표가 링 밖 내륙이면
-					  주사위도 이동도 막혀 고립된다.
-					조치
-					  보드로 나가는 순간 좌표 잠금을 푼다.
-					    current.axis    다음 응답의 axis 를 무조건 채택하게 한다
-					    cookies.axis    옛 룸 좌표를 지운다
-					  서버가 앵커 또는 링 칸으로 교정해 내려주므로
-					  첫 응답에서 정상 좌표로 확정된다.
-					  Snap 을 세워 그 이동을 보간 없이 즉시 반영한다.
-					  (링 반대편까지 기어가는 연출을 막는다)
-					앵커
-					  판이 바뀌지 않았다면 서버 anchor 쿠키가 살아 있다.
-					  서버가 그 칸으로 되돌리므로 진행 상황을 잃지 않는다.
-				*/
 				try{
 					delete window.current.axis
 				}catch(err){
@@ -8815,11 +8385,6 @@ OAuth3.on("ready", function(e){
 				window.MapReset()
 				if(window.MapGen){
 					window.MapGen.ready = false
-					/*
-						개발 Part 16 (미니맵)
-						보드가 바뀌면 이전 매치의 base64 는 무효다.
-						캐시를 비워야 apply(true) 이후 sync() 가 새 맵을 그린다.
-					*/
 					window.MapGen.tiles = null
 					window.MapGen.dataURL = ""
 					window.MapGen.paintedKey = ""

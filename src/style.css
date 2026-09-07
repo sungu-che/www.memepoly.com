@@ -2568,6 +2568,7 @@ body[panel] #panel{opacity: 1; pointer-events: initial;}
 #panel .row .name{display: block; margin-bottom: 0.4em; font-weight: 900; color: #fff;}
 #panel .row .cost{display: block; font-size: 0.8em; color: #fde030;}
 #panel .row .mat{display: block; margin-top: 0.4em; font-size: 1.2em;}
+#panel .row .mat span{color: #fff;}
 #panel .close{display: block; margin: 1.2em auto 0; border-radius: 1em; max-width: 380px; height: 3.4em; line-height: 3.4em; font-weight: 900; cursor: pointer; background-color: #fde030; color: #000;}
 
 /* ===== My Room (mode=first) ===== */
@@ -3400,11 +3401,6 @@ body:not([myroom]) #myroom{overflow: hidden;}
 	pointer-events: none;
 }
 #myroom .myroom_body .bulk .btn.deposit-all.disabled span{color: #ffffff44;}
-/*
-	제출 중.
-	pointer-events 로 물리적으로 막고,
-	myroom.js 가 클래스 검사와 busy 플래그로 한 번 더 막는다.
-*/
 #myroom .myroom_body .bulk .btn.deposit-all.loading{
 	border-color: #ffffff55;
 	background: none;
@@ -3474,36 +3470,6 @@ body[zoom="10"] #root player .emoji i.role-emoji{
 	width: 6vh;
 	font-size: 0.9em;
 }
-
-/*
-	개발 Part 77 (폭탄 슬롯)
-	현행 문제
-	  개발 Part 75 가 툴팁 두 번째 슬롯을 둘로 나눴다.
-	    링 위    a.hashType.Meta + #dice
-	    링 밖    a.hashType.Bomb
-	  JS 는 정상 동작해 DOM 에 슬롯이 만들어졌는데 화면에 뜨지 않았다.
-	  이 파일의 슬롯 스타일이 클래스별로 개별 작성돼 있기 때문이다.
-	    개발 Part 45  Build / Deploy 아이콘
-	    개발 Part 59  Exit 버튼
-	  즉 .hashType 은 빈 자리표시자(<a class="hashType"></a>)가 기본이고
-	  실제 표시는 각 클래스 규칙이 켠다.
-	  새 클래스 Bomb 에는 그 규칙이 없어 자리만 차지한 채 비어 있었다.
-	  결정적으로 개발 Part 50 이 인용한 아래 규칙이
-	    #root player[type="image"] i{display: none;}
-	  후손 선택자라 툴팁 안의 <i> 까지 감춘다.
-	  Build / Exit 은 각자 규칙에서 이 display 를 되살리지만
-	  Bomb 은 되살리는 곳이 없었다.
-	조치
-	  Build 와 동일한 표시 규칙을 부여한다.
-	  구조가 같으므로(.hashType > i.emoji.color) 값도 같게 둔다.
-	ready 속성
-	  1  던질 수 있다
-	  0  감옥 외출 중이라 자격이 없다 (개발 Part 47)
-	  감추지 않고 흐리게 둔다.
-	  감추면 "왜 아무것도 없지" 가 되고,
-	  똑같이 보이면 "눌러도 안 되는 버튼" 이 된다.
-	  Exit 슬롯의 ready 처리와 같은 방식이다.
-*/
 #root player tooltip a.hashType.Bomb{
 	opacity: 1;
 	visibility: visible;
@@ -3526,14 +3492,10 @@ body[zoom="10"] #root player .emoji i.role-emoji{
 #root player tooltip a.hashType.Bomb[ready="1"] i{
 	animation: none;
 }
-/*
-	개발 Part 77 (깃발 슬롯)
-	개발 Part 75 가 Fire 슬롯을 감옥 외출 중에도 노출하도록 바꿨다.
-	  ready="1"  출격 중. 깃발이 정상 동작한다
-	  ready="0"  감옥 외출 중. 서버 flag 는 team 만 보므로 동작은 하되
-	             레이드 상태가 아님을 시각적으로 구분한다
-	기존 .Fire 규칙은 그대로 두고 투명도만 얹는다.
-*/
-#root player tooltip a.hashType.Fire[ready="0"]{
+#root player[self="true"] tooltip li a.hashType.Fire{
+	opacity: 1;
+	pointer-events: initial;
+}
+#root player[self="true"] tooltip li a.hashType.Fire[ready="0"]{
 	opacity: 0.55;
 }

@@ -1,6 +1,12 @@
 (function(){
-	var MATCH_INTERVAL = 20 * 60 * 1000
-
+	var MATCH_INTERVAL = 60 * 60 * 1000
+	try{
+		if((localStorage.matchInterval * 1) !== MATCH_INTERVAL){
+			delete localStorage.matchOffset
+			localStorage.matchInterval = MATCH_INTERVAL
+		}
+	}catch(err){
+	}
 	var mix = function(n){
 		n = n | 0
 		n = (n ^ 61) ^ (n >>> 16)
@@ -334,6 +340,13 @@
 		}
 		try{
 			var delta = (serverIndex - current.index) * MATCH_INTERVAL
+			if(Math.abs(delta) > MATCH_INTERVAL * 3){
+				console.log("[match] index gap too large :: server " + serverIndex +
+					" client " + current.index + ". interval mismatch?")
+				delete localStorage.matchOffset
+				window.MatchReload()
+				return
+			}
 			localStorage.matchOffset = window.MatchOffset() + delta
 		}catch(err){
 		}

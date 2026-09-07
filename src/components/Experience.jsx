@@ -126,21 +126,27 @@ window.FieldsSync = function(force){
 	next.forEach(function(field, index){
 		if(_isRing){
 			/*
-				개발 Part 89 (jail 간격)
+				개발 Part 91 (특수칸 배열 - 8슬롯 주기)
 				worldService.toTileRows 와 완전히 같은 식이어야 한다.
-				어긋나면 클릭 판정과 화면 표시가 서로 다른 칸을 가리킨다.
 				  slot = index / 3
-				  slot % 4 === 3   jail
-				  slot % 3 === 0   gate ❓
-				  그 외            item ❔
+				  slot % 8 === 3   jail  ❓ 빨강
+				  slot % 8 === 7   gate  🚪 도어
+				  그 외              item  ❔ 흰색
+				화면 배열이 정확히 이렇게 반복된다.
+				  ❔ ❔ ❔ ❓ ❔ ❔ ❔ 🚪 ...
 				jail 에는 drop 을 주지 않는다.
-				서버가 field.drop 을 게이트 드랍 소각과 탈출구 판정에 쓴다.
+				  서버가 field.drop 으로 게이트 드랍 소각을 판정하므로
+				  감옥에 붙이면 갇히면서 소지품까지 잃는다.
+				  렌더는 jail 분기가 ❓ 를 상수로 그리므로 drop 이 필요 없다.
+				gate 의 drop "❓" 는 표시용이 아니라 판정용이다.
+				  ReservedTile(gate) / EdgeField 표시 / 탈출 버튼 노출에 쓰인다.
+				  화면의 🚪 는 gate 분기가 상수로 그린다.
 			*/
 			if(index % 3 == 0){
 				var _slot = index / 3
-				if(_slot % 4 == 3){
+				if(_slot % 8 == 3){
 					field.jail = true
-				}else if(_slot % 3 == 0){
+				}else if(_slot % 8 == 7){
 					field.drop = "❓"
 					field.gate = true
 				}else{
@@ -357,18 +363,6 @@ export const Experience = () => {
 			}catch(err){
 			}
 		}else{
-			/*
-				개발 Part 63 (커서 높이 유지)
-				커서는 자기가 놓인 칸의 높이를 따라야 한다.
-				클릭 순간에만 맞추면 그 뒤로 어긋난다.
-				  MapGen 이 섬을 다시 만들면 같은 좌표의 고도가 바뀐다
-				  판이 전환되면 지형이 통째로 달라진다
-				  개발 Part 63 이전에는 Player.jsx 가 매 프레임 덮어써
-				  플레이어 발밑 높이로 끌려갔다
-				여기서 자기 칸 기준으로만 유지한다.
-				좌표는 0.5 그리드이므로 그대로 키로 쓴다.
-				차이가 미세하면 건드리지 않아 불필요한 행렬 갱신을 피한다.
-			*/
 			try{
 				var _cu = cursor.current
 				if(_cu){
@@ -838,17 +832,15 @@ export const Experience = () => {
 			</>	
 		}else if(window.Biomes[props.name]){
 			var texture = 'glass'
-
 			var color = props.color
-
 			if(window.map.biomes[props.uid]){
-				emoji = window.Biomes[color]
+				var _biomeColor = window.Biomes[props.name]
+				emoji = window.Biomes[_biomeColor ? _biomeColor : color]
 			}
 			if(props.color == "black"){
 				color = props.color
 				opacity = 0.5
 			}
-
 			if(biome){
 				if(biome.bomb && !biome.water){
 					texture = color = "black"
@@ -860,13 +852,6 @@ export const Experience = () => {
 					field = window.fields ? window.fields[`${props.position.x}:${props.position.z}`] : null
 				}
 			}
-			/*
-				개발 Part 65 (UCAV 탈출 구역)
-				링 밖 내륙 칸 중 일부가 탈출 구역이다.
-				field 가 있으면 링 위이므로 게이트가 담당한다.
-				판정은 window.ExitZone 이 match.hash 로 결정론 계산한다.
-				화면에 안 보이면 UCAV 가 찾을 방법이 없으므로 반드시 표시한다.
-			*/
 			var exitZone = false
 			try{
 				if(!field && window.Mode() != "room" && window.ExitZone){
@@ -879,17 +864,6 @@ export const Experience = () => {
 			if(emoji){
 				if(field){
 					if(field.jail){
-						/*
-							개발 Part 89 (jail 표시)
-							현행은 바닥색과 SAFE 라벨뿐이라 멀리서 구분이 안 됐다.
-							게이트와 같은 자리에 ❓ 를 세운다.
-							문(🚪)은 게이트 전용이므로 여기엔 두지 않는다.
-							  jail  회보라 바닥 + ❓
-							  gate  노란 바닥 + ❓ + 🚪
-							  item  일반 바닥 + ❔
-							useLoader 는 1개다. 이 갈래의 기본 반환과 같은 수이므로
-							훅 순서가 어긋나지 않는다.
-						*/
 						return <>
 						<group position={props.position}>
 							<mesh position={[0, 0, 0.005]} onClick={onClick}>
@@ -1028,13 +1002,6 @@ export const Experience = () => {
 						</>
 					}
 				}
-				/*
-					개발 Part 65 (UCAV 탈출 구역)
-					useLoader 호출 수를 아래 기본 반환과 같은 1개로 맞춘다.
-					분기마다 훅 개수가 달라지면 같은 타일이 재렌더될 때 순서가 깨진다.
-					타일 색만 게이트와 같은 노란색으로 바꾸고
-					라벨은 CSS(.emoji.color.exit)가 그린다.
-				*/
 				if(exitZone){
 					return <>
 					<group position={props.position}>
@@ -1139,12 +1106,6 @@ export const Experience = () => {
 						</group>
 						</>
 					}
-					/*
-						개발 Part 87 (빈 땅 소유 표시)
-						장식 이모지가 없는 갈래.
-						이 갈래의 기본 반환은 useLoader 를 쓰지 않으므로
-						여기서도 0개를 유지한다. CanvasTexture 는 훅이 아니다.
-					*/
 					if(field.property && (field.property.level * 1) <= 0){
 						var landHash2 = window.TileOwner ? window.TileOwner(field) : ""
 						var landTex2 = landHash2 && window.OwnerTexture

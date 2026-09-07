@@ -941,13 +941,22 @@ window.StageSync = function(cookies){
 		}, 1600)
 		return
 	}
+	if(cookies.bankrupt){
+		try{
+			if(window.Notice){
+				window.Notice("BANKRUPT",
+					"You could not pay the toll. Your holdings were seized", 2600)
+			}
+		}catch(err){
+		}
+		setTimeout(function(){
+			window.location.hash = (cookies.address ? cookies.address : cookies.hash).replace("0x", "")
+		}, 1600)
+		return
+	}
 	if(cookies.enter){
-		/*
-			개발 Part 14 (검수) - H1
-			enter 가 확인되면 유예 카운터를 초기화한다.
-		*/
 		window.Stage.graceCount = 0
-		var limit = cookies.raidLimit ? cookies.raidLimit * 1 : 20 * 60 * 1000
+		var limit = cookies.raidLimit ? cookies.raidLimit * 1 : 60 * 60 * 1000
 		var left = (cookies.enter * 1) + limit - Date.now()
 		if(left > 0){
 			if(window.Stage.miaTimer){
