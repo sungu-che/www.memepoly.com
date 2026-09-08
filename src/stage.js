@@ -220,6 +220,9 @@ window.CanRaid = function(){
 	if(!cookies){
 		return false
 	}
+	if(cookies.matchFull){
+		return false
+	}
 	if(cookies.damage || cookies.dead){
 		return false
 	}
@@ -227,6 +230,21 @@ window.CanRaid = function(){
 		return false
 	}
 	return window.RaidSlots().any
+}
+window.RaidPending = function(){
+	try{
+		var v = sessionStorage.getItem("raidRole")
+		return v ? String(v).toUpperCase() : ""
+	}catch(err){
+		return ""
+	}
+}
+window.RaidPendingClear = function(){
+	try{
+		sessionStorage.removeItem("raidRole")
+	}catch(err){
+	}
+	return true
 }
 
 window.Dead = function(){
@@ -521,7 +539,10 @@ window.Lobby = function(){
 			stranded = false
 		}
 		if(!blocked && noSlot){
-			blocked = "No slots left this match"
+			blocked = cookies.matchFull
+				? ("This session is full (max " +
+					(cookies.matchCapacity ? cookies.matchCapacity : 20) + " players)")
+				: "No slots left this match"
 		}
 		if(blocked){
 			$raid.addClass("disabled").hide()
@@ -541,8 +562,14 @@ window.Lobby = function(){
 			var _head = "DEPLOY FAILED"
 			var _tip = ""
 			if(noSlot){
-				_head = "NO DEPLOY SLOT"
-				if(slots.aborted){
+				_head = cookies.matchFull ? "MATCH FULL" : "NO DEPLOY SLOT"
+				if(cookies.matchFull){
+					_tip = '<span class="ko">이번 세션의 정원(' +
+						(cookies.matchCapacity ? cookies.matchCapacity : 20) +
+						'명)이 가득 찼습니다.</span>\
+						<span class="en">This session has reached its player limit (' +
+						(cookies.matchCapacity ? cookies.matchCapacity : 20) + ').</span>'
+				}else if(slots.aborted){
 					_tip = '<span class="ko">이번 매치에서 전사했습니다. 다음 매치를 기다리세요.</span>\
 						<span class="en">You went down this match. Wait for the next match.</span>'
 				}else{
@@ -703,7 +730,21 @@ window.RaidDone = function(){
 		delete window.Stage.doneTimer
 		window.Stage.set("playing")
 		$("#raid .progress .bar").css("width", "0")
-		window.Notice("RAID START", "Roll the dice to move", 2200)
+		var _c = window.cookies ? window.cookies : {}
+		var _zone = _c.spawnZone ? String(_c.spawnZone) : ""
+		var _deployed = _c.role ? String(_c.role).toUpperCase() : ""
+		if(_deployed === "UCAV" || _zone === "inland"){
+			window.Notice("UCAV DEPLOYED",
+				"Dropped inside the island. Move freely, the dice path is off limits", 3200)
+		}else if(_zone === "gate"){
+			window.Notice("PMC DEPLOYED",
+				"Landed on a gate. Roll the dice to advance", 3000)
+		}else if(_zone === "inplace"){
+			window.Notice("PMC DEPLOYED",
+				"Deployed where you stood. Roll the dice to advance", 2800)
+		}else{
+			window.Notice("RAID START", "Roll the dice to move", 2200)
+		}
 	}, 400)
 }
 
@@ -824,7 +865,14 @@ window.StageSync = function(cookies){
 	}
 	if(cookies.raidBlocked){
 		var _denyBody = "No slots left this match"
-		if(cookies.raidDeny == "pmc_used"){
+		if(cookies.raidDeny == "match_full"){
+			_denyBody = "This session is full (max " +
+				(cookies.matchCapacity ? cookies.matchCapacity : 20) + " players)"
+		}else if(cookies.raidDeny == "no_inland"){
+			_denyBody = "No inland ground on this island. UCAV cannot deploy"
+		}else if(cookies.raidDeny == "no_gate"){
+			_denyBody = "No gate on this board path. PMC cannot deploy"
+		}else if(cookies.raidDeny == "pmc_used"){
 			_denyBody = "PMC already deployed this match"
 		}else if(cookies.raidDeny == "ucav_used"){
 			_denyBody = "UCAV already deployed this match"
@@ -910,7 +958,10 @@ window.StageSync = function(cookies){
 		*/
 		var _miaBody = "The match ended while you were deployed."
 		if(_burned > 0){
-			_miaBody += " " + _burned + " item(s) lost. Store loot in My Room next time."
+			_miaBody += " " + _burned + " item(s) lost."
+		}
+		if(cookies.miaRole === "UCAV"){
+			_miaBody += " UCAV has no item guarantee. Extract next time."
 		}else{
 			_miaBody += " Store loot in My Room before the match ends."
 		}
@@ -984,6 +1035,17 @@ window.StageSync = function(cookies){
 			window.Stage.graceCount = 0
 			window.Stage.set("")
 		}
+		var _pendingRole = window.RaidPending ? window.RaidPending() : ""
+		if(_pendingRole && window.Stage.current != "raid" && window.Stage.current != "raid_done"){
+			if(window.CanRaid()){
+				console.log("[stage] pending deploy consumed :: " + _pendingRole)
+				window.Raid()
+				return
+			}
+			if(window.RaidPendingClear){
+				window.RaidPendingClear()
+			}
+		}
 		var _onRing = false
 		try{
 			if(window.EdgeReady && window.EdgeReady()){
@@ -1050,6 +1112,14 @@ $(document).on("click", "#lobby .btn.raid", function(e){
 		window.Stage.blocked = "No slots left this match"
 		window.Notice("NO SLOTS", "Wait for the next match", 2600)
 		window.Lobby()
+		return
+	}
+	if(window.RaidPending && window.RaidPending()){
+		window.Raid()
+		return
+	}
+	if(window.RolePick){
+		window.RolePick()
 		return
 	}
 	window.Raid()

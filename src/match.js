@@ -14,43 +14,69 @@
 		n = n ^ (n >>> 4)
 		n = Math.imul(n, 0x27d4eb2d)
 		n = n ^ (n >>> 15)
-
 		return n >>> 0
 	}
-
 	var hex = function(n){
 		return ("0000000" + n.toString(16)).substr(-8)
 	}
-
+	var SHARD = 0
+	var hashOf = function(index, shard){
+		var s = shard ? shard * 1 : 0
+		if(isNaN(s) || s < 0){
+			s = 0
+		}
+		return hex(mix(index ^ Math.imul(s, 0x85ebca6b)))
+			+ hex(mix((index ^ 0x9e3779b9) + Math.imul(s, 0xc2b2ae35)))
+			+ hex(mix(((index + 0x85ebca6b) | 0) ^ Math.imul(s, 0x27d4eb2d)))
+			+ hex(mix((index ^ 0xc2b2ae35) + Math.imul(s, 0x165667b1)))
+	}
+	window.MatchShard = function(){
+		try{
+			if(window.cookies && typeof window.cookies.matchShard != "undefined"){
+				var v = window.cookies.matchShard * 1
+				if(!isNaN(v) && v >= 0){
+					SHARD = v
+					return v
+				}
+			}
+		}catch(err){
+		}
+		return SHARD
+	}
+	window.MatchShardSet = function(n){
+		var v = n * 1
+		if(isNaN(v) || v < 0){
+			v = 0
+		}
+		SHARD = v
+		return SHARD
+	}
 	window.MatchOffset = function(){
 		try{
 			if(localStorage.matchOffset){
 				var v = localStorage.matchOffset * 1
-
 				if(!isNaN(v)){
 					return v
 				}
 			}
 		}catch(err){
-
 		}
-
 		return 0
 	}
-
-	window.Match = function(ms){
+	window.Match = function(ms, shard){
 		var _now = typeof ms != "undefined" ? ms : (Date.now() + window.MatchOffset())
 		var _index = Math.floor(_now / MATCH_INTERVAL)
 		var _start = _index * MATCH_INTERVAL
-
-		var _hash = hex(mix(_index))
-			+ hex(mix(_index ^ 0x9e3779b9))
-			+ hex(mix((_index + 0x85ebca6b) | 0))
-			+ hex(mix(_index ^ 0xc2b2ae35))
-
+		var _shard = (typeof shard != "undefined" && shard !== null)
+			? (shard * 1) : window.MatchShard()
+		if(isNaN(_shard) || _shard < 0){
+			_shard = 0
+		}
+		var _hash = hashOf(_index, _shard)
 		return {
 			interval : MATCH_INTERVAL,
 			index : _index,
+			shard : _shard,
 			hash : _hash,
 			seed : _hash.substr(0, 8),
 			shapeSeed : _hash.substr(8, 8),
@@ -58,7 +84,6 @@
 			expired : _start + MATCH_INTERVAL
 		}
 	}
-
 	window.MatchApply = function(match){
 		match = match ? match : window.Match()
 		window.match = match
@@ -320,8 +345,16 @@
 		if(isNaN(serverIndex)){
 			return
 		}
+		var serverShard = 0
+		if(typeof cookies.matchShard != "undefined"){
+			serverShard = cookies.matchShard * 1
+			if(isNaN(serverShard) || serverShard < 0){
+				serverShard = 0
+			}
+		}
 		var current = window.match ? window.match : window.MatchApply()
-		if(current.index == serverIndex){
+		var currentShard = (typeof current.shard != "undefined") ? (current.shard * 1) : 0
+		if(current.index == serverIndex && currentShard === serverShard){
 			try{
 				delete sessionStorage.matchReload
 			}catch(err){
@@ -338,6 +371,13 @@
 			}
 			return
 		}
+		if(current.index == serverIndex){
+			console.log("[match] shard changed :: " + currentShard + " -> " + serverShard)
+			window.MatchShardSet(serverShard)
+			window.MatchRefresh()
+			return
+		}
+		window.MatchShardSet(serverShard)
 		try{
 			var delta = (serverIndex - current.index) * MATCH_INTERVAL
 			if(Math.abs(delta) > MATCH_INTERVAL * 3){

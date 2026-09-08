@@ -21,7 +21,7 @@ window.MyRoomEnter = function(cookies){
 			ucav : _used.indexOf("UCAV") == -1
 		}
 	}
-	var blocked = (cookies.raidBlocked || cookies.damage || cookies.dead) ? true : false
+	var blocked = (cookies.matchFull || cookies.raidBlocked || cookies.damage || cookies.dead) ? true : false
 	var pmcOk = slots.pmc && !blocked
 	var ucavOk = slots.ucav && !blocked
 	var body = ""
@@ -38,7 +38,10 @@ window.MyRoomEnter = function(cookies){
 	if(!pmcOk && !ucavOk){
 		var tip = { ko : "이번 세션은 종료되었습니다. 다음 매치를 기다리세요.",
 			en : "This session is over. Wait for the next match." }
-		if(cookies.damage || cookies.dead){
+		if(cookies.matchFull){
+			tip = { ko : "이번 세션의 정원이 가득 찼습니다. 다음 매치를 기다리세요.",
+				en : "This session is full. Wait for the next match." }
+		}else if(cookies.damage || cookies.dead){
 			tip = { ko : "전사 상태입니다. 다음 매치에 다시 출격할 수 있습니다.",
 				en : "You are down. Deploy again next match." }
 		}else if(slots.aborted){
@@ -402,8 +405,19 @@ $(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
 	if($t.hasClass("disabled")){
 		return
 	}
+	var _role = $t.attr("data-role") ? String($t.attr("data-role")).toUpperCase() : ""
 	try{
-		sessionStorage.raidRole = $t.attr("data-role") ? $t.attr("data-role") : ""
+		sessionStorage.setItem("raidRole", _role)
+	}catch(err){
+	}
+	try{
+		if(window.Stage){
+			window.Stage.blocked = ""
+			window.Stage.graceCount = 0
+			if(window.Stage.set){
+				window.Stage.set("")
+			}
+		}
 	}catch(err){
 	}
 	if(window.MyRoomClose){
@@ -415,6 +429,7 @@ $(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
 	if(window.history && window.history.replaceState){
 		window.history.replaceState(null, "", window.location.pathname)
 	}
+	console.log("[myroom] deploy requested :: " + (_role ? _role : "AUTO"))
 	window.location.hash = ""
 	if(window.onhashchange){
 		window.onhashchange()

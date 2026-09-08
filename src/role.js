@@ -175,7 +175,7 @@ window.RolePick = function(){
 		return null
 	}
 	var slots = window.RaidSlots ? window.RaidSlots() : { pmc : true, ucav : true, any : true }
-	var blocked = cookies.raidBlocked ? true : false
+	var blocked = (cookies.matchFull || cookies.raidBlocked) ? true : false
 	var pmcOk = slots.pmc && !blocked
 	var ucavOk = slots.ucav && !blocked
 	/*
@@ -213,7 +213,9 @@ window.RolePick = function(){
 	*/
 	var pmcWhy = ""
 	if(!pmcOk){
-		if(blocked){
+		if(cookies.matchFull){
+			pmcWhy = { ko : "이번 세션의 정원이 가득 찼습니다.", en : "This session is full." }
+		}else if(blocked){
 			pmcWhy = { ko : "서버가 출격을 거절했습니다.", en : "Server refused the deploy." }
 		}else if(slots.aborted){
 			pmcWhy = { ko : "이번 매치에서 전사했습니다. PMC 는 다음 매치부터.", en : "You went down this match. PMC returns next match." }
@@ -223,15 +225,17 @@ window.RolePick = function(){
 	}
 	var ucavWhy = ""
 	if(!ucavOk){
-		if(blocked){
+		if(cookies.matchFull){
+			ucavWhy = { ko : "이번 세션의 정원이 가득 찼습니다.", en : "This session is full." }
+		}else if(blocked){
 			ucavWhy = { ko : "서버가 출격을 거절했습니다.", en : "Server refused the deploy." }
 		}else{
 			ucavWhy = { ko : "이번 매치에서 UCAV 를 이미 사용했습니다.", en : "UCAV already used this match." }
 		}
 	}
 	var pmcDesc = onEdge
-		? { ko : "지금 서 있는 칸에서 그대로 출격합니다. 주사위로 계속 전진합니다.", en : "Deploys right where you stand. Keeps moving by dice." }
-		: { ko : "주사위 경로(EDGE)의 게이트로 이동해 배치됩니다.", en : "Moves to a gate on the dice path." }
+		? { ko : "주사위 경로 위, 지금 서 있는 칸에서 그대로 출격합니다.", en : "Deploys on the dice path, right where you stand." }
+		: { ko : "주사위 경로(EDGE)의 게이트 칸으로 이동해 배치됩니다.", en : "Moves to a gate tile on the dice path." }
 	var body = '<div class="role_pick_head">\
 		<strong class="title">\
 			<span class="ko">출격 역할 선택</span>\
@@ -250,8 +254,12 @@ window.RolePick = function(){
 		<a class="btn role ' + (ucavOk ? "" : "disabled") + '" data-role="UCAV">\
 			<i class="emoji color">🛩</i>\
 			<strong>UCAV</strong>\
-			<span class="ko">내륙 필드로 이동해 배치됩니다. 전투와 파밍 전용이며 주사위는 PMC 전용입니다.</span>\
-			<span class="en">Moves inland. Combat and farming only. Dice is PMC only.</span>\
+			<span class="ko">주사위 경로 안쪽 내륙 칸에 배치됩니다. 경로에는 올라갈 수 없습니다.</span>\
+			<span class="en">Placed on an inland tile inside the dice path. The path itself is off limits.</span>\
+			<span class="ko">보유 코인은 잠기고 0에서 시작합니다. 탈출해야 코인과 아이템을 가져갑니다.</span>\
+			<span class="en">Your coins are sealed and you start at 0. Extract to keep the coins and loot.</span>\
+			<span class="ko">전사하거나 탈출하지 못하면 아이템 보장 없이 전부 잃습니다.</span>\
+			<span class="en">Die or fail to extract and you lose everything. No item guarantee.</span>\
 			' + (ucavWhy ? '<em class="why"><span class="ko">' + ucavWhy.ko + '</span><span class="en">' + ucavWhy.en + '</span></em>' : '') + '\
 		</a>\
 	</div>'

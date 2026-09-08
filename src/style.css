@@ -972,13 +972,16 @@ form[name="swap"] .submit input{display: block; width: 100%; border-bottom: 4px 
 /*emojis .tab_content .deck .emoji_asset[emoji="💣"]{display: none;}*/
 emojis .tab_content .deck .emoji_asset[hash]{top: -3px;}
 emojis .tab_content .deck .emoji_asset[method] a:empty:after{content: ""; position: absolute; left: 0; right: 0; top: -8px; bottom: 0; margin: auto; width: 45px; height: 45px; background-color: #fff; border: 2px solid #ffffff; border-radius: 50%; z-index: 1;}
+
 emojis .tab_content .deck .emoji_asset[method="notify"].on a,
 emojis .tab_content .deck .emoji_asset[method="getUserMedia"].on a,
 emojis .tab_content .deck .emoji_asset[method="getDisplayMedia"].on a{background-color: red; color:#fff}
+emojis .tab_content .deck .emoji_asset[method="craft"] a,
 emojis .tab_content .deck .emoji_asset[method="notify"] a,
 emojis .tab_content .deck .emoji_asset[method="chat"] a,
 emojis .tab_content .deck .emoji_asset[method="getUserMedia"] a,
 emojis .tab_content .deck .emoji_asset[method="getDisplayMedia"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-weight: bold; color: #422b0d; font-size: 22px; font-family: 'Material Symbols Outlined'; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
+emojis .tab_content .deck .emoji_asset[method="craft"] a{font-size: 26px !important; -webkit-text-stroke: 0.2px #fde030;}
 emojis .tab_content .deck .emoji_asset[method="chat"] a{display: inline-block; top: -2px; line-height: 46px;}
 
 

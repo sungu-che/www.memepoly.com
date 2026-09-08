@@ -262,6 +262,9 @@ window.CanDiceNow = function(){
 	if(!cookies){
 		return false
 	}
+	if(cookies.matchFull){
+		return false
+	}
 	if(cookies.damage || cookies.dead){
 		return false
 	}
@@ -280,7 +283,6 @@ window.CanDiceNow = function(){
 	}
 	var _anc = window.RingAnchor ? window.RingAnchor() : null
 	if(!_anc){
-		/* 이번 판 첫 굴림. 이 칸이 첫 앵커가 된다 */
 		return true
 	}
 	try{
@@ -378,6 +380,14 @@ window.RingSync = function(){
 	}
 	if(_anc.x === _mx && _anc.z === _mz){
 		return false
+	}
+	if(cookies.jail || cookies.onJail){
+		if(!window.EdgeReady || !window.EdgeReady()){
+			return false
+		}
+		if(!window.IsEdge(_mx, _mz)){
+			return false
+		}
 	}
 	if(!window.RingReturn){
 		return false
@@ -5871,6 +5881,31 @@ OAuth3.on("ready", function(e){
 					}catch(err){
 					}
 					try{
+						if(cookies.raidForfeited && window.BoardCallback.raidForfeited !== cookies.raidForfeited){
+							window.BoardCallback.raidForfeited = cookies.raidForfeited
+							window.Notice("RUN LOST",
+								cookies.raidForfeited + " 🪙 lost. UCAV keeps nothing without extraction", 3400)
+						}else if(!cookies.raidForfeited){
+							delete window.BoardCallback.raidForfeited
+						}
+						if(cookies.raidReleased && window.BoardCallback.raidReleased !== cookies.raidReleased){
+							window.BoardCallback.raidReleased = cookies.raidReleased
+							window.Notice("RUN BANKED",
+								cookies.raidReleased + " 🪙 returned. Everything you earned is yours", 3200)
+						}else if(!cookies.raidReleased){
+							delete window.BoardCallback.raidReleased
+						}
+						if(typeof cookies.raidEscrow != "undefined" &&
+							window.BoardCallback.raidEscrow !== cookies.raidEscrow){
+							window.BoardCallback.raidEscrow = cookies.raidEscrow
+							window.Notice("UCAV RUN",
+								"Balance sealed (" + cookies.raidEscrow + " 🪙). Extract to get it back", 3400)
+						}else if(typeof cookies.raidEscrow == "undefined"){
+							delete window.BoardCallback.raidEscrow
+						}
+					}catch(err){
+					}
+					try{
 						if(window.OfferSync){
 							window.OfferSync(cookies)
 						}
@@ -5970,6 +6005,18 @@ OAuth3.on("ready", function(e){
 								3200)
 						}else if(!cookies.onJail){
 							delete window.BoardCallback.jailed
+						}
+					}catch(err){
+					}
+					try{
+						if(cookies.matchFull && !window.BoardCallback.matchFull){
+							window.BoardCallback.matchFull = true
+							window.Notice("MATCH FULL",
+								"This session is full (max " +
+								(cookies.matchCapacity ? cookies.matchCapacity : 20) +
+								" players). Wait for the next match", 3600)
+						}else if(!cookies.matchFull){
+							delete window.BoardCallback.matchFull
 						}
 					}catch(err){
 					}
@@ -7303,6 +7350,13 @@ OAuth3.on("ready", function(e){
 												if(window.DiceSpinBusy && window.DiceSpinBusy()){
 													return
 												}
+												if(cookies.matchFull){
+													window.Notice("MATCH FULL",
+														"This session is full (max " +
+														(cookies.matchCapacity ? cookies.matchCapacity : 20) +
+														" players). Wait for the next match", 3000)
+													return
+												}
 												if(window.EdgeReady && !window.EdgeReady()){
 													window.Notice("MAP LOADING", "Board path is not ready", 1800)
 													return
@@ -7444,18 +7498,11 @@ OAuth3.on("ready", function(e){
 												$('tooltip').removeClass("on")
 												$body.removeAttr("tooltip")
 												window.SwapIntent = "sell"
-												$sellables.addClass("on")
+												$sellables.removeClass("on")
+												$pool.html("")
+												$("#swap .submit input").val("")
+												$swap.removeClass("loading")
 												$body.attr("swap","")
-												$swap.addClass("loading")
-												$status.innerHTML = `<div class="loading">
-													<strong>Loading...</strong>
-												</div>`
-												if(window.PollBreak){
-													window.PollBreak()
-												}else if(OAuth3.xhr){
-													OAuth3.xhr.abort()
-													delete OAuth3.xhr
-												}
 												return
 											}else if($this.hasClass("Report")){
 												var $form = document.forms.report
@@ -8252,7 +8299,7 @@ OAuth3.on("ready", function(e){
 				EmojiDeck 이 (method, icon) 로 중복을 막는다.
 			*/
 			window.EmojiDeck("chat", "chat", "emoji")
-			window.EmojiDeck("craft", "construction", "emoji")
+			window.EmojiDeck("craft", "wand_stars", "emoji")
 			/*
 				개발 Part 32 (첫 슬롯 재배치)
 				건설 버튼(method="property", icon="home")을 여기서 제거한다.
@@ -8447,15 +8494,18 @@ OAuth3.on("ready", function(e){
 
 				setTimeout(function(){
 					window.speed = 0.1
-
 					window.camera.set({})
 					window.assets.set([])
-
 					window.setFrameloop("always")
-
 					window.Poll.ing = setInterval(window.Poll, time.balance)
-
 					delete window.response
+					try{
+						if(window.RaidPending && window.RaidPending()){
+							console.log("[board] pending deploy carried into board mode :: " +
+								window.RaidPending())
+						}
+					}catch(err){
+					}
 				}, 1000)
 			}
 		}
