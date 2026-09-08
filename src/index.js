@@ -99,13 +99,16 @@ window.ItemStock = function(rows, selfHash){
 			out.map[emoji] = {
 				emoji : emoji,
 				count : 0,
-				id : row.Id ? row.Id : "",
+				id : "",
 				rows : []
 			}
 			out.order.push(emoji)
 		}
 		out.map[emoji].count++
 		out.map[emoji].rows.push(row)
+		if(row.Id){
+			out.map[emoji].id = row.Id
+		}
 		out.total++
 	}
 	return out
@@ -129,18 +132,20 @@ window.ItemDeckBody = function(stock, seen){
 		var isNew = false
 		if(seen && !seen[id]){
 			seen[id] = true
-			isNew = true
-			fresh.push({ Id : id, emoji : emoji })
+			var _known = false
+			try{
+				_known = $('.emoji_asset[type="item"][emoji="' + emoji + '"]').length > 0
+			}catch(err){
+				_known = false
+			}
+			if(!_known){
+				isNew = true
+				fresh.push({ Id : id, emoji : emoji })
+			}
 		}
 		var isToggle = false
 		try{
-			var $prev = $('[id="' + id + '"]')
-			if($prev.length){
-				isToggle = $prev.hasClass("on")
-			}else{
-				var $byEmoji = $('.emoji_asset[type="item"][emoji="' + emoji + '"].on')
-				isToggle = $byEmoji.length > 0
-			}
+			isToggle = $('.emoji_asset[type="item"][emoji="' + emoji + '"].on').length > 0
 		}catch(err){
 			isToggle = false
 		}
@@ -170,111 +175,6 @@ window.ItemStockSync = function(stock){
 	return dropped
 }
 window.ItemStockLast = null
-window.ItemStockApply = function(deltas){
-	var stock = window.ItemStockLast
-	if(!stock || !deltas || !deltas.length){
-		return null
-	}
-	for(var i = 0; i < deltas.length; i++){
-		var d = deltas[i]
-		if(!d || !d.emoji){
-			continue
-		}
-		var n = d.count ? d.count * 1 : 0
-		if(isNaN(n) || n === 0){
-			continue
-		}
-		if(!stock.map[d.emoji]){
-			if(n <= 0){
-				continue
-			}
-			stock.map[d.emoji] = {
-				emoji : d.emoji,
-				count : 0,
-				id : d.id ? d.id : ("opt:" + d.emoji),
-				rows : []
-			}
-			stock.order.push(d.emoji)
-		}
-		var item = stock.map[d.emoji]
-		item.count += n
-		if(item.count < 0){
-			item.count = 0
-		}
-		stock.total += n
-		if(stock.total < 0){
-			stock.total = 0
-		}
-		if(!item.count){
-			for(var o = stock.order.length - 1; o >= 0; o--){
-				if(stock.order[o] === d.emoji){
-					stock.order.splice(o, 1)
-					break
-				}
-			}
-			delete stock.map[d.emoji]
-		}
-	}
-	return stock
-}
-window.ItemStockRender = function(){
-	var stock = window.ItemStockLast
-	if(!stock){
-		return false
-	}
-	try{
-		var cookies = window.cookies
-		var player_hash = cookies ? (cookies.address ? cookies.address : cookies.hash) : ""
-		var out = window.ItemDeckBody(stock, window.sticker)
-		var body = out.body
-		if(player_hash){
-			$('[id="' + player_hash + '"] items ul').html(body)
-		}
-		var $deck = window.ItemsDeck
-			? window.ItemsDeck()
-			: $("emojis .items").not(".emoji_asset")
-		var before = $deck.html()
-		if(before){
-			before = before.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-		}
-		var after = body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-		if(before !== after){
-			$deck.html(after)
-		}
-		$('.emoji[type="sticker"] cnt').text(stock.order.length)
-		if(window.ItemStockSync){
-			window.ItemStockSync(stock)
-		}
-		$('#pool li.item').each(function(){
-			var $li = $(this)
-			var emoji = $li.attr("emoji")
-			if(!emoji){
-				return
-			}
-			var item = stock.map[emoji]
-			if(!item || !item.count){
-				$li.remove()
-				return
-			}
-			$li.attr("cnt", item.count)
-			$li.find(".col.x .amount span").text(item.count)
-		})
-		if(!$('#pool li.item').length){
-			$("#pool ul").html("")
-			$("#swap .submit input").val("")
-			if(typeof $("body").attr("swap") !== "undefined"){
-				$("body").removeAttr("swap")
-				delete window.SwapIntent
-			}
-		}else if(window.SwapTotal){
-			window.SwapTotal()
-		}
-		return true
-	}catch(err){
-		console.log("[deck] optimistic render err", err)
-		return false
-	}
-}
 window.Mode = function(cookies){
 	cookies = cookies ? cookies : window.cookies
 
@@ -3618,7 +3518,6 @@ OAuth3.on("ready", function(e){
 			z : player.z
 		}
 		var picked = []
-		var deltas = []
 		var $assets = $('#pool li')
 		$assets.each(function(index, el){
 			var $el = $(el)
@@ -3638,10 +3537,8 @@ OAuth3.on("ready", function(e){
 			query.assets.push(asset.address)
 			if(asset.type == "sell"){
 				body.assets.push(asset.address.toUpperCase())
-				deltas.push({ emoji : asset.emoji, count : -1 })
 			}else{
 				body.assets.push(asset.address)
-				deltas.push({ emoji : asset.emoji, count : 1, id : "opt:" + asset.address })
 			}
 			picked.push(asset.type + ":" + asset.emoji)
 		})
@@ -3654,26 +3551,21 @@ OAuth3.on("ready", function(e){
 			count : body.assets.length,
 			stage : "stage",
 			picked : picked,
-			deltas : deltas,
 			query : query,
 			url : url,
 			emoji : player.emoji
 		}
-		console.log("[swap] staging :: " + picked.join(", "))
-		try{
-			if(deltas.length && window.ItemStockApply){
-				window.ItemStockApply(deltas)
-				if(window.ItemStockRender){
-					window.ItemStockRender()
-				}
+		window.SwapPending.timer = setTimeout(function(){
+			if(window.SwapPending){
+				console.log("[swap] watchdog released")
+				window.SwapRelease()
 			}
-		}catch(err){
-			console.log("[swap] optimistic apply err", err)
-		}
+		}, 12000)
+		console.log("[swap] staging :: " + picked.join(", "))
 		$swap.addClass("loading")
-		$status.innerHTML = `<div class="loading">
-			<strong>Loading...</strong>
-		</div>`
+		if(window.StatusLoading){
+			window.StatusLoading()
+		}
 		OAuth3.xhr = OAuth3.fetch({
 			method : "POST",
 			url : url,
@@ -3700,6 +3592,9 @@ OAuth3.on("ready", function(e){
 			nonces : _n
 		}
 		console.log("[swap] committing :: " + p.picked.join(", "))
+		if(window.StatusLoading){
+			window.StatusLoading()
+		}
 		if(OAuth3.xhr){
 			OAuth3.xhr.abort()
 			delete OAuth3.xhr
@@ -3718,9 +3613,8 @@ OAuth3.on("ready", function(e){
 			return false
 		}
 		if(Date.now() - p.at > 12000){
-			console.log("[swap] timed out. rolling back")
-			delete window.SwapPending
-			window.ItemStockLast = null
+			console.log("[swap] timed out. releasing")
+			window.SwapRelease()
 			return true
 		}
 		var traded = false
@@ -3744,12 +3638,18 @@ OAuth3.on("ready", function(e){
 			}
 		}
 		if(traded){
-			delete window.SwapPending
+			if(window.SwapClearPick){
+				window.SwapClearPick()
+			}
+			window.SwapRelease()
 			return true
 		}
 		try{
 			if(window.cookies && window.cookies.swapError){
-				delete window.SwapPending
+				if(window.SwapClearPick){
+					window.SwapClearPick()
+				}
+				window.SwapRelease()
 				return true
 			}
 		}catch(err){
@@ -3767,6 +3667,9 @@ OAuth3.on("ready", function(e){
 			if(staged){
 				p.stage = "commit"
 				p.sent = false
+				if(window.StatusLoading){
+					window.StatusLoading()
+				}
 			}
 		}
 		return false
@@ -3848,12 +3751,190 @@ OAuth3.on("ready", function(e){
 			query : query
 		}, window.Callback);
 	}
+	window.StatusEl = function(){
+		try{
+			return document.querySelector(".aside .status")
+		}catch(err){
+			return null
+		}
+	}
+	window.StatusLoading = function(){
+		var el = window.StatusEl()
+		if(!el){
+			return false
+		}
+		if(el.querySelector(".loading")){
+			return true
+		}
+		el.innerHTML = `<div class="loading">
+			<strong>Loading...</strong>
+		</div>`
+		return true
+	}
+	window.StatusSync = function(cookies){
+		var el = window.StatusEl()
+		if(!el){
+			return false
+		}
+		if(window.SwapPending){
+			return window.StatusLoading()
+		}
+		var c = cookies ? cookies : window.cookies
+		if(c && c.email){
+			if(el.innerHTML !== ""){
+				el.innerHTML = ""
+			}
+		}else{
+			var _login = '<a href="/login/">Sign In</a>'
+			if(el.innerHTML !== _login){
+				el.innerHTML = _login
+			}
+		}
+		return true
+	}
+	window.SwapRelease = function(){
+		try{
+			if(window.SwapPending && window.SwapPending.timer){
+				clearTimeout(window.SwapPending.timer)
+			}
+		}catch(err){
+		}
+		delete window.SwapPending
+		try{
+			$("#swap").removeClass("loading")
+		}catch(err){
+		}
+		if(window.StatusSync){
+			window.StatusSync()
+		}
+		return true
+	}
+	window.SwapClearPick = function(){
+		try{
+			$('#pool li.item').removeAttr("type")
+			$("#swap .submit input").val("")
+			$("body").attr("swap", "")
+		}catch(err){
+		}
+		return true
+	}
 	window.SwapOpen = function(){
 		try{
 			return typeof $("body").attr("swap") !== "undefined"
 		}catch(err){
 			return false
 		}
+	}
+	window.SwapRender = function(stock, settled){
+		var cookies = window.cookies
+		var $pool = $("#pool ul")
+		if(!cookies || !$pool.length){
+			return 0
+		}
+		var $picked = $('.emoji_asset[type="item"].on')
+		if(!$picked.length){
+			$pool.html("")
+			$("#swap .submit input").val("")
+			if(typeof $("body").attr("swap") !== "undefined" && !window.SwapPending){
+				$("body").removeAttr("swap")
+				if(window.StatusSync){
+					window.StatusSync()
+				}
+				delete window.SwapIntent
+			}
+			return 0
+		}
+		var body = ""
+		var count = 0
+		$picked.each(function(index, el){
+			var $el = $(el)
+			var emoji = $el.attr("emoji")
+			if(!emoji){
+				return
+			}
+			if(!window.typeof_item(emoji)){
+				return
+			}
+			var cnt = $el.attr("cnt") ? $el.attr("cnt") * 1 : 0
+			if(stock && stock.map && stock.map[emoji]){
+				cnt = stock.map[emoji].count
+			}
+			if(isNaN(cnt) || cnt < 1){
+				return
+			}
+			var address = ""
+			try{
+				address = ethers.hashMessage(emoji)
+				address = ethers.computeAddress(address).toLowerCase()
+			}catch(err){
+				return
+			}
+			var $prev = $("#" + address)
+			var type = ""
+			if(!settled && $prev.length){
+				type = $prev.attr("type")
+			}
+			if(!type || type === "undefined"){
+				type = ""
+			}
+			if(type !== "buy" && type !== "sell"){
+				type = ""
+			}
+			var balance = "-"
+			var amm = cookies[address]
+			if(amm){
+				balance = amm.x - amm.y
+			}else if($prev.length){
+				var _pb = $prev.find(".col.y .amount span").text()
+				if(_pb && !isNaN(_pb * 1)){
+					balance = _pb * 1
+				}
+			}
+			count++
+			body += `<li class="item" type="${type}" cnt="${cnt}" emoji="${emoji}" id="${address}">
+				<div class="asset">
+					<div class="col x buy">
+						<div class="icon">
+							<div class="emoji color">${emoji}</div>
+						</div>
+						<div class="amount">
+							<span>${cnt}</span>
+						</div>
+					</div>
+				</div>
+				<div class="asset">
+					<div class="col y sell transaction">
+						<div class="icon">
+							<div class="emoji color">🪙</div>
+						</div>
+						<div class="amount">
+							<span>${balance}</span>
+						</div>
+					</div>
+				</div>
+			</li>`
+		})
+		if(!count){
+			$pool.html("")
+			$("#swap .submit input").val("")
+			return 0
+		}
+		var before_body = $pool.html()
+		if(before_body){
+			before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+		}
+		var after_body = body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
+		if(before_body !== after_body){
+			$pool.html(after_body)
+		}
+		if(settled){
+			$pool.find("li.item").removeAttr("type")
+			$("#swap .submit input").val("")
+		}
+		if(window.SwapTotal){
+			window.SwapTotal()
+		}
+		return count
 	}
 	window.SwapTotal = function(){
 		var cookies = window.cookies
@@ -4713,9 +4794,9 @@ OAuth3.on("ready", function(e){
 									_gain -= _tp
 								}
 							}
-							$('#pool li.item').removeAttr("type")
-							$("#swap .submit input").val("")
-							window.ItemStockLast = null
+							if(window.SwapClearPick && window.SwapOpen && window.SwapOpen()){
+								window.SwapClearPick()
+							}
 							if(_sold){
 								console.log("[swap] settled :: " + _sold + " item(s), " +
 									(_gain >= 0 ? "+" : "") + _gain)
@@ -4732,112 +4813,19 @@ OAuth3.on("ready", function(e){
 						}catch(err){
 						}
 					}
-					var $assets = $('.emoji_asset[type="item"].on')
 					var uri = new URL(url.href)
 					var balanceAddress = ethers.computeAddress(ethers.hashMessage(uri.host)).toLowerCase()
-				
-					var assets = []
-					if(window.SwapPending){
+					var _swapBusy = false
+					try{
+						_swapBusy = (window.SwapPending && window.SwapPending.stage === "commit" && !window.SwapPending.sent)
+							? true : false
+					}catch(err){
+						_swapBusy = false
+					}
+					if(_swapBusy){
 						$swap.addClass("loading")
 					}else{
 						$swap.removeClass("loading")
-					}
-					if($assets.length){
-						var after_body = ""
-						$assets.each(function(index, el){
-							var $el = $(el)
-										
-							var asset = {
-								emoji : $el.attr("emoji"),
-								count : $el.attr("cnt"),
-								type : $el.attr("type")
-							}
-							if(!asset.emoji){
-								return
-							}
-							try{
-								if(itemStock && itemStock.map[asset.emoji]){
-									asset.count = itemStock.map[asset.emoji].count
-								}
-							}catch(err){
-							}
-							if(!asset.count || isNaN(asset.count * 1) || (asset.count * 1) < 1){
-								return
-							}
-							if(typeof_item(asset.emoji)){
-								asset.address = ethers.hashMessage(asset.emoji)
-								asset.address = ethers.computeAddress(asset.address).toLowerCase()
-								var amm = cookies[asset.address]
-								var type = ""
-								var $asset = $(`#${asset.address}`)
-								if($asset.length){
-									type = $asset.attr("type")
-								}
-								if(!type || type === "undefined"){
-									type = ""
-								}
-								if(swapSettled){
-									type = ""
-								}
-								if(amm){
-									asset.balance = amm.x - amm.y
-								}else{
-									var _prevBalance = $asset.length
-										? $asset.find(".col.y .amount span").text()
-										: ""
-									asset.balance = (_prevBalance && !isNaN(_prevBalance * 1))
-										? (_prevBalance * 1)
-										: "-"
-								}
-								after_body += `<li class="item" type="${type}" cnt="${asset.count}" emoji="${asset.emoji}" id="${asset.address}">
-									<div class="asset">
-										<div class="col x buy">
-											<div class="icon">
-												<div class="emoji color">${asset.emoji}</div>
-											</div>
-											<div class="amount">
-												<span>${asset.count}</span>
-											</div>
-										</div>
-									</div>
-									<div class="asset">
-										<div class="col y sell transaction">
-											<div class="icon">
-												<div class="emoji color">🪙</div>
-											</div>
-											<div class="amount">
-												<span>${asset.balance}</span>
-											</div>
-										</div>
-									</div>
-								</li>`
-								assets.push(asset)	
-							}
-						})
-						var $before = $($pool.html())
-							$before.find(".item").removeAttr("type")
-						var before_body = $before.html()
-						if(before_body){
-							before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-						}
-						after_body = after_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
-						if(before_body != after_body){
-							$pool.html(after_body)
-						}
-						try{
-							if(window.SwapTotal){
-								window.SwapTotal()
-							}
-						}catch(err){
-						}
-					}else{
-						$pool.html("")
-						$("#swap .submit input").val("")
-						if(typeof $body.attr("swap") !== "undefined"){
-							$body.removeAttr("swap")
-							$status.innerHTML = ""
-							delete window.SwapIntent
-						}
 					}
 
 					/*
@@ -5677,29 +5665,11 @@ OAuth3.on("ready", function(e){
 						var itemStock = window.ItemStock
 							? window.ItemStock(rows, player_hash)
 							: { order : [], map : {}, total : 0 }
-						var _stockHold = false
-						try{
-							if(window.SwapPending && !swapSettled && window.ItemStockLast){
-								_stockHold = true
-							}
-						}catch(err){
-							_stockHold = false
-						}
-						if(_stockHold){
-							itemStock = window.ItemStockLast
-						}else{
-							window.ItemStockLast = itemStock
-						}
+						window.ItemStockLast = itemStock
 						if(window.ItemDeckBody){
 							var _deckOut = window.ItemDeckBody(itemStock, window.sticker)
 							after_body = _deckOut.body
 							afterSticker = _deckOut.fresh
-						}
-						if(window.ItemStockSync){
-							var _dropped = window.ItemStockSync(itemStock)
-							if(_dropped){
-								console.log("[deck] " + _dropped + " sold-out item(s) unselected")
-							}
 						}
 						$('[id="'+player_hash+'"] items ul').html(after_body)
 						var $itemsDeck = window.ItemsDeck
@@ -5716,6 +5686,26 @@ OAuth3.on("ready", function(e){
 						try{
 							$('.emoji[type="sticker"] cnt').text(itemStock.order.length)
 						}catch(err){
+						}
+						if(window.ItemStockSync){
+							var _dropped = window.ItemStockSync(itemStock)
+							if(_dropped){
+								console.log("[deck] " + _dropped + " sold-out item(s) unselected")
+							}
+						}
+						try{
+							if(window.SwapRender && window.SwapOpen && window.SwapOpen()){
+								var _poolSettled = swapSettled
+								if(!_poolSettled && cookies.swapTraded){
+									var _pt = cookies.swapTraded * 1
+									if(!isNaN(_pt) && _pt > 0){
+										_poolSettled = true
+									}
+								}
+								window.SwapRender(itemStock, _poolSettled)
+							}
+						}catch(err){
+							console.log("[swap] pool render err", err)
 						}
 						var $player = $('player[self="true"]')
 						if(afterSticker.length && $player.length){
@@ -6259,12 +6249,13 @@ OAuth3.on("ready", function(e){
 						},3000)
 					}
 
-					if(cookies.email){
+					if(window.StatusSync){
+						window.StatusSync(cookies)
+					}else if(cookies.email){
 						$status.innerHTML = ''
 					}else{
 						$status.innerHTML = '<a href="/login/">Sign In</a>'
 					}
-
 					if($body.hasClass("loading") && (window.frameloop == "demand" || window.frameloop == "never" || window.tutorial)){
 						try{
 							var _address = ethers.hashMessage(resp.query.href.replace(window.location.protocol+"//",""))
@@ -6398,10 +6389,12 @@ OAuth3.on("ready", function(e){
 							}
 							window.Notice("TRADE FAILED", _seBody, 2800)
 							try{
-								$('#pool li.item').removeAttr("type")
-								$("#swap .submit input").val("")
-								window.ItemStockLast = null
-								console.log("[swap] optimistic rollback")
+								if(window.SwapClearPick && window.SwapOpen && window.SwapOpen()){
+									window.SwapClearPick()
+								}
+								if(window.SwapTotal){
+									window.SwapTotal()
+								}
 							}catch(err){
 							}
 						}else if(!cookies.swapError){
@@ -7097,19 +7090,15 @@ OAuth3.on("ready", function(e){
 							var dice = cookies.dice * 1
 
 							var assets = []
-
-							var $assets = $('.emoji_asset.on')
-
+							var $assets = $('.emoji_asset[type="item"].on')
 							$assets.each(function(index, el){
 								var asset = {
 									emoji : $(el).attr("emoji"),
 									count : $(el).attr("cnt")
 								}
-
 								if(typeof_item(asset.emoji)){
 									asset.address = ethers.hashMessage(asset.emoji)
 									asset.address = ethers.computeAddress(asset.address).toLowerCase()
-
 									assets.push(asset.address)
 								}
 							})
@@ -7977,9 +7966,9 @@ OAuth3.on("ready", function(e){
 												$sellables.addClass("on")
 												$body.attr("swap","")
 												$swap.addClass("loading")
-												$status.innerHTML = `<div class="loading">
-													<strong>Loading...</strong>
-												</div>`
+												if(window.StatusLoading){
+													window.StatusLoading()
+												}
 												if(window.PollBreak){
 													window.PollBreak()
 												}else if(OAuth3.xhr){
@@ -8135,18 +8124,20 @@ OAuth3.on("ready", function(e){
 											$body.removeAttr("tooltip")
 											$this.toggleClass("on")
 											
-											var $assets = $('.emoji_asset.on')
+											var $assets = $('.emoji_asset[type="item"].on')
 											if($assets.length){
 												$body.attr("swap","")
 												$swap.addClass("loading")
-												$status.innerHTML = `<div class="loading">
-													<strong>Loading...</strong>
-												</div>`
-											}else{
+												if(window.StatusLoading){
+													window.StatusLoading()
+												}
+											}else if(!window.SwapPending){
 												$body.removeAttr("swap")
 												$pool.html("")
 												$("#swap .submit input").val("")
-												$status.innerHTML = ""
+												if(window.StatusSync){
+													window.StatusSync()
+												}
 												delete window.SwapIntent
 											}
 											/* 개발 Part 67 : 커밋 폴링은 끊지 않는다 */
