@@ -773,6 +773,118 @@ window.RoomPuzzlePayload = function(list){
 	return out
 }
 
+window.BLAST_EMOJI = "💥"
+window.BlastSrc = function(){
+    var hex = "1f4a5"
+    try{
+        if(window.emojiUnicode){
+            var h = window.emojiUnicode(window.BLAST_EMOJI)
+            if(h){
+                hex = h
+            }
+        }
+    }catch(err){
+        hex = "1f4a5"
+    }
+    return "/src/fonts/emoji/animated/" + hex + ".webp"
+}
+window.MineSync = function(cookies){
+    if(!cookies){
+        return
+    }
+    if(!window.MineSync.last){
+        window.MineSync.last = {}
+    }
+    try{
+        if(cookies.sweepDebug && window.MineSync.debug !== cookies.sweepDebug){
+            window.MineSync.debug = cookies.sweepDebug
+            var _p = String(cookies.sweepDebug).split("/")
+            console.log("[sweep] opened=" + _p[0] +
+                " blast=" + _p[1] +
+                " used=" + _p[2] +
+                " reward=" + (cookies.openReward ? cookies.openReward : 0) +
+                " loss=" + (cookies.mineLoss ? cookies.mineLoss : 0))
+        }
+    }catch(err){
+    }
+    var fire = function(key, sig, head, body, sound, ms){
+        if(!sig){
+            window.MineSync.last[key] = ""
+            return
+        }
+        if(window.MineSync.last[key] === sig){
+            return
+        }
+        window.MineSync.last[key] = sig
+        try{
+            if(window.Notice){
+                window.Notice(head, body, ms ? ms : 2600)
+            }
+        }catch(err){
+        }
+        try{
+            if(window.Sfx && sound){
+                window.Sfx.play(sound)
+            }
+        }catch(err){
+        }
+    }
+    var hits = cookies.mineHits ? cookies.mineHits * 1 : 0
+    var loss = cookies.mineLoss ? cookies.mineLoss * 1 : 0
+    if(isNaN(hits)){
+        hits = 0
+    }
+    if(isNaN(loss)){
+        loss = 0
+    }
+    fire("mine",
+        hits ? (hits + "@" + loss + "@" + (cookies.mineHit ? cookies.mineHit : "")) : "",
+        "BOOM",
+        '<span class="emoji color">' + (window.BlastEmoji ? window.BlastEmoji : "💥") + '</span> ' +
+            hits + " mine(s) triggered · -" + loss + " 🪙",
+        "bomb",
+        3000)
+    var cells = cookies.openCells ? cookies.openCells * 1 : 0
+    var gain = cookies.openReward ? cookies.openReward * 1 : 0
+    if(isNaN(cells)){
+        cells = 0
+    }
+    if(isNaN(gain)){
+        gain = 0
+    }
+    fire("open",
+        cells ? (cells + "@" + gain) : "",
+        "CLEARED",
+        cells + " tile(s) opened · +" + gain + " 🪙",
+        "coin",
+        2400)
+    fire("safe",
+        cookies.mineSafeFirst ? String(cookies.mineSafeFirst) : "",
+        "FIRST DIG",
+        "The first sweep never blows up",
+        "blip",
+        2200)
+}
+window.MineSync.last = {}
+window.RoomView = 6
+window.BlastEmoji = "💥"
+window.BlastHex = function(){
+    var hex = "1f4a5"
+    try{
+        if(window.emojiUnicode){
+            var h = window.emojiUnicode(window.BlastEmoji)
+            if(h){
+                hex = h
+            }
+        }
+    }catch(err){
+        hex = "1f4a5"
+    }
+    return hex
+}
+window.BlastSrc = function(){
+    return "/src/fonts/emoji/animated/" + window.BlastHex() + ".webp"
+}
 window.RoomEmoji = function(emoji, local){
 	var player = window.players.self()
 
@@ -894,32 +1006,16 @@ window.RoomCallback = async function(resp){
 	}catch(err){
 		console.log("match err",err);
 	}
-	try{
-		if(window.MapGen){ window.MapGen.apply() }
-	}catch(err){
-		console.log("mapgen err",err);
-	}
-	/*
-		개발 Part 78 (사망 후 마이룸)
-		진입 시점(onhashchange)에서 한 번 내렸지만
-		폴링마다 다시 확인한다.
-		다시 설 수 있는 경로
-		  1) 해시가 바뀌지 않는 진입
-		     dead 패널의 .btn.myroom 은 MyRoomOpen 을 거치는데,
-		     이미 같은 해시에 있으면 onhashchange 가 발화하지 않는다.
-		  2) 보드 응답이 늦게 도착
-		     사망 직후 나간 보드 폴링이 마이룸 전환 뒤에 돌아오면
-		     BoardCallback 이 body[dead] 를 다시 세운다.
-		     Mode() 가 room 이면 Callback 이 RoomCallback 으로 보내지만,
-		     이미 진행 중이던 BoardCallback 은 끝까지 실행된다.
-		  3) 구버전 캐시 / 뒤로가기 복원
-		룸 모드에서 이 속성들은 어떤 기능도 하지 않는다.
-		오직 3D 클릭 게이트와 전체 화면 레이어만 켠다.
-		폴링마다 지워도 잃는 상태가 없다.
-		비용
-		  attr 이 이미 없으면 jQuery removeAttr 은 DOM 을 건드리지 않는다.
-		  값이 있을 때만 실제 변경이 일어나므로 폴링 부담이 없다.
-	*/
+    try{
+        if(window.MapGen){ window.MapGen.apply() }
+    }catch(err){
+        console.log("mapgen err",err);
+    }
+    try{
+        if(window.MineSync){ window.MineSync(cookies) }
+    }catch(err){
+        console.log("mine sync err",err);
+    }
 	try{
 		var $roomBody = $("body")
 		if(typeof $roomBody.attr("dead") !== "undefined" ||
@@ -2743,12 +2839,14 @@ window.RoomCallback = async function(resp){
 						if(isNaN(_near) || _near < 0){
 							_near = 0
 						}
-						var _nearText = ""
-						if(_near === 9){
-							_nearText = "💣"
-						}else if(_near > 0){
-							_nearText = String(_near)
-						}
+                        var _nearText = ""
+                        var _blast = false
+                        if(_near === 9){
+                            _nearText = window.BlastEmoji ? window.BlastEmoji : "💥"
+                            _blast = true
+                        }else if(_near > 0){
+                            _nearText = String(_near)
+                        }
 						if(!score_board[row.From]){
 							score_board[row.From] = 0
 						}
@@ -2771,66 +2869,51 @@ window.RoomCallback = async function(resp){
 							}
 						}
 
-						var uProgress = 1
+                        var _dkey = asset[0] + ":" + asset[1]
+                        if(!window.map.dissolve){
+                            window.map.dissolve = {}
+                        }
+                        if(!window.map.dissolve[_dkey]){
+                            window.map.dissolve[_dkey] = 1
+                            if(window.players && window.players.length){
+                                frameloop = true
+                                if(asset[0] == resp.body.query.x && asset[1] == resp.body.query.z){
+                                    _messages.push(row)
+                                    if(row.Flag){
+                                        if(resp.body.body.cc == "chord" || resp.body.body.cc == "open"){
+                                            window.emojis.self = "🤯"
+                                        }
+                                    }
+                                }
+                            }
+                        }
 
-						if(!window.map.dissolve){
-							window.map.dissolve = {}
-						}
-
-						if(window.players){
-							if(!window.map.dissolve[(asset[0]+":"+asset[1])] && window.players.length){
-								window.setDpr(0.8)
-								frameloop = true
-								name += " dissolve"
-
-								uProgress = 0
-
-								if(asset[0] == resp.body.query.x && asset[1] == resp.body.query.z){
-									_messages.push(row)
-
-									if(row.Flag){
-										if(resp.body.body.cc == "chord" || resp.body.body.cc == "open"){
-											window.emojis.self = "🤯"
-										}
-									}
-								}
-							}
-						}
-
-						if(uProgress){
-							window.map.dissolve[(asset[0]+":"+asset[1])] = uProgress
-						}
-
-						if(name){
-							window.map.open[(asset[0]+":"+asset[1])] = {
-								id : row.Id,
-								hash : row.From,
-								name : name,
-								/*
-									개발 Part 85 (지뢰찾기 숫자)
-									현행은 value 가 항상 "" 라 서버가 계산한 인접 지뢰 수가
-									화면까지 도달할 수 없었다.
-									near 는 원시값(0~9)이며 chord 안내 등에 쓴다.
-								*/
-								value : _nearText,
-								near : _near,
-								color: color,
-								x : asset[0],
-								y : y,
-								z : asset[1]
-							}
-							_assets.push({
-								id : row.Id,
-								hash : row.From,
-								name : name,
-								value : _nearText,
-								near : _near,
-								color: color,
-								x : asset[0],
-								y : y,
-								z : asset[1]
-							})
-						}
+                        if(name){
+                            window.map.open[(asset[0]+":"+asset[1])] = {
+                                id : row.Id,
+                                hash : row.From,
+                                name : name,
+                                value : _nearText,
+                                near : _near,
+                                blast : _blast,
+                                color: color,
+                                x : asset[0],
+                                y : y,
+                                z : asset[1]
+                            }
+                            _assets.push({
+                                id : row.Id,
+                                hash : row.From,
+                                name : name,
+                                value : _nearText,
+                                near : _near,
+                                blast : _blast,
+                                color: color,
+                                x : asset[0],
+                                y : y,
+                                z : asset[1]
+                            })
+                        }
 					}
 				}
 
@@ -3012,11 +3095,14 @@ window.RoomCallback = async function(resp){
 			try{
 				try{
 					if(window.MapGen && window.MapGen.ready && self_player){
-						var _size = 4
-						var _biomeAssets = window.MapGen.assets(cc_address, {
-							x : self_player.x,
-							z : self_player.z
-						}, _size)
+                        var _size = window.RoomView ? window.RoomView * 1 : 6
+                        if(isNaN(_size) || _size < 3){
+                            _size = 6
+                        }
+                        var _biomeAssets = window.MapGen.assets(cc_address, {
+                            x : self_player.x,
+                            z : self_player.z
+                        }, _size)
 						var _visible = []
 						for(var _ai = 0; _ai < _assets.length; _ai++){
 							var _a = _assets[_ai]
@@ -3218,20 +3304,19 @@ window.RoomCallback = async function(resp){
 				}
 
 
-				if(diff || frameloop){
-					window.setFrameloop("always")
-				}else{
-					window.setDpr(OAuth3.isMobile ? 0.8 : 1)
-					try{
-						if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
-							window.setFrameloop("demand")
-						}else{
-							window.setFrameloop("always")
-						}
-					}catch(err){
-						window.setFrameloop("always")
-					}
-				}
+                if(diff || frameloop){
+                    window.setFrameloop("always")
+                }else{
+                    try{
+                        if(window.current.current.position.x == window.cursor.current.position.x && window.current.current.position.z == window.cursor.current.position.z && self_player.x == window.current.current.position.x && self_player.z == window.current.current.position.z){
+                            window.setFrameloop("demand")
+                        }else{
+                            window.setFrameloop("always")
+                        }
+                    }catch(err){
+                        window.setFrameloop("always")
+                    }
+                }
 
 				if(bingo_body){
 					$("#bingo").html(bingo_body)
@@ -5050,13 +5135,22 @@ window.RoomInit = function(cookies){
 		}, 10)
 	});
 
-	window.addEventListener('focus', function(){
-		window.setFrameloop("always")
-	})
-
-	window.addEventListener('blur', function(){
-		window.setFrameloop("demand")
-	})
+    window.addEventListener('focus', function(){
+        window.setFrameloop("always")
+    })
+    window.addEventListener('blur', function(){
+        try{
+            if(window.Mode() != "room"){
+                return
+            }
+        }catch(err){
+            return
+        }
+        if(window.RollBusy && window.RollBusy()){
+            return
+        }
+        window.setFrameloop("demand")
+    })
 
 	window.addEventListener('change', function(e){
 		if(window.Mode() != "room"){

@@ -231,20 +231,55 @@ window.CanRaid = function(){
 	}
 	return window.RaidSlots().any
 }
+window.RaidRoles = ["PMC", "UCAV"]
+window.RaidRole = ""
+window.RAID_TIMEOUT = 12000
+window.RaidRoleSet = function(role){
+	var r = role ? String(role).toUpperCase() : ""
+	if(window.RaidRoles.indexOf(r) === -1){
+		r = ""
+	}
+	window.RaidRole = r
+	try{
+		if(r){
+			sessionStorage.setItem("raidRole", r)
+		}else{
+			sessionStorage.removeItem("raidRole")
+		}
+	}catch(err){
+	}
+	return r
+}
 window.RaidPending = function(){
+	if(window.RaidRole){
+		return window.RaidRole
+	}
 	try{
 		var v = sessionStorage.getItem("raidRole")
-		return v ? String(v).toUpperCase() : ""
+		v = v ? String(v).toUpperCase() : ""
+		return (window.RaidRoles.indexOf(v) > -1) ? v : ""
 	}catch(err){
 		return ""
 	}
 }
 window.RaidPendingClear = function(){
+	window.RaidRole = ""
 	try{
 		sessionStorage.removeItem("raidRole")
 	}catch(err){
 	}
 	return true
+}
+window.RaidSlotOf = function(role){
+	var r = role ? String(role).toUpperCase() : ""
+	var slots = window.RaidSlots()
+	if(r === "PMC"){
+		return slots.pmc ? true : false
+	}
+	if(r === "UCAV"){
+		return slots.ucav ? true : false
+	}
+	return false
 }
 
 window.Dead = function(){
@@ -619,21 +654,62 @@ window.Lobby = function(){
 	window.Stage.set("lobby")
 }
 
-window.Raid = function(){
-	if(window.Stage.current == "raid" || window.Stage.current == "raid_done"){
+window.Raid = function(role){
+	var _role = role ? String(role).toUpperCase() : ""
+	if(window.RaidRoles.indexOf(_role) === -1){
+		_role = window.RaidPending()
+	}
+	if(!_role){
+		console.log("[stage] deploy requested without a role. asking again.")
+		window.RaidPendingClear()
+		window.Stage.wanted = ""
+		if(window.Stage.raidTimer){
+			clearInterval(window.Stage.raidTimer)
+			delete window.Stage.raidTimer
+		}
+		if(window.Stage.timeoutTimer){
+			clearTimeout(window.Stage.timeoutTimer)
+			delete window.Stage.timeoutTimer
+		}
+		$("#raid .progress .bar").css("width", "0")
+		window.Stage.set("")
+		if(window.RolePick){
+			window.RolePick()
+		}else{
+			window.Notice("CHOOSE A ROLE", "Pick PMC or UCAV first", 2600)
+			if(window.Mode() == "board"){
+				window.Lobby()
+			}
+		}
 		return
 	}
+	if(window.Stage.current == "raid_done"){
+		return
+	}
+	if(window.Stage.current == "raid" && window.Stage.wanted === _role){
+		return
+	}
+	if(!window.RaidSlotOf(_role)){
+		window.RaidPendingClear()
+		window.RaidAbort(_role === "PMC"
+			? "PMC already deployed this match"
+			: "UCAV already deployed this match")
+		return
+	}
+	window.RaidPendingClear()
+	window.Stage.wanted = _role
 	window.Stage.set("raid")
 	window.Stage.graceCount = 0
 	var $bar = $("#raid .progress .bar")
 	var $tip = $("#raid .tip")
 	var keys = window.ExitKeys()
 	if(keys.length){
-		$tip.html("Find one of " + keys.join(" ") + " to extract")
+		$tip.html(_role + " · find one of " + keys.join(" ") + " to extract")
 	}else{
-		$tip.html("Preparing the board")
+		$tip.html(_role + " · preparing the board")
 	}
 	var pct = 0
+	$bar.css("width", "0")
 	if(window.Stage.raidTimer){
 		clearInterval(window.Stage.raidTimer)
 	}
@@ -644,15 +720,6 @@ window.Raid = function(){
 		}
 		$bar.css("width", pct + "%")
 	}, 120)
-	var _role = ""
-	try{
-		_role = sessionStorage.getItem("raidRole")
-		_role = _role ? _role : ""
-		sessionStorage.removeItem("raidRole")
-	}catch(err){
-		_role = ""
-	}
-	window.Stage.wanted = _role
 	if(!window.Action){
 		console.log("[stage] window.Action missing. abort raid.")
 		window.RaidAbort("Cannot reach the server")
@@ -672,9 +739,18 @@ window.Raid = function(){
 		window.RaidAbort("Cannot start the raid")
 		return
 	}
+	console.log("[stage] deploy sent :: " + _role)
 	if(window.Stage.timeoutTimer){
 		clearTimeout(window.Stage.timeoutTimer)
 	}
+	window.Stage.timeoutTimer = setTimeout(function(){
+		delete window.Stage.timeoutTimer
+		if(window.Stage.current !== "raid"){
+			return
+		}
+		console.log("[stage] deploy timed out :: " + _role)
+		window.RaidAbort("The server did not answer. Try again")
+	}, window.RAID_TIMEOUT)
 }
 window.RaidAbort = function(message){
 	if(window.Stage.raidTimer){
@@ -691,6 +767,10 @@ window.RaidAbort = function(message){
 	}
 	$("#raid .progress .bar").css("width", "0")
 	window.Stage.graceCount = 0
+	window.Stage.wanted = ""
+	if(window.RaidPendingClear){
+		window.RaidPendingClear()
+	}
 	window.Stage.set("")
 	if(window.CanRaid()){
 		window.Stage.blocked = ""
@@ -733,6 +813,19 @@ window.RaidDone = function(){
 		var _c = window.cookies ? window.cookies : {}
 		var _zone = _c.spawnZone ? String(_c.spawnZone) : ""
 		var _deployed = _c.role ? String(_c.role).toUpperCase() : ""
+		var _wanted = window.Stage.wanted ? String(window.Stage.wanted).toUpperCase() : ""
+		window.Stage.wanted = ""
+		if(_wanted && _deployed && _wanted !== _deployed){
+			console.log("[stage] role mismatch :: wanted=" + _wanted +
+				" deployed=" + _deployed + " zone=" + _zone +
+				" auto=" + (_c.raidAuto ? "1" : "0"))
+			window.Notice("ROLE CHANGED",
+				"You asked for " + _wanted + " but deployed as " + _deployed, 3600)
+			return
+		}
+		if(_c.raidAuto){
+			console.log("[stage] server auto assigned :: " + _deployed)
+		}
 		if(_deployed === "UCAV" || _zone === "inland"){
 			window.Notice("UCAV DEPLOYED",
 				"Dropped inside the island. Move freely, the dice path is off limits", 3200)
@@ -1019,9 +1112,19 @@ window.StageSync = function(cookies){
 				}
 			}, left + 500)
 		}
+		if(window.Stage.timeoutTimer){
+			clearTimeout(window.Stage.timeoutTimer)
+			delete window.Stage.timeoutTimer
+		}
 		if(window.Stage.current == "raid"){
 			window.RaidDone()
-		}else if(window.Stage.current == "lobby" || window.Stage.current == ""){
+		}else if(window.Stage.current != "raid_done"){
+			if(window.Stage.raidTimer){
+				clearInterval(window.Stage.raidTimer)
+				delete window.Stage.raidTimer
+			}
+			$("#raid .progress .bar").css("width", "0")
+			window.Stage.wanted = ""
 			window.Stage.set("playing")
 		}
 	}else{
@@ -1037,9 +1140,9 @@ window.StageSync = function(cookies){
 		}
 		var _pendingRole = window.RaidPending ? window.RaidPending() : ""
 		if(_pendingRole && window.Stage.current != "raid" && window.Stage.current != "raid_done"){
-			if(window.CanRaid()){
+			if(window.CanRaid() && window.RaidSlotOf(_pendingRole)){
 				console.log("[stage] pending deploy consumed :: " + _pendingRole)
-				window.Raid()
+				window.Raid(_pendingRole)
 				return
 			}
 			if(window.RaidPendingClear){
@@ -1114,15 +1217,23 @@ $(document).on("click", "#lobby .btn.raid", function(e){
 		window.Lobby()
 		return
 	}
-	if(window.RaidPending && window.RaidPending()){
-		window.Raid()
-		return
+	if(window.RaidPendingClear){
+		window.RaidPendingClear()
 	}
 	if(window.RolePick){
 		window.RolePick()
 		return
 	}
-	window.Raid()
+	var _slots = window.RaidSlots()
+	if(_slots.pmc && !_slots.ucav){
+		window.Raid("PMC")
+		return
+	}
+	if(_slots.ucav && !_slots.pmc){
+		window.Raid("UCAV")
+		return
+	}
+	window.Notice("CHOOSE A ROLE", "Pick PMC or UCAV first", 2600)
 })
 
 $(document).on("click", "#lobby .btn.stash", function(e){

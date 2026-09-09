@@ -2466,6 +2466,8 @@ body[jail] #capture:before{content: "JAIL"; position: absolute; left: 0; top: -1
 #root .emoji.color.gate{position: absolute; left: -22px; top: -30px; width: 44px; font-size: 9px; font-weight: 900; text-align: center; color: #fde030; text-shadow: 0 0 3px #000;}
 #root .emoji.color.jail{position: absolute; left: -26px; top: -30px; width: 52px; font-size: 9px; font-weight: 900; letter-spacing: 1px; text-align: center; color: #9fa8ff; text-shadow: 0 0 3px #000;}
 #root .emoji.color.jail:before{content: "SAFE";}
+#root .emoji.color.open.blast{position: absolute; left: -26px; top: -26px; width: 52px; font-size: 9px; font-weight: 900; letter-spacing: 1px; text-align: center; color: #ff5a5a; text-shadow: 0 0 3px #000;}
+#root .emoji.color.open.blast:before{content: "BOOM";}
 /*
 	개발 Part 65 (UCAV 탈출 구역)
 	내륙 탈출 구역 라벨.

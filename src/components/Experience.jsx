@@ -1,7 +1,5 @@
 import { Environment, Html, Text } from "@react-three/drei"
-
-import { Suspense, useEffect, useRef, useState, useMemo } from "react"
-
+import { Suspense, useEffect, useRef, useState, useMemo, memo } from "react"
 import { Player } from "./Player"
 import { RoomAsset, RoomGrid } from "./RoomWorld"
 
@@ -34,6 +32,86 @@ textures.black.minFilter = THREE.LinearMipMapLinearFilter
 var PropertyLevelEmoji = ["", "🪵", "🏠", "🏪", "🏰"]
 var OwnerTextures = {}
 var OwnerTextureLimit = 64
+var TileTypes = {}
+var TilePoint = {}
+var TileClickRef = { fn : null }
+var TileClick = function(e){
+    if(TileClickRef.fn){
+        return TileClickRef.fn(e)
+    }
+}
+var TileSame = function(a, b){
+    if(a.uid !== b.uid){
+        return false
+    }
+    if(a.hash !== b.hash){
+        return false
+    }
+    if(a.name !== b.name){
+        return false
+    }
+    if(a.value !== b.value){
+        return false
+    }
+    if(a.color !== b.color){
+        return false
+    }
+    if(a.blast !== b.blast){
+        return false
+    }
+    var p = a.position
+    var q = b.position
+    if(!p || !q){
+        return p === q
+    }
+    return p.x === q.x && p.y === q.y && p.z === q.z
+}
+var TilePure = function(name, fn){
+    if(!TileTypes[name]){
+        TileTypes[name] = memo(fn, TileSame)
+    }
+    return TileTypes[name]
+}
+var TileStable = function(name, fn){
+    if(!TileTypes[name]){
+        TileTypes[name] = fn
+    }
+    return TileTypes[name]
+}
+var blastTexture = null
+window.BlastTexture = function(){
+    if(blastTexture){
+        return blastTexture
+    }
+    var hex = "1f4a5"
+    try{
+        if(window.BlastHex){
+            hex = window.BlastHex()
+        }else if(window.emojiUnicode){
+            var h = window.emojiUnicode("💥")
+            if(h){
+                hex = h
+            }
+        }
+    }catch(err){
+        hex = "1f4a5"
+    }
+    try{
+        var loader = new THREE.TextureLoader()
+        var t = loader.load("/src/fonts/emoji/animated/" + hex + ".webp", null, null, function(){
+            loader.load("/src/fonts/emoji/emoji_u" + hex + ".png", function(png){
+                t.image = png.image
+                t.needsUpdate = true
+            })
+        })
+        t.magFilter = THREE.LinearFilter
+        t.minFilter = THREE.LinearMipMapLinearFilter
+        blastTexture = t
+    }catch(err){
+        blastTexture = null
+    }
+    return blastTexture
+}
 window.OwnerTexture = function(hash){
 	var seed = ""
 	try{
@@ -446,8 +524,8 @@ export const Experience = () => {
 		}
 	})
 
-	var point = {}
-	var onClick = function(e){
+    var point = TilePoint
+    TileClickRef.fn = function(e){
 		try{
 			var $b = $("body")
 			var _gateRoom = window.Mode() == "room"
@@ -481,15 +559,18 @@ export const Experience = () => {
 				if((_isRoom || cookies.axis) && (_isRoom || !cookies.damage)){
 					if(e.point){
 						var _point = new THREE.Vector3().copy(e.point).round().addScalar(0.5)
-						var biome = window.map.biomes[_point.x+":"+_point.z]
-						if(!biome){
-							return
-						}
-						if(biome.water){
-							return
-						}
-						point = _point
-					}else if(e.target.tagName == "CANVAS"){
+                        var biome = window.map.biomes[_point.x+":"+_point.z]
+                        if(!biome){
+                            return
+                        }
+                        if(biome.water){
+                            return
+                        }
+                        TilePoint.x = _point.x
+                        TilePoint.y = _point.y
+                        TilePoint.z = _point.z
+                        point = TilePoint
+                    }else if(e.target.tagName == "CANVAS"){
 						if(typeof point.x != "undefined" && typeof point.z != "undefined"){
 							var player = self()
 							var biome = window.map.biomes[point.x+":"+point.z]
@@ -664,13 +745,12 @@ export const Experience = () => {
 		}catch(err){
 			console.log("err",err);
 		}
-	}
-
-	const onContextmenu = function(e){
-		e.preventDefault();
-	}
-
-	const ChordTile = function(props){
+    }
+    var onClick = TileClick
+    const onContextmenu = function(e){
+        e.preventDefault();
+    }
+    const ChordTile = TilePure("ChordTile", function(props){
 		var cells = useMemo(function(){
 			var out = []
 			for(var _cx = -1; _cx < 2; _cx++){
@@ -698,82 +778,91 @@ export const Experience = () => {
 			}
 			return out
 		}, [props.position.x, props.position.z, props.position.y])
-		return <>
-			<group position={props.position}>
-				{cells.map(function(c){
-					return <mesh key={c.key} rotation-x={-Math.PI / 2} position={[c.x, c.y, c.z]} onClick={onClick}>
-						<planeGeometry attach="geometry" args={[0.9, 0.9]} />
-						<meshStandardMaterial attach="material" color={props.color ? props.color : "yellow"} transparent opacity={0.55} />
-					</mesh>
-				})}
-			</group>
-		</>
-	}
-
-	const OpenTile = function(props){
-		var texture = useMemo(function(){
-			try{
-				var _seed = (props.hash + "")
-				if(_seed.indexOf("0x") != 0){
-					_seed = "0x" + _seed
-				}
-				var _canvas = blockies.create({
-					seed : _seed.toLowerCase(),
-					size : 8,
-					scale : 8
-				})
-				var _t = new THREE.CanvasTexture(_canvas)
-				_t.magFilter = THREE.NearestFilter
-				_t.minFilter = THREE.NearestFilter
-				_t.needsUpdate = true
-				return _t
-			}catch(err){
-				return null
-			}
-		}, [props.hash])
-		if(!texture){
-			return <>
-				<group position={props.position}>
-					<group></group>
-				</group>
-			</>
-		}
-		return <>
-			<group position={props.position}>
-				<mesh rotation-x={-Math.PI / 2} position={[0, 0.02, 0]} onClick={onClick}>
-					<planeGeometry attach="geometry" args={[0.94, 0.94]} />
-					<meshBasicMaterial attach="material" map={texture} transparent opacity={0.92} />
-				</mesh>
-				{/*
-					개발 Part 85 (지뢰찾기 숫자)
-					서버가 board_objects.dice 로 내려준 인접 지뢰 수를 바닥에 새긴다.
-					  ""    빈 칸(0). 아무 것도 그리지 않는다
-					  1~8   숫자
-					  💣    밟아서 터진 칸
-					값이 없으면 노드를 만들지 않는다.
-					Text 는 파일 상단에서 이미 import 되어 있다.
-				*/}
-				{props.value ? (
-					<Text
-						rotation-x={-Math.PI / 2}
-						rotation-z={Math.PI / 0.0815}
-						position={[0, 0.06, 0]}
-						fontSize={0.42}
-						color="#ffffff"
-						outlineWidth={0.035}
-						outlineColor="#000000"
-						anchorX="center"
-						anchorY="middle"
-					>{props.value}</Text>
-				) : null}
-				<Html className="clipped">
-					<div className="emoji color open" x={props.position.x} z={props.position.z}></div>
-				</Html>
-			</group>
-		</>
-	}
-
-	const Asset = function(props){
+        return <>
+            <group position={props.position}>
+                {cells.map(function(c){
+                    return <mesh key={c.key} rotation-x={-Math.PI / 2} position={[c.x, c.y, c.z]} onClick={onClick}>
+                        <planeGeometry attach="geometry" args={[0.9, 0.9]} />
+                        <meshStandardMaterial attach="material" color={props.color ? props.color : "yellow"} transparent opacity={0.55} />
+                    </mesh>
+                })}
+            </group>
+        </>
+    })
+    const OpenTile = TilePure("OpenTile", function(props){
+        var isBlast = props.blast ? true : false
+        var texture = useMemo(function(){
+            try{
+                var _seed = (props.hash + "")
+                if(_seed.indexOf("0x") != 0){
+                    _seed = "0x" + _seed
+                }
+                var _canvas = blockies.create({
+                    seed : _seed.toLowerCase(),
+                    size : 8,
+                    scale : 8
+                })
+                var _t = new THREE.CanvasTexture(_canvas)
+                _t.magFilter = THREE.NearestFilter
+                _t.minFilter = THREE.NearestFilter
+                _t.needsUpdate = true
+                return _t
+            }catch(err){
+                return null
+            }
+        }, [props.hash])
+        var blast = useMemo(function(){
+            if(!isBlast){
+                return null
+            }
+            return window.BlastTexture ? window.BlastTexture() : null
+        }, [isBlast])
+        if(!texture){
+            return <>
+                <group position={props.position}>
+                    <group></group>
+                </group>
+            </>
+        }
+        var showNumber = (!isBlast && props.value) ? true : false
+        return <>
+            <group position={props.position}>
+                <mesh rotation-x={-Math.PI / 2} position={[0, 0.02, 0]} onClick={onClick}>
+                    <planeGeometry attach="geometry" args={[0.94, 0.94]} />
+                    <meshBasicMaterial
+                        attach="material"
+                        map={texture}
+                        transparent
+                        opacity={isBlast ? 0.45 : 0.92}
+                        color={isBlast ? "#ff5a5a" : "#ffffff"}
+                    />
+                </mesh>
+                {isBlast && blast ? (
+                    <mesh rotation-x={-Math.PI / 2} position={[0, 0.09, 0]}>
+                        <planeGeometry attach="geometry" args={[1.05, 1.05]} />
+                        <meshBasicMaterial attach="material" map={blast} transparent depthWrite={false} />
+                    </mesh>
+                ) : null}
+                {showNumber ? (
+                    <Text
+                        rotation-x={-Math.PI / 2}
+                        rotation-z={Math.PI / 0.0815}
+                        position={[0, 0.06, 0]}
+                        fontSize={0.42}
+                        color="#ffffff"
+                        outlineWidth={0.035}
+                        outlineColor="#000000"
+                        anchorX="center"
+                        anchorY="middle"
+                    >{props.value}</Text>
+                ) : null}
+                <Html className="clipped">
+                    <div className={isBlast ? "emoji color open blast" : "emoji color open"} x={props.position.x} z={props.position.z}></div>
+                </Html>
+            </group>
+        </>
+    })
+    const Asset = TileStable("Asset", function(props){
 		var cookies = window.cookies
 
 		var url = new URL(window.location.href)
@@ -1178,16 +1267,15 @@ export const Experience = () => {
 					</group>
 				</>
 			}
-		}else{
-			return <>
-				<group position={props.position}>
-					<group></group>
-				</group>
-			</>
-		}
-	}
-
-	const { gl } = useThree();
+        }else{
+            return <>
+                <group position={props.position}>
+                    <group></group>
+                </group>
+            </>
+        }
+    })
+    const { gl } = useThree();
 
 	const onContextLost = function (event) {
 		event.preventDefault();
@@ -1299,22 +1387,23 @@ export const Experience = () => {
 								)
 							}
 						/>
-					) : (mode == "room" && (window.MapGen && window.MapGen.ready) && (asset.name + "").indexOf("open") === 0) ? (
-						<OpenTile
-							key={asset.id + ":" + asset.name + ":" + (asset.value ? asset.value : "")}
-							uid={asset.id}
-							hash={asset.hash}
-							name={asset.name}
-							value={asset.value}
-							position={
-								new THREE.Vector3(
-									asset.x,
-									asset.y,
-									asset.z
-								)
-							}
-						/>
-					) : (mode == "room" && (asset.name + "").indexOf("#") !== 0) ? (
+                    ) : (mode == "room" && (window.MapGen && window.MapGen.ready) && (asset.name + "").indexOf("open") === 0) ? (
+                        <OpenTile
+                            key={asset.id}
+                            uid={asset.id}
+                            hash={asset.hash}
+                            name={asset.name}
+                            value={asset.value}
+                            blast={asset.blast}
+                            position={
+                                new THREE.Vector3(
+                                    asset.x,
+                                    asset.y,
+                                    asset.z
+                                )
+                            }
+                        />
+                    ) : (mode == "room" && (asset.name + "").indexOf("#") !== 0) ? (
 						<RoomAsset
 							key={asset.id + ":" + asset.name}
 							uid={asset.id}

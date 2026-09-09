@@ -460,13 +460,20 @@ window.DiceHome = function(){
 	return _anc
 }
 window.RingSync = function(){
-	var cookies = window.cookies
-	if(!cookies){
-		return false
-	}
-	if(cookies.enter){
-		return false
-	}
+    var cookies = window.cookies
+    if(!cookies){
+        return false
+    }
+    try{
+        if(window.Mode && window.Mode() != "board"){
+            return false
+        }
+    }catch(err){
+        return false
+    }
+    if(cookies.enter){
+        return false
+    }
 	if(cookies.damage || cookies.dead){
 		return false
 	}
@@ -1317,12 +1324,15 @@ window.Grid = function(v){
 	return Math.round(n * 2) / 2
 }
 window.RingAnchor = function(){
-	try{
-		var raw = window.cookies ? window.cookies.anchor : ""
-		if(!raw){
-			return null
-		}
-		var p = String(raw).split(",")
+    try{
+        if(window.Mode && window.Mode() != "board"){
+            return null
+        }
+        var raw = window.cookies ? window.cookies.anchor : ""
+        if(!raw){
+            return null
+        }
+        var p = String(raw).split(",")
 		if(p.length < 2){
 			return null
 		}
@@ -1342,12 +1352,20 @@ window.RingAnchor = function(){
 	}
 }
 window.RingReturn = function(anchor){
-	if(!anchor){
-		return false
-	}
-	try{
-		var _y = 0
-		var b = window.map.biomes[anchor.x + ":" + anchor.z]
+    if(!anchor){
+        return false
+    }
+    try{
+        if(window.Mode && window.Mode() != "board"){
+            console.log("[dice] anchor return skipped :: not board mode")
+            return false
+        }
+    }catch(err){
+        return false
+    }
+    try{
+        var _y = 0
+        var b = window.map.biomes[anchor.x + ":" + anchor.z]
 		if(b && typeof b.y !== "undefined"){
 			_y = b.y * 1
 		}
@@ -7229,26 +7247,18 @@ OAuth3.on("ready", function(e){
 			if(icon && $navLabel){
 				$navLabel.appendChild(icon)
 			}
-			window.addEventListener('focus', function(){
-				window.setFrameloop("always")
-				/*
-					개발 Part 73 (복귀 동기화)
-					탭으로 돌아왔다.
-					백그라운드에서 타이머가 늦어져 좌표와 화면이 갈렸을 수 있다.
-					  굴림 중  Roll 이 캐치업으로 스스로 따라잡는다
-					  굴림 끝  화면 상태만 맞추면 된다
-					어느 쪽이든 TileSync 로 슬롯 / body 속성을 현재 좌표에 맞춘다.
-					폴링을 강제로 쏘지는 않는다.
-					굴림이 살아 있는데 폴링이 나가면 중간 좌표가 올라가
-					서버 클레임이 거절되어 앵커로 되돌아간다.
-				*/
-				try{
-					if(window.TileSync){
-						window.TileSync()
-					}
-				}catch(err){
-				}
-			})
+            window.addEventListener('focus', function(){
+                window.setFrameloop("always")
+                try{
+                    if(window.Mode() != "board"){
+                        return
+                    }
+                    if(window.TileSync){
+                        window.TileSync()
+                    }
+                }catch(err){
+                }
+            })
 			window.addEventListener('blur', function(){
 				/*
 					개발 Part 73 (굴림 중 렌더 유지)
@@ -7270,31 +7280,34 @@ OAuth3.on("ready", function(e){
 				}
 				window.setFrameloop("demand")
 			})
-			document.addEventListener("visibilitychange", function(){
-				try{
-					if(document.hidden){
-						if(window.RollBusy && window.RollBusy()){
-							return
-						}
-						window.setFrameloop("demand")
-						return
-					}
-					window.setFrameloop("always")
-					try{
-						if(window.RollBusy && window.RollBusy() && window.Roll){
-							window.Roll.at = Date.now() - 4000
-						}
-					}catch(err){
-					}
-					if(window.RingSync){
-						window.RingSync()
-					}
-					if(window.TileSync){
-						window.TileSync()
-					}
-				}catch(err){
-				}
-			})
+            document.addEventListener("visibilitychange", function(){
+                try{
+                    if(document.hidden){
+                        if(window.RollBusy && window.RollBusy()){
+                            return
+                        }
+                        window.setFrameloop("demand")
+                        return
+                    }
+                    window.setFrameloop("always")
+                    if(window.Mode() != "board"){
+                        return
+                    }
+                    try{
+                        if(window.RollBusy && window.RollBusy() && window.Roll){
+                            window.Roll.at = Date.now() - 4000
+                        }
+                    }catch(err){
+                    }
+                    if(window.RingSync){
+                        window.RingSync()
+                    }
+                    if(window.TileSync){
+                        window.TileSync()
+                    }
+                }catch(err){
+                }
+            })
 			$body.on({
 				click : async function(e){
 					if(window.Mode() != "board"){

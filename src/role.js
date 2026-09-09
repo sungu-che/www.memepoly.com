@@ -287,26 +287,39 @@ window.RolePick = function(){
 	return $form
 }
 $(document).on("click", 'form[name="RolePick"] .btn.role', function(e){
-	e.preventDefault()
-	var $t = $(this)
-	if($t.hasClass("disabled")){
-		return
-	}
-	var role = $t.attr("data-role") ? $t.attr("data-role") : ""
-	/*
-		stage.js 의 Raid() 가 sessionStorage.raidRole 을 읽어
-		Action({ cc : "start", role : _role }) 로 보낸다.
-		읽은 뒤 즉시 지우므로 다음 출격에 새지 않는다.
-	*/
-	try{
-		/* 개발 Part 29 : stage.js Raid() 가 getItem / removeItem 으로 읽는다 */
-		sessionStorage.setItem("raidRole", role)
-	}catch(err){
-	}
-	$(".layer, .layer form.popup").removeClass("on")
-	if(window.Raid){
-		window.Raid()
-	}
+    e.preventDefault()
+    var $t = $(this)
+    if($t.hasClass("disabled")){
+        return
+    }
+    var role = $t.attr("data-role") ? String($t.attr("data-role")).toUpperCase() : ""
+    if(role !== "PMC" && role !== "UCAV"){
+        return
+    }
+    if(window.RaidRoleSet){
+        window.RaidRoleSet(role)
+    }else{
+        try{
+            sessionStorage.setItem("raidRole", role)
+        }catch(err){
+        }
+    }
+    try{
+        if(window.Stage){
+            window.Stage.blocked = ""
+            window.Stage.graceCount = 0
+        }
+    }catch(err){
+    }
+    $(".layer, .layer form.popup").removeClass("on")
+    console.log("[role] deploy picked :: " + role)
+    if(window.Raid){
+        window.Raid(role)
+        return
+    }
+    if(window.Action){
+        window.Action({ cc : "start", role : role })
+    }
 })
 
 window.Enlist = function(){

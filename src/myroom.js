@@ -405,21 +405,29 @@ $(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
 	if($t.hasClass("disabled")){
 		return
 	}
-	var _role = $t.attr("data-role") ? String($t.attr("data-role")).toUpperCase() : ""
-	try{
-		sessionStorage.setItem("raidRole", _role)
-	}catch(err){
-	}
-	try{
-		if(window.Stage){
-			window.Stage.blocked = ""
-			window.Stage.graceCount = 0
-			if(window.Stage.set){
-				window.Stage.set("")
-			}
-		}
-	}catch(err){
-	}
+    var _role = $t.attr("data-role") ? String($t.attr("data-role")).toUpperCase() : ""
+    if(_role !== "PMC" && _role !== "UCAV"){
+        return
+    }
+    if(window.RaidRoleSet){
+        window.RaidRoleSet(_role)
+    }else{
+        try{
+            sessionStorage.setItem("raidRole", _role)
+        }catch(err){
+        }
+    }
+    try{
+        if(window.Stage){
+            window.Stage.blocked = ""
+            window.Stage.graceCount = 0
+            window.Stage.wanted = ""
+            if(window.Stage.set){
+                window.Stage.set("")
+            }
+        }
+    }catch(err){
+    }
 	if(window.MyRoomClose){
 		window.MyRoomClose()
 	}else{
@@ -429,7 +437,7 @@ $(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
 	if(window.history && window.history.replaceState){
 		window.history.replaceState(null, "", window.location.pathname)
 	}
-	console.log("[myroom] deploy requested :: " + (_role ? _role : "AUTO"))
+	console.log("[myroom] deploy requested :: " + _role)
 	window.location.hash = ""
 	if(window.onhashchange){
 		window.onhashchange()
