@@ -343,6 +343,36 @@ window.EdgeSelf = function(){
 		return null
 	}
 }
+window.WARD_RANGE = 4
+window.CanWard = function(){
+	var cookies = window.cookies
+	if(!cookies){
+		return false
+	}
+	if(cookies.damage || cookies.dead){
+		return false
+	}
+	if(!cookies.enter){
+		return false
+	}
+	if(String(cookies.role).toUpperCase() !== "PMC"){
+		return false
+	}
+	if(cookies.team !== "#red" && cookies.team !== "#blue"){
+		return false
+	}
+	return true
+}
+window.WardTeam = function(){
+	var cookies = window.cookies
+	if(!cookies){
+		return ""
+	}
+	if(cookies.team === "#red" || cookies.team === "#blue"){
+		return cookies.team.replace("#","")
+	}
+	return ""
+}
 window.TrailMap = function(){
 	var out = {}
 	var cookies = window.cookies
@@ -889,9 +919,9 @@ window.SlotBody = function(opts){
 		  폭탄은 개발 Part 47 규칙으로 enter 를 요구한다.
 		  깃발은 서버가 team 만 본다. 두 자격은 다르므로 분리한다.
 	*/
-	var _inField = (cookies.enter || cookies.jail) ? true : false
-	var out = _inField
-		? `<a class="hashType Fire" ready="${cookies.enter ? "1" : "0"}"><img src="${src}"><span class="cnt">${cnt}</span></a>`
+	var _canWard = window.CanWard ? window.CanWard() : false
+	var out = _canWard
+		? `<a class="hashType Fire" ready="1"><img src="${src}"><span class="cnt">${cnt}</span></a>`
 		: `<a class="hashType"></a>`
 	try{
 		var _sf = window.EdgeSelf ? window.EdgeSelf() : null
@@ -1145,7 +1175,19 @@ window.MetaBody = function(opts){
 		? window.MetaIcon()
 		: { icon : "", act : "", ready : "0" }
 	if(_meta.act === "bomb"){
-		return `<a class="hashType Bomb emoji color" ready="${_meta.ready}"><i class="emoji color">💣</i></a>`
+		var _bsrc = ""
+		try{
+			_bsrc = window.EmojiSrc ? window.EmojiSrc("💣") : ""
+			if(!_bsrc && window.emojiUnicode){
+				_bsrc = "/src/fonts/emoji/emoji_u" + window.emojiUnicode("💣") + ".png"
+			}
+		}catch(err){
+			_bsrc = ""
+		}
+		if(!_bsrc){
+			_bsrc = "/src/fonts/emoji/emoji_u1f4a3.png"
+		}
+		return `<a class="hashType Bomb" ready="${_meta.ready}"><img draggable="false" src="${_bsrc}" alt="bomb"></a>`
 	}
 	return `<a class="hashType Meta emoji color" act="${_meta.act}" ready="${_meta.ready}"><i></i><div id="dice" class="slot-machine"><div class="slotwrapper"><ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li></ul><div class="num">${_num}</div></div></div></a>`
 }
@@ -1748,6 +1790,7 @@ window.Callback = async function(resp){
 			$("#flag .red, #flag .blue").removeClass("on")
 		}else{
 			$("#flag").css("display", "")
+			$("body").removeAttr("startable").removeAttr("start")
 		}
 	}catch(err){
 	}
@@ -1984,35 +2027,68 @@ function Respawn(){
 			}
 		}
 	}
-	if(!position){
-		var r, b
-		for(var i = 0; i < fields.length; i++){
-			r = fields[Math.floor(Math.random() * fields.length)]
-			b = window.map.biomes[`${r.x}:${r.z}`]
-
-			if(b){
-				if(!b.water){
-					break
-				}
-			}
-		}
-
-		if(!r){
-			r = fields[0]
-		}
-
-		if(!b){
-			b = { y : 0.5 }
-		}
-
-		position = {
-			x : r.x,
-			y : b.y,
-			z : r.z
-		}
-	}
-
-	return position
+    if(!position){
+        var _wantUcav = false
+        try{
+            _wantUcav = (window.RaidPending && window.RaidPending() === "UCAV") ||
+                (cookies.role === "UCAV")
+        }catch(err){
+            _wantUcav = false
+        }
+        if(_wantUcav && window.map && window.map.biomes){
+            var _ix = null
+            var _iz = null
+            var _ib = null
+            var _keys = Object.keys(window.map.biomes)
+            for(var _t = 0; _t < 400 && _keys.length; _t++){
+                var _k = _keys[Math.floor(Math.random() * _keys.length)]
+                var _cand = window.map.biomes[_k]
+                if(!_cand || typeof _cand.x === "undefined" || !_cand.biome){
+                    continue
+                }
+                if(_cand.water || _cand.ocean){
+                    continue
+                }
+                if(window.IsEdge && window.IsEdge(_cand.x, _cand.z)){
+                    continue
+                }
+                _ix = _cand.x
+                _iz = _cand.z
+                _ib = _cand
+                break
+            }
+            if(_ib){
+                console.log("[board] inland spawn for pending UCAV :: " + _ix + "," + _iz)
+                return {
+                    x : _ix,
+                    y : _ib.y,
+                    z : _iz
+                }
+            }
+        }
+        var r, b
+        for(var i = 0; i < fields.length; i++){
+            r = fields[Math.floor(Math.random() * fields.length)]
+            b = window.map.biomes[`${r.x}:${r.z}`]
+            if(b){
+                if(!b.water){
+                    break
+                }
+            }
+        }
+        if(!r){
+            r = fields[0]
+        }
+        if(!b){
+            b = { y : 0.5 }
+        }
+        position = {
+            x : r.x,
+            y : b.y,
+            z : r.z
+        }
+    }
+    return position
 }
 
 function nFormatter(num, digits) {
@@ -4514,6 +4590,7 @@ OAuth3.on("ready", function(e){
 		window.BoardCallback = async function(resp){
 			var url = new URL(window.location.href)
 			var _dice = window.cookies.dice * 1
+			var _xhr = OAuth3.xhr
 			var cookies = window.CookiesParse(resp.body.cookies)
 			if(!cookies){
 				console.log("[board] callback skipped :: cookies unreadable")
@@ -5122,6 +5199,39 @@ OAuth3.on("ready", function(e){
 									}
 									window.map.biomes[_decoId] = _asset
 								}
+							}else if(row.Subject == "#ward"){
+								var _wf = {
+									Id : row.Id,
+									From : row.From,
+									To : row.To,
+									Cc : row.Cc,
+									Subject : row.Subject,
+									Flag : row.Flag,
+									Date : row.Date,
+									x : row.x,
+									z : row.z,
+									dice : row.dice,
+									emoji : row.emoji ? row.emoji : "🔥",
+									__team : row.__team ? row.__team : "",
+									__ward : true
+								}
+								if(!flags[_wf.Id]){
+									flags[_wf.Id] = true
+									flags.push(_wf)
+								}
+								var _wteam = window.WardTeam ? window.WardTeam() : ""
+								if(_wteam && _wf.__team === _wteam){
+									_assets.push({
+										id : "wd:" + _wf.x + ":" + _wf.z,
+										hash : cc_address,
+										name : "ward",
+										value : "🔥",
+										color : _wf.__team,
+										x : _wf.x,
+										y : (b ? b.y : 0) + 0.02,
+										z : _wf.z
+									})
+								}
 							}else if(row.Subject == "#position"){
 								var player = {
 									follow : false	
@@ -5521,6 +5631,14 @@ OAuth3.on("ready", function(e){
 								}catch(err){
 									_decoSig = ""
 								}
+								var _zoneSig = ""
+								try{
+									if(window.ExitZone && window.ExitZone(b.x, b.z)){
+										_zoneSig = "exit"
+									}
+								}catch(err){
+									_zoneSig = ""
+								}
 								_assets.push({
 									id : _id,
 									hash : cc_address,
@@ -5529,6 +5647,7 @@ OAuth3.on("ready", function(e){
 									color: color,
 									own : _ownSig,
 									deco : _decoSig,
+									zone : _zoneSig,
 									x : b.x,
 									y : b.y - (b.water ? 0.8 : 0.5),
 									z : b.z
@@ -5577,13 +5696,37 @@ OAuth3.on("ready", function(e){
 							}catch(err){
 								console.log("map thumb err", err)
 							}
-							if(JSON.stringify(window.players) != JSON.stringify(_players)){
+							var _psig = ""
+							for(var _sp = 0; _sp < _players.length; _sp++){
+								var _spv = _players[_sp]
+								if(!_spv){
+									continue
+								}
+								_psig += _spv.hash + "|" + _spv.x + "|" + _spv.y + "|" + _spv.z +
+									"|" + _spv.emoji + "|" + (_spv.team ? _spv.team : "") +
+									"|" + (_spv.role ? _spv.role : "") +
+									"|" + (_spv.self ? 1 : 0) + "|" + (_spv.dice ? _spv.dice : 0) + ";"
+							}
+							if(window.players.sig !== _psig){
+								_players.sig = _psig
 								diff = true
 								window.players.set(_players)
 							}
 						}
 						if(window.assets){
-							if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
+							var _asig = ""
+							for(var _sa = 0; _sa < _assets.length; _sa++){
+								var _sav = _assets[_sa]
+								if(!_sav){
+									continue
+								}
+								_asig += _sav.id + "|" + _sav.color + "|" +
+									(_sav.own ? _sav.own : "") + "|" +
+									(_sav.deco ? _sav.deco : "") + "|" +
+									(_sav.zone ? _sav.zone : "") + "|" + _sav.y + ";"
+							}
+							if(window.assets.sig !== _asig){
+								_assets.sig = _asig
 								diff = true
 								window.assets.set(_assets)
 							}
@@ -5693,6 +5836,12 @@ OAuth3.on("ready", function(e){
 						var $itemsDeck = window.ItemsDeck
 							? window.ItemsDeck()
 							: $("emojis .items").not(".emoji_asset")
+						try{
+							if(window.Mode() != "board"){
+								$itemsDeck = $()
+							}
+						}catch(err){
+						}
 						var before_body = $itemsDeck.html()
 						if(before_body){
 							before_body = before_body.replace(/\t/gi,"").replace(/\n/gi,"").trim()
@@ -6357,6 +6506,41 @@ OAuth3.on("ready", function(e){
 					}catch(err){
 					}
 					try{
+						var _got = ""
+						if(cookies.harvested){
+							_got += String(cookies.harvested)
+						}
+						if(cookies.farmed){
+							_got += String(cookies.farmed)
+						}
+						if(_got){
+							if(window.BoardCallback.harvested !== _got){
+								window.BoardCallback.harvested = _got
+								window.Notice("HARVEST", "Picked up " + _got, 2400)
+								try{
+									if(window.Sfx){
+										window.Sfx.play("pickup")
+									}
+								}catch(err){
+								}
+							}
+						}else{
+							delete window.BoardCallback.harvested
+						}
+					}catch(err){
+					}
+					try{
+						if(cookies.ucavStashed &&
+							window.BoardCallback.ucavStashed !== cookies.ucavStashed){
+							window.BoardCallback.ucavStashed = cookies.ucavStashed
+							window.Notice("GEAR SEALED",
+								cookies.ucavStashed + " item(s) moved to My Room. UCAV deploys empty", 3400)
+						}else if(!cookies.ucavStashed){
+							delete window.BoardCallback.ucavStashed
+						}
+					}catch(err){
+					}
+					try{
 						if(cookies.raidForfeited && window.BoardCallback.raidForfeited !== cookies.raidForfeited){
 							window.BoardCallback.raidForfeited = cookies.raidForfeited
 							window.Notice("RUN LOST",
@@ -6550,11 +6734,14 @@ OAuth3.on("ready", function(e){
 					}catch(err){
 					}
 					if(window.Poll.ing){
-						if(OAuth3.xhr){
+						if(OAuth3.xhr && OAuth3.xhr === _xhr){
 							OAuth3.xhr.abort()
 							delete OAuth3.xhr
-						window.response = resp
+						}else if(OAuth3.xhr){
+							console.log("[board] keep in-flight request :: " +
+								(window.Stage && window.Stage.current ? window.Stage.current : ""))
 						}
+						window.response = resp
 					}
 					if(typeof window.Poll.ing == "undefined" && !cookies.damage &&
 						!(window.RollBusy && window.RollBusy())){
@@ -6906,33 +7093,58 @@ OAuth3.on("ready", function(e){
 				cookies = window.cookies ? window.cookies : {}
 			}
 			window.cookies = cookies
-			try{
-				var _bootHash = String(window.location.hash || "").replace("#","").toLowerCase()
-				if(_bootHash){
-					var _selfKey = String(cookies.address ? cookies.address : cookies.hash)
-						.replace("0x","").toLowerCase()
-					if(_selfKey && _bootHash === _selfKey){
-						console.log("[board] my room direct entry blocked :: " + _bootHash)
-						if(window.history && window.history.replaceState){
-							window.history.replaceState(null, "",
-								window.location.pathname + window.location.search)
-						}else{
-							window.location.hash = ""
-						}
-						try{
-							if(window.Notice){
-								window.Notice("BOARD MODE",
-									"My Room opens from the board", 2600)
-							}
-						}catch(err){
-						}
-					}
-				}
-			}catch(err){
-			}
-			$body.attr("address", cookies.address)
-
-			var len = rows.length;
+            try{
+                var _bootHash = String(window.location.hash || "").replace("#","").toLowerCase()
+                if(_bootHash){
+                    var _selfKey = String(cookies.address ? cookies.address : cookies.hash)
+                        .replace("0x","").toLowerCase()
+                    if(_selfKey && _bootHash === _selfKey){
+                        console.log("[boot] my room direct entry :: " + _bootHash)
+                        try{
+                            if(window.MyRoom){
+                                window.MyRoom.closed = ""
+                            }
+                        }catch(err){
+                        }
+                    }
+                }
+            }catch(err){
+            }
+            $body.attr("address", cookies.address)
+            try{
+                var _ownerKey = String(cookies.address ? cookies.address : cookies.hash)
+                    .replace("0x","").toLowerCase()
+                var _curHash = String(window.location.hash || "").replace("#","").toLowerCase()
+                var _booted = false
+                try{
+                    _booted = sessionStorage.getItem("bootRoom") === "1"
+                }catch(err){
+                    _booted = false
+                }
+                if(!_booted){
+                    try{
+                        sessionStorage.setItem("bootRoom", "1")
+                    }catch(err){
+                    }
+                    if(_ownerKey && !_curHash && !cookies.enter && !cookies.damage && !cookies.dead){
+                        console.log("[boot] first entry :: opening my room " + _ownerKey)
+                        if(window.history && window.history.replaceState){
+                            window.history.replaceState(null, "",
+                                window.location.pathname + window.location.search + "#" + _ownerKey)
+                        }else{
+                            window.location.hash = _ownerKey
+                        }
+                        try{
+                            if(window.MyRoom){
+                                window.MyRoom.closed = ""
+                            }
+                        }catch(err){
+                        }
+                    }
+                }
+            }catch(err){
+            }
+            var len = rows.length;
 
 			var teams = {};
 
@@ -7843,14 +8055,14 @@ OAuth3.on("ready", function(e){
 													window.Notice("UCAV", "Drones fight in the field, not on the path", 2200)
 													return
 												}
-												if(!_isEdgeHere && !window.cookies.enter && !window.cookies.jail){
-													if(window.RolePick){
-														window.RolePick()
-														return
-													}
-													window.Notice("NOT ON PATH", "Return to the board path", 2200)
-													return
-												}
+                                                if(!_isEdgeHere && !window.cookies.enter && !window.cookies.jail){
+                                                    if(window.GoMyRoom && window.GoMyRoom("MY ROOM",
+                                                        "Pick PMC or UCAV in My Room to deploy")){
+                                                        return
+                                                    }
+                                                    window.Notice("NOT ON PATH", "Return to the board path", 2200)
+                                                    return
+                                                }
 												window.cookies.dice = 0
 												body.cc = ""
 												var _anc = window.RingAnchor ? window.RingAnchor() : null
@@ -7938,6 +8150,18 @@ OAuth3.on("ready", function(e){
 												}
 												return
 											}else if($this.hasClass("Fire")){
+												if(window.CanWard && !window.CanWard()){
+													var _wr = ""
+													if(!cookies.enter){
+														_wr = "Deploy first to place a ward"
+													}else if(String(cookies.role).toUpperCase() !== "PMC"){
+														_wr = "Only PMC can place wards"
+													}else{
+														_wr = "You need a red or blue team"
+													}
+													window.Notice("NO WARD", _wr, 2400)
+													return
+												}
 												body.cc = "flag"
 											}else if($this.hasClass("Flag")){
 												return
@@ -8033,10 +8257,13 @@ OAuth3.on("ready", function(e){
 											})
 										}
 
-										emojiChanged("🫥", true, isBomb)
+										if(body.cc !== "flag"){
+											emojiChanged("🫥", true, isBomb)
+										}
 
 										if(diff){
 											window.assets.set(_assets)
+											window.setFrameloop("always")
 										}
 
 										if(time.out){

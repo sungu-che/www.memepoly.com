@@ -226,7 +226,10 @@ window.CanRaid = function(){
 	if(cookies.damage || cookies.dead){
 		return false
 	}
-	if(cookies.raidBlocked){
+	var _deny = cookies.raidDeny ? String(cookies.raidDeny) : ""
+	if(cookies.raidBlocked &&
+		(_deny === "pmc_used" || _deny === "ucav_used" ||
+		 _deny === "no_slot" || _deny === "aborted" || _deny === "match_full")){
 		return false
 	}
 	return window.RaidSlots().any
@@ -696,7 +699,6 @@ window.Raid = function(role){
 			: "UCAV already deployed this match")
 		return
 	}
-	window.RaidPendingClear()
 	window.Stage.wanted = _role
 	window.Stage.set("raid")
 	window.Stage.graceCount = 0
@@ -767,8 +769,14 @@ window.RaidAbort = function(message){
 	}
 	$("#raid .progress .bar").css("width", "0")
 	window.Stage.graceCount = 0
+	var _keep = window.RaidAbort.keep ? window.RaidAbort.keep : ""
+	window.RaidAbort.keep = ""
 	window.Stage.wanted = ""
-	if(window.RaidPendingClear){
+	if(_keep){
+		if(window.RaidRoleSet){
+			window.RaidRoleSet(_keep)
+		}
+	}else if(window.RaidPendingClear){
 		window.RaidPendingClear()
 	}
 	window.Stage.set("")
@@ -783,7 +791,36 @@ window.RaidAbort = function(message){
 	if(window.Mode() == "board"){
 		window.Lobby()
 	}
+	if(_keep){
+		window.Stage.tries = (window.Stage.tries ? window.Stage.tries : 0) + 1
+		if(window.Stage.tries <= 2){
+			console.log("[stage] retrying deploy :: " + _keep +
+				" try=" + window.Stage.tries)
+			setTimeout(function(){
+				window.Raid(_keep)
+			}, 900)
+			return
+		}
+		window.Stage.tries = 0
+		if(window.RaidPendingClear){
+			window.RaidPendingClear()
+		}
+	}
+	var _now = Date.now()
+	if(window.RaidAbort.lastBounce && (_now - window.RaidAbort.lastBounce) < 15000){
+		console.log("[stage] my room bounce suppressed")
+		return
+	}
+	window.RaidAbort.lastBounce = _now
+	if(window.GoMyRoom){
+		setTimeout(function(){
+			window.GoMyRoom("DEPLOY FAILED", message ? message : "Pick a role again in My Room")
+		}, 600)
+	}
 }
+window.RaidAbort.keep = ""
+window.RaidAbort.lastBounce = 0
+window.Stage.tries = 0
 window.RaidDone = function(){
 	if(window.Stage.current != "raid"){
 		return
@@ -805,6 +842,10 @@ window.RaidDone = function(){
 		delete window.Stage.timeoutTimer
 	}
 	window.Stage.current = "raid_done"
+	window.Stage.tries = 0
+	if(window.RaidPendingClear){
+		window.RaidPendingClear()
+	}
 	$("#raid .progress .bar").css("width", "100%")
 	window.Stage.doneTimer = setTimeout(function(){
 		delete window.Stage.doneTimer
@@ -957,23 +998,48 @@ window.StageSync = function(cookies){
 		$("body").removeAttr("jail")
 	}
 	if(cookies.raidBlocked){
-		var _denyBody = "No slots left this match"
-		if(cookies.raidDeny == "match_full"){
-			_denyBody = "This session is full (max " +
-				(cookies.matchCapacity ? cookies.matchCapacity : 20) + " players)"
-		}else if(cookies.raidDeny == "no_inland"){
-			_denyBody = "No inland ground on this island. UCAV cannot deploy"
-		}else if(cookies.raidDeny == "no_gate"){
-			_denyBody = "No gate on this board path. PMC cannot deploy"
-		}else if(cookies.raidDeny == "pmc_used"){
-			_denyBody = "PMC already deployed this match"
-		}else if(cookies.raidDeny == "ucav_used"){
-			_denyBody = "UCAV already deployed this match"
-		}else if(cookies.raidDeny == "aborted"){
-			_denyBody = "You went down. Only UCAV is left this match"
+		var _denySig = String(cookies.raidDeny ? cookies.raidDeny : "1") + "@" +
+			String(cookies.raidWanted ? cookies.raidWanted : "") + "@" +
+			String(cookies.match ? cookies.match : "")
+		var _asked = (window.Stage.current === "raid") ||
+			(window.Stage.wanted ? true : false)
+		if(!_asked){
+			if(window.StageSync.denySeen !== _denySig){
+				window.StageSync.denySeen = _denySig
+				console.log("[stage] stale deploy deny ignored :: " + _denySig)
+			}
+		}else if(window.StageSync.denySeen === _denySig){
+			console.log("[stage] duplicate deploy deny ignored :: " + _denySig)
+		}else{
+			window.StageSync.denySeen = _denySig
+			var _denyBody = "No slots left this match"
+			var _wanted = cookies.raidWanted ? String(cookies.raidWanted).toUpperCase() : ""
+			if(cookies.raidDeny == "match_full"){
+				_denyBody = "This session is full (max " +
+					(cookies.matchCapacity ? cookies.matchCapacity : 20) + " players)"
+			}else if(cookies.raidDeny == "no_inland"){
+				_denyBody = "The island has no inland drop point yet. Try again"
+			}else if(cookies.raidDeny == "no_gate"){
+				_denyBody = "No gate on this board path yet. Try again"
+			}else if(cookies.raidDeny == "pmc_used"){
+				_denyBody = "PMC already deployed this match"
+			}else if(cookies.raidDeny == "ucav_used"){
+				_denyBody = "UCAV already deployed this match"
+			}else if(cookies.raidDeny == "aborted"){
+				_denyBody = "You went down. Only UCAV is left this match"
+			}
+			console.log("[stage] deploy denied :: want=" + _wanted +
+				" reason=" + (cookies.raidDeny ? cookies.raidDeny : "") +
+				" used=" + (cookies.raidUsed ? cookies.raidUsed : "") +
+				" retry=" + (cookies.raidRetry ? "1" : "0"))
+			if(cookies.raidRetry && _wanted){
+				window.RaidAbort.keep = _wanted
+			}
+			window.RaidAbort(_denyBody)
+			return
 		}
-		window.RaidAbort(_denyBody)
-		return
+	}else{
+		window.StageSync.denySeen = ""
 	}
 	if(cookies.exitBlocked){
 		var keys = window.ExitKeys()
@@ -1217,23 +1283,19 @@ $(document).on("click", "#lobby .btn.raid", function(e){
 		window.Lobby()
 		return
 	}
+	var _pending = window.RaidPending ? window.RaidPending() : ""
+	if(_pending && window.RaidSlotOf(_pending)){
+		window.Raid(_pending)
+		return
+	}
 	if(window.RaidPendingClear){
 		window.RaidPendingClear()
 	}
-	if(window.RolePick){
-		window.RolePick()
+	if(window.GoMyRoom && window.GoMyRoom("MY ROOM",
+		"Pick PMC or UCAV in My Room to deploy")){
 		return
 	}
-	var _slots = window.RaidSlots()
-	if(_slots.pmc && !_slots.ucav){
-		window.Raid("PMC")
-		return
-	}
-	if(_slots.ucav && !_slots.pmc){
-		window.Raid("UCAV")
-		return
-	}
-	window.Notice("CHOOSE A ROLE", "Pick PMC or UCAV first", 2600)
+	window.Notice("CHOOSE A ROLE", "Open My Room to pick a role", 2600)
 })
 
 $(document).on("click", "#lobby .btn.stash", function(e){

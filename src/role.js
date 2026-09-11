@@ -30,7 +30,7 @@ window.RoleSpec = {
 	"UCAV" : {
 		name : "UCAV",
 		emoji : "🛩",
-		hp : 8,
+		hp : 3,
 		backpack : 0,
 		desc : { ko : "부동산 3개 이상 보유 시 자동 소환되는 방어 드론입니다.", en : "A defense drone summoned by owning 3+ properties." }
 	}

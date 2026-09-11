@@ -21,7 +21,11 @@ window.MyRoomEnter = function(cookies){
 			ucav : _used.indexOf("UCAV") == -1
 		}
 	}
-	var blocked = (cookies.matchFull || cookies.raidBlocked || cookies.damage || cookies.dead) ? true : false
+    var _deny = cookies.raidDeny ? String(cookies.raidDeny) : ""
+    var _hardBlock = cookies.raidBlocked &&
+        (_deny === "pmc_used" || _deny === "ucav_used" ||
+         _deny === "no_slot" || _deny === "aborted" || _deny === "match_full")
+    var blocked = (cookies.matchFull || _hardBlock || cookies.damage || cookies.dead) ? true : false
 	var pmcOk = slots.pmc && !blocked
 	var ucavOk = slots.ucav && !blocked
 	var body = ""
@@ -319,6 +323,259 @@ window.MyRoomOpen = function(resp){
 	}
 	return window.MyRoom(r)
 }
+window.GoMyRoom = function(head, body){
+    var cookies = window.cookies
+    if(!cookies){
+        return false
+    }
+    var target = String(cookies.address ? cookies.address : cookies.hash)
+        .replace("0x", "").toLowerCase()
+    if(!target){
+        return false
+    }
+    try{
+        if(window.MyRoom){
+            window.MyRoom.closed = ""
+        }
+        sessionStorage.removeItem("roomDismissed")
+    }catch(err){
+    }
+    if(head && window.Notice){
+        window.Notice(head, body ? body : "Choose your role in My Room", 2600)
+    }
+    var now = ""
+    try{
+        now = String(window.location.hash || "").replace("#", "").toLowerCase()
+    }catch(err){
+        now = ""
+    }
+    console.log("[myroom] redirect for role pick :: " + target)
+    if(now === target){
+        try{
+            if(window.onhashchange){
+                window.onhashchange()
+            }
+            if(window.MyRoomOpen){
+                window.MyRoomOpen()
+            }
+        }catch(err){
+        }
+        return true
+    }
+    window.location.hash = target
+    return true
+}
+window.StartReady = function(){
+	var cookies = window.cookies
+	if(!cookies){
+		return { ok : false, why : "loading", role : "" }
+	}
+	if(cookies.enter){
+		return { ok : false, why : "deployed", role : "" }
+	}
+	if(cookies.damage || cookies.dead){
+		return { ok : false, why : "dead", role : "" }
+	}
+	if(cookies.matchFull){
+		return { ok : false, why : "full", role : "" }
+	}
+	var can = window.CanRaid ? window.CanRaid() : false
+	if(!can){
+		return { ok : false, why : "noslot", role : "" }
+	}
+	var role = window.RaidPending ? window.RaidPending() : ""
+	if(role && window.RaidSlotOf && !window.RaidSlotOf(role)){
+		role = ""
+	}
+	if(!role){
+		var slots = window.RaidSlots ? window.RaidSlots() : null
+		if(slots){
+			if(slots.pmc && !slots.ucav){
+				role = "PMC"
+			}else if(!slots.pmc && slots.ucav){
+				role = "UCAV"
+			}
+		}
+	}
+	return { ok : true, why : "", role : role }
+}
+window.StartDeck = function(){
+	var $deck = null
+	try{
+		$deck = window.ItemsDeck
+			? window.ItemsDeck()
+			: $("emojis .items").not(".emoji_asset")
+	}catch(err){
+		$deck = null
+	}
+	if(!$deck || !$deck.length){
+		return null
+	}
+	return $deck
+}
+window.StartSync = function(){
+	var $deck = window.StartDeck()
+	if(!$deck){
+		return false
+	}
+	var $old = $deck.find('.emoji_asset[type="start"]')
+	var room = true
+	try{
+		room = window.Mode ? (window.Mode() === "room") : true
+	}catch(err){
+		room = true
+	}
+	if(!room){
+		if($old.length){
+			$old.remove()
+		}
+		try{
+			$("body").removeAttr("start").removeAttr("startable")
+		}catch(err){
+		}
+		return false
+	}
+	var st = window.StartReady
+		? window.StartReady()
+		: { ok : false, why : "loading", role : "" }
+	try{
+		var $sb = $("body")
+		if(st.ok){
+			$sb.attr("startable", "on")
+		}else{
+			$sb.removeAttr("startable")
+		}
+		$sb.attr("start", st.ok ? "ready" : "blocked")
+	}catch(err){
+	}
+	var sig = (st.ok ? "1" : "0") + ":" +
+		(st.role ? st.role : "") + ":" +
+		(st.why ? st.why : "")
+	if($old.length){
+		if($old.attr("sig") === sig && $old.is(":last-child")){
+			return true
+		}
+		$old.remove()
+	}
+	var icon = "🎮"
+	if(st.role === "PMC"){
+		icon = "⚔"
+	}else if(st.role === "UCAV"){
+		icon = "🛩"
+	}
+	var label = st.role ? st.role : "Start"
+	$deck.append(
+		'<div draggable="false" class="emoji_asset start" emoji="start" type="start"' +
+		' sig="' + sig + '"' +
+		' ready="' + (st.ok ? "1" : "0") + '"' +
+		' role="' + (st.role ? st.role : "") + '"' +
+		' why="' + (st.why ? st.why : "") + '">' +
+		'<a class="emoji color">' + icon + '</a>' +
+		'<span class="label">' + label + '</span>' +
+		'</div>'
+	)
+	return true
+}
+window.StartDeckBody = function(){
+	return ""
+}
+window.StartDeploy = function(){
+	var st = window.StartReady
+		? window.StartReady()
+		: { ok : false, why : "loading", role : "" }
+	if(!st.ok){
+		var msg = { head : "NOT READY", body : "You cannot deploy right now" }
+		if(st.why === "deployed"){
+			msg = { head : "IN RAID", body : "You are already deployed" }
+		}else if(st.why === "dead"){
+			msg = { head : "DOWN", body : "Deploy again next match" }
+		}else if(st.why === "full"){
+			msg = { head : "MATCH FULL",
+				body : "This session is full. Wait for the next match" }
+		}else if(st.why === "noslot"){
+			msg = { head : "NO DEPLOY SLOT",
+				body : "Both PMC and UCAV are used this match" }
+		}else if(st.why === "loading"){
+			msg = { head : "LOADING", body : "Waiting for the server" }
+		}
+		if(window.Notice){
+			window.Notice(msg.head, msg.body, 2600)
+		}
+		return false
+	}
+	if(!st.role){
+		if(window.Notice){
+			window.Notice("CHOOSE A ROLE", "Pick PMC or UCAV to deploy", 2400)
+		}
+		try{
+			sessionStorage.removeItem("roomDismissed")
+		}catch(err){
+		}
+		try{
+			if(window.MyRoom){
+				window.MyRoom.closed = ""
+			}
+		}catch(err){
+		}
+		if(window.MyRoomOpen){
+			window.MyRoomOpen()
+		}
+		return false
+	}
+	if(window.RaidRoleSet){
+		window.RaidRoleSet(st.role)
+	}else{
+		try{
+			sessionStorage.setItem("raidRole", st.role)
+		}catch(err){
+		}
+	}
+	try{
+		if(window.Sfx){
+			window.Sfx.play("click")
+		}
+	}catch(err){
+	}
+	try{
+		if(window.Stage){
+			window.Stage.blocked = ""
+			window.Stage.graceCount = 0
+			window.Stage.wanted = ""
+			if(window.Stage.set){
+				window.Stage.set("")
+			}
+		}
+	}catch(err){
+	}
+	try{
+		$("body").removeAttr("startable")
+	}catch(err){
+	}
+	if(window.MyRoomClose){
+		window.MyRoomClose()
+	}else{
+		$("#myroom").removeClass("on")
+		$("body").removeAttr("myroom")
+	}
+	console.log("[start] deploy from deck :: " + st.role)
+	var _hadHash = false
+	try{
+		_hadHash = String(window.location.hash || "").replace("#", "").length > 0
+	}catch(err){
+		_hadHash = false
+	}
+	if(_hadHash){
+		window.location.hash = ""
+		return true
+	}
+	if(window.history && window.history.replaceState){
+		window.history.replaceState(null, "", window.location.pathname)
+	}
+	if(window.onhashchange){
+		window.onhashchange()
+	}
+	return true
+}
 window.MyRoomClose = function(){
 	var cookies = window.cookies
 	var owner = ""
@@ -331,6 +588,12 @@ window.MyRoomClose = function(){
 	window.MyRoom.closed = owner ? owner : "*"
 	$("#myroom").removeClass("on")
 	$("body").removeAttr("myroom")
+	try{
+		if(window.StartSync){
+			window.StartSync()
+		}
+	}catch(err){
+	}
 	try{
 		if(window.setFrameloop){
 			window.setFrameloop("always")
@@ -434,32 +697,64 @@ $(document).on("click", "#myroom .myroom_foot .btn.board", function(e){
 		$("#myroom").removeClass("on")
 		$("body").removeAttr("myroom")
 	}
-	if(window.history && window.history.replaceState){
-		window.history.replaceState(null, "", window.location.pathname)
-	}
-	console.log("[myroom] deploy requested :: " + _role)
-	window.location.hash = ""
-	if(window.onhashchange){
-		window.onhashchange()
-	}
+    console.log("[myroom] deploy requested :: " + _role)
+    var _hadHash = String(window.location.hash || "").replace("#", "").length > 0
+    if(_hadHash){
+        window.location.hash = ""
+        return
+    }
+    if(window.history && window.history.replaceState){
+        window.history.replaceState(null, "", window.location.pathname)
+    }
+    if(window.onhashchange){
+        window.onhashchange()
+    }
 })
 $(document).on("click", "#myroom .myroom_close", function(e){
-	e.preventDefault()
-	if(window.MyRoomClose){
-		window.MyRoomClose()
-	}else{
-		$("#myroom").removeClass("on")
-		$("body").removeAttr("myroom")
-	}
+    e.preventDefault()
+    try{
+        sessionStorage.setItem("roomDismissed", "1")
+    }catch(err){
+    }
+    if(window.MyRoomClose){
+        window.MyRoomClose()
+    }else{
+        $("#myroom").removeClass("on")
+        $("body").removeAttr("myroom")
+    }
 })
+window.MyRoomLocked = function(){
+    try{
+        var c = window.cookies
+        if(!c){
+            return false
+        }
+        if(c.enter || c.damage || c.dead){
+            return false
+        }
+        if(sessionStorage.getItem("roomDismissed") === "1"){
+            return false
+        }
+        var slots = window.RaidSlots ? window.RaidSlots() : null
+        return slots ? slots.any : false
+    }catch(err){
+        return false
+    }
+}
 $(document).on("click", "#myroom", function(e){
-	if(e.target !== this){
-		return
-	}
-	e.preventDefault()
-	if(window.MyRoomClose){
-		window.MyRoomClose()
-	}
+    if(e.target !== this){
+        return
+    }
+    e.preventDefault()
+    if(window.MyRoomLocked && window.MyRoomLocked()){
+        if(window.Notice){
+            window.Notice("CHOOSE A ROLE", "Pick PMC or UCAV to deploy", 2400)
+        }
+        return
+    }
+    if(window.MyRoomClose){
+        window.MyRoomClose()
+    }
 })
 
 $(document).on("change", "#myroom .stash.carried li.item .check .sel", function(){

@@ -3297,7 +3297,19 @@ window.RoomCallback = async function(resp){
 				}
 
 				if(window.assets){
-					if(JSON.stringify(window.assets) != JSON.stringify(_assets)){
+					var _rsig = ""
+					for(var _ra = 0; _ra < _assets.length; _ra++){
+						var _rav = _assets[_ra]
+						if(!_rav){
+							continue
+						}
+						_rsig += _rav.id + "|" + _rav.name + "|" +
+							(_rav.value ? _rav.value : "") + "|" +
+							(_rav.color ? _rav.color : "") + "|" +
+							(_rav.blast ? 1 : 0) + "|" + _rav.x + "|" + _rav.y + "|" + _rav.z + ";"
+					}
+					if(window.assets.sig !== _rsig){
+						_assets.sig = _rsig
 						diff = true
 						window.assets.set(_assets)
 					}
@@ -3503,18 +3515,16 @@ window.RoomCallback = async function(resp){
 				}
 
 				$('[id="'+player_hash+'"] items ul').html(li)
-				/*
-					개발 Part 81 (아이템 컨테이너)
-					보드와 같은 사고다.
-					"emojis .items" 는 진짜 목록과 덱 자리표시자를 모두 잡아
-					🎁 / 📦 가 화면에 두 번 그려졌다.
-					ItemsDeck() 은 src/index.js 가 정의한다.
-					로드 순서를 대비해 폴백 선택자를 둔다.
-				*/
 				if(window.ItemsDeck){
 					window.ItemsDeck().html(li)
 				}else{
 					$("emojis .items").not(".emoji_asset").html(li)
+				}
+				try{
+					if(window.StartSync){
+						window.StartSync()
+					}
+				}catch(err){
 				}
 				$('.emoji[type="sticker"] cnt').text(stickerCnt+(rewardLength ? 1 : 0))
 				$('.emoji[type="players"] cnt').text(_players.cnt+1)
@@ -4675,6 +4685,13 @@ window.RoomCallback = async function(resp){
 			}
 		}catch(err){
 			console.log("[room] myroom render err", err)
+		}
+		try{
+			if(window.StartSync){
+				window.StartSync()
+			}
+		}catch(err){
+			console.log("[room] start sync err", err)
 		}
 		if(!window.Init.done["room"]){
 			window.Init(cookies)
@@ -6155,6 +6172,12 @@ window.RoomInit = function(cookies){
 							var type = $this.attr("type")
 							var emoji = $this.attr("emoji")
 							var method = $this.attr("method")
+							if(type == "start"){
+								if(window.StartDeploy){
+									window.StartDeploy()
+								}
+								return
+							}
 							var player_emoji = player.emoji + ""
 							window.Zoom()
 							var open = window.map.open[(player.x+":"+player.z)]
@@ -7728,6 +7751,13 @@ window.RoomInit = function(cookies){
 	window.addEventListener('mouseup', function() {
 		isTouch = false
 	})
+
+	try{
+		if(window.StartSync){
+			window.StartSync()
+		}
+	}catch(err){
+	}
 }
 
 window.RoomHashChange = function(e){

@@ -1,5 +1,5 @@
-import { Environment, Html, Text } from "@react-three/drei"
-import { Suspense, useEffect, useRef, useState, useMemo, memo } from "react"
+import { Environment, Text } from "@react-three/drei"
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, useMemo, memo } from "react"
 import { Player } from "./Player"
 import { RoomAsset, RoomGrid } from "./RoomWorld"
 
@@ -59,6 +59,15 @@ var TileSame = function(a, b){
     if(a.blast !== b.blast){
         return false
     }
+    if(a.own !== b.own){
+        return false
+    }
+    if(a.deco !== b.deco){
+        return false
+    }
+    if(a.zone !== b.zone){
+        return false
+    }
     var p = a.position
     var q = b.position
     if(!p || !q){
@@ -77,6 +86,176 @@ var TileStable = function(name, fn){
         TileTypes[name] = fn
     }
     return TileTypes[name]
+}
+var BOX_GEO = new THREE.BoxGeometry(1, 1, 1)
+var PlaneGeoCache = {}
+var planeGeo = function(w, h){
+    var key = w + "x" + h
+    if(!PlaneGeoCache[key]){
+        PlaneGeoCache[key] = new THREE.PlaneGeometry(w, h)
+    }
+    return PlaneGeoCache[key]
+}
+var VecCache = {}
+var tileVec = function(id, x, y, z){
+    var v = VecCache[id]
+    if(v && v.x === x && v.y === y && v.z === z){
+        return v
+    }
+    v = new THREE.Vector3(x, y, z)
+    VecCache[id] = v
+    return v
+}
+var MarkerList = []
+var MarkerHost = null
+var MarkerVec = new THREE.Vector3()
+var MarkerTick = 0
+var MarkerStep = 6
+var markerHost = function(gl){
+    if(MarkerHost && MarkerHost.parentNode){
+        return MarkerHost
+    }
+    var parent = (gl && gl.domElement) ? gl.domElement.parentNode : null
+    if(!parent){
+        return null
+    }
+    var host = parent.querySelector(".r3f_markers")
+    if(!host){
+        host = document.createElement("div")
+        host.className = "r3f_markers"
+        host.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;"
+        parent.appendChild(host)
+    }
+    MarkerHost = host
+    return host
+}
+var markerHtml = function(children){
+    var child = null
+    if(children && children.props){
+        child = children
+    }else if(children && children.length){
+        child = children[0]
+    }
+    if(!child || !child.props){
+        return ""
+    }
+    var p = child.props
+    var attrs = ""
+    if(typeof p.level !== "undefined"){
+        attrs += ' level="' + p.level + '"'
+    }
+    if(typeof p.href !== "undefined"){
+        attrs += ' href="' + p.href + '"'
+    }
+    if(typeof p.src !== "undefined"){
+        attrs += ' src="' + p.src + '"'
+    }
+    var body = ""
+    if(typeof p.children === "string" || typeof p.children === "number"){
+        body = String(p.children)
+    }
+    return '<div class="' + (p.className ? p.className : "") + '"' + attrs +
+        ' x="' + p.x + '" z="' + p.z + '">' + body + '</div>'
+}
+var MarkerSync = function(state){
+    MarkerTick++
+    if(MarkerTick % MarkerStep !== 0){
+        return
+    }
+    if(!MarkerList.length){
+        return
+    }
+    var cam = state.camera
+    var w = state.size.width / 2
+    var h = state.size.height / 2
+    for(var i = 0; i < MarkerList.length; i++){
+        var m = MarkerList[i]
+        if(!m.obj || !m.el){
+            continue
+        }
+        MarkerVec.setFromMatrixPosition(m.obj.matrixWorld)
+        MarkerVec.project(cam)
+        var px = Math.round((MarkerVec.x * w) + w)
+        var py = Math.round((-MarkerVec.y * h) + h)
+        if(m.px === px && m.py === py){
+            continue
+        }
+        m.px = px
+        m.py = py
+        m.el.style.transform = "translate3d(" + px + "px," + py + "px,0)"
+    }
+}
+var IdleFrames = 0
+var IdleCache = { cx : 0, cy : 0, cz : 0, px : 0, pz : 0, ux : 0, uz : 0 }
+var IdleMoved = function(state){
+    var moved = false
+    var cam = state.camera
+    if(Math.abs(cam.position.x - IdleCache.cx) > 0.001 ||
+        Math.abs(cam.position.y - IdleCache.cy) > 0.001 ||
+        Math.abs(cam.position.z - IdleCache.cz) > 0.001){
+        moved = true
+        IdleCache.cx = cam.position.x
+        IdleCache.cy = cam.position.y
+        IdleCache.cz = cam.position.z
+    }
+    try{
+        var cur = window.current.current.position
+        if(cur.x !== IdleCache.px || cur.z !== IdleCache.pz){
+            moved = true
+            IdleCache.px = cur.x
+            IdleCache.pz = cur.z
+        }
+    }catch(err){
+    }
+    try{
+        var cs = window.cursor.current.position
+        if(cs.x !== IdleCache.ux || cs.z !== IdleCache.uz){
+            moved = true
+            IdleCache.ux = cs.x
+            IdleCache.uz = cs.z
+        }
+    }catch(err){
+    }
+    try{
+        if(window.RollBusy && window.RollBusy()){
+            moved = true
+        }
+    }catch(err){
+    }
+    return moved
+}
+function Html(props){
+    var ref = useRef()
+    var gl = useThree(function(s){ return s.gl })
+    var el = useMemo(function(){
+        var d = document.createElement("div")
+        d.style.cssText = "position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;pointer-events:none;"
+        return d
+    }, [])
+    var inner = markerHtml(props.children)
+    useLayoutEffect(function(){
+        el.className = props.className ? props.className : ""
+        el.innerHTML = inner
+    }, [inner, props.className])
+    useLayoutEffect(function(){
+        var host = markerHost(gl)
+        if(!host){
+            return
+        }
+        host.appendChild(el)
+        var entry = { obj : ref.current, el : el, px : -99999, py : -99999 }
+        MarkerList.push(entry)
+        return function(){
+            var at = MarkerList.indexOf(entry)
+            if(at > -1){
+                MarkerList.splice(at, 1)
+            }
+            if(el.parentNode){
+                el.parentNode.removeChild(el)
+            }
+        }
+    }, [])
+    return <group ref={ref} />
 }
 var blastTexture = null
 window.BlastTexture = function(){
@@ -519,8 +698,29 @@ export const Experience = () => {
 				}
 			}
 		}
+		MarkerSync(e)
 		if(window.Snap > 0){
 			window.Snap = window.Snap - 1
+			IdleFrames = 0
+			return
+		}
+		if(IdleMoved(e)){
+			IdleFrames = 0
+			return
+		}
+		IdleFrames++
+		if(IdleFrames <= 90){
+			return
+		}
+		IdleFrames = 0
+		try{
+			if(window.Mode() == "room"){
+				return
+			}
+			if(window.frameloop === "always" && window.setFrameloop){
+				window.setFrameloop("demand")
+			}
+		}catch(err){
 		}
 	})
 
@@ -862,7 +1062,7 @@ export const Experience = () => {
             </group>
         </>
     })
-    const Asset = TileStable("Asset", function(props){
+    const Asset = TilePure("Asset", function(props){
 		var cookies = window.cookies
 
 		var url = new URL(window.location.href)
@@ -1321,7 +1521,9 @@ export const Experience = () => {
 		window.current = current;
 
 		window.gl = gl
+	})
 
+	useEffect(() => {
 		window.addEventListener('click', onClick);
 		window.addEventListener('contextmenu', onContextmenu);
 		gl.domElement.addEventListener('webglcontextlost', onContextLost, false);
@@ -1331,7 +1533,7 @@ export const Experience = () => {
 			window.removeEventListener('contextmenu', onContextmenu);
 			gl.domElement.removeEventListener('webglcontextlost', onContextLost, false)
 		}
-	})
+	}, [gl])
 
 	var mode = window.Mode()
 
@@ -1379,13 +1581,7 @@ export const Experience = () => {
 							uid={asset.id}
 							hash={asset.hash}
 							color={asset.color}
-							position={
-								new THREE.Vector3(
-									asset.x,
-									asset.y,
-									asset.z
-								)
-							}
+							position={tileVec("c:" + asset.id, asset.x, asset.y, asset.z)}
 						/>
                     ) : (mode == "room" && (window.MapGen && window.MapGen.ready) && (asset.name + "").indexOf("open") === 0) ? (
                         <OpenTile
@@ -1395,13 +1591,7 @@ export const Experience = () => {
                             name={asset.name}
                             value={asset.value}
                             blast={asset.blast}
-                            position={
-                                new THREE.Vector3(
-                                    asset.x,
-                                    asset.y,
-                                    asset.z
-                                )
-                            }
+                            position={tileVec("o:" + asset.id, asset.x, asset.y, asset.z)}
                         />
                     ) : (mode == "room" && (asset.name + "").indexOf("#") !== 0) ? (
 						<RoomAsset
@@ -1411,13 +1601,7 @@ export const Experience = () => {
 							name={asset.name}
 							value={asset.value}
 							color={asset.color}
-							position={
-								new THREE.Vector3(
-									asset.x,
-									asset.y,
-									asset.z
-								)
-							}
+							position={tileVec("r:" + asset.id, asset.x, asset.y, asset.z)}
 						/>
 					) : (
 						<Asset 
@@ -1427,13 +1611,10 @@ export const Experience = () => {
 							name={asset.name}
 							value={asset.value}
 							color={asset.color}
-							position={
-								new THREE.Vector3(
-									asset.x,
-									asset.y,
-									asset.z
-								)
-							}
+							own={asset.own}
+							deco={asset.deco}
+							zone={asset.zone}
+							position={tileVec("a:" + asset.id, asset.x, asset.y, asset.z)}
 						/>
 					)
 				))}
@@ -1451,13 +1632,7 @@ export const Experience = () => {
 						follow={player.follow}
 						role={player.role}
 						dice={player.dice}
-						position={
-							new THREE.Vector3(
-								player.x,
-								player.y,
-								player.z
-							)
-						}
+						position={tileVec("p:" + player.hash, player.x, player.y, player.z)}
 					/>
 				))}
 			</Suspense>

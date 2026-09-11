@@ -645,8 +645,12 @@ emojis .deck .players ul li{display: inline-block;}
 
 .emoji_asset .metamask img{position: absolute; left: 0; right: 0; top: -0.5em; margin: 0 auto; padding: 0;}
 
-emojis .tab_content .deck>div{display: inline-block;}
+emojis .tab_content .deck .items{position: relative; top: -1px;}
+emojis .tab_content .deck .emoji_asset[type="emoji"][method=""]{position: relative; top: -3px;}
+emojis .tab_content .deck>div{display: inline-block; vertical-align: top;}
 emojis .tab_content .deck .emoji_asset[emoji="notifications"]{display: none;}
+emojis .tab_content .deck .emoji_asset[emoji="wand_stars"]{top: -2px;}
+emojis .tab_content .deck .emoji_asset[emoji="wand_stars"] a{text-shadow: none; box-shadow: 0 0 1px 0px #000000, inset 0 0 7px 1px #eb8f00;}
 /*.emoji_asset.playing:before{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; border-radius: 50%; width: 10px; height: 10px; background-color: #fff;}*/
 
 @keyframes playing {
@@ -763,7 +767,7 @@ emojis .tab_content .deck .emoji_asset[method="inventory"] a{font-size: 2.7em; f
 
 emojis .tab_content .deck .emoji_asset{position: relative; display: inline-block; padding: 0.5em; width: 50px; height: 56px; text-align: center; cursor: pointer; pointer-events: initial;}
 emojis .tab_content .deck .emoji_asset:after{content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 3;}
-emojis .tab_content .deck .emoji_asset>a{position: relative; display: inline-block; margin: auto; width: 53px; height: 53px; font-size: 3em; text-align: center; z-index: -1; transform: scale(1.0) translateZ(0); -webkit-transform: scale(1.0) translateZ(0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s; -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
+emojis .tab_content .deck .emoji_asset>a{position: relative; display: inline-block; margin: auto; width: 53px; height: 53px; font-size: 3em; text-align: center; vertical-align: top; z-index: -1; transform: scale(1.0) translateZ(0); -webkit-transform: scale(1.0) translateZ(0); transition-duration: 0.2s; -webkit-transition-duration: 0.2s; -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform; -webkit-filter: opacity(.9999); -webkit-text-stroke: 0.35px;}
 /*body[mobile="ios"] emojis .tab_content .deck .emoji_asset>a{font-family: sans-serif;}*/
 
 emojis .tab_content .deck .emoji_asset:hover>a{transform: scale(1.2) translateZ(0); -webkit-transform: scale(1.2) translateZ(0); -webkit-transform-style: preserve-3d; -webkit-backface-visibility: hidden; will-change: transform;}
@@ -982,7 +986,7 @@ emojis .tab_content .deck .emoji_asset[method="chat"] a,
 emojis .tab_content .deck .emoji_asset[method="getUserMedia"] a,
 emojis .tab_content .deck .emoji_asset[method="getDisplayMedia"] a{position: relative; border-radius: 50%; width: 45px; height: 43px; line-height: 43px; font-weight: bold; color: #422b0d; font-size: 22px; font-family: 'Material Symbols Outlined'; background: #fde030; box-shadow: inset 0 0 7px 1px #eb8f00;}
 emojis .tab_content .deck .emoji_asset[method="craft"] a{font-size: 26px !important; -webkit-text-stroke: 0.2px #fde030;}
-emojis .tab_content .deck .emoji_asset[method="chat"] a{display: inline-block; top: -2px; line-height: 46px;}
+emojis .tab_content .deck .emoji_asset[method="chat"] a{display: inline-block; line-height: 46px;}
 
 
 emojis .tab_content .deck .emoji_asset>a[type="emoji"]{text-shadow: 0 0 4px #000}
@@ -1056,8 +1060,7 @@ player[self="true"] tooltip li a.verify{border-width: 0 !important; text-decorat
 #root player tooltip li a.Fire *{pointer-events: none}
 #root player tooltip li a.Fire .cnt{top: 14px; font-size: 16px;}
 #root player tooltip li a.Flag:after{top:-10px; bottom: -10px; height: auto;}
-#root player tooltip li a.Flag:before{content: "Fire"; position: absolute; left: 0; right: 0; bottom: 6px; z-index: 1; color:#fff;}
-#root player tooltip li a.Flag{overflow: visible; display: inline-block; border:0; width: 49px; height: 47px; line-height: 0; border:none; background-size: cover; box-shadow: none; opacity: 0; pointer-events: none;}
+#root player tooltip li a.Flag{overflow: visible; display: inline-block; top:-25px; border:0; width: 49px; height: 47px; border:none; background-size: cover; opacity: 0; pointer-events: none;}
 #root player tooltip li a.Flag *{pointer-events: none}
 #root player tooltip li a.Flag .cnt{top: 14px; font-size: 16px;}
 
@@ -3476,26 +3479,52 @@ body[zoom="10"] #root player .emoji i.role-emoji{
 	font-size: 0.9em;
 }
 #root player tooltip a.hashType.Bomb{
+	overflow: visible;
+	position: relative;
+	display: inline-block;
+	border: 0;
+	width: 49px;
+	height: 49px;
+	line-height: 49px;
+	box-shadow: none;
+	vertical-align: top;
 	opacity: 1;
 	visibility: visible;
-	display: flex;
-	align-items: center;
-	justify-content: center;
 }
-#root player tooltip a.hashType.Bomb i,
-#root player[type="image"] tooltip a.hashType.Bomb i,
-#root player[type="video"] tooltip a.hashType.Bomb i,
-#root player[type="text"] tooltip a.hashType.Bomb i{
+#root player tooltip a.hashType.Bomb img,
+#root player[type="image"] tooltip a.hashType.Bomb img,
+#root player[type="video"] tooltip a.hashType.Bomb img,
+#root player[type="text"] tooltip a.hashType.Bomb img{
 	display: block;
-	opacity: 1;
-	visibility: visible;
-	font-style: normal;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	margin: auto;
+	width: 44px;
+	height: 44px;
+	object-fit: contain;
+	filter: drop-shadow(0 1px 2px #000);
+	-webkit-filter: drop-shadow(0 1px 2px #000);
+	pointer-events: none;
 }
 #root player tooltip a.hashType.Bomb[ready="0"]{
 	opacity: 0.45;
 }
-#root player tooltip a.hashType.Bomb[ready="1"] i{
-	animation: none;
+#root player tooltip a.hashType.Bomb[ready="1"] img{
+	animation: bombready 1.3s ease-in-out infinite;
+	-webkit-animation: bombready 1.3s ease-in-out infinite;
+}
+@keyframes bombready{
+	0%{ transform: scale(1); }
+	50%{ transform: scale(1.12); }
+	100%{ transform: scale(1); }
+}
+@-webkit-keyframes bombready{
+	0%{ -webkit-transform: scale(1); }
+	50%{ -webkit-transform: scale(1.12); }
+	100%{ -webkit-transform: scale(1); }
 }
 #root player[self="true"] tooltip li a.hashType.Fire{
 	opacity: 1;
@@ -3503,4 +3532,59 @@ body[zoom="10"] #root player .emoji i.role-emoji{
 }
 #root player[self="true"] tooltip li a.hashType.Fire[ready="0"]{
 	opacity: 0.55;
+}
+emojis .tab_content .deck .emoji_asset[type="start"]{
+	position: relative;
+	width: 56px;
+	margin-right: -0.5em;
+}
+emojis .tab_content .deck .emoji_asset[type="start"]>a{
+	position: relative;
+	display: inline-block;
+	margin: 0 auto;
+	border-radius: 50%;
+	width: 44px;
+	height: 43px;
+	line-height: 44px;
+	font-size: 22px;
+	text-shadow: none;
+	color: #422b0d;
+	background-color: #fde030;
+	box-shadow: inset 0 0 7px 1px #eb8f00;
+}
+emojis .tab_content .deck .emoji_asset[type="start"] .label{
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 7px;
+	text-align: center;
+	font-size: 9px;
+	font-weight: 900;
+	letter-spacing: 0.02em;
+	color: #fff;
+	text-shadow: 0 0 3px #000;
+}
+emojis .tab_content .deck .emoji_asset[type="start"][ready="1"]>a{
+	animation: startready 1.4s ease-in-out infinite;
+	-webkit-animation: startready 1.4s ease-in-out infinite;
+}
+emojis .tab_content .deck .emoji_asset[type="start"][ready="0"]{
+	opacity: 0.4;
+}
+emojis .tab_content .deck .emoji_asset[type="start"][ready="0"] .label{
+	position: absolute; right: 0; bottom: 0.4em; font-weight: 900; color: #fff; text-shadow: 0 0 10px #000; -webkit-text-stroke: 0.3px #000; letter-spacing: 0;
+}
+@keyframes startready{
+	0%{ box-shadow: inset 0 0 7px 1px #eb8f00, 0 0 0 0 rgba(253,224,48,0); }
+	50%{ box-shadow: inset 0 0 7px 1px #eb8f00, 0 0 8px 3px rgba(253,224,48,0.6); }
+	100%{ box-shadow: inset 0 0 7px 1px #eb8f00, 0 0 0 0 rgba(253,224,48,0); }
+}
+@-webkit-keyframes startready{
+	0%{ box-shadow: inset 0 0 7px 1px #eb8f00, 0 0 0 0 rgba(253,224,48,0); }
+	50%{ box-shadow: inset 0 0 7px 1px #eb8f00, 0 0 8px 3px rgba(253,224,48,0.6); }
+	100%{ box-shadow: inset 0 0 7px 1px #eb8f00, 0 0 0 0 rgba(253,224,48,0); }
+}
+body[startable] .aside emojis .tab_content .deck>.items{
+	display: inline-block;
+	vertical-align: top;
 }

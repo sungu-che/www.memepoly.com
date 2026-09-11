@@ -23,8 +23,23 @@ function App() {
 
 	return (
 		<>
-			<Canvas frameloop={frameloop} dpr={dpr} camera={{ position: [6, 6, 6], fov: 40 }} performance={{ current: 1, min: 0.1, max: 1, debounce: 200}} gl={{ antialias: true, alpha: true }}>
-				{effect ? (
+			<Canvas
+				frameloop={frameloop}
+				dpr={dpr}
+				camera={{ position: [6, 6, 6], fov: 40 }}
+				performance={{ current: 1, min: 0.1, max: 1, debounce: 200 }}
+				shadows={false}
+				gl={{
+					antialias: OAuth3.isMobile ? false : true,
+					alpha: true,
+					stencil: false,
+					depth: true,
+					preserveDrawingBuffer: false,
+					powerPreference: "high-performance",
+					failIfMajorPerformanceCaveat: false
+				}}
+			>
+				{(effect && !OAuth3.isMobile) ? (
 					<Suspense>
 						<EffectComposer>
 							<Bloom luminanceThreshold mipmapBlur luminanceSmoothing intensity />

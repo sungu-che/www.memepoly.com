@@ -35,7 +35,7 @@ window.Recipes.forEach(function(row){
 	window.Recipes[row.result] = row
 })
 
-window.MaxHp = { "" : 10, "PLAYER" : 10, "PMC" : 8, "SCAV" : 5, "UCAV" : 8 }
+window.MaxHp = { "" : 10, "PLAYER" : 10, "PMC" : 8, "SCAV" : 5, "UCAV" : 3 }
 
 /*
 	개발 Part 38 (중복 제거)

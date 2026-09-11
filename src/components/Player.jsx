@@ -9,6 +9,10 @@ export function Player({
 }) {
 	const group = useRef();
 
+	var _cellX = null
+	var _cellZ = null
+	var _cellBiome = null
+
 	var cookies = window.cookies
 
 	var props_hash = props.hash
@@ -77,31 +81,34 @@ export function Player({
 					position.z = window.current.current.position.z
 				}
 			}else{
-				try{
-					var b = window.map.biomes[`${Math.round(group.current.position.x - 0.5) + 0.5}:${Math.round(group.current.position.z - 0.5) + 0.5}`]
-					if(!b){
-						b = window.map.biomes[`${group.current.position.x}:${group.current.position.z}`]
-					}
-					if(b){
-						var _lift = window.TileLift ? window.TileLift * 1 : 0.02
-						if(isNaN(_lift)){
-							_lift = 0.02
+				var _isMine = window.cookies.address
+					? (window.cookies.address == props_hash)
+					: (props_hash == window.cookies.hash)
+				if(_isMine){
+					try{
+						var _gx = Math.round(group.current.position.x - 0.5) + 0.5
+						var _gz = Math.round(group.current.position.z - 0.5) + 0.5
+						if(_cellX !== _gx || _cellZ !== _gz){
+							_cellX = _gx
+							_cellZ = _gz
+							_cellBiome = window.map.biomes[_gx + ":" + _gz]
+							if(!_cellBiome){
+								_cellBiome = window.map.biomes[group.current.position.x + ":" + group.current.position.z]
+							}
 						}
-						var _cy = window.current.current.position.y
-						if(typeof _cy === "undefined" || Math.abs(_cy - (b.y + _lift)) > 0.05){
-							window.current.current.position.y = b.y + _lift
+						var b = _cellBiome
+						if(b){
+							var _lift = window.TileLift ? window.TileLift * 1 : 0.02
+							if(isNaN(_lift)){
+								_lift = 0.02
+							}
+							var _cy = window.current.current.position.y
+							if(typeof _cy === "undefined" || Math.abs(_cy - (b.y + _lift)) > 0.05){
+								window.current.current.position.y = b.y + _lift
+							}
 						}
+					}catch(err){
 					}
-				}catch(err){
-				}
-
-				if(window.cookies.address){
-					if(window.cookies.address == props_hash){
-						position.x = window.current.current.position.x
-						position.y = window.current.current.position.y + 0.5
-						position.z = window.current.current.position.z
-					}
-				}else if(props_hash == window.cookies.hash){
 					position.x = window.current.current.position.x
 					position.y = window.current.current.position.y + 0.5
 					position.z = window.current.current.position.z
